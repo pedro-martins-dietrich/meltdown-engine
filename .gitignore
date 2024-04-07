@@ -1,0 +1,11 @@
+.vs
+.vscode
+.env
+/build
+vcpkg_installed
+build.sh
+build.cmd
+run.sh
+run.cmd
+clear.sh
+clear.cmd
