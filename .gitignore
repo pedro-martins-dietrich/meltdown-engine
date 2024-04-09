@@ -2,6 +2,8 @@
 .vscode
 .env
 /build
+/out
+CMakeSettings.json
 vcpkg_installed
 build.sh
 build.cmd
