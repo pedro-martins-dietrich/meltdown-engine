@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../Engine/Engine.hpp"
+
 // Main class responsible to interact with the engine
 class Application
 {
@@ -12,4 +14,8 @@ class Application
 
 		// Begins the engine main loop
 		void run();
+
+	private:
+		// Instance of the Meltdown Engine
+		mtd::Engine meltdownEngine;
 };
