@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Window/Window.hpp"
+
 // Meltdown (mtd) engine namespace
 namespace mtd
 {
@@ -15,5 +17,9 @@ namespace mtd
 
 			// Begins the engine main loop
 			void start();
+
+		private:
+			// Window handler
+			Window window;
 	};
 }
