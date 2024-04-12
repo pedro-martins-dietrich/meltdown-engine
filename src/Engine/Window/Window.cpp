@@ -1,5 +1,7 @@
 #include "Window.hpp"
 
+#include "../Utils/Logger.hpp"
+
 mtd::Window::Window(int width, int height) : glfwWindow{nullptr}, width{width}, height{height}
 {
 	initializeGLFW();
@@ -36,4 +38,12 @@ void mtd::Window::createWindowInstance()
 		height = 600;
 
 	glfwWindow = glfwCreateWindow(width, height, "Meltdown Engine", nullptr, nullptr);
+
+	if(glfwWindow == nullptr)
+	{
+		LOG_ERROR("Failed to create GLFW window (%d, %d).", width, height);
+		return;
+	}
+
+	LOG_INFO("Created GLFW window with size %dx%d.", width, height);
 }
