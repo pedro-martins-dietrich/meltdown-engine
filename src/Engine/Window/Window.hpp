@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vulkan/vulkan.hpp>
 #include <GLFW/glfw3.h>
 
 namespace mtd
@@ -17,6 +18,9 @@ namespace mtd
 			// Poll events and checks if window should be kept open
 			bool keepOpen() const;
 
+			// Creates Vulkan surface for GLFW window
+			vk::SurfaceKHR createSurface(const vk::Instance& instance) const;
+
 		private:
 			// GLFW window instance
 			GLFWwindow* glfwWindow;
@@ -25,7 +29,7 @@ namespace mtd
 			int width, height;
 
 			// Configures GLFW parameters
-			void initializeGLFW();
+			void initializeGLFW() const;
 			// Creates GLFW window instance
 			void createWindowInstance();
 	};

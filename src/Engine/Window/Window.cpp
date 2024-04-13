@@ -20,8 +20,18 @@ bool mtd::Window::keepOpen() const
 	return !glfwWindowShouldClose(glfwWindow);
 }
 
+// Creates Vulkan surface for GLFW window
+vk::SurfaceKHR mtd::Window::createSurface(const vk::Instance& instance) const
+{
+	VkSurfaceKHR surface;
+	if(glfwCreateWindowSurface(instance, glfwWindow, nullptr, &surface) != VK_SUCCESS)
+		LOG_ERROR("Failed to create surface for Vulkan.");
+
+	return surface;
+}
+
 // Configures GLFW parameters
-void mtd::Window::initializeGLFW()
+void mtd::Window::initializeGLFW() const
 {
 	glfwInit();
 
