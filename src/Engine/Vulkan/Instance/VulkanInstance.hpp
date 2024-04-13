@@ -27,6 +27,11 @@ namespace mtd
 			// Vulkan surface for GLFW window
 			vk::SurfaceKHR surface;
 
+			// Vulkan debug messenger (it depends on the validation layer)
+			#ifdef MTD_DEBUG
+				vk::DebugUtilsMessengerEXT debugMessenger;
+			#endif
+
 			// Verifies if Vulkan version is compatible with the engine
 			uint32_t checkVulkanVersion() const;
 			// Checks if required extensions and layers are available
@@ -35,8 +40,5 @@ namespace mtd
 				std::vector<const char*> requiredExtensions,
 				std::vector<const char*> requiredLayers
 			);
-
-			// Creates an instance of the dispatch loader
-			void createDispatchLoader();
 	};
 }

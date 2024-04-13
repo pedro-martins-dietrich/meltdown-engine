@@ -1,5 +1,6 @@
 #include "VulkanInstance.hpp"
 
+#include "DebugMessenger.hpp"
 #include "../../Utils/Logger.hpp"
 
 mtd::VulkanInstance::VulkanInstance(const char* appName, uint32_t appVersion, const Window& window)
@@ -39,12 +40,19 @@ mtd::VulkanInstance::VulkanInstance(const char* appName, uint32_t appVersion, co
 		throw std::runtime_error("Failed to create Vulkan instance.\n");
 	LOG_INFO("Vulkan instance created.");
 
-	createDispatchLoader();
-	window.createSurface(instance);
+	dispatchLoader = vk::DispatchLoaderDynamic(instance, vkGetInstanceProcAddr);
+	#ifdef MTD_DEBUG
+		debugMessenger = DebugMessenger::createDebugMessenger(instance, dispatchLoader);
+	#endif
+	surface = window.createSurface(instance);
 }
 
 mtd::VulkanInstance::~VulkanInstance()
 {
+	instance.destroySurfaceKHR(surface);
+	#ifdef MTD_DEBUG
+		instance.destroyDebugUtilsMessengerEXT(debugMessenger, nullptr, dispatchLoader);
+	#endif
 	instance.destroy();
 }
 
@@ -137,10 +145,4 @@ bool mtd::VulkanInstance::supports
 	}
 
 	return true;
-}
-
-// Creates an instance of the dispatch loader
-void mtd::VulkanInstance::createDispatchLoader()
-{
-	dispatchLoader = vk::DispatchLoaderDynamic(instance, vkGetInstanceProcAddr);
 }
