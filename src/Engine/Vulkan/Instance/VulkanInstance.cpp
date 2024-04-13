@@ -2,9 +2,7 @@
 
 #include "../../Utils/Logger.hpp"
 
-#include <GLFW/glfw3.h>
-
-mtd::VulkanInstance::VulkanInstance(const char* appName, uint32_t appVersion)
+mtd::VulkanInstance::VulkanInstance(const char* appName, uint32_t appVersion, const Window& window)
 {
 	uint32_t version = checkVulkanVersion();
 
@@ -42,6 +40,7 @@ mtd::VulkanInstance::VulkanInstance(const char* appName, uint32_t appVersion)
 	LOG_INFO("Vulkan instance created.");
 
 	createDispatchLoader();
+	window.createSurface(instance);
 }
 
 mtd::VulkanInstance::~VulkanInstance()
@@ -50,7 +49,7 @@ mtd::VulkanInstance::~VulkanInstance()
 }
 
 // Verifies if Vulkan version is compatible with the engine
-uint32_t mtd::VulkanInstance::checkVulkanVersion()
+uint32_t mtd::VulkanInstance::checkVulkanVersion() const
 {
 	uint32_t version = 0;
 	vk::Result result = vk::enumerateInstanceVersion(&version);
