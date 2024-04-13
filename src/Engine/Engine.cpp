@@ -1,6 +1,8 @@
 #include "Engine.hpp"
 
-mtd::Engine::Engine() : window{800, 600}
+mtd::Engine::Engine()
+	: window{800, 600},
+	vulkanInstance{"Meltdown", VK_MAKE_API_VERSION(0, 1, 0, 0)}
 {
 }
 
