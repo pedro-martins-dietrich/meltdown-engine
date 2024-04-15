@@ -29,6 +29,7 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y ninja-build
+          ninja --version
 
       - name: Install Vulkan SDK for Windows
         if: matrix.os == 'windows-latest'
@@ -71,7 +72,6 @@ jobs:
           cmake -S ${{github.workspace}}
           -B ${{env.BUILD_PATH}}
           -G "Ninja Multi-Config"
-          -DCMAKE-BUILD-TYPE=${{env.BUILD_TYPE}}
           -DCMAKE_TOOLCHAIN_FILE=/usr/local/share/vcpkg/scripts/buildsystems/vcpkg.cmake
 
       - name: Build
