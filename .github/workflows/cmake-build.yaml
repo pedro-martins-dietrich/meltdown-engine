@@ -1,0 +1,78 @@
+name: Build CMake on multiple platforms
+
+on:
+  push:
+
+jobs:
+  build:
+    name: build-${{matrix.os}}
+    runs-on: ${{matrix.os}}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+
+    env:
+      BUILD_PATH: ${{github.workspace}}/build
+      BUILD_TYPE: Release
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: CMake version
+        run: cmake --version
+
+      - name: Install Ninja for Ubuntu
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt update
+          sudo apt install -y ninja-build
+          ninja --version
+
+      - name: Install Vulkan SDK for Windows
+        if: matrix.os == 'windows-latest'
+        shell: cmd
+        run: |
+          curl -o "VulkanSDK-Installer.exe" https://sdk.lunarg.com/sdk/download/latest/windows/vulkan-sdk.exe
+          .\VulkanSDK-Installer.exe --accept-licenses --default-answer --confirm-command install
+
+      - name: Install Vulkan SDK for Ubuntu
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          wget -qO- https://packages.lunarg.com/lunarg-signing-key-pub.asc | sudo tee /etc/apt/trusted.gpg.d/lunarg.asc
+          sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-jammy.list http://packages.lunarg.com/vulkan/lunarg-vulkan-jammy.list
+          sudo apt update
+          sudo apt install -y vulkan-sdk
+
+      - name: Install library dependencies for Ubuntu
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt update
+          sudo apt install -y build-essential libxinerama-dev libxcursor-dev xorg-dev libglu1-mesa-dev pkg-config
+
+      - name: Install vcpkg dependencies
+        run: |
+          vcpkg --version
+          vcpkg install glfw3 glm vulkan
+
+      - name: Configure CMake for Windows
+        if: matrix.os == 'windows-latest'
+        run: >
+          cmake -S ${{github.workspace}}
+          -B ${{env.BUILD_PATH}}
+          -G "Visual Studio 17 2022"
+          -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+          -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
+
+      - name: Configure CMake for Ubuntu
+        if: matrix.os == 'ubuntu-latest'
+        run: >
+          cmake -S ${{github.workspace}}
+          -B ${{env.BUILD_PATH}}
+          -G "Ninja Multi-Config"
+          -DCMAKE_TOOLCHAIN_FILE=/usr/local/share/vcpkg/scripts/buildsystems/vcpkg.cmake
+
+      - name: Build
+        run: cmake --build ${{env.BUILD_PATH}} --config ${{env.BUILD_TYPE}}
