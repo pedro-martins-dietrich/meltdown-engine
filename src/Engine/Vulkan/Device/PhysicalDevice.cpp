@@ -5,7 +5,7 @@
 mtd::PhysicalDevice::PhysicalDevice(const vk::Instance& vulkanInstance) : physicalDevice{nullptr}
 {
 	std::vector<vk::PhysicalDevice> availableDevices = vulkanInstance.enumeratePhysicalDevices();
-	LOG_VERBOSE("There are %d devices available.", availableDevices.size());
+	LOG_VERBOSE("There are %d device(s) available.", availableDevices.size());
 
 	std::array<vk::PhysicalDeviceType, 5> physicalDeviceTypePreferenceList
 	{

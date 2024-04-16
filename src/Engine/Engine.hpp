@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Window/Window.hpp"
-#include "Vulkan/Instance/VulkanInstance.hpp"
+#include "Vulkan/Device/Device.hpp"
 
 // Meltdown (mtd) engine namespace
 namespace mtd
@@ -24,5 +24,7 @@ namespace mtd
 			Window window;
 			// Vulkan instance handler
 			VulkanInstance vulkanInstance;
+			// Logical device
+			Device device;
 	};
 }

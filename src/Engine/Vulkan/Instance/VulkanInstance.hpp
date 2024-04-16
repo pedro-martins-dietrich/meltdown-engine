@@ -16,8 +16,9 @@ namespace mtd
 			VulkanInstance(const VulkanInstance&) = delete;
 			VulkanInstance& operator=(const VulkanInstance&) = delete;
 
-			// Getter
+			// Getters
 			const vk::Instance& getInstance() const { return instance; }
+			const vk::SurfaceKHR& getSurface() const { return surface; }
 
 		private:
 			// Vulkan instance
