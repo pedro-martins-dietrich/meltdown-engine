@@ -2,7 +2,8 @@
 
 #include "../Utils/Logger.hpp"
 
-mtd::Window::Window(int width, int height) : glfwWindow{nullptr}, width{width}, height{height}
+mtd::Window::Window(FrameDimensions initialDimensions)
+	: glfwWindow{nullptr}, dimensions{initialDimensions}
 {
 	initializeGLFW();
 	createWindowInstance();
@@ -42,18 +43,21 @@ void mtd::Window::initializeGLFW() const
 // Creates GLFW window instance
 void mtd::Window::createWindowInstance()
 {
-	if(width <= 0)
-		width = 800;
-	if(height <= 0)
-		height = 600;
+	if(dimensions.width <= 0)
+		dimensions.width = 800;
+	if(dimensions.height <= 0)
+		dimensions.height = 600;
 
-	glfwWindow = glfwCreateWindow(width, height, "Meltdown Engine", nullptr, nullptr);
+	glfwWindow = glfwCreateWindow
+	(
+		dimensions.width, dimensions.height, "Meltdown Engine", nullptr, nullptr
+	);
 
 	if(glfwWindow == nullptr)
 	{
-		LOG_ERROR("Failed to create GLFW window (%d, %d).", width, height);
+		LOG_ERROR("Failed to create GLFW window (%d, %d).", dimensions.width, dimensions.height);
 		return;
 	}
 
-	LOG_INFO("Created GLFW window with size %dx%d.", width, height);
+	LOG_INFO("Created GLFW window with size %dx%d.", dimensions.width, dimensions.height);
 }
