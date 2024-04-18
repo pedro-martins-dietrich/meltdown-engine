@@ -16,10 +16,13 @@ namespace mtd
 			Device(const Device&) = delete;
 			Device& operator=(const Device&) = delete;
 
-			// Getters
+			// Device getters
 			const vk::Device& getDevice() const { return device; }
 			const vk::PhysicalDevice& getPhysicalDevice() const
 				{ return physicalDevice.getPhysicalDevice(); }
+
+			// Queue getters
+			const QueueFamilies& getQueueFamilies() const { return queueFamilies; }
 			const vk::Queue getGraphicsQueue() const
 			{
 				return device.getQueue(queueFamilies.getGraphicsFamilyIndex(), 0);

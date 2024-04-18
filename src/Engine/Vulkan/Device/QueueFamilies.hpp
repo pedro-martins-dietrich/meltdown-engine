@@ -19,6 +19,7 @@ namespace mtd
 			// Getters
 			uint32_t getGraphicsFamilyIndex() const { return graphicsFamilyIndex.value(); }
 			uint32_t getPresentFamilyIndex() const { return presentFamilyIndex.value(); }
+			const std::vector<uint32_t>& getUniqueIndices() const { return queueFamilyIndices; }
 
 		private:
 			// Stores the queue family index that supports graphics computation
@@ -26,10 +27,12 @@ namespace mtd
 			// Stores the queue family index that supports surface presentation
 			std::optional<uint32_t> presentFamilyIndex;
 
-			// Checks if all queue famuly indices have been set
-			inline bool isComplete() const
-			{
-				return graphicsFamilyIndex.has_value() && presentFamilyIndex.has_value();
-			}
+			// Unique queue family indices
+			std::vector<uint32_t> queueFamilyIndices;
+
+			// Checks if all queue family indices have been set
+			inline bool isComplete() const;
+			// Adds queue family index to vector if unique
+			void addIndexToVector(uint32_t index);
 	};
 }

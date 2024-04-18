@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Window/Window.hpp"
-#include "Vulkan/Device/Device.hpp"
+#include "Vulkan/Frame/Swapchain.hpp"
 
 // Meltdown (mtd) engine namespace
 namespace mtd
@@ -26,5 +26,7 @@ namespace mtd
 			VulkanInstance vulkanInstance;
 			// Logical device
 			Device device;
+			// Swapchain
+			Swapchain swapchain;
 	};
 }
