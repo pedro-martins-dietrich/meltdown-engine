@@ -3,7 +3,8 @@
 mtd::Engine::Engine()
 	: window{FrameDimensions{800, 600}},
 	vulkanInstance{"Meltdown", VK_MAKE_API_VERSION(0, 1, 0, 0), window},
-	device{vulkanInstance}
+	device{vulkanInstance},
+	swapchain{device, window.getDimensions(), vulkanInstance.getSurface()}
 {
 }
 

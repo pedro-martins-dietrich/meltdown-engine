@@ -10,4 +10,12 @@ namespace mtd
 		uint32_t width;
 		uint32_t height;
 	};
+
+	// Swapchain features supported by the device
+	struct SwapchainSupportedDetails
+	{
+		vk::SurfaceCapabilitiesKHR capabilities;
+		std::vector<vk::SurfaceFormatKHR> formats;
+		std::vector<vk::PresentModeKHR> presentModes;
+	};
 }
