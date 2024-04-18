@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../Device/Device.hpp"
+#include "Frame.hpp"
 
 namespace mtd
 {
@@ -24,6 +25,11 @@ namespace mtd
 			vk::SwapchainKHR swapchain;
 			// Features supported by the current device
 			SwapchainSupportedDetails supportedDetails;
+
+			// Frames stored by the swapchain
+			std::vector<Frame> frames;
+			// Number of frames
+			uint32_t frameCount;
 
 			// Vulkan device reference
 			const vk::Device& device;
@@ -52,6 +58,12 @@ namespace mtd
 			vk::Extent2D selectExtent(const FrameDimensions& frameDimensions) const;
 			// Sets the present mode to be used
 			vk::PresentModeKHR selectPresentMode(vk::PresentModeKHR desiredPresentMode) const;
+
+			// Creates all the swapchain frames
+			void setSwapchainFrames
+			(
+				const FrameDimensions& frameDimensions, vk::Format format
+			);
 
 			// Destroys the swapchain
 			void destroy();

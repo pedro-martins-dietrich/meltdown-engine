@@ -7,7 +7,7 @@ mtd::Swapchain::Swapchain
 	const Device& device,
 	const FrameDimensions& frameDimensions,
 	const vk::SurfaceKHR& surface
-) : device{device.getDevice()}
+) : device{device.getDevice()}, frameCount{3}
 {
 	getSupportedDetails(device.getPhysicalDevice(), surface);
 	createSwapchain(device, frameDimensions, surface);
@@ -49,7 +49,7 @@ void mtd::Swapchain::createSwapchain
 	vk::SwapchainCreateInfoKHR swapchainCreateInfo{};
 	swapchainCreateInfo.flags = vk::SwapchainCreateFlagsKHR();
 	swapchainCreateInfo.surface = surface;
-	swapchainCreateInfo.minImageCount = selectImageCount(3);
+	swapchainCreateInfo.minImageCount = selectImageCount(frameCount);
 	swapchainCreateInfo.imageFormat = selectedFormat.format;
 	swapchainCreateInfo.imageColorSpace = selectedFormat.colorSpace;
 	swapchainCreateInfo.imageExtent = selectExtent(frameDimensions);
@@ -70,6 +70,8 @@ void mtd::Swapchain::createSwapchain
 		LOG_ERROR("Failed to create swapchain.");
 		return;
 	}
+
+	setSwapchainFrames(frameDimensions, selectedFormat.format);
 
 	LOG_INFO("Created swapchain.\n");
 }
@@ -150,8 +152,24 @@ vk::PresentModeKHR mtd::Swapchain::selectPresentMode(vk::PresentModeKHR desiredP
 	return vk::PresentModeKHR::eFifo;
 }
 
+// Creates all the swapchain frames
+void mtd::Swapchain::setSwapchainFrames
+(
+	const FrameDimensions& frameDimensions, vk::Format format
+)
+{
+	std::vector<vk::Image> images = device.getSwapchainImagesKHR(swapchain);
+
+	frames.reserve(frameCount);
+	for(vk::Image& image: images)
+	{
+		frames.emplace_back(device, frameDimensions, image, format);
+	}
+}
+
 // Destroys the swapchain
 void mtd::Swapchain::destroy()
 {
+	frames.clear();
 	device.destroySwapchainKHR(swapchain);
 }
