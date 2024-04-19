@@ -20,6 +20,10 @@ namespace mtd
 			Swapchain(const Swapchain&) = delete;
 			Swapchain& operator=(const Swapchain&) = delete;
 
+			// Getters
+			const vk::Extent2D& getExtent() const { return extent; }
+			vk::Format getColorFormat() const { return colorFormat; }
+
 		private:
 			// Vulkan swapchain
 			vk::SwapchainKHR swapchain;
@@ -30,6 +34,11 @@ namespace mtd
 			std::vector<Frame> frames;
 			// Number of frames
 			uint32_t frameCount;
+
+			// Frame size
+			vk::Extent2D extent;
+			// Image color format
+			vk::Format colorFormat;
 
 			// Vulkan device reference
 			const vk::Device& device;
@@ -53,17 +62,14 @@ namespace mtd
 				vk::Format desiredFormat, vk::ColorSpaceKHR desiredColorSpace
 			) const;
 			// Sets how many frames will be stored in the buffer
-			uint32_t selectImageCount(uint32_t desiredImageCount) const;
+			void selectImageCount();
 			// Sets the frame dimensions to be used in the swapchain
-			vk::Extent2D selectExtent(const FrameDimensions& frameDimensions) const;
+			void selectExtent(const FrameDimensions& frameDimensions);
 			// Sets the present mode to be used
 			vk::PresentModeKHR selectPresentMode(vk::PresentModeKHR desiredPresentMode) const;
 
 			// Creates all the swapchain frames
-			void setSwapchainFrames
-			(
-				const FrameDimensions& frameDimensions, vk::Format format
-			);
+			void setSwapchainFrames(const FrameDimensions& frameDimensions);
 
 			// Destroys the swapchain
 			void destroy();

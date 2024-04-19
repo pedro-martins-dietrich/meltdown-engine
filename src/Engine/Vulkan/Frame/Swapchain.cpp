@@ -10,6 +10,7 @@ mtd::Swapchain::Swapchain
 ) : device{device.getDevice()}, frameCount{3}
 {
 	getSupportedDetails(device.getPhysicalDevice(), surface);
+	selectImageCount();
 	createSwapchain(device, frameDimensions, surface);
 }
 
@@ -39,6 +40,7 @@ void mtd::Swapchain::createSwapchain
 {
 	vk::SurfaceFormatKHR selectedFormat =
 		selectFormat(vk::Format::eB8G8R8A8Unorm, vk::ColorSpaceKHR::eSrgbNonlinear);
+	colorFormat = selectedFormat.format;
 
 	uint32_t distinctQueueFamilyIndices =
 		static_cast<uint32_t>(device.getQueueFamilies().getUniqueIndices().size());
@@ -46,13 +48,15 @@ void mtd::Swapchain::createSwapchain
 		? vk::SharingMode::eExclusive
 		: vk::SharingMode::eConcurrent;
 
+	selectExtent(frameDimensions);
+
 	vk::SwapchainCreateInfoKHR swapchainCreateInfo{};
 	swapchainCreateInfo.flags = vk::SwapchainCreateFlagsKHR();
 	swapchainCreateInfo.surface = surface;
-	swapchainCreateInfo.minImageCount = selectImageCount(frameCount);
-	swapchainCreateInfo.imageFormat = selectedFormat.format;
+	swapchainCreateInfo.minImageCount = frameCount;
+	swapchainCreateInfo.imageFormat = colorFormat;
 	swapchainCreateInfo.imageColorSpace = selectedFormat.colorSpace;
-	swapchainCreateInfo.imageExtent = selectExtent(frameDimensions);
+	swapchainCreateInfo.imageExtent = extent;
 	swapchainCreateInfo.imageArrayLayers = 1U;
 	swapchainCreateInfo.imageUsage = vk::ImageUsageFlagBits::eColorAttachment;
 	swapchainCreateInfo.imageSharingMode = selectedSharingMode;
@@ -71,7 +75,7 @@ void mtd::Swapchain::createSwapchain
 		return;
 	}
 
-	setSwapchainFrames(frameDimensions, selectedFormat.format);
+	setSwapchainFrames(frameDimensions);
 
 	LOG_INFO("Created swapchain.\n");
 }
@@ -96,39 +100,37 @@ vk::SurfaceFormatKHR mtd::Swapchain::selectFormat
 }
 
 // Sets how many frames will be stored in the buffer
-uint32_t mtd::Swapchain::selectImageCount(uint32_t desiredImageCount) const
+void mtd::Swapchain::selectImageCount()
 {
-	return std::clamp
+	frameCount = std::clamp
 	(
-		desiredImageCount,
+		frameCount,
 		supportedDetails.capabilities.minImageCount,
 		supportedDetails.capabilities.maxImageCount
 	);
 }
 
 // Sets the frame dimensions to be used in the swapchain
-vk::Extent2D mtd::Swapchain::selectExtent(const FrameDimensions& frameDimensions) const
+void mtd::Swapchain::selectExtent(const FrameDimensions& frameDimensions)
 {
 	if(supportedDetails.capabilities.currentExtent.width != UINT32_MAX)
 	{
-		return supportedDetails.capabilities.currentExtent;
+		extent = supportedDetails.capabilities.currentExtent;
+		return;
 	}
 
-	return vk::Extent2D
-	{
-		std::clamp
-		(
-			frameDimensions.width,
-			supportedDetails.capabilities.minImageExtent.width,
-			supportedDetails.capabilities.maxImageExtent.width
-		),
-		std::clamp
-		(
-			frameDimensions.height,
-			supportedDetails.capabilities.minImageExtent.height,
-			supportedDetails.capabilities.maxImageExtent.height
-		)
-	};
+	extent.width = std::clamp
+	(
+		frameDimensions.width,
+		supportedDetails.capabilities.minImageExtent.width,
+		supportedDetails.capabilities.maxImageExtent.width
+	);
+	extent.height = std::clamp
+	(
+		frameDimensions.height,
+		supportedDetails.capabilities.minImageExtent.height,
+		supportedDetails.capabilities.maxImageExtent.height
+	);
 }
 
 // Sets the present mode to be used
@@ -153,17 +155,14 @@ vk::PresentModeKHR mtd::Swapchain::selectPresentMode(vk::PresentModeKHR desiredP
 }
 
 // Creates all the swapchain frames
-void mtd::Swapchain::setSwapchainFrames
-(
-	const FrameDimensions& frameDimensions, vk::Format format
-)
+void mtd::Swapchain::setSwapchainFrames(const FrameDimensions& frameDimensions)
 {
 	std::vector<vk::Image> images = device.getSwapchainImagesKHR(swapchain);
 
 	frames.reserve(frameCount);
 	for(vk::Image& image: images)
 	{
-		frames.emplace_back(device, frameDimensions, image, format);
+		frames.emplace_back(device, frameDimensions, image, colorFormat);
 	}
 }
 
