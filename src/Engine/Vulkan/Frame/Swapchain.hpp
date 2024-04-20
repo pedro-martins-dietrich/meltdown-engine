@@ -24,6 +24,9 @@ namespace mtd
 			const vk::Extent2D& getExtent() const { return extent; }
 			vk::Format getColorFormat() const { return colorFormat; }
 
+			// Create framebuffers for each frame
+			void createFramebuffers(const vk::RenderPass& renderPass);
+
 		private:
 			// Vulkan swapchain
 			vk::SwapchainKHR swapchain;

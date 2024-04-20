@@ -24,11 +24,16 @@ namespace mtd
 
 			Frame(Frame&& otherFrame) noexcept;
 
+			// Set up framebuffer
+			void createFramebuffer(const vk::RenderPass& renderPass);
+
 		private:
 			// Image data
 			vk::Image image;
 			// Image desctiption
 			vk::ImageView imageView;
+			// Frame storage
+			vk::Framebuffer framebuffer;
 
 			// Frame dimensions
 			FrameDimensions frameDimensions;

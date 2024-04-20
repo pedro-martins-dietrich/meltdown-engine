@@ -17,6 +17,7 @@ mtd::Frame::Frame
 
 mtd::Frame::~Frame()
 {
+	device.destroyFramebuffer(framebuffer);
 	device.destroyImageView(imageView);
 }
 
@@ -28,6 +29,28 @@ mtd::Frame::Frame(Frame&& frame) noexcept
 {
 	frame.image = nullptr;
 	frame.imageView = nullptr;
+}
+
+// Set up framebuffer
+void mtd::Frame::createFramebuffer(const vk::RenderPass& renderPass)
+{
+	vk::FramebufferCreateInfo framebufferCreateInfo{};
+	framebufferCreateInfo.flags = vk::FramebufferCreateFlags();
+	framebufferCreateInfo.renderPass = renderPass;
+	framebufferCreateInfo.attachmentCount = 1;
+	framebufferCreateInfo.pAttachments = &imageView;
+	framebufferCreateInfo.width = frameDimensions.width;
+	framebufferCreateInfo.height = frameDimensions.height;
+	framebufferCreateInfo.layers = 1;
+
+	vk::Result result = device.createFramebuffer(&framebufferCreateInfo, nullptr, &framebuffer);
+	if(result != vk::Result::eSuccess)
+	{
+		LOG_ERROR("Failed to create framebuffer. Vulkan result: %d", result);
+		return;
+	}
+
+	LOG_VERBOSE("Created framebuffer.");
 }
 
 // Create frame image view
@@ -56,5 +79,5 @@ void mtd::Frame::createImageView(vk::Format format)
 
 	vk::Result result = device.createImageView(&imageViewCreateInfo, nullptr, &imageView);
 	if(result != vk::Result::eSuccess)
-		LOG_ERROR("Failed to create image view for frame.");
+		LOG_ERROR("Failed to create image view for frame. Vulkan result: %d", result);
 }

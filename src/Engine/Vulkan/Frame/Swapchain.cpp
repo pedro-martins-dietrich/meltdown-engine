@@ -19,6 +19,15 @@ mtd::Swapchain::~Swapchain()
 	destroy();
 }
 
+// Create framebuffers for each frame
+void mtd::Swapchain::createFramebuffers(const vk::RenderPass& renderPass)
+{
+	for(Frame& frame: frames)
+	{
+		frame.createFramebuffer(renderPass);
+	}
+}
+
 // Retrieves swapchain features supported by the physical device
 void mtd::Swapchain::getSupportedDetails
 (

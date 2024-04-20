@@ -9,14 +9,15 @@ namespace mtd
 	class Pipeline
 	{
 		public:
-			Pipeline(const vk::Device& device, const Swapchain& swapchain);
+			Pipeline(const vk::Device& device, Swapchain& swapchain);
 			~Pipeline();
 
 			Pipeline(const Pipeline&) = delete;
 			Pipeline& operator=(const Pipeline&) = delete;
 
-			// Getter
+			// Getters
 			const vk::Pipeline& getPipeline() const { return pipeline; }
+			const vk::RenderPass& getRenderPass() const { return renderPass; }
 
 		private:
 			// Vulkan graphics pipeline
@@ -30,7 +31,7 @@ namespace mtd
 			const vk::Device& device;
 
 			// Creates the graphics pipeline
-			void createPipeline(const Swapchain& swapchain);
+			void createPipeline(Swapchain& swapchain);
 
 			// Sets create infos for pipeline creation
 			void setVertexInput(vk::PipelineVertexInputStateCreateInfo& vertexInputInfo) const;
@@ -67,6 +68,6 @@ namespace mtd
 			// Creates the layout for the pipeline
 			void createPipelineLayout();
 			// Creates pipeline render pass
-			void createRenderPass(const Swapchain& swapchain);
+			void createRenderPass(Swapchain& swapchain);
 	};
 }
