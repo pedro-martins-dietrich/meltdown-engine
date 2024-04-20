@@ -3,6 +3,8 @@
 .env
 /build
 /out
+/install
+/resources/shaders
 CMakeSettings.json
 vcpkg_installed
 build.sh

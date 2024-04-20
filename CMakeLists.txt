@@ -31,17 +31,44 @@ set(
     Vulkan::Vulkan
 )
 
+# Sets shaders directory
+set(SOURCE_SHADERS_DIR "${CMAKE_SOURCE_DIR}/src/Engine/Shaders")
+set(COMPILED_SHADERS_DIR "${CMAKE_SOURCE_DIR}/resources/shaders")
+
+# Searches shaders source code files and compiles them
+file(GLOB_RECURSE SHADER_SRC_FILES "${SOURCE_SHADERS_DIR}/**.vert" "${SOURCE_SHADERS_DIR}/**.frag")
+foreach(SHADER_SRC_FILE ${SHADER_SRC_FILES})
+    get_filename_component(SHADER_NAME ${SHADER_SRC_FILE} NAME)
+    set(SHADER_OUTPUT "${COMPILED_SHADERS_DIR}/${SHADER_NAME}.spv")
+
+    add_custom_command(
+        OUTPUT ${SHADER_OUTPUT}
+        COMMAND ${CMAKE_COMMAND} -E remove ${SHADER_OUTPUT}
+        COMMAND glslc "${SHADER_SRC_FILE}" -o "${SHADER_OUTPUT}"
+        DEPENDS ${SHADER_SRC_FILE}
+        COMMENT "Compiled shader: ${SHADER_NAME}"
+    )
+
+    list(APPEND SHADER_OUTPUTS ${SHADER_OUTPUT})
+endforeach()
+add_custom_target(SHADERS DEPENDS ${SHADER_OUTPUTS})
+
 # Gathers source files (.cpp) to be compiled
 set(EXECUTABLE "meltdown_engine")
 file(GLOB_RECURSE SRC_FILES "src/**.cpp")
 add_executable(${EXECUTABLE} ${SRC_FILES})
+add_dependencies(${EXECUTABLE} SHADERS)
 
-# Defines macros for the current build type
+# Define macros for the project
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_compile_definitions(${EXECUTABLE} PRIVATE MTD_DEBUG=2)
+    add_compile_definitions(${EXECUTABLE} PRIVATE MTD_SPIRV_SHADERS_PATH="${COMPILED_SHADERS_DIR}/")
+
     message(STATUS "Building for debug...")
 elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
     add_compile_definitions(${EXECUTABLE} PRIVATE MTD_DEBUG=1)
+    add_compile_definitions(${EXECUTABLE} PRIVATE MTD_SPIRV_SHADERS_PATH="${COMPILED_SHADERS_DIR}/")
+
     message(STATUS "Building for release with debug info...")
 elseif(CMAKE_BUILD_TYPE MATCHES "^(Release|MinSizeRel)$")
     message(STATUS "Building for release...")
@@ -56,3 +83,4 @@ target_link_libraries(${EXECUTABLE} PRIVATE ${LIBRARIES})
 # Copies the selected files to the install location
 install(TARGETS ${EXECUTABLE} DESTINATION .)
 install(FILES $<TARGET_FILE:glfw> DESTINATION .)
+install(DIRECTORY "${CMAKE_SOURCE_DIR}/resources" DESTINATION .)
