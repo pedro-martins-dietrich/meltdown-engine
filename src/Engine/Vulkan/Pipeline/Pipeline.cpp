@@ -255,7 +255,7 @@ void mtd::Pipeline::createPipelineLayout()
 }
 
 // Creates pipeline render pass
-void mtd::Pipeline::createRenderPass(mutable Swapchain& swapchain)
+void mtd::Pipeline::createRenderPass(Swapchain& swapchain)
 {
 	vk::AttachmentDescription colorAttachmentDescription{};
 	colorAttachmentDescription.flags = vk::AttachmentDescriptionFlags();

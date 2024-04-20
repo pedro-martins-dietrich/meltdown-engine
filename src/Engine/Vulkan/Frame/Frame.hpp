@@ -3,6 +3,7 @@
 #include <vulkan/vulkan.hpp>
 
 #include "../../Utils/EngineStructs.hpp"
+#include "../Command/CommandHandler.hpp"
 
 namespace mtd
 {
@@ -12,7 +13,7 @@ namespace mtd
 		public:
 			Frame
 			(
-				const vk::Device& device,
+				const Device& device,
 				const FrameDimensions& frameDimensions,
 				vk::Image image,
 				vk::Format format
@@ -37,6 +38,9 @@ namespace mtd
 
 			// Frame dimensions
 			FrameDimensions frameDimensions;
+
+			// Vulkan command handler
+			CommandHandler commandHandler;
 
 			// Vulkan device reference
 			const vk::Device& device;

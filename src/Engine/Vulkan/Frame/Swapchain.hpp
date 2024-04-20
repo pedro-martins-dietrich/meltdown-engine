@@ -72,7 +72,7 @@ namespace mtd
 			vk::PresentModeKHR selectPresentMode(vk::PresentModeKHR desiredPresentMode) const;
 
 			// Creates all the swapchain frames
-			void setSwapchainFrames(const FrameDimensions& frameDimensions);
+			void setSwapchainFrames(const Device& device, const FrameDimensions& frameDimensions);
 
 			// Destroys the swapchain
 			void destroy();

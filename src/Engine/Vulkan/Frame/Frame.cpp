@@ -4,11 +4,14 @@
 
 mtd::Frame::Frame
 (
-	const vk::Device& device,
+	const Device& device,
 	const FrameDimensions& frameDimensions,
 	vk::Image image,
 	vk::Format format
-) : device{device}, frameDimensions{frameDimensions}, image{image}
+) : device{device.getDevice()},
+	frameDimensions{frameDimensions},
+	image{image},
+	commandHandler{device}
 {
 	createImageView(format);
 
@@ -25,7 +28,8 @@ mtd::Frame::Frame(Frame&& frame) noexcept
 	: device{frame.device},
 	frameDimensions{std::move(frame.frameDimensions)},
 	image{std::move(frame.image)},
-	imageView{std::move(frame.imageView)}
+	imageView{std::move(frame.imageView)},
+	commandHandler{std::move(frame.commandHandler)}
 {
 	frame.image = nullptr;
 	frame.imageView = nullptr;

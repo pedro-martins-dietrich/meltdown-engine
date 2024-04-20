@@ -84,7 +84,7 @@ void mtd::Swapchain::createSwapchain
 		return;
 	}
 
-	setSwapchainFrames(frameDimensions);
+	setSwapchainFrames(device, frameDimensions);
 
 	LOG_INFO("Created swapchain.\n");
 }
@@ -164,9 +164,12 @@ vk::PresentModeKHR mtd::Swapchain::selectPresentMode(vk::PresentModeKHR desiredP
 }
 
 // Creates all the swapchain frames
-void mtd::Swapchain::setSwapchainFrames(const FrameDimensions& frameDimensions)
+void mtd::Swapchain::setSwapchainFrames
+(
+	const Device& device, const FrameDimensions& frameDimensions
+)
 {
-	std::vector<vk::Image> images = device.getSwapchainImagesKHR(swapchain);
+	std::vector<vk::Image> images = this->device.getSwapchainImagesKHR(swapchain);
 
 	frames.reserve(frameCount);
 	for(vk::Image& image: images)
