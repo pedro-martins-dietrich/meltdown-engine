@@ -11,7 +11,7 @@ namespace mtd
 	{
 		public:
 			Engine();
-			~Engine() {}
+			~Engine();
 
 			Engine(const Engine&) = delete;
 			Engine& operator=(const Engine&) = delete;

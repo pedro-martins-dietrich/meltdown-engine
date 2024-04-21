@@ -3,6 +3,7 @@
 #include <vulkan/vulkan.hpp>
 
 #include "../../Utils/EngineStructs.hpp"
+#include "../Command/CommandHandler.hpp"
 
 namespace mtd
 {
@@ -12,10 +13,11 @@ namespace mtd
 		public:
 			Frame
 			(
-				const vk::Device& device,
+				const Device& device,
 				const FrameDimensions& frameDimensions,
 				vk::Image image,
-				vk::Format format
+				vk::Format format,
+				uint32_t frameIndex
 			);
 			~Frame();
 
@@ -24,14 +26,36 @@ namespace mtd
 
 			Frame(Frame&& otherFrame) noexcept;
 
+			// Getters
+			const vk::Fence& getInFlightFence() const
+				{ return synchronizationBundle.inFlightFence; }
+			const vk::Semaphore& getImageAvailableSemaphore() const
+				{ return synchronizationBundle.imageAvailable; }
+
+			// Set up framebuffer
+			void createFramebuffer(const vk::RenderPass& renderPass);
+
+			// Draws frame to screen
+			void drawFrame(DrawInfo& drawInfo) const;
+
 		private:
 			// Image data
 			vk::Image image;
 			// Image desctiption
 			vk::ImageView imageView;
+			// Frame storage
+			vk::Framebuffer framebuffer;
 
+			// Frame index in the swapchain
+			uint32_t frameIndex;
 			// Frame dimensions
 			FrameDimensions frameDimensions;
+
+			// Vulkan command handler
+			CommandHandler commandHandler;
+
+			// Synchronization objects
+			SynchronizationBundle synchronizationBundle;
 
 			// Vulkan device reference
 			const vk::Device& device;

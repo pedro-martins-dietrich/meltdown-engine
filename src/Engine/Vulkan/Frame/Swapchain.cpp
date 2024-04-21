@@ -19,6 +19,15 @@ mtd::Swapchain::~Swapchain()
 	destroy();
 }
 
+// Create framebuffers for each frame
+void mtd::Swapchain::createFramebuffers(const vk::RenderPass& renderPass)
+{
+	for(Frame& frame: frames)
+	{
+		frame.createFramebuffer(renderPass);
+	}
+}
+
 // Retrieves swapchain features supported by the physical device
 void mtd::Swapchain::getSupportedDetails
 (
@@ -75,7 +84,7 @@ void mtd::Swapchain::createSwapchain
 		return;
 	}
 
-	setSwapchainFrames(frameDimensions);
+	setSwapchainFrames(device, frameDimensions);
 
 	LOG_INFO("Created swapchain.\n");
 }
@@ -155,14 +164,17 @@ vk::PresentModeKHR mtd::Swapchain::selectPresentMode(vk::PresentModeKHR desiredP
 }
 
 // Creates all the swapchain frames
-void mtd::Swapchain::setSwapchainFrames(const FrameDimensions& frameDimensions)
+void mtd::Swapchain::setSwapchainFrames
+(
+	const Device& device, const FrameDimensions& frameDimensions
+)
 {
-	std::vector<vk::Image> images = device.getSwapchainImagesKHR(swapchain);
+	std::vector<vk::Image> images = this->device.getSwapchainImagesKHR(swapchain);
 
 	frames.reserve(frameCount);
-	for(vk::Image& image: images)
+	for(uint32_t i = 0; i < images.size(); i++)
 	{
-		frames.emplace_back(device, frameDimensions, image, colorFormat);
+		frames.emplace_back(device, frameDimensions, images[i], colorFormat, i);
 	}
 }
 

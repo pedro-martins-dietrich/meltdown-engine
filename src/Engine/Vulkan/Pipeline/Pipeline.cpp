@@ -2,7 +2,7 @@
 
 #include "../../Utils/Logger.hpp"
 
-mtd::Pipeline::Pipeline(const vk::Device& device, const Swapchain& swapchain)
+mtd::Pipeline::Pipeline(const vk::Device& device, Swapchain& swapchain)
 	: device{device}
 {
 	createPipeline(swapchain);
@@ -16,7 +16,7 @@ mtd::Pipeline::~Pipeline()
 }
 
 // Creates the graphics pipeline
-void mtd::Pipeline::createPipeline(const Swapchain& swapchain)
+void mtd::Pipeline::createPipeline(Swapchain& swapchain)
 {
 	std::vector<vk::PipelineShaderStageCreateInfo> shaderStagesCreateInfos;
 	vk::Viewport viewport{};
@@ -255,13 +255,13 @@ void mtd::Pipeline::createPipelineLayout()
 }
 
 // Creates pipeline render pass
-void mtd::Pipeline::createRenderPass(const Swapchain& swapchain)
+void mtd::Pipeline::createRenderPass(Swapchain& swapchain)
 {
 	vk::AttachmentDescription colorAttachmentDescription{};
 	colorAttachmentDescription.flags = vk::AttachmentDescriptionFlags();
 	colorAttachmentDescription.format = swapchain.getColorFormat();
 	colorAttachmentDescription.samples = vk::SampleCountFlagBits::e1;
-	colorAttachmentDescription.loadOp = vk::AttachmentLoadOp::eDontCare;
+	colorAttachmentDescription.loadOp = vk::AttachmentLoadOp::eClear;
 	colorAttachmentDescription.storeOp = vk::AttachmentStoreOp::eStore;
 	colorAttachmentDescription.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
 	colorAttachmentDescription.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
@@ -300,4 +300,5 @@ void mtd::Pipeline::createRenderPass(const Swapchain& swapchain)
 		return;
 	}
 	LOG_VERBOSE("Created render pass.");
+	swapchain.createFramebuffers(renderPass);
 }

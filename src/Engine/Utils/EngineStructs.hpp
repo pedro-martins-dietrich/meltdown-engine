@@ -18,4 +18,27 @@ namespace mtd
 		std::vector<vk::SurfaceFormatKHR> formats;
 		std::vector<vk::PresentModeKHR> presentModes;
 	};
+
+	// Frame synchronization bundle
+	struct SynchronizationBundle
+	{
+		// Blocks CPU execution until frame is ready
+		vk::Fence inFlightFence;
+		// Signals the image has been aquired
+		vk::Semaphore imageAvailable;
+		// Signals the image has been rendered in the frame
+		vk::Semaphore renderFinished;
+	};
+
+	// Information required for drawing a frame
+	struct DrawInfo
+	{
+		const vk::Pipeline* pipeline;
+		const vk::RenderPass* renderPass;
+		const vk::SwapchainKHR* swapchain;
+		const vk::Extent2D* extent;
+		const vk::Framebuffer* framebuffer;
+		const SynchronizationBundle* syncBundle;
+		uint32_t frameIndex;
+	};
 }

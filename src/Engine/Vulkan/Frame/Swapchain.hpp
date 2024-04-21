@@ -21,8 +21,13 @@ namespace mtd
 			Swapchain& operator=(const Swapchain&) = delete;
 
 			// Getters
+			const vk::SwapchainKHR& getSwapchain() const { return swapchain; }
 			const vk::Extent2D& getExtent() const { return extent; }
 			vk::Format getColorFormat() const { return colorFormat; }
+			const Frame& getFrame(uint32_t index) const { return frames[index]; }
+
+			// Create framebuffers for each frame
+			void createFramebuffers(const vk::RenderPass& renderPass);
 
 		private:
 			// Vulkan swapchain
@@ -69,7 +74,7 @@ namespace mtd
 			vk::PresentModeKHR selectPresentMode(vk::PresentModeKHR desiredPresentMode) const;
 
 			// Creates all the swapchain frames
-			void setSwapchainFrames(const FrameDimensions& frameDimensions);
+			void setSwapchainFrames(const Device& device, const FrameDimensions& frameDimensions);
 
 			// Destroys the swapchain
 			void destroy();
