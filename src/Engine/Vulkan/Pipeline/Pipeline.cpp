@@ -261,7 +261,7 @@ void mtd::Pipeline::createRenderPass(Swapchain& swapchain)
 	colorAttachmentDescription.flags = vk::AttachmentDescriptionFlags();
 	colorAttachmentDescription.format = swapchain.getColorFormat();
 	colorAttachmentDescription.samples = vk::SampleCountFlagBits::e1;
-	colorAttachmentDescription.loadOp = vk::AttachmentLoadOp::eDontCare;
+	colorAttachmentDescription.loadOp = vk::AttachmentLoadOp::eClear;
 	colorAttachmentDescription.storeOp = vk::AttachmentStoreOp::eStore;
 	colorAttachmentDescription.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
 	colorAttachmentDescription.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;

@@ -1,38 +1,56 @@
 #include "Frame.hpp"
 
 #include "../../Utils/Logger.hpp"
+#include "../Command/Synchronization.hpp"
 
 mtd::Frame::Frame
 (
 	const Device& device,
 	const FrameDimensions& frameDimensions,
 	vk::Image image,
-	vk::Format format
+	vk::Format format,
+	uint32_t frameIndex
 ) : device{device.getDevice()},
 	frameDimensions{frameDimensions},
 	image{image},
-	commandHandler{device}
+	commandHandler{device},
+	frameIndex{frameIndex}
 {
 	createImageView(format);
 
-	LOG_VERBOSE("Created a frame.");
+	Synchronization::createFence(this->device, synchronizationBundle.inFlightFence);
+	Synchronization::createSemaphore(this->device, synchronizationBundle.imageAvailable);
+	Synchronization::createSemaphore(this->device, synchronizationBundle.renderFinished);
+
+	LOG_VERBOSE("Created frame number %d.", frameIndex);
 }
 
 mtd::Frame::~Frame()
 {
+	device.destroySemaphore(synchronizationBundle.renderFinished);
+	device.destroySemaphore(synchronizationBundle.imageAvailable);
+	device.destroyFence(synchronizationBundle.inFlightFence);
+
 	device.destroyFramebuffer(framebuffer);
 	device.destroyImageView(imageView);
 }
 
 mtd::Frame::Frame(Frame&& frame) noexcept
 	: device{frame.device},
+	frameIndex{frame.frameIndex},
 	frameDimensions{std::move(frame.frameDimensions)},
 	image{std::move(frame.image)},
 	imageView{std::move(frame.imageView)},
-	commandHandler{std::move(frame.commandHandler)}
+	framebuffer{std::move(frame.framebuffer)},
+	commandHandler{std::move(frame.commandHandler)},
+	synchronizationBundle{std::move(frame.synchronizationBundle)}
 {
 	frame.image = nullptr;
 	frame.imageView = nullptr;
+	frame.framebuffer = nullptr;
+	frame.synchronizationBundle.inFlightFence = nullptr;
+	frame.synchronizationBundle.imageAvailable = nullptr;
+	frame.synchronizationBundle.renderFinished = nullptr;
 }
 
 // Set up framebuffer
@@ -55,6 +73,16 @@ void mtd::Frame::createFramebuffer(const vk::RenderPass& renderPass)
 	}
 
 	LOG_VERBOSE("Created framebuffer.");
+}
+
+// Draws frame to screen
+void mtd::Frame::drawFrame(DrawInfo& drawInfo) const
+{
+	drawInfo.framebuffer = &framebuffer;
+	drawInfo.syncBundle = &synchronizationBundle;
+	drawInfo.frameIndex = frameIndex;
+
+	commandHandler.draw(drawInfo);
 }
 
 // Create frame image view

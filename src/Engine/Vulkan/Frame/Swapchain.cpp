@@ -172,9 +172,9 @@ void mtd::Swapchain::setSwapchainFrames
 	std::vector<vk::Image> images = this->device.getSwapchainImagesKHR(swapchain);
 
 	frames.reserve(frameCount);
-	for(vk::Image& image: images)
+	for(uint32_t i = 0; i < images.size(); i++)
 	{
-		frames.emplace_back(device, frameDimensions, image, colorFormat);
+		frames.emplace_back(device, frameDimensions, images[i], colorFormat, i);
 	}
 }
 
