@@ -10,9 +10,14 @@ mtd::Pipeline::Pipeline(const vk::Device& device, Swapchain& swapchain)
 
 mtd::Pipeline::~Pipeline()
 {
-	device.destroyPipeline(pipeline);
-	device.destroyRenderPass(renderPass);
-	device.destroyPipelineLayout(pipelineLayout);
+	destroy();
+}
+
+// Recreates the pipeline
+void mtd::Pipeline::recreate(Swapchain& swapchain)
+{
+	destroy();
+	createPipeline(swapchain);
 }
 
 // Creates the graphics pipeline
@@ -301,4 +306,12 @@ void mtd::Pipeline::createRenderPass(Swapchain& swapchain)
 	}
 	LOG_VERBOSE("Created render pass.");
 	swapchain.createFramebuffers(renderPass);
+}
+
+// Clears pipeline objects
+void mtd::Pipeline::destroy()
+{
+	device.destroyPipeline(pipeline);
+	device.destroyRenderPass(renderPass);
+	device.destroyPipelineLayout(pipelineLayout);
 }

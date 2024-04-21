@@ -47,7 +47,8 @@ void mtd::Engine::start()
 			if(result == vk::Result::eErrorOutOfDateKHR ||
 				result == vk::Result::eErrorIncompatibleDisplayKHR)
 			{
-				LOG_WARNING("Resize! Vulkan result: %d", result);
+				handleWindowResize();
+				currentFrameIndex = 0;
 				continue;
 			}
 			else
@@ -57,7 +58,7 @@ void mtd::Engine::start()
 			}
 		}
 
-		DrawInfo drawInfo;
+		DrawInfo drawInfo{};
 		drawInfo.pipeline = &pipeline.getPipeline();
 		drawInfo.renderPass = &pipeline.getRenderPass();
 		drawInfo.swapchain = &swapchain.getSwapchain();
@@ -67,4 +68,14 @@ void mtd::Engine::start()
 
 		currentFrameIndex = (currentFrameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
 	}
+}
+
+// Recreates swapchain and pipeline to use new dimensions
+void mtd::Engine::handleWindowResize()
+{
+	window.waitForValidWindowSize();
+	device.getDevice().waitIdle();
+
+	swapchain.recreate(device, window.getDimensions(), vulkanInstance.getSurface());
+	pipeline.recreate(swapchain);
 }
