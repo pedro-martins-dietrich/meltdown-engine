@@ -19,13 +19,28 @@ namespace mtd
 			// Allocates a command buffer in the command pool
 			void allocateCommandBuffer(vk::CommandBuffer& commandBuffer) const;
 
+			// Draws frame
+			void draw(const DrawInfo& drawInfo) const;
+
 		private:
 			// Command buffer allocator
 			vk::CommandPool commandPool;
 			// Main command buffer for the handler
 			vk::CommandBuffer mainCommandBuffer;
 
-			// Vulkan device reference
-			const vk::Device& device;
+			// Device reference
+			const Device& device;
+
+			// Begin command buffer
+			void beginCommand() const;
+			// End command buffer
+			void endCommand() const;
+
+			// Records draw command to the command buffer
+			void recordDrawCommand(const DrawInfo& drawInfo) const;
+			// Submits recorded draw command
+			void submitCommandBuffer(const SynchronizationBundle& syncBudle) const;
+			// Presents frame to screen when ready
+			void presentFrame(const DrawInfo& drawInfo) const;
 	};
 }
