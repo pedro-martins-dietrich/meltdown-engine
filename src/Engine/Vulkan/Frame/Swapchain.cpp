@@ -28,6 +28,19 @@ void mtd::Swapchain::createFramebuffers(const vk::RenderPass& renderPass)
 	}
 }
 
+// Recreates swapchain to handle resizes
+void mtd::Swapchain::recreate
+(
+	const Device& device,
+	const FrameDimensions& frameDimensions,
+	const vk::SurfaceKHR& surface
+)
+{
+	destroy();
+	getSupportedDetails(device.getPhysicalDevice(), surface);
+	createSwapchain(device, frameDimensions, surface);
+}
+
 // Retrieves swapchain features supported by the physical device
 void mtd::Swapchain::getSupportedDetails
 (

@@ -31,13 +31,27 @@ vk::SurfaceKHR mtd::Window::createSurface(const vk::Instance& instance) const
 	return surface;
 }
 
+// Waits until the window dimensions are valid
+void mtd::Window::waitForValidWindowSize()
+{
+	int width = 0;
+	int height = 0;
+	while(width == 0 || height == 0)
+	{
+		glfwGetFramebufferSize(glfwWindow, &width, &height);
+		glfwWaitEvents();
+	}
+	dimensions = {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
+	LOG_VERBOSE("New window size: (%dx%d)", dimensions.width, dimensions.height);
+}
+
 // Configures GLFW parameters
 void mtd::Window::initializeGLFW() const
 {
 	glfwInit();
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 }
 
 // Creates GLFW window instance

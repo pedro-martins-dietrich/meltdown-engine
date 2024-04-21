@@ -29,6 +29,14 @@ namespace mtd
 			// Create framebuffers for each frame
 			void createFramebuffers(const vk::RenderPass& renderPass);
 
+			// Recreates swapchain to handle resizes
+			void recreate
+			(
+				const Device& device,
+				const FrameDimensions& frameDimensions,
+				const vk::SurfaceKHR& surface
+			);
+
 		private:
 			// Vulkan swapchain
 			vk::SwapchainKHR swapchain;

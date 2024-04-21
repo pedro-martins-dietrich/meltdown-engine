@@ -135,6 +135,6 @@ void mtd::CommandHandler::presentFrame(const DrawInfo& drawInfo) const
 	presentInfo.pResults = nullptr;
 
 	vk::Result result = device.getPresentQueue().presentKHR(&presentInfo);
-	if(result != vk::Result::eSuccess)
+	if(result != vk::Result::eSuccess && result != vk::Result::eErrorOutOfDateKHR)
 		LOG_ERROR("Failed to present frame to screen. Vulkan result: %d", result);
 }

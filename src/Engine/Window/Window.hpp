@@ -26,6 +26,9 @@ namespace mtd
 			// Creates Vulkan surface for GLFW window
 			vk::SurfaceKHR createSurface(const vk::Instance& instance) const;
 
+			// Waits until the window dimensions are valid
+			void waitForValidWindowSize();
+
 		private:
 			// GLFW window instance
 			GLFWwindow* glfwWindow;

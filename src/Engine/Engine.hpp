@@ -30,5 +30,8 @@ namespace mtd
 			Swapchain swapchain;
 			// Pipeline handler
 			Pipeline pipeline;
+
+			// Recreates swapchain and pipeline to use new dimensions
+			void handleWindowResize();
 	};
 }

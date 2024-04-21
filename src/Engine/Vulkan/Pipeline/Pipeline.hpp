@@ -19,6 +19,9 @@ namespace mtd
 			const vk::Pipeline& getPipeline() const { return pipeline; }
 			const vk::RenderPass& getRenderPass() const { return renderPass; }
 
+			// Recreates the pipeline
+			void recreate(Swapchain& swapchain);
+
 		private:
 			// Vulkan graphics pipeline
 			vk::Pipeline pipeline;
@@ -69,5 +72,8 @@ namespace mtd
 			void createPipelineLayout();
 			// Creates pipeline render pass
 			void createRenderPass(Swapchain& swapchain);
+
+			// Clears pipeline objects
+			void destroy();
 	};
 }
