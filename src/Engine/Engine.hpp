@@ -2,6 +2,7 @@
 
 #include "Window/Window.hpp"
 #include "Vulkan/Pipeline/Pipeline.hpp"
+#include "Camera/Camera.hpp"
 
 // Meltdown (mtd) engine namespace
 namespace mtd
@@ -30,6 +31,9 @@ namespace mtd
 			Swapchain swapchain;
 			// Pipeline handler
 			Pipeline pipeline;
+
+			// Camera data
+			Camera camera;
 
 			// Recreates swapchain and pipeline to use new dimensions
 			void handleWindowResize();

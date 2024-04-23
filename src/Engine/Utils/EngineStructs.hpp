@@ -1,5 +1,6 @@
 #pragma once
 
+#include <glm/glm.hpp>
 #include <vulkan/vulkan.hpp>
 
 namespace mtd
@@ -30,15 +31,24 @@ namespace mtd
 		vk::Semaphore renderFinished;
 	};
 
+	// Camera data to send to the shaders
+	struct CameraMatrices
+	{
+		glm::mat4 projection;
+		glm::mat4 view;
+	};
+
 	// Information required for drawing a frame
 	struct DrawInfo
 	{
 		const vk::Pipeline* pipeline;
+		const vk::PipelineLayout* pipelineLayout;
 		const vk::RenderPass* renderPass;
 		const vk::SwapchainKHR* swapchain;
 		const vk::Extent2D* extent;
 		const vk::Framebuffer* framebuffer;
 		const SynchronizationBundle* syncBundle;
 		uint32_t frameIndex;
+		const CameraMatrices* cameraMatrices;
 	};
 }

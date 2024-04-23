@@ -17,8 +17,9 @@ namespace mtd
 			Window(const Window&) = delete;
 			Window& operator=(const Window&) = delete;
 
-			// Getter
+			// Getters
 			const FrameDimensions& getDimensions() const { return dimensions; }
+			float getAspectRatio() const { return aspectRatio; }
 
 			// Poll events and checks if window should be kept open
 			bool keepOpen() const;
@@ -35,6 +36,8 @@ namespace mtd
 
 			// Window dimensions
 			FrameDimensions dimensions;
+			// Window aspect ratio
+			float aspectRatio;
 
 			// Configures GLFW parameters
 			void initializeGLFW() const;

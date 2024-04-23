@@ -98,6 +98,14 @@ void mtd::CommandHandler::recordDrawCommand(const DrawInfo& drawInfo) const
 
 	mainCommandBuffer.beginRenderPass(&renderPassBeginInfo, vk::SubpassContents::eInline);
 	mainCommandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, *drawInfo.pipeline);
+	mainCommandBuffer.pushConstants
+	(
+		*drawInfo.pipelineLayout,
+		vk::ShaderStageFlagBits::eVertex,
+		0,
+		sizeof(CameraMatrices),
+		drawInfo.cameraMatrices
+	);
 	mainCommandBuffer.draw(3, 1, 0, 0);
 	mainCommandBuffer.endRenderPass();
 

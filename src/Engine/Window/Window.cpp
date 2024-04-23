@@ -42,6 +42,7 @@ void mtd::Window::waitForValidWindowSize()
 		glfwWaitEvents();
 	}
 	dimensions = {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
+	aspectRatio = static_cast<float>(width) / static_cast<float>(height);
 	LOG_VERBOSE("New window size: (%dx%d)", dimensions.width, dimensions.height);
 }
 
@@ -61,6 +62,8 @@ void mtd::Window::createWindowInstance()
 		dimensions.width = 800;
 	if(dimensions.height <= 0)
 		dimensions.height = 600;
+
+	aspectRatio = static_cast<float>(dimensions.width) / static_cast<float>(dimensions.height);
 
 	glfwWindow = glfwCreateWindow
 	(
