@@ -17,6 +17,7 @@ namespace mtd
 
 			// Getters
 			const vk::Pipeline& getPipeline() const { return pipeline; }
+			const vk::PipelineLayout& getLayout() const { return pipelineLayout; }
 			const vk::RenderPass& getRenderPass() const { return renderPass; }
 
 			// Recreates the pipeline

@@ -9,7 +9,8 @@ mtd::Engine::Engine()
 	vulkanInstance{"Meltdown", VK_MAKE_API_VERSION(0, 1, 0, 0), window},
 	device{vulkanInstance},
 	swapchain{device, window.getDimensions(), vulkanInstance.getSurface()},
-	pipeline{device.getDevice(), swapchain}
+	pipeline{device.getDevice(), swapchain},
+	camera{glm::vec3{0.0f, -1.0f, -4.0f}, glm::vec3{1.0f, 0.0f, 0.0f}, 70.0f, window.getAspectRatio()}
 {
 }
 
@@ -23,8 +24,28 @@ void mtd::Engine::start()
 {
 	uint32_t currentFrameIndex = 0;
 
+	double lastTime;
+	double currentTime = glfwGetTime();
+	double frameTime = 0.016;
+
+	DrawInfo drawInfo{};
+	drawInfo.pipeline = &pipeline.getPipeline();
+	drawInfo.pipelineLayout = &pipeline.getLayout();
+	drawInfo.renderPass = &pipeline.getRenderPass();
+	drawInfo.swapchain = &swapchain.getSwapchain();
+	drawInfo.extent = &swapchain.getExtent();
+	drawInfo.cameraMatrices = camera.getMatrices();
+
 	while(window.keepOpen())
 	{
+		glm::vec3 acceleration
+		{
+			-0.0625f * camera.getPosition().x,
+			0.0f,
+			-0.0625f * camera.getPosition().z
+		};
+		camera.updateCamera(frameTime, acceleration);
+
 		const Frame& frame = swapchain.getFrame(currentFrameIndex);
 		const vk::Fence& inFlightFence = frame.getInFlightFence();
 
@@ -58,15 +79,13 @@ void mtd::Engine::start()
 			}
 		}
 
-		DrawInfo drawInfo{};
-		drawInfo.pipeline = &pipeline.getPipeline();
-		drawInfo.renderPass = &pipeline.getRenderPass();
-		drawInfo.swapchain = &swapchain.getSwapchain();
-		drawInfo.extent = &swapchain.getExtent();
-
 		swapchain.getFrame(currentFrameIndex).drawFrame(drawInfo);
 
 		currentFrameIndex = (currentFrameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
+
+		lastTime = currentTime;
+		currentTime = glfwGetTime();
+		frameTime = glm::min(currentTime - lastTime, 1.0);
 	}
 }
 
@@ -78,4 +97,5 @@ void mtd::Engine::handleWindowResize()
 
 	swapchain.recreate(device, window.getDimensions(), vulkanInstance.getSurface());
 	pipeline.recreate(swapchain);
+	camera.updatePerspective(70.0f, window.getAspectRatio());
 }
