@@ -25,11 +25,8 @@ namespace mtd
 			glm::vec3 getPosition() const { return position; }
 			const CameraMatrices* getMatrices() const { return &matrices; }
 
-			// Updates the frame time
-			void setFrameTime(float time) { frameTime = time; }
-
 			// Updates camera position and direction
-			void updateCamera();
+			void updateCamera(float deltaTime, const Window& window);
 			// Updates the perspective matrix
 			void updatePerspective(float fovDegrees, float aspectRatio);
 

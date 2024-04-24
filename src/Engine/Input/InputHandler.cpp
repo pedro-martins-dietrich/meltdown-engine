@@ -42,4 +42,6 @@ void mtd::InputHandler::setDefaultInputCodes()
 	keyMapping["default"]["left"] = GLFW_KEY_A;
 	keyMapping["default"]["up"] = GLFW_KEY_SPACE;
 	keyMapping["default"]["down"] = GLFW_KEY_LEFT_CONTROL;
+
+	keyMapping["default"]["toggle_cursor"] = GLFW_KEY_TAB;
 }

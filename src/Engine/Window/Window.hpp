@@ -4,6 +4,7 @@
 #include <GLFW/glfw3.h>
 
 #include "../Utils/EngineStructs.hpp"
+#include "../Input/InputHandler.hpp"
 
 namespace mtd
 {
@@ -33,6 +34,12 @@ namespace mtd
 			// Waits until the window dimensions are valid
 			void waitForValidWindowSize();
 
+			// Returns the mouse coordinates relative to the screen center
+			void getMousePos(float* x, float* y, bool needsCursorHidden) const;
+
+			// Sets window input callbacks
+			void setInputCallbacks(InputHandler& inputHandler);
+
 		private:
 			// GLFW window instance
 			GLFWwindow* glfwWindow;
@@ -41,6 +48,9 @@ namespace mtd
 			FrameDimensions dimensions;
 			// Window aspect ratio
 			float aspectRatio;
+
+			// True if cursor is not visible
+			bool cursorHidden;
 
 			// Configures GLFW parameters
 			void initializeGLFW() const;

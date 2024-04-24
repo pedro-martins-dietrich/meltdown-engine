@@ -3,6 +3,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "../Utils/Logger.hpp"
+#include "../Window/Window.hpp"
 
 mtd::Camera::Camera
 (
@@ -28,13 +29,21 @@ mtd::Camera::Camera
 }
 
 // Updates camera position and direction
-void mtd::Camera::updateCamera()
+void mtd::Camera::updateCamera(float deltaTime, const Window& window)
 {
+	frameTime = deltaTime;
+
 	if(glm::length(velocity) > 0.00001f)
 		velocity = glm::normalize(velocity) * maxSpeed;
 	position += velocity * frameTime;
 
+	float mouseX = 0.0f;
+	float mouseY = 0.0f;
+	window.getMousePos(&mouseX, &mouseY, true);
+	yaw += mouseX;
+	pitch += mouseY;
 	calculateDirectionVectors();
+
 	matrices.view = glm::lookAt
 	(
 		position,
@@ -99,7 +108,7 @@ void mtd::Camera::calculateDirectionVectors()
 	forwardDirection = glm::vec3
 	{
 		glm::sin(yaw) * glm::cos(pitch),
-		-glm::sin(pitch),
+		glm::sin(pitch),
 		glm::cos(yaw) * glm::cos(pitch)
 	};
 	rightDirection = glm::cross(forwardDirection, up);

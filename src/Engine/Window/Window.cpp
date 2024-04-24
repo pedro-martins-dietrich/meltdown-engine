@@ -3,7 +3,7 @@
 #include "../Utils/Logger.hpp"
 
 mtd::Window::Window(FrameDimensions initialDimensions)
-	: glfwWindow{nullptr}, dimensions{initialDimensions}
+	: glfwWindow{nullptr}, dimensions{initialDimensions}, cursorHidden{false}
 {
 	initializeGLFW();
 	createWindowInstance();
@@ -44,6 +44,43 @@ void mtd::Window::waitForValidWindowSize()
 	dimensions = {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
 	aspectRatio = static_cast<float>(width) / static_cast<float>(height);
 	LOG_VERBOSE("New window size: (%dx%d)", dimensions.width, dimensions.height);
+}
+
+// Returns the mouse coordinates relative to the screen center
+void mtd::Window::getMousePos(float* x, float* y, bool needsCursorHidden) const
+{
+	if(needsCursorHidden && !cursorHidden) return;
+
+	double mouseX, mouseY;
+	glfwGetCursorPos(glfwWindow, &mouseX, &mouseY);
+	double halfWidth = 0.5f * dimensions.width;
+	double halfHeight = 0.5f * dimensions.height;
+
+	*x = static_cast<float>((mouseX - halfWidth) / dimensions.height);
+	*y = static_cast<float>((mouseY - halfHeight) / dimensions.height);
+
+	if(cursorHidden)
+		glfwSetCursorPos(glfwWindow, halfWidth, halfHeight);
+}
+
+// Sets window input callbacks
+void mtd::Window::setInputCallbacks(InputHandler& inputHandler)
+{
+	inputHandler.setInputCallback("default", "toggle_cursor", [this](bool pressed)
+	{
+		static bool lastPressed = false;
+
+		if(!pressed || lastPressed)
+		{
+			lastPressed = pressed;
+			return;
+		}
+
+		cursorHidden = !cursorHidden;
+		glfwSetInputMode(glfwWindow, GLFW_CURSOR, cursorHidden ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+
+		lastPressed = pressed;
+	});
 }
 
 // Configures GLFW parameters

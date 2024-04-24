@@ -13,6 +13,7 @@ mtd::Engine::Engine()
 	inputHandler{},
 	camera{inputHandler, glm::vec3{0.0f, -1.0f, -4.0f}, 70.0f, window.getAspectRatio()}
 {
+	window.setInputCallbacks(inputHandler);
 }
 
 mtd::Engine::~Engine()
@@ -39,9 +40,8 @@ void mtd::Engine::start()
 
 	while(window.keepOpen())
 	{
-		camera.setFrameTime(static_cast<float>(frameTime));
 		inputHandler.handleInputs(window);
-		camera.updateCamera();
+		camera.updateCamera(static_cast<float>(frameTime), window);
 
 		const Frame& frame = swapchain.getFrame(currentFrameIndex);
 		const vk::Fence& inFlightFence = frame.getInFlightFence();
