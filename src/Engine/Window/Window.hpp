@@ -21,8 +21,11 @@ namespace mtd
 			const FrameDimensions& getDimensions() const { return dimensions; }
 			float getAspectRatio() const { return aspectRatio; }
 
-			// Poll events and checks if window should be kept open
+			// Polls events and checks if window should be kept open
 			bool keepOpen() const;
+			// Checks if a specific key is pressed
+			bool isKeyPressed(int glfwKeyCode) const
+				{ return glfwGetKey(glfwWindow, glfwKeyCode) == GLFW_PRESS; }
 
 			// Creates Vulkan surface for GLFW window
 			vk::SurfaceKHR createSurface(const vk::Instance& instance) const;
