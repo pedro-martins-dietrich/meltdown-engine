@@ -2,18 +2,19 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "../Utils/Logger.hpp"
+
 mtd::Camera::Camera
 (
+	InputHandler& inputHandler,
 	glm::vec3 initialPosition,
-	glm::vec3 initialVelocity,
 	float fovDegrees,
 	float aspectRatio
-) : position{initialPosition},
-	velocity{initialVelocity},
+) : position{initialPosition}, velocity{0.0f},
+	maxSpeed{1.0f},
+	yaw{0.0f}, pitch{0.0f},
 	up{0.0f, -1.0f, 0.0f},
-	maxSpeed{2.0f},
-	yaw{0.0f},
-	pitch{0.0f}
+	frameTime{0.016f}
 {
 	matrices.view = glm::lookAt
 	(
@@ -22,25 +23,26 @@ mtd::Camera::Camera
 		up
 	);
 	updatePerspective(fovDegrees, aspectRatio);
+	calculateDirectionVectors();
+	setInputCallbacks(inputHandler);
 }
 
 // Updates camera position and direction
-void mtd::Camera::updateCamera(float frameTime, glm::vec3 acceleration)
+void mtd::Camera::updateCamera()
 {
-	velocity += acceleration * frameTime;
-	float speed = glm::length(velocity);
-	if(speed > maxSpeed)
-		velocity *= (speed / maxSpeed);
-
+	if(glm::length(velocity) > 0.00001f)
+		velocity = glm::normalize(velocity) * maxSpeed;
 	position += velocity * frameTime;
 
-	glm::vec3 viewDirection{glm::sin(yaw), -glm::sin(pitch), -glm::cos(yaw) * glm::cos(pitch)};
+	calculateDirectionVectors();
 	matrices.view = glm::lookAt
 	(
 		position,
-		glm::vec3{0.0f, 0.0f, 0.0f},
+		position + forwardDirection,
 		up
 	);
+
+	velocity = glm::vec3{0.0f};
 }
 
 // Updates the perspective matrix
@@ -54,4 +56,52 @@ void mtd::Camera::updatePerspective(float fovDegrees, float aspectRatio)
 		100.0f
 	);
 	matrices.projection[1][1] *= -1;
+}
+
+// Sets camera input logic
+void mtd::Camera::setInputCallbacks(InputHandler& inputHandler)
+{
+	inputHandler.setInputCallback("default", "forward", [this](bool pressed)
+	{
+		if(!pressed) return;
+		velocity += forwardDirection;
+	});
+	inputHandler.setInputCallback("default", "backward", [this](bool pressed)
+	{
+		if(!pressed) return;
+		velocity -= forwardDirection;
+	});
+	inputHandler.setInputCallback("default", "right", [this](bool pressed)
+	{
+		if(!pressed) return;
+		velocity += rightDirection;
+	});
+	inputHandler.setInputCallback("default", "left", [this](bool pressed)
+	{
+		if(!pressed) return;
+		velocity -= rightDirection;
+	});
+	inputHandler.setInputCallback("default", "up", [this](bool pressed)
+	{
+		if(!pressed) return;
+		velocity += up;
+	});
+	inputHandler.setInputCallback("default", "down", [this](bool pressed)
+	{
+		if(!pressed) return;
+		velocity -= up;
+	});
+}
+
+// Calculates the normalized camera direction vectors
+void mtd::Camera::calculateDirectionVectors()
+{
+	forwardDirection = glm::vec3
+	{
+		glm::sin(yaw) * glm::cos(pitch),
+		-glm::sin(pitch),
+		glm::cos(yaw) * glm::cos(pitch)
+	};
+	rightDirection = glm::cross(forwardDirection, up);
+	upDirection = glm::cross(rightDirection, forwardDirection);
 }

@@ -10,7 +10,8 @@ mtd::Engine::Engine()
 	device{vulkanInstance},
 	swapchain{device, window.getDimensions(), vulkanInstance.getSurface()},
 	pipeline{device.getDevice(), swapchain},
-	camera{glm::vec3{0.0f, -1.0f, -4.0f}, glm::vec3{1.0f, 0.0f, 0.0f}, 70.0f, window.getAspectRatio()}
+	inputHandler{},
+	camera{inputHandler, glm::vec3{0.0f, -1.0f, -4.0f}, 70.0f, window.getAspectRatio()}
 {
 }
 
@@ -38,13 +39,9 @@ void mtd::Engine::start()
 
 	while(window.keepOpen())
 	{
-		glm::vec3 acceleration
-		{
-			-0.0625f * camera.getPosition().x,
-			0.0f,
-			-0.0625f * camera.getPosition().z
-		};
-		camera.updateCamera(frameTime, acceleration);
+		camera.setFrameTime(static_cast<float>(frameTime));
+		inputHandler.handleInputs(window);
+		camera.updateCamera();
 
 		const Frame& frame = swapchain.getFrame(currentFrameIndex);
 		const vk::Fence& inFlightFence = frame.getInFlightFence();

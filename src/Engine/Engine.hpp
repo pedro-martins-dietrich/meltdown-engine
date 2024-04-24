@@ -32,6 +32,8 @@ namespace mtd
 			// Pipeline handler
 			Pipeline pipeline;
 
+			// Keyboard and mouse input handler
+			InputHandler inputHandler;
 			// Camera data
 			Camera camera;
 
