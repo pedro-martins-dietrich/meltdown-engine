@@ -49,6 +49,43 @@ void mtd::CommandHandler::allocateCommandBuffer(vk::CommandBuffer& commandBuffer
 		LOG_ERROR("Failed to allocate command buffer. Vulkan result: %d", result);
 }
 
+// Creates a command buffer for submitting a command once
+vk::CommandBuffer mtd::CommandHandler::beginSingleTimeCommand() const
+{
+	vk::CommandBuffer commandBuffer;
+	allocateCommandBuffer(commandBuffer);
+
+	vk::CommandBufferBeginInfo commandBufferBeginInfo{};
+	commandBufferBeginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
+	commandBufferBeginInfo.pInheritanceInfo = nullptr;
+
+	vk::Result result = commandBuffer.begin(&commandBufferBeginInfo);
+	if(result != vk::Result::eSuccess)
+		LOG_ERROR("Failed to begin command buffer. Vulkan result: %d", result);
+
+	return commandBuffer;
+}
+
+// Submits the single time command and frees the command buffer
+void mtd::CommandHandler::endSingleTimeCommand(const vk::CommandBuffer& commandBuffer) const
+{
+	commandBuffer.end();
+
+	vk::SubmitInfo submitInfo{};
+	submitInfo.waitSemaphoreCount = 0;
+	submitInfo.pWaitSemaphores = nullptr;
+	submitInfo.pWaitDstStageMask = nullptr;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &commandBuffer;
+	submitInfo.signalSemaphoreCount = 0;
+	submitInfo.pSignalSemaphores = nullptr;
+
+	(void) device.getGraphicsQueue().submit(1, &submitInfo, nullptr);
+	device.getGraphicsQueue().waitIdle();
+
+	device.getDevice().freeCommandBuffers(commandPool, 1, &commandBuffer);
+}
+
 // Draws frame
 void mtd::CommandHandler::draw(const DrawInfo& drawInfo) const
 {

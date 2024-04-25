@@ -19,6 +19,11 @@ namespace mtd
 			// Allocates a command buffer in the command pool
 			void allocateCommandBuffer(vk::CommandBuffer& commandBuffer) const;
 
+			// Creates a command buffer for submitting a command once
+			vk::CommandBuffer beginSingleTimeCommand() const;
+			// Submits and finalizes the single time command
+			void endSingleTimeCommand(const vk::CommandBuffer& commandBuffer) const;
+
 			// Draws frame
 			void draw(const DrawInfo& drawInfo) const;
 
