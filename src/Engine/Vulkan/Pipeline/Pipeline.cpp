@@ -1,6 +1,7 @@
 #include "Pipeline.hpp"
 
 #include "../../Utils/Logger.hpp"
+#include "../Mesh/Mesh.hpp"
 
 mtd::Pipeline::Pipeline(const vk::Device& device, Swapchain& swapchain)
 	: device{device}
@@ -86,11 +87,16 @@ void mtd::Pipeline::createPipeline(Swapchain& swapchain)
 // Sets create info for the vertex input
 void mtd::Pipeline::setVertexInput(vk::PipelineVertexInputStateCreateInfo& vertexInputInfo) const
 {
+	const vk::VertexInputBindingDescription& bindingDescription =
+		Mesh::getInputBindingDescription();
+	const std::vector<vk::VertexInputAttributeDescription>& attributeDescriptions =
+		Mesh::getInputAttributeDescriptions();
+
 	vertexInputInfo.flags = vk::PipelineVertexInputStateCreateFlags();
-	vertexInputInfo.vertexBindingDescriptionCount = 0;
-	vertexInputInfo.pVertexBindingDescriptions = nullptr;
-	vertexInputInfo.vertexAttributeDescriptionCount = 0;
-	vertexInputInfo.pVertexAttributeDescriptions = nullptr;
+	vertexInputInfo.vertexBindingDescriptionCount = 1;
+	vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+	vertexInputInfo.vertexAttributeDescriptionCount = attributeDescriptions.size();
+	vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 }
 
 // Sets create info for the input assembly

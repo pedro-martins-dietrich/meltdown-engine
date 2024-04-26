@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Window/Window.hpp"
 #include "Vulkan/Pipeline/Pipeline.hpp"
+#include "Vulkan/Mesh/MeshManager.hpp"
 #include "Camera/Camera.hpp"
 
 // Meltdown (mtd) engine namespace
@@ -21,20 +21,15 @@ namespace mtd
 			void start();
 
 		private:
-			// Window handler
+			// Engine's handler objects
 			Window window;
-			// Vulkan instance handler
 			VulkanInstance vulkanInstance;
-			// Logical and physical device handler
 			Device device;
-			// Swapchain and frame handler
 			Swapchain swapchain;
-			// Pipeline handler
 			Pipeline pipeline;
-
-			// Keyboard and mouse input handler
+			CommandHandler commandHandler;
+			MeshManager meshManager;
 			InputHandler inputHandler;
-			// Camera data
 			Camera camera;
 
 			// Recreates swapchain and pipeline to use new dimensions

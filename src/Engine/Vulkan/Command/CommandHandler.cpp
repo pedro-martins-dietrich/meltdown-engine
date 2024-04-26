@@ -90,7 +90,7 @@ void mtd::CommandHandler::endSingleTimeCommand(const vk::CommandBuffer& commandB
 void mtd::CommandHandler::draw(const DrawInfo& drawInfo) const
 {
 	recordDrawCommand(drawInfo);
-	submitCommandBuffer(*drawInfo.syncBundle);
+	submitCommandBuffer(*(drawInfo.syncBundle));
 	presentFrame(drawInfo);
 }
 
@@ -121,29 +121,44 @@ void mtd::CommandHandler::recordDrawCommand(const DrawInfo& drawInfo) const
 
 	vk::Rect2D renderArea{};
 	renderArea.offset = vk::Offset2D{0, 0};
-	renderArea.extent = *drawInfo.extent;
+	renderArea.extent = drawInfo.extent;
 
 	std::vector<vk::ClearValue> clearValues;
 	clearValues.push_back(vk::ClearColorValue{0.3f, 0.6f, 1.0f, 1.0f});
 
 	vk::RenderPassBeginInfo renderPassBeginInfo{};
-	renderPassBeginInfo.renderPass = *drawInfo.renderPass;
-	renderPassBeginInfo.framebuffer = *drawInfo.framebuffer;
+	renderPassBeginInfo.renderPass = drawInfo.renderPass;
+	renderPassBeginInfo.framebuffer = *(drawInfo.framebuffer);
 	renderPassBeginInfo.renderArea = renderArea;
 	renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
 	renderPassBeginInfo.pClearValues = clearValues.data();
 
 	mainCommandBuffer.beginRenderPass(&renderPassBeginInfo, vk::SubpassContents::eInline);
-	mainCommandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, *drawInfo.pipeline);
+	mainCommandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, drawInfo.pipeline);
+
+	vk::DeviceSize offset = 0;
+	mainCommandBuffer.bindVertexBuffers(0, 1, &(drawInfo.meshLumpData.vertexBuffer), &offset);
+	mainCommandBuffer.bindIndexBuffer(drawInfo.meshLumpData.indexBuffer, 0, vk::IndexType::eUint32);
+
 	mainCommandBuffer.pushConstants
 	(
-		*drawInfo.pipelineLayout,
+		drawInfo.pipelineLayout,
 		vk::ShaderStageFlagBits::eVertex,
 		0,
 		sizeof(CameraMatrices),
 		drawInfo.cameraMatrices
 	);
-	mainCommandBuffer.draw(3, 1, 0, 0);
+	for(uint32_t i = 0; i < drawInfo.meshLumpData.indexCounts.size(); i++)
+	{
+		mainCommandBuffer.drawIndexed
+		(
+			drawInfo.meshLumpData.indexCounts[i],
+			drawInfo.meshLumpData.instanceCounts[i],
+			drawInfo.meshLumpData.indexOffsets[i],
+			0,
+			0U
+		);
+	}
 	mainCommandBuffer.endRenderPass();
 
 	endCommand();
@@ -155,12 +170,12 @@ void mtd::CommandHandler::submitCommandBuffer(const SynchronizationBundle& syncB
 	vk::PipelineStageFlags waitStage = vk::PipelineStageFlagBits::eColorAttachmentOutput;
 	vk::SubmitInfo submitInfo{};
 	submitInfo.waitSemaphoreCount = 1;
-	submitInfo.pWaitSemaphores = &syncBundle.imageAvailable;
+	submitInfo.pWaitSemaphores = &(syncBundle.imageAvailable);
 	submitInfo.pWaitDstStageMask = &waitStage;
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &mainCommandBuffer;
 	submitInfo.signalSemaphoreCount = 1;
-	submitInfo.pSignalSemaphores = &syncBundle.renderFinished;
+	submitInfo.pSignalSemaphores = &(syncBundle.renderFinished);
 
 	vk::Result result =
 		device.getGraphicsQueue().submit(1, &submitInfo, syncBundle.inFlightFence);
@@ -175,8 +190,8 @@ void mtd::CommandHandler::presentFrame(const DrawInfo& drawInfo) const
 	presentInfo.waitSemaphoreCount = 1;
 	presentInfo.pWaitSemaphores = &(drawInfo.syncBundle->renderFinished);
 	presentInfo.swapchainCount = 1;
-	presentInfo.pSwapchains = drawInfo.swapchain;
-	presentInfo.pImageIndices = &drawInfo.frameIndex;
+	presentInfo.pSwapchains = &(drawInfo.swapchain);
+	presentInfo.pImageIndices = &(drawInfo.frameIndex);
 	presentInfo.pResults = nullptr;
 
 	vk::Result result = device.getPresentQueue().presentKHR(&presentInfo);
