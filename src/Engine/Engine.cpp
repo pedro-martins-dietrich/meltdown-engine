@@ -10,15 +10,27 @@ mtd::Engine::Engine()
 	device{vulkanInstance},
 	swapchain{device, window.getDimensions(), vulkanInstance.getSurface()},
 	pipeline{device.getDevice(), swapchain},
+	commandHandler{device},
+	meshManager{device},
 	inputHandler{},
 	camera{inputHandler, glm::vec3{0.0f, -1.0f, -4.0f}, 70.0f, window.getAspectRatio()}
 {
 	window.setInputCallbacks(inputHandler);
+
+	Mesh triangle{0};
+	meshManager.loadMeshToLump(triangle);
+	Mesh square{1};
+	meshManager.loadMeshToLump(square);
+
+	meshManager.loadMeshesToGPU(commandHandler);
+	LOG_INFO("Meshes loaded.\n");
 }
 
 mtd::Engine::~Engine()
 {
 	device.getDevice().waitIdle();
+
+	LOG_INFO("Engine shut down.");
 }
 
 // Begins the engine main loop
@@ -30,12 +42,22 @@ void mtd::Engine::start()
 	double currentTime = glfwGetTime();
 	double frameTime = 0.016;
 
-	DrawInfo drawInfo{};
-	drawInfo.pipeline = &pipeline.getPipeline();
-	drawInfo.pipelineLayout = &pipeline.getLayout();
-	drawInfo.renderPass = &pipeline.getRenderPass();
-	drawInfo.swapchain = &swapchain.getSwapchain();
-	drawInfo.extent = &swapchain.getExtent();
+	DrawInfo drawInfo
+	{
+		MeshLumpData
+		{
+			meshManager.getIndexCounts(),
+			meshManager.getInstanceCounts(),
+			meshManager.getIndexOffsets(),
+			meshManager.getVertexBuffer(),
+			meshManager.getIndexBuffer()
+		},
+		pipeline.getPipeline(),
+		pipeline.getLayout(),
+		pipeline.getRenderPass(),
+		swapchain.getSwapchain(),
+		swapchain.getExtent(),
+	};
 	drawInfo.cameraMatrices = camera.getMatrices();
 
 	while(window.keepOpen())

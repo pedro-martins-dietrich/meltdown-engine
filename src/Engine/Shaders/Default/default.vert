@@ -1,6 +1,11 @@
 #version 450
 
+layout(location = 0) in vec3 position;
+layout(location = 1) in vec3 normal;
+layout(location = 2) in vec3 color;
+
 layout(location = 0) out vec3 fragColor;
+layout(location = 1) out vec3 fragNormal;
 
 layout(push_constant) uniform CameraMatrices
 {
@@ -8,26 +13,10 @@ layout(push_constant) uniform CameraMatrices
 	mat4 view;
 } camera;
 
-// Triangle vertices
-vec3 positions[3] =
-{
-	vec3(0.0f, -2.0f, 0.0f),
-	vec3(-1.732f, 1.0f, 0.0f),
-	vec3(1.732f, 1.0f, 0.0f)
-};
-
-// Triangle colors
-vec3 colors[3] =
-{
-	vec3(1.0f, 0.0f, 0.0f),
-	vec3(0.0f, 1.0f, 0.0f),
-	vec3(0.0f, 0.0f, 1.0f)
-};
-
-// Renders a triangle to screen
 void main()
 {
-	fragColor = colors[gl_VertexIndex];
+	fragColor = color;
+	fragNormal = (camera.view * vec4(normal, 0.0f)).xyz;
 
-	gl_Position = camera.projection * (camera.view * vec4(positions[gl_VertexIndex], 1.0f));
+	gl_Position = camera.projection * (camera.view * vec4(position, 1.0f));
 }
