@@ -125,6 +125,7 @@ void mtd::CommandHandler::recordDrawCommand(const DrawInfo& drawInfo) const
 
 	std::vector<vk::ClearValue> clearValues;
 	clearValues.push_back(vk::ClearColorValue{0.3f, 0.6f, 1.0f, 1.0f});
+	clearValues.push_back(vk::ClearDepthStencilValue{1.0f, 0});
 
 	vk::RenderPassBeginInfo renderPassBeginInfo{};
 	renderPassBeginInfo.renderPass = drawInfo.renderPass;

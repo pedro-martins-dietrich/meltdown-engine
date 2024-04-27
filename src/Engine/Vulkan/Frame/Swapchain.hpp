@@ -24,6 +24,7 @@ namespace mtd
 			const vk::SwapchainKHR& getSwapchain() const { return swapchain; }
 			const vk::Extent2D& getExtent() const { return extent; }
 			vk::Format getColorFormat() const { return colorFormat; }
+			vk::Format getDepthFormat() const { return frames[0].getDepthFormat(); }
 			const Frame& getFrame(uint32_t index) const { return frames[index]; }
 
 			// Create framebuffers for each frame
