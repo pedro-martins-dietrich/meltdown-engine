@@ -2,6 +2,7 @@
 
 #include "../../Utils/Logger.hpp"
 #include "../Command/Synchronization.hpp"
+#include "../Image/Image.hpp"
 
 mtd::Frame::Frame
 (
@@ -16,17 +17,31 @@ mtd::Frame::Frame
 	commandHandler{device},
 	frameIndex{frameIndex}
 {
-	createImageView(format);
+	Image::createImageView
+	(
+		device.getDevice(),
+		image,
+		format,
+		vk::ImageAspectFlagBits::eColor,
+		vk::ImageViewType::e2D,
+		imageView
+	);
 
 	Synchronization::createFence(this->device, synchronizationBundle.inFlightFence);
 	Synchronization::createSemaphore(this->device, synchronizationBundle.imageAvailable);
 	Synchronization::createSemaphore(this->device, synchronizationBundle.renderFinished);
+
+	createDepthResources(device);
 
 	LOG_VERBOSE("Created frame number %d.", frameIndex);
 }
 
 mtd::Frame::~Frame()
 {
+	device.destroyImage(depthBuffer);
+	device.freeMemory(depthBufferMemory);
+	device.destroyImageView(depthBufferView);
+
 	device.destroySemaphore(synchronizationBundle.renderFinished);
 	device.destroySemaphore(synchronizationBundle.imageAvailable);
 	device.destroyFence(synchronizationBundle.inFlightFence);
@@ -38,16 +53,23 @@ mtd::Frame::~Frame()
 mtd::Frame::Frame(Frame&& frame) noexcept
 	: device{frame.device},
 	frameIndex{frame.frameIndex},
-	frameDimensions{std::move(frame.frameDimensions)},
+	frameDimensions{frame.frameDimensions},
 	image{std::move(frame.image)},
 	imageView{std::move(frame.imageView)},
 	framebuffer{std::move(frame.framebuffer)},
+	depthBuffer{std::move(frame.depthBuffer)},
+	depthBufferView{std::move(frame.depthBufferView)},
+	depthBufferMemory{std::move(frame.depthBufferMemory)},
+	depthBufferFormat{frame.depthBufferFormat},
 	commandHandler{std::move(frame.commandHandler)},
 	synchronizationBundle{std::move(frame.synchronizationBundle)}
 {
 	frame.image = nullptr;
 	frame.imageView = nullptr;
 	frame.framebuffer = nullptr;
+	frame.depthBuffer = nullptr;
+	frame.depthBufferView = nullptr;
+	frame.depthBufferMemory = nullptr;
 	frame.synchronizationBundle.inFlightFence = nullptr;
 	frame.synchronizationBundle.imageAvailable = nullptr;
 	frame.synchronizationBundle.renderFinished = nullptr;
@@ -56,11 +78,13 @@ mtd::Frame::Frame(Frame&& frame) noexcept
 // Set up framebuffer
 void mtd::Frame::createFramebuffer(const vk::RenderPass& renderPass)
 {
+	std::vector<vk::ImageView> attachments{imageView, depthBufferView};
+
 	vk::FramebufferCreateInfo framebufferCreateInfo{};
 	framebufferCreateInfo.flags = vk::FramebufferCreateFlags();
 	framebufferCreateInfo.renderPass = renderPass;
-	framebufferCreateInfo.attachmentCount = 1;
-	framebufferCreateInfo.pAttachments = &imageView;
+	framebufferCreateInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+	framebufferCreateInfo.pAttachments = attachments.data();
 	framebufferCreateInfo.width = frameDimensions.width;
 	framebufferCreateInfo.height = frameDimensions.height;
 	framebufferCreateInfo.layers = 1;
@@ -85,31 +109,65 @@ void mtd::Frame::drawFrame(DrawInfo& drawInfo) const
 	commandHandler.draw(drawInfo);
 }
 
-// Create frame image view
-void mtd::Frame::createImageView(vk::Format format)
+// Creates depth buffer data
+void mtd::Frame::createDepthResources(const Device& device)
 {
-	vk::ComponentMapping componentMapping{};
-	componentMapping.r = vk::ComponentSwizzle::eIdentity;
-	componentMapping.g = vk::ComponentSwizzle::eIdentity;
-	componentMapping.b = vk::ComponentSwizzle::eIdentity;
-	componentMapping.a = vk::ComponentSwizzle::eIdentity;
+	depthBufferFormat = findSupportedFormat
+	(
+		device.getPhysicalDevice(),
+		{vk::Format::eD32Sfloat, vk::Format::eD24UnormS8Uint},
+		vk::ImageTiling::eOptimal,
+		vk::FormatFeatureFlagBits::eDepthStencilAttachment
+	);
 
-	vk::ImageSubresourceRange subresourceRange{};
-	subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
-	subresourceRange.baseMipLevel = 0;
-	subresourceRange.levelCount = 1;
-	subresourceRange.baseArrayLayer = 0;
-	subresourceRange.layerCount = 1;
+	Image::CreateImageBundle imageBundle{device.getDevice()};
+	imageBundle.tiling = vk::ImageTiling::eOptimal;
+	imageBundle.usage = vk::ImageUsageFlagBits::eDepthStencilAttachment;
+	imageBundle.format = depthBufferFormat;
+	imageBundle.imageFlags = vk::ImageCreateFlags();
+	imageBundle.dimensions = frameDimensions;
 
-	vk::ImageViewCreateInfo imageViewCreateInfo{};
-	imageViewCreateInfo.flags = vk::ImageViewCreateFlags();
-	imageViewCreateInfo.image = image;
-	imageViewCreateInfo.viewType = vk::ImageViewType::e2D;
-	imageViewCreateInfo.format = format;
-	imageViewCreateInfo.components = componentMapping;
-	imageViewCreateInfo.subresourceRange = subresourceRange;
+	Image::createImage(imageBundle, depthBuffer);
+	Image::createImageMemory
+	(
+		device, depthBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal, depthBufferMemory
+	);
+	Image::createImageView
+	(
+		device.getDevice(),
+		depthBuffer,
+		depthBufferFormat,
+		vk::ImageAspectFlagBits::eDepth,
+		vk::ImageViewType::e2D,
+		depthBufferView
+	);
+}
 
-	vk::Result result = device.createImageView(&imageViewCreateInfo, nullptr, &imageView);
-	if(result != vk::Result::eSuccess)
-		LOG_ERROR("Failed to create image view for frame. Vulkan result: %d", result);
+// Selects an image format with the specified features
+vk::Format mtd::Frame::findSupportedFormat
+(
+	const vk::PhysicalDevice& physicalDevice,
+	const std::vector<vk::Format>& candidates,
+	vk::ImageTiling tiling,
+	vk::FormatFeatureFlags features
+)
+{
+	for(vk::Format candidate: candidates)
+	{
+		vk::FormatProperties properties = physicalDevice.getFormatProperties(candidate);
+		if
+		(
+			(tiling == vk::ImageTiling::eLinear &&
+				(properties.linearTilingFeatures & features) == features)
+			||
+			(tiling == vk::ImageTiling::eOptimal &&
+				(properties.optimalTilingFeatures & features) == features)
+		)
+		{
+			return candidate;
+		}
+	}
+
+	LOG_ERROR("Failed to find suitable Vulkan format.");
+	return vk::Format::eUndefined;
 }

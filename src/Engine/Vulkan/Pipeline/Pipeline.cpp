@@ -288,6 +288,26 @@ void mtd::Pipeline::createRenderPass(Swapchain& swapchain)
 	colorAttachmentReference.attachment = 0;
 	colorAttachmentReference.layout = vk::ImageLayout::eColorAttachmentOptimal;
 
+	vk::AttachmentDescription depthAttachmentDescription{};
+	depthAttachmentDescription.flags = vk::AttachmentDescriptionFlags();
+	depthAttachmentDescription.format = swapchain.getDepthFormat();
+	depthAttachmentDescription.samples = vk::SampleCountFlagBits::e1;
+	depthAttachmentDescription.loadOp = vk::AttachmentLoadOp::eClear;
+	depthAttachmentDescription.storeOp = vk::AttachmentStoreOp::eStore;
+	depthAttachmentDescription.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
+	depthAttachmentDescription.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
+	depthAttachmentDescription.initialLayout = vk::ImageLayout::eUndefined;
+	depthAttachmentDescription.finalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+
+	vk::AttachmentReference depthAttachmentReference{};
+	depthAttachmentReference.attachment = 1;
+	depthAttachmentReference.layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+
+	std::vector<vk::AttachmentDescription> attachmentDescriptions
+	{
+		colorAttachmentDescription, depthAttachmentDescription
+	};
+
 	vk::SubpassDescription subpassDescription{};
 	subpassDescription.flags = vk::SubpassDescriptionFlags();
 	subpassDescription.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
@@ -296,14 +316,14 @@ void mtd::Pipeline::createRenderPass(Swapchain& swapchain)
 	subpassDescription.colorAttachmentCount = 1;
 	subpassDescription.pColorAttachments = &colorAttachmentReference;
 	subpassDescription.pResolveAttachments = nullptr;
-	subpassDescription.pDepthStencilAttachment = nullptr;
+	subpassDescription.pDepthStencilAttachment = &depthAttachmentReference;
 	subpassDescription.preserveAttachmentCount = 0;
 	subpassDescription.pPreserveAttachments = nullptr;
 
 	vk::RenderPassCreateInfo renderPassCreateInfo{};
 	renderPassCreateInfo.flags = vk::RenderPassCreateFlags();
-	renderPassCreateInfo.attachmentCount = 1;
-	renderPassCreateInfo.pAttachments = &colorAttachmentDescription;
+	renderPassCreateInfo.attachmentCount = static_cast<uint32_t>(attachmentDescriptions.size());
+	renderPassCreateInfo.pAttachments = attachmentDescriptions.data();
 	renderPassCreateInfo.subpassCount = 1;
 	renderPassCreateInfo.pSubpasses = &subpassDescription;
 	renderPassCreateInfo.dependencyCount = 0;

@@ -27,6 +27,7 @@ namespace mtd
 			Frame(Frame&& otherFrame) noexcept;
 
 			// Getters
+			vk::Format getDepthFormat() const { return depthBufferFormat; }
 			const vk::Fence& getInFlightFence() const
 				{ return synchronizationBundle.inFlightFence; }
 			const vk::Semaphore& getImageAvailableSemaphore() const
@@ -46,6 +47,12 @@ namespace mtd
 			// Frame storage
 			vk::Framebuffer framebuffer;
 
+			// Depth buffer data
+			vk::Image depthBuffer;
+			vk::ImageView depthBufferView;
+			vk::DeviceMemory depthBufferMemory;
+			vk::Format depthBufferFormat;
+
 			// Frame index in the swapchain
 			uint32_t frameIndex;
 			// Frame dimensions
@@ -60,7 +67,16 @@ namespace mtd
 			// Vulkan device reference
 			const vk::Device& device;
 
-			// Create frame image view
-			void createImageView(vk::Format format);
+			// Creates depth buffer data
+			void createDepthResources(const Device& device);
+
+			// Selects an image format with the specified features
+			vk::Format findSupportedFormat
+			(
+				const vk::PhysicalDevice& physicalDevice,
+				const std::vector<vk::Format>& candidates,
+				vk::ImageTiling tiling,
+				vk::FormatFeatureFlags features
+			);
 	};
 }
