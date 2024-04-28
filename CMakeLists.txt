@@ -31,9 +31,12 @@ set(
     Vulkan::Vulkan
 )
 
-# Sets shaders directory
+# Sets resources directory
+set(RESOURCES_DIR "${CMAKE_SOURCE_DIR}/resources")
+
+# Sets shaders directories
 set(SOURCE_SHADERS_DIR "${CMAKE_SOURCE_DIR}/src/Engine/Shaders")
-set(COMPILED_SHADERS_DIR "${CMAKE_SOURCE_DIR}/resources/shaders")
+set(COMPILED_SHADERS_DIR "${RESOURCES_DIR}/shaders")
 
 # Searches shaders source code files and compiles them
 file(GLOB_RECURSE SHADER_SRC_FILES "${SOURCE_SHADERS_DIR}/**.vert" "${SOURCE_SHADERS_DIR}/**.frag")
@@ -62,12 +65,12 @@ add_dependencies(${EXECUTABLE} SHADERS)
 # Define macros for the project
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_compile_definitions(${EXECUTABLE} PRIVATE MTD_DEBUG=2)
-    add_compile_definitions(${EXECUTABLE} PRIVATE MTD_SPIRV_SHADERS_PATH="${COMPILED_SHADERS_DIR}/")
+    add_compile_definitions(${EXECUTABLE} PRIVATE MTD_RESOURCES_PATH="${RESOURCES_DIR}/")
 
     message(STATUS "Building for debug...")
 elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
     add_compile_definitions(${EXECUTABLE} PRIVATE MTD_DEBUG=1)
-    add_compile_definitions(${EXECUTABLE} PRIVATE MTD_SPIRV_SHADERS_PATH="${COMPILED_SHADERS_DIR}/")
+    add_compile_definitions(${EXECUTABLE} PRIVATE MTD_RESOURCES_PATH="${RESOURCES_DIR}/")
 
     message(STATUS "Building for release with debug info...")
 elseif(CMAKE_BUILD_TYPE MATCHES "^(Release|MinSizeRel)$")
