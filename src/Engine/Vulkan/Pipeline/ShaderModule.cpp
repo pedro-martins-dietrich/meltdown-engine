@@ -3,14 +3,11 @@
 #include "../../Utils/FileHandler.hpp"
 #include "../../Utils/Logger.hpp"
 
-#ifndef MTD_SPIRV_SHADERS_PATH
-	#define MTD_SPIRV_SHADERS_PATH "./resources/shaders/"
-#endif
-
 mtd::ShaderModule::ShaderModule(const char* shaderFile, const vk::Device& device)
 	: device{device}
 {
-	std::string shaderPath{MTD_SPIRV_SHADERS_PATH};
+	std::string shaderPath{MTD_RESOURCES_PATH};
+	shaderPath.append("shaders/");
 	shaderPath.append(shaderFile);
 
 	std::vector<char> shaderSourceCode;
@@ -23,7 +20,11 @@ mtd::ShaderModule::ShaderModule(const char* shaderFile, const vk::Device& device
 
 	vk::Result result = device.createShaderModule(&shaderModuleCreateInfo, nullptr, &shaderModule);
 	if(result != vk::Result::eSuccess)
-		LOG_ERROR("Failed to create shader module for \"%s\".", shaderPath.c_str());
+		LOG_ERROR
+		(
+			"Failed to create shader module for \"%s\". Vulkan result: %d",
+			shaderPath.c_str(), result
+		);
 }
 
 mtd::ShaderModule::~ShaderModule()
