@@ -17,13 +17,22 @@ mtd::Engine::Engine()
 {
 	window.setInputCallbacks(inputHandler);
 
-	Mesh triangle{0};
-	meshManager.loadMeshToLump(triangle);
-	Mesh square{1};
-	meshManager.loadMeshToLump(square);
+	LOG_INFO("Engine ready.\n");
+
+	std::vector<const char*> meshes
+	{
+		"ground/ground.obj",
+		"polyhedra/icosahedron.obj"
+	};
+
+	for(uint32_t i = 0; i < meshes.size(); i++)
+	{
+		Mesh mesh{meshes[i], i};
+		meshManager.loadMeshToLump(mesh);
+	}
 
 	meshManager.loadMeshesToGPU(commandHandler);
-	LOG_INFO("Meshes loaded.\n");
+	LOG_INFO("Meshes loaded to the GPU.\n");
 }
 
 mtd::Engine::~Engine()

@@ -1,23 +1,14 @@
 #pragma once
 
-#include <glm/glm.hpp>
-#include <vulkan/vulkan.hpp>
+#include "../../Utils/EngineStructs.hpp"
 
 namespace mtd
 {
-	// Vertex format
-	struct Vertex
-	{
-		glm::vec3 position;
-		glm::vec3 normal;
-		glm::vec3 color;
-	};
-
 	// Stores a mesh
 	class Mesh
 	{
 		public:
-			Mesh(uint32_t id, glm::mat4 preTransform = glm::mat4{1.0f});
+			Mesh(const char* fileName, uint32_t id, glm::mat4 preTransform = glm::mat4{1.0f});
 			~Mesh() {}
 
 			Mesh(const Mesh&) = delete;
@@ -52,7 +43,7 @@ namespace mtd
 			// Pre-transformations for each instance
 			std::vector<glm::mat4> preTransforms;
 
-			// Vertex data
+			// Mesh data
 			std::vector<Vertex> vertices;
 			std::vector<uint32_t> indices;
 	};

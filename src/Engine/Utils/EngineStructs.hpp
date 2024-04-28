@@ -38,6 +38,14 @@ namespace mtd
 		glm::mat4 view;
 	};
 
+	// Vertex format
+	struct Vertex
+	{
+		glm::vec3 position;
+		glm::vec3 normal;
+		glm::vec3 color;
+	};
+
 	// Vertex array manager draw data
 	struct MeshLumpData
 	{

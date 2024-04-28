@@ -1,65 +1,11 @@
 #include "Mesh.hpp"
 
-mtd::Mesh::Mesh(uint32_t id, glm::mat4 preTransform) : id{id}, preTransforms{preTransform}, instanceCount{1}
-{
-	// Hard-coded meshes until creating a mesh loader
-	if(id == 0)
-	{
-		// Triangle
-		vertices =
-		{
-			Vertex
-			{
-				glm::vec3{1.0f, 1.0f, 0.0f},
-				glm::vec3{0.0f, 0.0f, 1.0f},
-				glm::vec3{1.0f, 0.0f, 0.0f}
-			},
-			Vertex
-			{
-				glm::vec3{1.0f, -1.0f, -1.0f},
-				glm::vec3{0.0f, -1.0f, 0.0f},
-				glm::vec3{0.0f, 1.0f, 0.0f}
-			},
-			Vertex
-			{
-				glm::vec3{1.0f, 1.0f, -2.0f},
-				glm::vec3{0.0f, 0.0f, -1.0f},
-				glm::vec3{0.0f, 0.0f, 1.0f}
-			}
-		};
-		indices = {0, 1, 2};
-		return;
-	}
+#include "ObjMeshLoader.hpp"
 
-	// Square
-	vertices =
-	{
-		Vertex
-		{
-			glm::vec3{-1.0f, 1.0f, 0.0f},
-			glm::vec3{0.0f, 0.0f, 1.0f},
-			glm::vec3{0.0f, 0.0f, 1.0f}
-		},
-		Vertex
-		{
-			glm::vec3{-1.0f, -1.0f, 0.0f},
-			glm::vec3{0.0f, 0.0f, 1.0f},
-			glm::vec3{0.0f, 1.0f, 1.0f}
-		},
-		Vertex
-		{
-			glm::vec3{1.0f, -1.0f, 0.0f},
-			glm::vec3{0.0f, 0.0f, 1.0f},
-			glm::vec3{1.0f, 1.0f, 1.0f}
-		},
-		Vertex
-		{
-			glm::vec3{1.0f, 1.0f, 0.0f},
-			glm::vec3{0.0f, 0.0f, 1.0f},
-			glm::vec3{1.0f, 0.0f, 1.0f}
-		}
-	};
-	indices = {0, 1, 2, 0, 3, 2};
+mtd::Mesh::Mesh(const char* fileName, uint32_t id, glm::mat4 preTransform)
+	: id{id}, preTransforms{preTransform}, instanceCount{1}
+{
+	ObjMeshLoader::load(fileName, vertices, indices);
 }
 
 // Adds a new instance of the mesh
