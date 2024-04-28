@@ -16,7 +16,7 @@ layout(push_constant) uniform CameraMatrices
 void main()
 {
 	fragColor = color;
-	fragNormal = (camera.view * vec4(normal, 0.0f)).xyz;
+	fragNormal = normal;
 
 	gl_Position = camera.projection * (camera.view * vec4(position, 1.0f));
 }
