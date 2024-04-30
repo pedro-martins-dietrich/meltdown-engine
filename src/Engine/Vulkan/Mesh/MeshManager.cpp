@@ -1,7 +1,7 @@
 #include "MeshManager.hpp"
 
 mtd::MeshManager::MeshManager(const Device& device)
-	: device{device}, currentIndexOffset{0}
+	: device{device}, currentIndexOffset{0}, totalInstanceCount{0}
 {
 }
 
@@ -34,6 +34,7 @@ void mtd::MeshManager::loadMeshToLump(const Mesh& mesh)
 		indexLump.push_back(index + currentIndexOffset);
 	}
 
+	totalInstanceCount += instanceCounts.back();
 	currentIndexOffset += vertices.size();
 }
 

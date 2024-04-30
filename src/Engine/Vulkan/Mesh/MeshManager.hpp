@@ -21,6 +21,8 @@ namespace mtd
 			const std::vector<uint32_t>& getIndexCounts() const { return indexCounts; }
 			const std::vector<uint32_t>& getInstanceCounts() const { return instanceCounts; }
 			const std::vector<uint32_t>& getIndexOffsets() const { return indexOffsets; }
+			vk::DeviceSize getModelMatricesSize() const
+				{ return sizeof(glm::mat4) * totalInstanceCount; }
 
 			// Stores a mesh in the lump of data
 			void loadMeshToLump(const Mesh& mesh);
@@ -40,6 +42,8 @@ namespace mtd
 			// Lumps of data containing all vertices and indices from all meshes
 			std::vector<Vertex> vertexLump;
 			std::vector<uint32_t> indexLump;
+			// Total number of instances
+			uint32_t totalInstanceCount;
 
 			// Index offset counter
 			uint32_t currentIndexOffset;
