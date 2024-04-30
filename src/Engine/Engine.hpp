@@ -2,6 +2,7 @@
 
 #include "Vulkan/Pipeline/Pipeline.hpp"
 #include "Vulkan/Mesh/MeshManager.hpp"
+#include "Vulkan/Descriptors/DescriptorPool.hpp"
 #include "Camera/Camera.hpp"
 
 // Meltdown (mtd) engine namespace
@@ -30,7 +31,19 @@ namespace mtd
 			CommandHandler commandHandler;
 			MeshManager meshManager;
 			InputHandler inputHandler;
+			DescriptorPool descriptorPool;
 			Camera camera;
+
+			// List of meshes in the scene
+			std::vector<Mesh> meshes;
+
+			// Loads all the meshes
+			void loadScene();
+			// Sets up the descriptor pools and sets
+			void configureDescriptors();
+
+			// Changes the scene
+			void updateScene(float frameTime);
 
 			// Recreates swapchain and pipeline to use new dimensions
 			void handleWindowResize();

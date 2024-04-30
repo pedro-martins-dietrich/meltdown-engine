@@ -2,6 +2,7 @@
 
 #include "../Frame/Swapchain.hpp"
 #include "ShaderModule.hpp"
+#include "../Descriptors/DescriptorSetHandler.hpp"
 
 namespace mtd
 {
@@ -19,6 +20,8 @@ namespace mtd
 			const vk::Pipeline& getPipeline() const { return pipeline; }
 			const vk::PipelineLayout& getLayout() const { return pipelineLayout; }
 			const vk::RenderPass& getRenderPass() const { return renderPass; }
+			DescriptorSetHandler& getDescriptorSet(uint32_t index)
+				{ return descriptorSets[index]; }
 
 			// Recreates the pipeline
 			void recreate(Swapchain& swapchain);
@@ -31,11 +34,17 @@ namespace mtd
 			// Pipeline render pass
 			vk::RenderPass renderPass;
 
+			// Descriptor sets and their layouts
+			std::vector<DescriptorSetHandler> descriptorSets;
+
 			// Vulkan device reference
 			const vk::Device& device;
 
 			// Creates the graphics pipeline
 			void createPipeline(Swapchain& swapchain);
+
+			// Configures the descriptor set handlers to be used
+			void createDescriptorSetLayouts();
 
 			// Sets create infos for pipeline creation
 			void setVertexInput(vk::PipelineVertexInputStateCreateInfo& vertexInputInfo) const;

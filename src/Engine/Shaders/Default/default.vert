@@ -13,10 +13,17 @@ layout(push_constant) uniform CameraMatrices
 	mat4 view;
 } camera;
 
+layout(set = 0, binding = 0, std140) readonly buffer storageBuffer
+{
+	mat4 model[];
+} modelData;
+
 void main()
 {
-	fragColor = color;
-	fragNormal = normal;
+	mat4 model = modelData.model[gl_InstanceIndex];
 
-	gl_Position = camera.projection * (camera.view * vec4(position, 1.0f));
+	fragColor = color;
+	fragNormal = (model * vec4(normal, 0.0f)).xyz;
+
+	gl_Position = camera.projection * (camera.view * (model * vec4(position, 1.0f)));
 }

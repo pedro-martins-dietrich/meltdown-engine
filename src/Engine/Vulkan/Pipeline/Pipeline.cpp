@@ -6,6 +6,7 @@
 mtd::Pipeline::Pipeline(const vk::Device& device, Swapchain& swapchain)
 	: device{device}
 {
+	createDescriptorSetLayouts();
 	createPipeline(swapchain);
 }
 
@@ -18,6 +19,7 @@ mtd::Pipeline::~Pipeline()
 void mtd::Pipeline::recreate(Swapchain& swapchain)
 {
 	destroy();
+
 	createPipeline(swapchain);
 }
 
@@ -82,6 +84,19 @@ void mtd::Pipeline::createPipeline(Swapchain& swapchain)
 		return;
 	}
 	LOG_INFO("Created graphics pipeline.\n");
+}
+
+// Configures the descriptor set handlers to be used
+void mtd::Pipeline::createDescriptorSetLayouts()
+{
+	std::vector<vk::DescriptorSetLayoutBinding> bindings{1};
+	bindings[0].binding = 0;
+	bindings[0].descriptorType = vk::DescriptorType::eStorageBuffer;
+	bindings[0].descriptorCount = 1;
+	bindings[0].stageFlags = vk::ShaderStageFlagBits::eVertex;
+	bindings[0].pImmutableSamplers = nullptr;
+
+	descriptorSets.emplace_back(device, bindings);
 }
 
 // Sets create info for the vertex input
@@ -254,10 +269,14 @@ void mtd::Pipeline::createPipelineLayout()
 	pushConstantRange.offset = 0;
 	pushConstantRange.size = sizeof(CameraMatrices);
 
+	std::vector<vk::DescriptorSetLayout> descriptorSetLayouts;
+	for(const DescriptorSetHandler& descriptorSet: descriptorSets)
+		descriptorSetLayouts.push_back(descriptorSet.getLayout());
+
 	vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
 	pipelineLayoutCreateInfo.flags = vk::PipelineLayoutCreateFlags();
-	pipelineLayoutCreateInfo.setLayoutCount = 0;
-	pipelineLayoutCreateInfo.pSetLayouts = nullptr;
+	pipelineLayoutCreateInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
+	pipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayouts.data();
 	pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
 	pipelineLayoutCreateInfo.pPushConstantRanges = &pushConstantRange;
 

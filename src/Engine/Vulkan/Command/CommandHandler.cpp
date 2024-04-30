@@ -135,6 +135,17 @@ void mtd::CommandHandler::recordDrawCommand(const DrawInfo& drawInfo) const
 	renderPassBeginInfo.pClearValues = clearValues.data();
 
 	mainCommandBuffer.beginRenderPass(&renderPassBeginInfo, vk::SubpassContents::eInline);
+
+	mainCommandBuffer.bindDescriptorSets
+	(
+		vk::PipelineBindPoint::eGraphics,
+		drawInfo.pipelineLayout,
+		0,
+		static_cast<uint32_t>(drawInfo.descriptorSets.size()),
+		drawInfo.descriptorSets.data(),
+		0, nullptr
+	);
+
 	mainCommandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, drawInfo.pipeline);
 
 	vk::DeviceSize offset = 0;
@@ -149,6 +160,8 @@ void mtd::CommandHandler::recordDrawCommand(const DrawInfo& drawInfo) const
 		sizeof(CameraMatrices),
 		drawInfo.cameraMatrices
 	);
+
+	uint32_t startInstance = 0;
 	for(uint32_t i = 0; i < drawInfo.meshLumpData.indexCounts.size(); i++)
 	{
 		mainCommandBuffer.drawIndexed
@@ -157,9 +170,11 @@ void mtd::CommandHandler::recordDrawCommand(const DrawInfo& drawInfo) const
 			drawInfo.meshLumpData.instanceCounts[i],
 			drawInfo.meshLumpData.indexOffsets[i],
 			0,
-			0U
+			startInstance
 		);
+		startInstance += drawInfo.meshLumpData.instanceCounts[i];
 	}
+
 	mainCommandBuffer.endRenderPass();
 
 	endCommand();
