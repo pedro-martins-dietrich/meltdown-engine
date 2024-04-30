@@ -69,5 +69,6 @@ namespace mtd
 		const SynchronizationBundle* syncBundle;
 		uint32_t frameIndex;
 		const CameraMatrices* cameraMatrices;
+		std::vector<vk::DescriptorSet> descriptorSets;
 	};
 }

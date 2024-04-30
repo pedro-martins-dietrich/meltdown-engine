@@ -1,5 +1,7 @@
 #include "Engine.hpp"
 
+#include <glm/gtc/matrix_transform.hpp>
+
 #include "Utils/Logger.hpp"
 
 #define MAX_FRAMES_IN_FLIGHT 3
@@ -13,26 +15,15 @@ mtd::Engine::Engine()
 	commandHandler{device},
 	meshManager{device},
 	inputHandler{},
+	descriptorPool{device.getDevice()},
 	camera{inputHandler, glm::vec3{0.0f, -1.0f, -4.0f}, 70.0f, window.getAspectRatio()}
 {
 	window.setInputCallbacks(inputHandler);
 
 	LOG_INFO("Engine ready.\n");
 
-	std::vector<const char*> meshes
-	{
-		"ground/ground.obj",
-		"polyhedra/icosahedron.obj"
-	};
-
-	for(uint32_t i = 0; i < meshes.size(); i++)
-	{
-		Mesh mesh{meshes[i], i};
-		meshManager.loadMeshToLump(mesh);
-	}
-
-	meshManager.loadMeshesToGPU(commandHandler);
-	LOG_INFO("Meshes loaded to the GPU.\n");
+	loadScene();
+	configureDescriptors();
 }
 
 mtd::Engine::~Engine()
@@ -68,11 +59,14 @@ void mtd::Engine::start()
 		swapchain.getExtent(),
 	};
 	drawInfo.cameraMatrices = camera.getMatrices();
+	drawInfo.descriptorSets.push_back(pipeline.getDescriptorSet(0).getSet());
 
 	while(window.keepOpen())
 	{
 		inputHandler.handleInputs(window);
 		camera.updateCamera(static_cast<float>(frameTime), window);
+
+		updateScene(frameTime);
 
 		const Frame& frame = swapchain.getFrame(currentFrameIndex);
 		const vk::Fence& inFlightFence = frame.getInFlightFence();
@@ -115,6 +109,105 @@ void mtd::Engine::start()
 		currentTime = glfwGetTime();
 		frameTime = glm::min(currentTime - lastTime, 1.0);
 	}
+}
+
+// Loads all the meshes
+void mtd::Engine::loadScene()
+{
+	meshes.emplace_back
+	(
+		"ground/ground.obj",
+		0,
+		glm::mat4
+		{
+			0.7071f, 0.0f, 0.7071f, 0.0f,
+			0.0f, 1.0f, 0.0f, 0.0f,
+			-0.7071f, 0.0f, 0.7071f, 0.0f,
+			0.0f, 0.0f, 0.0f, 1.0f
+		}
+	);
+
+	meshes.emplace_back
+	(
+		"polyhedra/icosahedron.obj",
+		1,
+		glm::mat4
+		{
+			1.0f, 0.0f, 0.0f, 0.0f,
+			0.0f, 1.0f, 0.0f, 0.0f,
+			0.0f, 0.0f, 1.0f, 0.0f,
+			4.0f, 0.0f, 0.0f, 1.0f
+		}
+	);
+
+	meshes[1].addInstance
+	(
+		{
+			1.0f, 0.0f, 0.0f, 0.0f,
+			0.0f, -1.0f, 0.0f, 0.0f,
+			0.0f, 0.0f, 1.0f, 0.0f,
+			-4.0f, 0.0f, 0.0f, 1.0f
+		}
+	);
+
+	for(Mesh& mesh: meshes)
+	{
+		meshManager.loadMeshToLump(mesh);
+	}
+	meshManager.loadMeshesToGPU(commandHandler);
+
+	LOG_INFO("Meshes loaded to the GPU.\n");
+}
+
+// Sets up the descriptors
+void mtd::Engine::configureDescriptors()
+{
+	std::vector<PoolSizeData> poolSizesInfo{1};
+	poolSizesInfo[0].descriptorCount = 1;
+	poolSizesInfo[0].descriptorType = vk::DescriptorType::eStorageBuffer;
+	descriptorPool.createDescriptorPool(poolSizesInfo);
+
+	DescriptorSetHandler& descriptorSetHandler = pipeline.getDescriptorSet(0);
+	descriptorPool.allocateDescriptorSet(descriptorSetHandler);
+	descriptorSetHandler.createDescriptorResources
+	(
+		device, meshManager.getModelMatricesSize(), vk::BufferUsageFlagBits::eStorageBuffer
+	);
+
+	char* bufferWriteLocation = static_cast<char*>(descriptorSetHandler.getBufferWriteLocation());
+	for(Mesh& mesh: meshes)
+	{
+		mesh.setTransformsWriteLocation(bufferWriteLocation);
+		mesh.updateTransformationMatricesDescriptor();
+
+		bufferWriteLocation += mesh.getModelMatricesSize();
+	}
+	descriptorSetHandler.writeDescriptorSet();
+}
+
+// Changes the scene
+void mtd::Engine::updateScene(float frameTime)
+{
+	meshes[1].updateTransformationMatrix
+	(
+		glm::rotate
+		(
+			meshes[1].getTransformationMatrix(0),
+			frameTime,
+			glm::vec3{0.0f, -1.0f, 0.0f}
+		),
+		0
+	);
+	meshes[1].updateTransformationMatrix
+	(
+		glm::rotate
+		(
+			meshes[1].getTransformationMatrix(1),
+			frameTime,
+			glm::vec3{0.0f, 1.0f, 0.0f}
+		),
+		1
+	);
 }
 
 // Recreates swapchain and pipeline to use new dimensions
