@@ -16,7 +16,8 @@ mtd::Engine::Engine()
 	meshManager{device},
 	inputHandler{},
 	descriptorPool{device.getDevice()},
-	camera{inputHandler, glm::vec3{0.0f, -1.0f, -4.0f}, 70.0f, window.getAspectRatio()}
+	camera{inputHandler, glm::vec3{0.0f, -1.0f, -4.0f}, 70.0f, window.getAspectRatio()},
+	scene{"meltdown_demo.json"}
 {
 	window.setInputCallbacks(inputHandler);
 
@@ -114,43 +115,7 @@ void mtd::Engine::start()
 // Loads all the meshes
 void mtd::Engine::loadScene()
 {
-	meshes.emplace_back
-	(
-		"ground/ground.obj",
-		0,
-		glm::mat4
-		{
-			0.7071f, 0.0f, 0.7071f, 0.0f,
-			0.0f, 1.0f, 0.0f, 0.0f,
-			-0.7071f, 0.0f, 0.7071f, 0.0f,
-			0.0f, 0.0f, 0.0f, 1.0f
-		}
-	);
-
-	meshes.emplace_back
-	(
-		"polyhedra/icosahedron.obj",
-		1,
-		glm::mat4
-		{
-			1.0f, 0.0f, 0.0f, 0.0f,
-			0.0f, 1.0f, 0.0f, 0.0f,
-			0.0f, 0.0f, 1.0f, 0.0f,
-			4.0f, 0.0f, 0.0f, 1.0f
-		}
-	);
-
-	meshes[1].addInstance
-	(
-		{
-			1.0f, 0.0f, 0.0f, 0.0f,
-			0.0f, -1.0f, 0.0f, 0.0f,
-			0.0f, 0.0f, 1.0f, 0.0f,
-			-4.0f, 0.0f, 0.0f, 1.0f
-		}
-	);
-
-	for(Mesh& mesh: meshes)
+	for(Mesh& mesh: scene.getMeshes())
 	{
 		meshManager.loadMeshToLump(mesh);
 	}
@@ -175,7 +140,7 @@ void mtd::Engine::configureDescriptors()
 	);
 
 	char* bufferWriteLocation = static_cast<char*>(descriptorSetHandler.getBufferWriteLocation());
-	for(Mesh& mesh: meshes)
+	for(Mesh& mesh: scene.getMeshes())
 	{
 		mesh.setTransformsWriteLocation(bufferWriteLocation);
 		mesh.updateTransformationMatricesDescriptor();
@@ -188,26 +153,36 @@ void mtd::Engine::configureDescriptors()
 // Changes the scene
 void mtd::Engine::updateScene(float frameTime)
 {
-	meshes[1].updateTransformationMatrix
-	(
-		glm::rotate
+	for(uint32_t i = 1; i < 5; i++)
+	{
+		Mesh& mesh = scene.getMesh(i);
+		mesh.updateTransformationMatrix
 		(
-			meshes[1].getTransformationMatrix(0),
-			frameTime,
-			glm::vec3{0.0f, -1.0f, 0.0f}
-		),
-		0
-	);
-	meshes[1].updateTransformationMatrix
-	(
-		glm::rotate
+			glm::rotate
+			(
+				mesh.getTransformationMatrix(0),
+				frameTime,
+				glm::vec3{0.0f, -1.0f, 0.0f}
+			),
+			0
+		);
+		mesh.updateTransformationMatrix
 		(
-			meshes[1].getTransformationMatrix(1),
-			frameTime,
-			glm::vec3{0.0f, 1.0f, 0.0f}
-		),
-		1
-	);
+			glm::rotate
+			(
+				mesh.getTransformationMatrix(1),
+				frameTime,
+				glm::vec3{0.0f, 1.0f, 0.0f}
+			),
+			1
+		);
+	}
+
+	Mesh& mesh = scene.getMesh(5);
+	glm::mat4 matrix = mesh.getTransformationMatrix(0);
+	matrix[3][0] -= frameTime * matrix[3][2];
+	matrix[3][2] += frameTime * matrix[3][0];
+	mesh.updateTransformationMatrix(matrix, 0);
 }
 
 // Recreates swapchain and pipeline to use new dimensions

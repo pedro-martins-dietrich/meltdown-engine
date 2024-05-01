@@ -24,12 +24,14 @@ Required tools to install and execute the **Meltdown Engine** in a development e
 After downloading and installing the required tools, find the file `/scripts/buildsystems/vcpkg.cmake` at the **vcpkg** install location, and set the environment variable `CMAKE_TOOLCHAIN_FILE` to this file full path.
 
 
-Make sure **CMake** and **vcpkg** are accessible through the command line:
+Make sure **CMake**, **vcpkg** and the **Vulkan SDK** executables are accessible through the command line:
 
 ```bash
 cmake --version
 
 vcpkg --version
+
+glslc --version
 ```
 
 If not, add the executables to the PATH.
@@ -38,7 +40,7 @@ If not, add the executables to the PATH.
 The required libraries can be installed by running the following command:
 
 ```bash
-vcpkg install glfw3 glm vulkan
+vcpkg install glfw3 glm vulkan nlohmann-json
 ```
 
 
