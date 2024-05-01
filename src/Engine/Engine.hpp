@@ -4,6 +4,7 @@
 #include "Vulkan/Mesh/MeshManager.hpp"
 #include "Vulkan/Descriptors/DescriptorPool.hpp"
 #include "Camera/Camera.hpp"
+#include "Scene/Scene.hpp"
 
 // Meltdown (mtd) engine namespace
 namespace mtd
@@ -34,8 +35,8 @@ namespace mtd
 			DescriptorPool descriptorPool;
 			Camera camera;
 
-			// List of meshes in the scene
-			std::vector<Mesh> meshes;
+			// Scene being currently rendered
+			Scene scene;
 
 			// Loads all the meshes
 			void loadScene();
