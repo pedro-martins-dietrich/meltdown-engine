@@ -12,11 +12,14 @@ mtd::DescriptorSetHandler::DescriptorSetHandler
 
 mtd::DescriptorSetHandler::~DescriptorSetHandler()
 {
-	if(descriptorBuffer.bufferMemory)
+	for(DescriptorResources& resources: resourcesList)
 	{
-		device.unmapMemory(descriptorBuffer.bufferMemory);
-		device.freeMemory(descriptorBuffer.bufferMemory);
-		device.destroyBuffer(descriptorBuffer.buffer);
+		if(resources.descriptorBuffer.bufferMemory)
+		{
+			device.unmapMemory(resources.descriptorBuffer.bufferMemory);
+			device.freeMemory(resources.descriptorBuffer.bufferMemory);
+			device.destroyBuffer(resources.descriptorBuffer.buffer);
+		}
 	}
 
 	device.destroyDescriptorSetLayout(descriptorSetLayout);
@@ -26,52 +29,59 @@ mtd::DescriptorSetHandler::DescriptorSetHandler(DescriptorSetHandler&& other) no
 	: device{other.device},
 	descriptorSetLayout{std::move(other.descriptorSetLayout)},
 	descriptorSet{std::move(other.descriptorSet)},
-	descriptorBuffer{other.descriptorBuffer},
-	descriptorBufferInfo{other.descriptorBufferInfo},
-	descriptorBufferWriteLocation{other.descriptorBufferWriteLocation},
-	writeOp{other.writeOp},
-	descriptorTypes{std::move(other.descriptorTypes)}
+	resourcesList{std::move(other.resourcesList)}
 {
 	other.descriptorSetLayout = nullptr;
 	other.descriptorSet = nullptr;
-	other.descriptorBuffer.buffer = nullptr;
-	other.descriptorBuffer.bufferMemory = nullptr;
 }
 
 // Creates a descriptor and assings it to a descriptor set
 void mtd::DescriptorSetHandler::createDescriptorResources
 (
-	const Device& mtdDevice, vk::DeviceSize resourceSize, vk::BufferUsageFlags usageFlags
+	const Device& mtdDevice,
+	vk::DeviceSize resourceSize,
+	vk::BufferUsageFlags usageFlags,
+	uint32_t resourceIndex
 )
 {
 	Memory::createBuffer
 	(
 		mtdDevice,
-		descriptorBuffer,
+		resourcesList[resourceIndex].descriptorBuffer,
 		resourceSize,
 		usageFlags,
 		vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
 	);
-	descriptorBufferWriteLocation =
-		device.mapMemory(descriptorBuffer.bufferMemory, 0UL, resourceSize);
-	descriptorBufferInfo.buffer = descriptorBuffer.buffer;
-	descriptorBufferInfo.offset = 0UL;
-	descriptorBufferInfo.range = resourceSize;
+	resourcesList[resourceIndex].descriptorBufferWriteLocation = device.mapMemory
+	(
+		resourcesList[resourceIndex].descriptorBuffer.bufferMemory, 0UL, resourceSize
+	);
+	resourcesList[resourceIndex].descriptorBufferInfo.buffer =
+		resourcesList[resourceIndex].descriptorBuffer.buffer;
+	resourcesList[resourceIndex].descriptorBufferInfo.offset = 0UL;
+	resourcesList[resourceIndex].descriptorBufferInfo.range = resourceSize;
 }
 
 // Updates the descriptor set data
 void mtd::DescriptorSetHandler::writeDescriptorSet()
 {
-	writeOp.dstSet = descriptorSet;
-	writeOp.dstBinding = 0;
-	writeOp.dstArrayElement = 0;
-	writeOp.descriptorCount = 1;
-	writeOp.descriptorType = descriptorTypes[0];
-	writeOp.pImageInfo = nullptr;
-	writeOp.pBufferInfo = &descriptorBufferInfo;
-	writeOp.pTexelBufferView = nullptr;
+	writeOps.resize(resourcesList.size());
+	for(uint32_t i = 0; i < resourcesList.size(); i++)
+	{
+		writeOps[i].dstSet = descriptorSet;
+		writeOps[i].dstBinding = i;
+		writeOps[i].dstArrayElement = 0;
+		writeOps[i].descriptorCount = 1;
+		writeOps[i].descriptorType = resourcesList[i].descriptorType;
+		writeOps[i].pImageInfo = nullptr;
+		writeOps[i].pBufferInfo = &resourcesList[i].descriptorBufferInfo;
+		writeOps[i].pTexelBufferView = nullptr;
+	}
 
-	device.updateDescriptorSets(1, &writeOp, 0, nullptr);
+	device.updateDescriptorSets
+	(
+		static_cast<uint32_t>(writeOps.size()), writeOps.data(), 0, nullptr
+	);
 }
 
 // Creates a descriptor set layout
@@ -80,9 +90,10 @@ void mtd::DescriptorSetHandler::createDescriptorSetLayout
 	const std::vector<vk::DescriptorSetLayoutBinding>& bindings
 )
 {
-	for(const vk::DescriptorSetLayoutBinding& binding: bindings)
+	resourcesList.resize(bindings.size());
+	for(uint32_t i = 0; i < bindings.size(); i++)
 	{
-		descriptorTypes.push_back(binding.descriptorType);
+		resourcesList[i].descriptorType = bindings[i].descriptorType;
 	}
 
 	vk::DescriptorSetLayoutCreateInfo layoutCreateInfo{};
