@@ -36,6 +36,7 @@ namespace mtd
 	{
 		glm::mat4 projection;
 		glm::mat4 view;
+		glm::mat4 projectionView;
 	};
 
 	// Vertex format
@@ -68,7 +69,6 @@ namespace mtd
 		const vk::Framebuffer* framebuffer;
 		const SynchronizationBundle* syncBundle;
 		uint32_t frameIndex;
-		const CameraMatrices* cameraMatrices;
 		std::vector<vk::DescriptorSet> descriptorSets;
 	};
 }

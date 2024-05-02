@@ -152,15 +152,6 @@ void mtd::CommandHandler::recordDrawCommand(const DrawInfo& drawInfo) const
 	mainCommandBuffer.bindVertexBuffers(0, 1, &(drawInfo.meshLumpData.vertexBuffer), &offset);
 	mainCommandBuffer.bindIndexBuffer(drawInfo.meshLumpData.indexBuffer, 0, vk::IndexType::eUint32);
 
-	mainCommandBuffer.pushConstants
-	(
-		drawInfo.pipelineLayout,
-		vk::ShaderStageFlagBits::eVertex,
-		0,
-		sizeof(CameraMatrices),
-		drawInfo.cameraMatrices
-	);
-
 	uint32_t startInstance = 0;
 	for(uint32_t i = 0; i < drawInfo.meshLumpData.indexCounts.size(); i++)
 	{

@@ -15,7 +15,8 @@ mtd::Camera::Camera
 	maxSpeed{1.0f},
 	yaw{0.0f}, pitch{0.0f},
 	up{0.0f, -1.0f, 0.0f},
-	frameTime{0.016f}
+	frameTime{0.016f},
+	cameraMatricesWriteLocation{nullptr}
 {
 	matrices.view = glm::lookAt
 	(
@@ -40,8 +41,12 @@ void mtd::Camera::updateCamera(float deltaTime, const Window& window)
 	float mouseX = 0.0f;
 	float mouseY = 0.0f;
 	window.getMousePos(&mouseX, &mouseY, true);
+
 	yaw += mouseX;
 	pitch += mouseY;
+	yaw = glm::mod(yaw, glm::two_pi<float>());
+	pitch = glm::clamp(pitch, -1.5f, 1.5f);
+
 	calculateDirectionVectors();
 
 	matrices.view = glm::lookAt
@@ -51,7 +56,11 @@ void mtd::Camera::updateCamera(float deltaTime, const Window& window)
 		up
 	);
 
+	matrices.projectionView = matrices.projection * matrices.view;
+
 	velocity = glm::vec3{0.0f};
+
+	memcpy(cameraMatricesWriteLocation, &matrices, sizeof(CameraMatrices));
 }
 
 // Updates the perspective matrix

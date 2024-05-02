@@ -89,12 +89,20 @@ void mtd::Pipeline::createPipeline(Swapchain& swapchain)
 // Configures the descriptor set handlers to be used
 void mtd::Pipeline::createDescriptorSetLayouts()
 {
-	std::vector<vk::DescriptorSetLayoutBinding> bindings{1};
+	std::vector<vk::DescriptorSetLayoutBinding> bindings;
+	bindings.resize(2);
+	// Transformation matrices
 	bindings[0].binding = 0;
 	bindings[0].descriptorType = vk::DescriptorType::eStorageBuffer;
 	bindings[0].descriptorCount = 1;
 	bindings[0].stageFlags = vk::ShaderStageFlagBits::eVertex;
 	bindings[0].pImmutableSamplers = nullptr;
+	// Camera data
+	bindings[1].binding = 1;
+	bindings[1].descriptorType = vk::DescriptorType::eUniformBuffer;
+	bindings[1].descriptorCount = 1;
+	bindings[1].stageFlags = vk::ShaderStageFlagBits::eVertex;
+	bindings[1].pImmutableSamplers = nullptr;
 
 	descriptorSets.emplace_back(device, bindings);
 }
@@ -264,11 +272,6 @@ void mtd::Pipeline::setColorBlending
 // Creates the layout for the pipeline
 void mtd::Pipeline::createPipelineLayout()
 {
-	vk::PushConstantRange pushConstantRange{};
-	pushConstantRange.stageFlags = vk::ShaderStageFlagBits::eVertex;
-	pushConstantRange.offset = 0;
-	pushConstantRange.size = sizeof(CameraMatrices);
-
 	std::vector<vk::DescriptorSetLayout> descriptorSetLayouts;
 	for(const DescriptorSetHandler& descriptorSet: descriptorSets)
 		descriptorSetLayouts.push_back(descriptorSet.getLayout());
@@ -277,8 +280,8 @@ void mtd::Pipeline::createPipelineLayout()
 	pipelineLayoutCreateInfo.flags = vk::PipelineLayoutCreateFlags();
 	pipelineLayoutCreateInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
 	pipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayouts.data();
-	pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
-	pipelineLayoutCreateInfo.pPushConstantRanges = &pushConstantRange;
+	pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
+	pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
 
 	vk::Result result = device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &pipelineLayout);
 	if(result != vk::Result::eSuccess)

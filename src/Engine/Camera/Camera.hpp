@@ -23,7 +23,9 @@ namespace mtd
 
 			// Getter
 			glm::vec3 getPosition() const { return position; }
-			const CameraMatrices* getMatrices() const { return &matrices; }
+
+			// Sets the write location for the camera matrices
+			void setWriteLocation(void* location) { cameraMatricesWriteLocation = location; }
 
 			// Updates camera position and direction
 			void updateCamera(float deltaTime, const Window& window);
@@ -53,6 +55,7 @@ namespace mtd
 
 			// Transformation matrices
 			CameraMatrices matrices;
+			void* cameraMatricesWriteLocation;
 
 			// Calculates the normalized camera direction vectors
 			void calculateDirectionVectors();
