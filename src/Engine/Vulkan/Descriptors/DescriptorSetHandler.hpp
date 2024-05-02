@@ -4,6 +4,15 @@
 
 namespace mtd
 {
+	// Information about each descriptor
+	struct DescriptorResources
+	{
+		Memory::Buffer descriptorBuffer;
+		vk::DescriptorBufferInfo descriptorBufferInfo;
+		void* descriptorBufferWriteLocation;
+		vk::DescriptorType descriptorType;
+	};
+
 	// Handles the data to be sent to the GPU through descriptors
 	class DescriptorSetHandler
 	{
@@ -23,16 +32,18 @@ namespace mtd
 			// Getters
 			const vk::DescriptorSetLayout& getLayout() const { return descriptorSetLayout; }
 			vk::DescriptorSet& getSet() { return descriptorSet; }
-			void* getBufferWriteLocation() const { return descriptorBufferWriteLocation; }
-			const std::vector<vk::DescriptorType>& getDescriptorTypes() const
-				{ return descriptorTypes; }
+			void* getBufferWriteLocation(uint32_t index) const
+				{ return resourcesList[index].descriptorBufferWriteLocation; }
+			vk::DescriptorType getDescriptorType(uint32_t index) const
+				{ return resourcesList[index].descriptorType; }
 
 			// Creates a descriptor and assings it to a descriptor set
 			void createDescriptorResources
 			(
 				const Device& mtdDevice,
 				vk::DeviceSize resourceSize,
-				vk::BufferUsageFlags usageFlags
+				vk::BufferUsageFlags usageFlags,
+				uint32_t resourceIndex
 			);
 
 			// Updates the descriptor set data
@@ -44,16 +55,10 @@ namespace mtd
 			// Descriptor set
 			vk::DescriptorSet descriptorSet;
 
-			// Descriptor resources
-			Memory::Buffer descriptorBuffer;
-			vk::DescriptorBufferInfo descriptorBufferInfo;
-			void* descriptorBufferWriteLocation;
-
-			// Write operation
-			vk::WriteDescriptorSet writeOp;
-
-			// Types of descriptor being used
-			std::vector<vk::DescriptorType> descriptorTypes;
+			// Data about the descriptors used in the descriptor set
+			std::vector<DescriptorResources> resourcesList;
+			// Write operations
+			std::vector<vk::WriteDescriptorSet> writeOps;
 
 			// Vulkan device reference
 			const vk::Device& device;

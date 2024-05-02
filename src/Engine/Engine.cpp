@@ -16,7 +16,7 @@ mtd::Engine::Engine()
 	meshManager{device},
 	inputHandler{},
 	descriptorPool{device.getDevice()},
-	camera{inputHandler, glm::vec3{0.0f, -1.0f, -4.0f}, 70.0f, window.getAspectRatio()},
+	camera{inputHandler, glm::vec3{0.0f, -1.5f, -4.5f}, 70.0f, window.getAspectRatio()},
 	scene{"meltdown_demo.json"}
 {
 	window.setInputCallbacks(inputHandler);
@@ -59,7 +59,6 @@ void mtd::Engine::start()
 		swapchain.getSwapchain(),
 		swapchain.getExtent(),
 	};
-	drawInfo.cameraMatrices = camera.getMatrices();
 	drawInfo.descriptorSets.push_back(pipeline.getDescriptorSet(0).getSet());
 
 	while(window.keepOpen())
@@ -127,19 +126,25 @@ void mtd::Engine::loadScene()
 // Sets up the descriptors
 void mtd::Engine::configureDescriptors()
 {
-	std::vector<PoolSizeData> poolSizesInfo{1};
+	std::vector<PoolSizeData> poolSizesInfo{2};
 	poolSizesInfo[0].descriptorCount = 1;
 	poolSizesInfo[0].descriptorType = vk::DescriptorType::eStorageBuffer;
+	poolSizesInfo[1].descriptorCount = 1;
+	poolSizesInfo[1].descriptorType = vk::DescriptorType::eUniformBuffer;
 	descriptorPool.createDescriptorPool(poolSizesInfo);
 
 	DescriptorSetHandler& descriptorSetHandler = pipeline.getDescriptorSet(0);
 	descriptorPool.allocateDescriptorSet(descriptorSetHandler);
 	descriptorSetHandler.createDescriptorResources
 	(
-		device, meshManager.getModelMatricesSize(), vk::BufferUsageFlagBits::eStorageBuffer
+		device, meshManager.getModelMatricesSize(), vk::BufferUsageFlagBits::eStorageBuffer, 0
+	);
+	descriptorSetHandler.createDescriptorResources
+	(
+		device, sizeof(CameraMatrices), vk::BufferUsageFlagBits::eUniformBuffer, 1
 	);
 
-	char* bufferWriteLocation = static_cast<char*>(descriptorSetHandler.getBufferWriteLocation());
+	char* bufferWriteLocation = static_cast<char*>(descriptorSetHandler.getBufferWriteLocation(0));
 	for(Mesh& mesh: scene.getMeshes())
 	{
 		mesh.setTransformsWriteLocation(bufferWriteLocation);
@@ -147,6 +152,10 @@ void mtd::Engine::configureDescriptors()
 
 		bufferWriteLocation += mesh.getModelMatricesSize();
 	}
+
+	void* cameraWriteLocation = descriptorSetHandler.getBufferWriteLocation(1);
+	camera.setWriteLocation(cameraWriteLocation);
+
 	descriptorSetHandler.writeDescriptorSet();
 }
 
