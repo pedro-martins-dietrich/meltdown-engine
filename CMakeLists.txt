@@ -19,6 +19,7 @@ find_package(glfw3 REQUIRED)
 find_package(glm REQUIRED)
 find_package(Vulkan REQUIRED)
 find_package(nlohmann_json REQUIRED)
+find_package(imgui REQUIRED)
 
 # Sets include directories and libraries
 set(
@@ -31,6 +32,7 @@ set(
     glm::glm
     Vulkan::Vulkan
     nlohmann_json::nlohmann_json
+    imgui::imgui
 )
 
 # Sets resources directory
