@@ -1,5 +1,6 @@
 #include "CommandHandler.hpp"
 
+#include "../Gui/Gui.hpp"
 #include "../../Utils/Logger.hpp"
 
 mtd::CommandHandler::CommandHandler(const Device& device) : device{device}
@@ -87,9 +88,9 @@ void mtd::CommandHandler::endSingleTimeCommand(const vk::CommandBuffer& commandB
 }
 
 // Draws frame
-void mtd::CommandHandler::draw(const DrawInfo& drawInfo) const
+void mtd::CommandHandler::draw(const DrawInfo& drawInfo, const Gui& gui) const
 {
-	recordDrawCommand(drawInfo);
+	recordDrawCommand(drawInfo, gui);
 	submitCommandBuffer(*(drawInfo.syncBundle));
 	presentFrame(drawInfo);
 }
@@ -115,7 +116,7 @@ void mtd::CommandHandler::endCommand() const
 }
 
 // Records draw command to the command buffer
-void mtd::CommandHandler::recordDrawCommand(const DrawInfo& drawInfo) const
+void mtd::CommandHandler::recordDrawCommand(const DrawInfo& drawInfo, const Gui& gui) const
 {
 	beginCommand();
 
@@ -165,6 +166,8 @@ void mtd::CommandHandler::recordDrawCommand(const DrawInfo& drawInfo) const
 		);
 		startInstance += drawInfo.meshLumpData.instanceCounts[i];
 	}
+
+	gui.renderGui(mainCommandBuffer);
 
 	mainCommandBuffer.endRenderPass();
 

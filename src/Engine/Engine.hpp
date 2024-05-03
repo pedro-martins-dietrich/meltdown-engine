@@ -3,6 +3,7 @@
 #include "Vulkan/Pipeline/Pipeline.hpp"
 #include "Vulkan/Mesh/MeshManager.hpp"
 #include "Vulkan/Descriptors/DescriptorPool.hpp"
+#include "Vulkan/Gui/Gui.hpp"
 #include "Camera/Camera.hpp"
 #include "Scene/Scene.hpp"
 
@@ -34,6 +35,9 @@ namespace mtd
 			InputHandler inputHandler;
 			DescriptorPool descriptorPool;
 			Camera camera;
+
+			// Engine's user interface
+			Gui imgui;
 
 			// Scene being currently rendered
 			Scene scene;

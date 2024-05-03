@@ -16,10 +16,20 @@ mtd::Engine::Engine()
 	meshManager{device},
 	inputHandler{},
 	descriptorPool{device.getDevice()},
+	imgui{device.getDevice(), inputHandler},
 	camera{inputHandler, glm::vec3{0.0f, -1.5f, -4.5f}, 70.0f, window.getAspectRatio()},
 	scene{"meltdown_demo.json"}
 {
 	window.setInputCallbacks(inputHandler);
+
+	imgui.init
+	(
+		window,
+		vulkanInstance.getInstance(),
+		device,
+		pipeline.getRenderPass(),
+		MAX_FRAMES_IN_FLIGHT
+	);
 
 	LOG_INFO("Engine ready.\n");
 
@@ -101,7 +111,7 @@ void mtd::Engine::start()
 			}
 		}
 
-		swapchain.getFrame(currentFrameIndex).drawFrame(drawInfo);
+		swapchain.getFrame(currentFrameIndex).drawFrame(drawInfo, imgui);
 
 		currentFrameIndex = (currentFrameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
 
