@@ -1,5 +1,7 @@
 #include "Window.hpp"
 
+#include <imgui_impl_glfw.h>
+
 #include "../Utils/Logger.hpp"
 
 mtd::Window::Window(FrameDimensions initialDimensions)
@@ -29,6 +31,12 @@ vk::SurfaceKHR mtd::Window::createSurface(const vk::Instance& instance) const
 		LOG_ERROR("Failed to create surface for Vulkan.");
 
 	return surface;
+}
+
+// Initializes ImGui GLFW backend
+void mtd::Window::initImGuiForGLFW() const
+{
+	ImGui_ImplGlfw_InitForVulkan(glfwWindow, true);
 }
 
 // Waits until the window dimensions are valid
