@@ -23,9 +23,10 @@ namespace mtd
 			// Getters
 			const vk::SwapchainKHR& getSwapchain() const { return swapchain; }
 			const vk::Extent2D& getExtent() const { return extent; }
-			vk::Format getColorFormat() const { return colorFormat; }
-			vk::Format getDepthFormat() const { return frames[0].getDepthFormat(); }
 			const Frame& getFrame(uint32_t index) const { return frames[index]; }
+			vk::Format getColorFormat() const { return settings.colorFormat; }
+			vk::Format getDepthFormat() const { return frames[0].getDepthFormat(); }
+			SwapchainSettings& getSettings() { return settings; }
 
 			// Create framebuffers for each frame
 			void createFramebuffers(const vk::RenderPass& renderPass);
@@ -51,11 +52,15 @@ namespace mtd
 
 			// Frame size
 			vk::Extent2D extent;
-			// Image color format
-			vk::Format colorFormat;
+
+			// Customizable swapchain settings
+			SwapchainSettings settings;
 
 			// Vulkan device reference
 			const vk::Device& device;
+
+			// Sets up default swapchain settings
+			void configureDefaultSettings();
 
 			// Retrieves swapchain features supported by the physical device
 			void getSupportedDetails
@@ -70,17 +75,14 @@ namespace mtd
 				const vk::SurfaceKHR& surface
 			);
 
-			// Selects the image format to be used
-			vk::SurfaceFormatKHR selectFormat
-			(
-				vk::Format desiredFormat, vk::ColorSpaceKHR desiredColorSpace
-			) const;
+			// Ensures the swapchain uses a valid surface format
+			void checkSurfaceFormat();
 			// Sets how many frames will be stored in the buffer
 			void selectImageCount();
 			// Sets the frame dimensions to be used in the swapchain
 			void selectExtent(const FrameDimensions& frameDimensions);
-			// Sets the present mode to be used
-			vk::PresentModeKHR selectPresentMode(vk::PresentModeKHR desiredPresentMode) const;
+			// Ensures the present mode to be used is valid
+			void checkPresentMode();
 
 			// Creates all the swapchain frames
 			void setSwapchainFrames(const Device& device, const FrameDimensions& frameDimensions);

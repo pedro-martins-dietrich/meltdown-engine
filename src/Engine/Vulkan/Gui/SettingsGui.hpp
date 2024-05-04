@@ -9,7 +9,12 @@ namespace mtd
 	class SettingsGui : public GuiWindow
 	{
 		public:
-			SettingsGui(PipelineSettings& pipelineSettings, bool& shouldUpdateEngine);
+			SettingsGui
+			(
+				SwapchainSettings& swapchainSettings,
+				PipelineSettings& pipelineSettings,
+				bool& shouldUpdateEngine
+			);
 			~SettingsGui() {}
 
 			SettingsGui(const SettingsGui&) = delete;
@@ -20,6 +25,7 @@ namespace mtd
 
 		private:
 			// References to relevant objects
+			SwapchainSettings& swapchainSettings;
 			PipelineSettings& pipelineSettings;
 			bool& shouldUpdateEngine;
 
@@ -27,9 +33,14 @@ namespace mtd
 			bool showGui;
 
 			// List of names for the selections
+			std::vector<const char*> presentModeNames;
 			std::vector<const char*> primitiveTopologyNames;
 			std::vector<const char*> polygonModeNames;
 			std::vector<const char*> cullModeNames;
+
+			// Settings subsections
+			void swapchainSettingsGui();
+			void pipelineSettingsGui();
 
 			// Configures strings to show in the GUI
 			void setNames();

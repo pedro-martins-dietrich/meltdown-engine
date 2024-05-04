@@ -17,7 +17,7 @@ mtd::Engine::Engine()
 	inputHandler{},
 	descriptorPool{device.getDevice()},
 	imgui{device.getDevice(), inputHandler},
-	settingsGui{pipeline.getSettings(), shouldUpdateEngine},
+	settingsGui{swapchain.getSettings(), pipeline.getSettings(), shouldUpdateEngine},
 	camera{inputHandler, glm::vec3{0.0f, -1.5f, -4.5f}, 70.0f, window.getAspectRatio()},
 	scene{"meltdown_demo.json"},
 	shouldUpdateEngine{false}

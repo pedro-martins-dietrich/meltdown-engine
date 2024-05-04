@@ -20,6 +20,15 @@ namespace mtd
 		std::vector<vk::PresentModeKHR> presentModes;
 	};
 
+	// Customizable swapchain settings
+	struct SwapchainSettings
+	{
+		vk::Format colorFormat;
+		vk::ColorSpaceKHR colorSpace;
+		vk::CompositeAlphaFlagBitsKHR compositeAlpha;
+		vk::PresentModeKHR presentMode;
+	};
+
 	// Customizable pipeline settings
 	struct PipelineSettings
 	{

@@ -2,8 +2,15 @@
 
 #include <imgui.h>
 
-mtd::SettingsGui::SettingsGui(PipelineSettings& pipelineSettings, bool& shouldUpdateEngine)
-	: pipelineSettings{pipelineSettings}, shouldUpdateEngine{shouldUpdateEngine}, showGui{true}
+mtd::SettingsGui::SettingsGui
+(
+	SwapchainSettings& swapchainSettings,
+	PipelineSettings& pipelineSettings,
+	bool& shouldUpdateEngine
+) : swapchainSettings{swapchainSettings},
+	pipelineSettings{pipelineSettings},
+	shouldUpdateEngine{shouldUpdateEngine},
+	showGui{true}
 {
 	setNames();
 }
@@ -15,6 +22,66 @@ void mtd::SettingsGui::renderGui()
 	ImGui::SetNextWindowPos(ImVec2{20.0f, 120.0f});
 	ImGui::Begin("Engine Settings", &showGui);
 
+	swapchainSettingsGui();
+	pipelineSettingsGui();
+
+	ImGui::End();
+}
+
+// Swapchain settings section
+void mtd::SettingsGui::swapchainSettingsGui()
+{
+	ImGui::SeparatorText("Swapchain");
+
+	ImGui::Text("Composite alpha:");
+	uint32_t compositeAlphaNumber = static_cast<uint32_t>(swapchainSettings.compositeAlpha);
+	shouldUpdateEngine |= ImGui::CheckboxFlags
+	(
+		"Opaque",
+		&compositeAlphaNumber,
+		static_cast<uint32_t>(vk::CompositeAlphaFlagBitsKHR::eOpaque)
+	);
+	shouldUpdateEngine |= ImGui::CheckboxFlags
+	(
+		"Pre-multiplied",
+		&compositeAlphaNumber,
+		static_cast<uint32_t>(vk::CompositeAlphaFlagBitsKHR::ePreMultiplied)
+	);
+	shouldUpdateEngine |= ImGui::CheckboxFlags
+	(
+		"Post-multiplied",
+		&compositeAlphaNumber,
+		static_cast<uint32_t>(vk::CompositeAlphaFlagBitsKHR::ePostMultiplied)
+	);
+	shouldUpdateEngine |= ImGui::CheckboxFlags
+	(
+		"Inherit",
+		&compositeAlphaNumber,
+		static_cast<uint32_t>(vk::CompositeAlphaFlagBitsKHR::eInherit)
+	);
+	swapchainSettings.compositeAlpha =
+		static_cast<vk::CompositeAlphaFlagBitsKHR>(compositeAlphaNumber);
+
+	ImGui::Separator();
+
+	ImGui::Text("Present mode:");
+	int presentModeIndex =
+		(swapchainSettings.presentMode == vk::PresentModeKHR::eSharedDemandRefresh) ? 4
+		: (swapchainSettings.presentMode == vk::PresentModeKHR::eSharedContinuousRefresh) ? 5
+		: static_cast<int>(swapchainSettings.presentMode);
+	shouldUpdateEngine |= ImGui::Combo
+	(
+		"##PresentMode", &presentModeIndex, presentModeNames.data(), presentModeNames.size()
+	);
+	swapchainSettings.presentMode =
+		(presentModeIndex == 4) ? vk::PresentModeKHR::eSharedDemandRefresh
+		: (presentModeIndex == 5) ? vk::PresentModeKHR::eSharedContinuousRefresh
+		: static_cast<vk::PresentModeKHR>(presentModeIndex);
+}
+
+// Pipeline settings section
+void mtd::SettingsGui::pipelineSettingsGui()
+{
 	ImGui::SeparatorText("Pipeline");
 
 	ImGui::Text("Input assembly primitive topology:");
@@ -33,8 +100,8 @@ void mtd::SettingsGui::renderGui()
 
 	ImGui::Text("Rasterizer polygon mode:");
 	int polygonModeIndex =
-		(pipelineSettings.rasterizationPolygonMode == vk::PolygonMode::eFillRectangleNV)
-		? 3 : static_cast<int>(pipelineSettings.rasterizationPolygonMode);
+		(pipelineSettings.rasterizationPolygonMode == vk::PolygonMode::eFillRectangleNV) ? 3
+		: static_cast<int>(pipelineSettings.rasterizationPolygonMode);
 	shouldUpdateEngine |= ImGui::Combo
 	(
 		"##Polygon mode", &polygonModeIndex, polygonModeNames.data(), polygonModeNames.size()
@@ -53,18 +120,26 @@ void mtd::SettingsGui::renderGui()
 
 	ImGui::Separator();
 
-	int frontFace = static_cast<int>(pipelineSettings.rasterizationFrontFace);
 	ImGui::Text("Rasterizer front face:");
+	int frontFace = static_cast<int>(pipelineSettings.rasterizationFrontFace);
 	shouldUpdateEngine |= ImGui::RadioButton("Counter-clockwise", &frontFace, 0);
 	shouldUpdateEngine |= ImGui::RadioButton("Clockwise", &frontFace, 1);
 	pipelineSettings.rasterizationFrontFace = static_cast<vk::FrontFace>(frontFace);
-
-	ImGui::End();
 }
 
 // Configures strings to show in the GUI
 void mtd::SettingsGui::setNames()
 {
+	presentModeNames =
+	{
+		"Immediate",
+		"Mailbox",
+		"FIFO",
+		"FIFO relaxed",
+		"Shared demand refresh",
+		"Shared continuous refresh"
+	};
+
 	primitiveTopologyNames =
 	{
 		"Point list",
