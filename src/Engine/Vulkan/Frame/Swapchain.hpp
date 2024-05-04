@@ -47,8 +47,6 @@ namespace mtd
 
 			// Frames stored by the swapchain
 			std::vector<Frame> frames;
-			// Number of frames
-			uint32_t frameCount;
 
 			// Frame size
 			vk::Extent2D extent;
@@ -77,8 +75,8 @@ namespace mtd
 
 			// Ensures the swapchain uses a valid surface format
 			void checkSurfaceFormat();
-			// Sets how many frames will be stored in the buffer
-			void selectImageCount();
+			// Ensures a valid amount of frames to be stored in the buffer
+			void checkImageCount();
 			// Sets the frame dimensions to be used in the swapchain
 			void selectExtent(const FrameDimensions& frameDimensions);
 			// Ensures the present mode to be used is valid

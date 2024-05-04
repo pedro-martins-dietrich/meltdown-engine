@@ -7,11 +7,11 @@ mtd::Swapchain::Swapchain
 	const Device& device,
 	const FrameDimensions& frameDimensions,
 	const vk::SurfaceKHR& surface
-) : device{device.getDevice()}, frameCount{3}
+) : device{device.getDevice()}
 {
 	configureDefaultSettings();
 	getSupportedDetails(device.getPhysicalDevice(), surface);
-	selectImageCount();
+	checkImageCount();
 	createSwapchain(device, frameDimensions, surface);
 }
 
@@ -39,12 +39,14 @@ void mtd::Swapchain::recreate
 {
 	destroy();
 	getSupportedDetails(device.getPhysicalDevice(), surface);
+	checkImageCount();
 	createSwapchain(device, frameDimensions, surface);
 }
 
 // Sets up default swapchain settings
 void mtd::Swapchain::configureDefaultSettings()
 {
+	settings.frameCount = 3;
 	settings.colorFormat = vk::Format::eB8G8R8A8Unorm;
 	settings.colorSpace = vk::ColorSpaceKHR::eSrgbNonlinear;
 	settings.compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque;
@@ -84,7 +86,7 @@ void mtd::Swapchain::createSwapchain
 	vk::SwapchainCreateInfoKHR swapchainCreateInfo{};
 	swapchainCreateInfo.flags = vk::SwapchainCreateFlagsKHR();
 	swapchainCreateInfo.surface = surface;
-	swapchainCreateInfo.minImageCount = frameCount;
+	swapchainCreateInfo.minImageCount = settings.frameCount;
 	swapchainCreateInfo.imageFormat = settings.colorFormat;
 	swapchainCreateInfo.imageColorSpace = settings.colorSpace;
 	swapchainCreateInfo.imageExtent = extent;
@@ -129,12 +131,12 @@ void mtd::Swapchain::checkSurfaceFormat()
 	settings.colorSpace = supportedDetails.formats[0].colorSpace;
 }
 
-// Sets how many frames will be stored in the buffer
-void mtd::Swapchain::selectImageCount()
+// Ensures a valid amount of frames to be stored in the buffer
+void mtd::Swapchain::checkImageCount()
 {
-	frameCount = std::clamp
+	settings.frameCount = std::clamp
 	(
-		frameCount,
+		settings.frameCount,
 		supportedDetails.capabilities.minImageCount,
 		supportedDetails.capabilities.maxImageCount
 	);
@@ -192,7 +194,8 @@ void mtd::Swapchain::setSwapchainFrames
 {
 	std::vector<vk::Image> images = this->device.getSwapchainImagesKHR(swapchain);
 
-	frames.reserve(frameCount);
+	frames.reserve(settings.frameCount);
+	LOG_INFO("Reserved %d frames.", settings.frameCount);
 	for(uint32_t i = 0; i < images.size(); i++)
 	{
 		frames.emplace_back(device, frameDimensions, images[i], settings.colorFormat, i);

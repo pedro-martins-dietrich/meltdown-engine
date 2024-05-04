@@ -33,6 +33,11 @@ void mtd::SettingsGui::swapchainSettingsGui()
 {
 	ImGui::SeparatorText("Swapchain");
 
+	ImGui::Text("Swapchain frame count:");
+	int frameCount = static_cast<int>(swapchainSettings.frameCount);
+	shouldUpdateEngine |= ImGui::InputInt("##Frame count", &frameCount, 1, 1);
+	swapchainSettings.frameCount = static_cast<uint32_t>(frameCount);
+
 	ImGui::Text("Composite alpha:");
 	uint32_t compositeAlphaNumber = static_cast<uint32_t>(swapchainSettings.compositeAlpha);
 	shouldUpdateEngine |= ImGui::CheckboxFlags

@@ -4,8 +4,6 @@
 
 #include "Utils/Logger.hpp"
 
-#define MAX_FRAMES_IN_FLIGHT 3
-
 mtd::Engine::Engine()
 	: window{FrameDimensions{1280, 720}},
 	vulkanInstance{"Meltdown", VK_MAKE_API_VERSION(0, 1, 0, 0), window},
@@ -30,7 +28,7 @@ mtd::Engine::Engine()
 		vulkanInstance.getInstance(),
 		device,
 		pipeline.getRenderPass(),
-		MAX_FRAMES_IN_FLIGHT
+		swapchain.getSettings().frameCount
 	);
 	imgui.addGuiWindow(&settingsGui);
 
@@ -81,6 +79,13 @@ void mtd::Engine::start()
 
 		updateScene(frameTime);
 
+		if(shouldUpdateEngine)
+		{
+			updateEngine();
+			currentFrameIndex = 0;
+			continue;
+		}
+
 		const Frame& frame = swapchain.getFrame(currentFrameIndex);
 		const vk::Fence& inFlightFence = frame.getInFlightFence();
 
@@ -121,7 +126,7 @@ void mtd::Engine::start()
 
 		swapchain.getFrame(currentFrameIndex).drawFrame(drawInfo, imgui);
 
-		currentFrameIndex = (currentFrameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
+		currentFrameIndex = (currentFrameIndex + 1) % swapchain.getSettings().frameCount;
 
 		lastTime = currentTime;
 		currentTime = glfwGetTime();

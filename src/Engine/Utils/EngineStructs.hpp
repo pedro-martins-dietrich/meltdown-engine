@@ -23,6 +23,7 @@ namespace mtd
 	// Customizable swapchain settings
 	struct SwapchainSettings
 	{
+		uint32_t frameCount;
 		vk::Format colorFormat;
 		vk::ColorSpaceKHR colorSpace;
 		vk::CompositeAlphaFlagBitsKHR compositeAlpha;
