@@ -20,6 +20,7 @@ namespace mtd
 			const vk::Pipeline& getPipeline() const { return pipeline; }
 			const vk::PipelineLayout& getLayout() const { return pipelineLayout; }
 			const vk::RenderPass& getRenderPass() const { return renderPass; }
+			PipelineSettings& getSettings() { return settings; }
 			DescriptorSetHandler& getDescriptorSet(uint32_t index)
 				{ return descriptorSets[index]; }
 
@@ -37,8 +38,14 @@ namespace mtd
 			// Descriptor sets and their layouts
 			std::vector<DescriptorSetHandler> descriptorSets;
 
+			// Customizable pipeline settings
+			PipelineSettings settings;
+
 			// Vulkan device reference
 			const vk::Device& device;
+
+			// Sets up default pipeline settings
+			void configureDefaultSettings();
 
 			// Creates the graphics pipeline
 			void createPipeline(Swapchain& swapchain);

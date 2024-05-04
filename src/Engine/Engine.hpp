@@ -4,6 +4,7 @@
 #include "Vulkan/Mesh/MeshManager.hpp"
 #include "Vulkan/Descriptors/DescriptorPool.hpp"
 #include "Vulkan/Gui/Gui.hpp"
+#include "Vulkan/Gui/SettingsGui.hpp"
 #include "Camera/Camera.hpp"
 #include "Scene/Scene.hpp"
 
@@ -38,9 +39,14 @@ namespace mtd
 
 			// Engine's user interface
 			Gui imgui;
+			// Engine's settings GUI
+			SettingsGui settingsGui;
 
 			// Scene being currently rendered
 			Scene scene;
+
+			// Flag for updating the engine
+			bool shouldUpdateEngine;
 
 			// Loads all the meshes
 			void loadScene();
@@ -50,7 +56,7 @@ namespace mtd
 			// Changes the scene
 			void updateScene(float frameTime);
 
-			// Recreates swapchain and pipeline to use new dimensions
-			void handleWindowResize();
+			// Recreates swapchain and pipeline to apply new settings
+			void updateEngine();
 	};
 }

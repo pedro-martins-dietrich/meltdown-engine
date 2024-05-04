@@ -20,6 +20,15 @@ namespace mtd
 		std::vector<vk::PresentModeKHR> presentModes;
 	};
 
+	// Customizable pipeline settings
+	struct PipelineSettings
+	{
+		vk::PrimitiveTopology inputAssemblyPrimitiveTopology;
+		vk::PolygonMode rasterizationPolygonMode;
+		vk::CullModeFlags rasterizationCullMode;
+		vk::FrontFace rasterizationFrontFace;
+	};
+
 	// Frame synchronization bundle
 	struct SynchronizationBundle
 	{
