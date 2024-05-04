@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../Descriptors/DescriptorPool.hpp"
+#include "GuiWindow.hpp"
 
 namespace mtd
 {
@@ -24,6 +25,9 @@ namespace mtd
 				uint32_t framesInFlight
 			) const;
 
+			// Adds a GUI window to exhibit
+			void addGuiWindow(GuiWindow* pGuiWindow) { guiWindows.push_back(pGuiWindow); }
+
 			// Renders the GUI in the current frame
 			void renderGui(const vk::CommandBuffer& commandBuffer) const;
 
@@ -33,6 +37,8 @@ namespace mtd
 
 			// Exhibit GUI
 			bool showGui;
+
+			std::vector<GuiWindow*> guiWindows;
 
 			// Checks ImGui Vulkan results
 			static void checkVulkanResult(VkResult result);

@@ -68,7 +68,8 @@ void mtd::Gui::renderGui(const vk::CommandBuffer& commandBuffer) const
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
 
-	ImGui::ShowDemoWindow();
+	for(GuiWindow* pGuiWindow: guiWindows)
+		pGuiWindow->renderGui();
 
 	ImGui::Render();
 	ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer, nullptr);
