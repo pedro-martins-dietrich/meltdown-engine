@@ -114,7 +114,7 @@ void mtd::Pipeline::createDescriptorSetLayouts()
 	bindings[1].stageFlags = vk::ShaderStageFlagBits::eVertex;
 	bindings[1].pImmutableSamplers = nullptr;
 
-	descriptorSets.emplace_back(device, bindings);
+	descriptorSetHandlers.emplace_back(device, bindings, 1);
 }
 
 // Sets create info for the vertex input
@@ -283,8 +283,8 @@ void mtd::Pipeline::setColorBlending
 void mtd::Pipeline::createPipelineLayout()
 {
 	std::vector<vk::DescriptorSetLayout> descriptorSetLayouts;
-	for(const DescriptorSetHandler& descriptorSet: descriptorSets)
-		descriptorSetLayouts.push_back(descriptorSet.getLayout());
+	for(const DescriptorSetHandler& descriptorSetHandler: descriptorSetHandlers)
+		descriptorSetLayouts.push_back(descriptorSetHandler.getLayout());
 
 	vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
 	pipelineLayoutCreateInfo.flags = vk::PipelineLayoutCreateFlags();

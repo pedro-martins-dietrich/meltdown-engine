@@ -70,7 +70,7 @@ void mtd::Engine::start()
 		swapchain.getSwapchain(),
 		swapchain.getExtent(),
 	};
-	drawInfo.descriptorSets.push_back(pipeline.getDescriptorSet(0).getSet());
+	drawInfo.descriptorSets.push_back(pipeline.getDescriptorSetHandler(0).getSet(0));
 
 	while(window.keepOpen())
 	{
@@ -156,18 +156,18 @@ void mtd::Engine::configureDescriptors()
 	poolSizesInfo[1].descriptorType = vk::DescriptorType::eUniformBuffer;
 	descriptorPool.createDescriptorPool(poolSizesInfo);
 
-	DescriptorSetHandler& descriptorSetHandler = pipeline.getDescriptorSet(0);
+	DescriptorSetHandler& descriptorSetHandler = pipeline.getDescriptorSetHandler(0);
 	descriptorPool.allocateDescriptorSet(descriptorSetHandler);
 	descriptorSetHandler.createDescriptorResources
 	(
-		device, meshManager.getModelMatricesSize(), vk::BufferUsageFlagBits::eStorageBuffer, 0
+		device, meshManager.getModelMatricesSize(), vk::BufferUsageFlagBits::eStorageBuffer, 0, 0
 	);
 	descriptorSetHandler.createDescriptorResources
 	(
-		device, sizeof(CameraMatrices), vk::BufferUsageFlagBits::eUniformBuffer, 1
+		device, sizeof(CameraMatrices), vk::BufferUsageFlagBits::eUniformBuffer, 0, 1
 	);
 
-	char* bufferWriteLocation = static_cast<char*>(descriptorSetHandler.getBufferWriteLocation(0));
+	char* bufferWriteLocation = static_cast<char*>(descriptorSetHandler.getBufferWriteLocation(0, 0));
 	for(Mesh& mesh: scene.getMeshes())
 	{
 		mesh.setTransformsWriteLocation(bufferWriteLocation);
@@ -176,10 +176,10 @@ void mtd::Engine::configureDescriptors()
 		bufferWriteLocation += mesh.getModelMatricesSize();
 	}
 
-	void* cameraWriteLocation = descriptorSetHandler.getBufferWriteLocation(1);
+	void* cameraWriteLocation = descriptorSetHandler.getBufferWriteLocation(0, 1);
 	camera.setWriteLocation(cameraWriteLocation);
 
-	descriptorSetHandler.writeDescriptorSet();
+	descriptorSetHandler.writeDescriptorSet(0);
 }
 
 // Changes the scene

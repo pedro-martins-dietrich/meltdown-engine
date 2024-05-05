@@ -4,21 +4,28 @@
 
 mtd::DescriptorSetHandler::DescriptorSetHandler
 (
-	const vk::Device& device, const std::vector<vk::DescriptorSetLayoutBinding>& setLayoutBindings
+	const vk::Device& device,
+	const std::vector<vk::DescriptorSetLayoutBinding>& setLayoutBindings,
+	uint32_t maxSets
 ) : device{device}
 {
+	descriptorSets.resize(maxSets);
+	resourcesList.resize(maxSets);
 	createDescriptorSetLayout(setLayoutBindings);
 }
 
 mtd::DescriptorSetHandler::~DescriptorSetHandler()
 {
-	for(DescriptorResources& resources: resourcesList)
+	for(std::vector<DescriptorResources>& setResourcesList: resourcesList)
 	{
-		if(resources.descriptorBuffer.bufferMemory)
+		for(DescriptorResources& resources: setResourcesList)
 		{
-			device.unmapMemory(resources.descriptorBuffer.bufferMemory);
-			device.freeMemory(resources.descriptorBuffer.bufferMemory);
-			device.destroyBuffer(resources.descriptorBuffer.buffer);
+			if(resources.descriptorBuffer.bufferMemory)
+			{
+				device.unmapMemory(resources.descriptorBuffer.bufferMemory);
+				device.freeMemory(resources.descriptorBuffer.bufferMemory);
+				device.destroyBuffer(resources.descriptorBuffer.buffer);
+			}
 		}
 	}
 
@@ -28,11 +35,12 @@ mtd::DescriptorSetHandler::~DescriptorSetHandler()
 mtd::DescriptorSetHandler::DescriptorSetHandler(DescriptorSetHandler&& other) noexcept
 	: device{other.device},
 	descriptorSetLayout{std::move(other.descriptorSetLayout)},
-	descriptorSet{std::move(other.descriptorSet)},
+	descriptorSets{std::move(other.descriptorSets)},
 	resourcesList{std::move(other.resourcesList)}
 {
 	other.descriptorSetLayout = nullptr;
-	other.descriptorSet = nullptr;
+	for(vk::DescriptorSet& set: other.descriptorSets)
+		set = nullptr;
 }
 
 // Creates a descriptor and assings it to a descriptor set
@@ -41,40 +49,41 @@ void mtd::DescriptorSetHandler::createDescriptorResources
 	const Device& mtdDevice,
 	vk::DeviceSize resourceSize,
 	vk::BufferUsageFlags usageFlags,
+	uint32_t setIndex,
 	uint32_t resourceIndex
 )
 {
+	DescriptorResources& resources = resourcesList[setIndex][resourceIndex];
 	Memory::createBuffer
 	(
 		mtdDevice,
-		resourcesList[resourceIndex].descriptorBuffer,
+		resources.descriptorBuffer,
 		resourceSize,
 		usageFlags,
 		vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
 	);
-	resourcesList[resourceIndex].descriptorBufferWriteLocation = device.mapMemory
+	resources.descriptorBufferWriteLocation = device.mapMemory
 	(
-		resourcesList[resourceIndex].descriptorBuffer.bufferMemory, 0UL, resourceSize
+		resources.descriptorBuffer.bufferMemory, 0UL, resourceSize
 	);
-	resourcesList[resourceIndex].descriptorBufferInfo.buffer =
-		resourcesList[resourceIndex].descriptorBuffer.buffer;
-	resourcesList[resourceIndex].descriptorBufferInfo.offset = 0UL;
-	resourcesList[resourceIndex].descriptorBufferInfo.range = resourceSize;
+	resources.descriptorBufferInfo.buffer = resources.descriptorBuffer.buffer;
+	resources.descriptorBufferInfo.offset = 0UL;
+	resources.descriptorBufferInfo.range = resourceSize;
 }
 
 // Updates the descriptor set data
-void mtd::DescriptorSetHandler::writeDescriptorSet()
+void mtd::DescriptorSetHandler::writeDescriptorSet(uint32_t setIndex)
 {
-	writeOps.resize(resourcesList.size());
-	for(uint32_t i = 0; i < resourcesList.size(); i++)
+	writeOps.resize(resourcesList[setIndex].size());
+	for(uint32_t i = 0; i < resourcesList[setIndex].size(); i++)
 	{
-		writeOps[i].dstSet = descriptorSet;
+		writeOps[i].dstSet = descriptorSets[setIndex];
 		writeOps[i].dstBinding = i;
 		writeOps[i].dstArrayElement = 0;
 		writeOps[i].descriptorCount = 1;
-		writeOps[i].descriptorType = resourcesList[i].descriptorType;
+		writeOps[i].descriptorType = resourcesList[setIndex][i].descriptorType;
 		writeOps[i].pImageInfo = nullptr;
-		writeOps[i].pBufferInfo = &resourcesList[i].descriptorBufferInfo;
+		writeOps[i].pBufferInfo = &resourcesList[setIndex][i].descriptorBufferInfo;
 		writeOps[i].pTexelBufferView = nullptr;
 	}
 
@@ -90,10 +99,13 @@ void mtd::DescriptorSetHandler::createDescriptorSetLayout
 	const std::vector<vk::DescriptorSetLayoutBinding>& bindings
 )
 {
-	resourcesList.resize(bindings.size());
-	for(uint32_t i = 0; i < bindings.size(); i++)
+	for(std::vector<DescriptorResources>& setResourcesList: resourcesList)
 	{
-		resourcesList[i].descriptorType = bindings[i].descriptorType;
+		setResourcesList.resize(bindings.size());
+		for(uint32_t i = 0; i < bindings.size(); i++)
+		{
+			setResourcesList[i].descriptorType = bindings[i].descriptorType;
+		}
 	}
 
 	vk::DescriptorSetLayoutCreateInfo layoutCreateInfo{};
