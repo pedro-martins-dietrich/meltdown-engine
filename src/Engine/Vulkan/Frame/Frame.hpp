@@ -4,6 +4,7 @@
 
 #include "../../Utils/EngineStructs.hpp"
 #include "../Command/CommandHandler.hpp"
+#include "../Gui/Gui.hpp"
 
 namespace mtd
 {
@@ -37,7 +38,7 @@ namespace mtd
 			void createFramebuffer(const vk::RenderPass& renderPass);
 
 			// Draws frame to screen
-			void drawFrame(DrawInfo& drawInfo) const;
+			void drawFrame(DrawInfo& drawInfo, const Gui& gui) const;
 
 		private:
 			// Image data

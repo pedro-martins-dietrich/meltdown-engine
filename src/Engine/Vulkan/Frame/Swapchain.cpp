@@ -7,10 +7,11 @@ mtd::Swapchain::Swapchain
 	const Device& device,
 	const FrameDimensions& frameDimensions,
 	const vk::SurfaceKHR& surface
-) : device{device.getDevice()}, frameCount{3}
+) : device{device.getDevice()}
 {
+	configureDefaultSettings();
 	getSupportedDetails(device.getPhysicalDevice(), surface);
-	selectImageCount();
+	checkImageCount();
 	createSwapchain(device, frameDimensions, surface);
 }
 
@@ -38,7 +39,18 @@ void mtd::Swapchain::recreate
 {
 	destroy();
 	getSupportedDetails(device.getPhysicalDevice(), surface);
+	checkImageCount();
 	createSwapchain(device, frameDimensions, surface);
+}
+
+// Sets up default swapchain settings
+void mtd::Swapchain::configureDefaultSettings()
+{
+	settings.frameCount = 3;
+	settings.colorFormat = vk::Format::eB8G8R8A8Unorm;
+	settings.colorSpace = vk::ColorSpaceKHR::eSrgbNonlinear;
+	settings.compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque;
+	settings.presentMode = vk::PresentModeKHR::eMailbox;
 }
 
 // Retrieves swapchain features supported by the physical device
@@ -60,9 +72,7 @@ void mtd::Swapchain::createSwapchain
 	const vk::SurfaceKHR& surface
 )
 {
-	vk::SurfaceFormatKHR selectedFormat =
-		selectFormat(vk::Format::eB8G8R8A8Unorm, vk::ColorSpaceKHR::eSrgbNonlinear);
-	colorFormat = selectedFormat.format;
+	checkSurfaceFormat();
 
 	uint32_t distinctQueueFamilyIndices =
 		static_cast<uint32_t>(device.getQueueFamilies().getUniqueIndices().size());
@@ -71,13 +81,14 @@ void mtd::Swapchain::createSwapchain
 		: vk::SharingMode::eConcurrent;
 
 	selectExtent(frameDimensions);
+	checkPresentMode();
 
 	vk::SwapchainCreateInfoKHR swapchainCreateInfo{};
 	swapchainCreateInfo.flags = vk::SwapchainCreateFlagsKHR();
 	swapchainCreateInfo.surface = surface;
-	swapchainCreateInfo.minImageCount = frameCount;
-	swapchainCreateInfo.imageFormat = colorFormat;
-	swapchainCreateInfo.imageColorSpace = selectedFormat.colorSpace;
+	swapchainCreateInfo.minImageCount = settings.frameCount;
+	swapchainCreateInfo.imageFormat = settings.colorFormat;
+	swapchainCreateInfo.imageColorSpace = settings.colorSpace;
 	swapchainCreateInfo.imageExtent = extent;
 	swapchainCreateInfo.imageArrayLayers = 1U;
 	swapchainCreateInfo.imageUsage = vk::ImageUsageFlagBits::eColorAttachment;
@@ -85,8 +96,8 @@ void mtd::Swapchain::createSwapchain
 	swapchainCreateInfo.queueFamilyIndexCount = distinctQueueFamilyIndices;
 	swapchainCreateInfo.pQueueFamilyIndices = device.getQueueFamilies().getUniqueIndices().data();
 	swapchainCreateInfo.preTransform = supportedDetails.capabilities.currentTransform;
-	swapchainCreateInfo.compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque;
-	swapchainCreateInfo.presentMode = selectPresentMode(vk::PresentModeKHR::eMailbox);
+	swapchainCreateInfo.compositeAlpha = settings.compositeAlpha;
+	swapchainCreateInfo.presentMode = settings.presentMode;
 	swapchainCreateInfo.clipped = vk::True;
 	swapchainCreateInfo.oldSwapchain = nullptr;
 
@@ -102,31 +113,30 @@ void mtd::Swapchain::createSwapchain
 	LOG_INFO("Created swapchain.\n");
 }
 
-// Selects the image format to be used
-vk::SurfaceFormatKHR mtd::Swapchain::selectFormat
-(
-	vk::Format desiredFormat, vk::ColorSpaceKHR desiredColorSpace
-) const
+// Ensures the swapchain uses a valid surface format
+void mtd::Swapchain::checkSurfaceFormat()
 {
 	for(vk::SurfaceFormatKHR supportedFormat: supportedDetails.formats)
 	{
-		if(supportedFormat.format == desiredFormat &&
-			supportedFormat.colorSpace == desiredColorSpace)
+		if(supportedFormat.format == settings.colorFormat &&
+			supportedFormat.colorSpace == settings.colorSpace)
 		{
-			return supportedFormat;
+			return;
 		}
 	}
 
 	LOG_WARNING("Could not find a surface format with the desired properties.");
-	return supportedDetails.formats[0];
+
+	settings.colorFormat = supportedDetails.formats[0].format;
+	settings.colorSpace = supportedDetails.formats[0].colorSpace;
 }
 
-// Sets how many frames will be stored in the buffer
-void mtd::Swapchain::selectImageCount()
+// Ensures a valid amount of frames to be stored in the buffer
+void mtd::Swapchain::checkImageCount()
 {
-	frameCount = std::clamp
+	settings.frameCount = std::clamp
 	(
-		frameCount,
+		settings.frameCount,
 		supportedDetails.capabilities.minImageCount,
 		supportedDetails.capabilities.maxImageCount
 	);
@@ -155,25 +165,25 @@ void mtd::Swapchain::selectExtent(const FrameDimensions& frameDimensions)
 	);
 }
 
-// Sets the present mode to be used
-vk::PresentModeKHR mtd::Swapchain::selectPresentMode(vk::PresentModeKHR desiredPresentMode) const
+// Ensures the present mode to be used is valid
+void mtd::Swapchain::checkPresentMode()
 {
 	for(vk::PresentModeKHR supportedPresentMode: supportedDetails.presentModes)
 	{
-		if(desiredPresentMode == supportedPresentMode)
+		if(settings.presentMode == supportedPresentMode)
 		{
 			LOG_VERBOSE("Swapchain present mode %d selected.", supportedPresentMode);
-			return supportedPresentMode;
+			return;
 		}
 	}
 
 	LOG_WARNING
 	(
 		"Desired swapchain present mode (%d) not supported. Using FIFO (%d).",
-		desiredPresentMode,
+		settings.presentMode,
 		vk::PresentModeKHR::eFifo
 	);
-	return vk::PresentModeKHR::eFifo;
+	settings.presentMode = vk::PresentModeKHR::eFifo;
 }
 
 // Creates all the swapchain frames
@@ -184,10 +194,11 @@ void mtd::Swapchain::setSwapchainFrames
 {
 	std::vector<vk::Image> images = this->device.getSwapchainImagesKHR(swapchain);
 
-	frames.reserve(frameCount);
+	frames.reserve(settings.frameCount);
+	LOG_INFO("Reserved %d frames.", settings.frameCount);
 	for(uint32_t i = 0; i < images.size(); i++)
 	{
-		frames.emplace_back(device, frameDimensions, images[i], colorFormat, i);
+		frames.emplace_back(device, frameDimensions, images[i], settings.colorFormat, i);
 	}
 }
 

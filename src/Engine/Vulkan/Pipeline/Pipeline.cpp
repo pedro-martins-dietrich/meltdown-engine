@@ -6,6 +6,7 @@
 mtd::Pipeline::Pipeline(const vk::Device& device, Swapchain& swapchain)
 	: device{device}
 {
+	configureDefaultSettings();
 	createDescriptorSetLayouts();
 	createPipeline(swapchain);
 }
@@ -21,6 +22,15 @@ void mtd::Pipeline::recreate(Swapchain& swapchain)
 	destroy();
 
 	createPipeline(swapchain);
+}
+
+// Sets up default pipeline settings
+void mtd::Pipeline::configureDefaultSettings()
+{
+	settings.inputAssemblyPrimitiveTopology = vk::PrimitiveTopology::eTriangleList;
+	settings.rasterizationPolygonMode = vk::PolygonMode::eFill;
+	settings.rasterizationCullMode = vk::CullModeFlagBits::eNone;
+	settings.rasterizationFrontFace = vk::FrontFace::eCounterClockwise;
 }
 
 // Creates the graphics pipeline
@@ -129,7 +139,7 @@ void mtd::Pipeline::setInputAssembly
 ) const
 {
 	inputAssemblyInfo.flags = vk::PipelineInputAssemblyStateCreateFlags();
-	inputAssemblyInfo.topology = vk::PrimitiveTopology::eTriangleList;
+	inputAssemblyInfo.topology = settings.inputAssemblyPrimitiveTopology;
 	inputAssemblyInfo.primitiveRestartEnable = vk::False;
 }
 
@@ -186,9 +196,9 @@ void mtd::Pipeline::setRasterizer
 	rasterizationInfo.flags = vk::PipelineRasterizationStateCreateFlags();
 	rasterizationInfo.depthClampEnable = vk::False;
 	rasterizationInfo.rasterizerDiscardEnable = vk::False;
-	rasterizationInfo.polygonMode = vk::PolygonMode::eFill;
-	rasterizationInfo.cullMode = vk::CullModeFlagBits::eNone;
-	rasterizationInfo.frontFace = vk::FrontFace::eCounterClockwise;
+	rasterizationInfo.polygonMode = settings.rasterizationPolygonMode;
+	rasterizationInfo.cullMode = settings.rasterizationCullMode;
+	rasterizationInfo.frontFace = settings.rasterizationFrontFace;
 	rasterizationInfo.depthBiasEnable = vk::False;
 	rasterizationInfo.depthBiasConstantFactor = 0.0f;
 	rasterizationInfo.depthBiasClamp = 0.0f;

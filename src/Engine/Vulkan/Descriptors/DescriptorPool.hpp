@@ -4,6 +4,7 @@
 
 namespace mtd
 {
+	// Information about the descriptors to be allocated in the pool
 	struct PoolSizeData
 	{
 		uint32_t descriptorCount;
@@ -20,8 +21,15 @@ namespace mtd
 			DescriptorPool(const DescriptorPool&) = delete;
 			DescriptorPool& operator=(const DescriptorPool&) = delete;
 
+			// Getter
+			const vk::DescriptorPool& getDescriptorPool() const { return descriptorPool; }
+
 			// Creates a descriptor pool
-			void createDescriptorPool(const std::vector<PoolSizeData>& poolSizesInfo);
+			void createDescriptorPool
+			(
+				const std::vector<PoolSizeData>& poolSizesInfo,
+				vk::DescriptorPoolCreateFlags flags = vk::DescriptorPoolCreateFlags()
+			);
 
 			// Allocates a descriptor set in the pool
 			void allocateDescriptorSet(DescriptorSetHandler& descriptorSetHandler) const;

@@ -30,6 +30,8 @@ namespace mtd
 
 			// Creates Vulkan surface for GLFW window
 			vk::SurfaceKHR createSurface(const vk::Instance& instance) const;
+			// Initializes ImGui GLFW backend
+			void initImGuiForGLFW() const;
 
 			// Waits until the window dimensions are valid
 			void waitForValidWindowSize();

@@ -100,13 +100,13 @@ void mtd::Frame::createFramebuffer(const vk::RenderPass& renderPass)
 }
 
 // Draws frame to screen
-void mtd::Frame::drawFrame(DrawInfo& drawInfo) const
+void mtd::Frame::drawFrame(DrawInfo& drawInfo, const Gui& gui) const
 {
 	drawInfo.framebuffer = &framebuffer;
 	drawInfo.syncBundle = &synchronizationBundle;
 	drawInfo.frameIndex = frameIndex;
 
-	commandHandler.draw(drawInfo);
+	commandHandler.draw(drawInfo, gui);
 }
 
 // Creates depth buffer data

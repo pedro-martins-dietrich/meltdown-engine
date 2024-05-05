@@ -40,7 +40,7 @@ If not, add the executables to the PATH.
 The required libraries can be installed by running the following command:
 
 ```bash
-vcpkg install glfw3 glm vulkan nlohmann-json
+vcpkg install glfw3 glm vulkan nlohmann-json imgui[core,glfw-binding,vulkan-binding]
 ```
 
 

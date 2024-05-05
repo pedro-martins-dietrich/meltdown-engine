@@ -20,6 +20,25 @@ namespace mtd
 		std::vector<vk::PresentModeKHR> presentModes;
 	};
 
+	// Customizable swapchain settings
+	struct SwapchainSettings
+	{
+		uint32_t frameCount;
+		vk::Format colorFormat;
+		vk::ColorSpaceKHR colorSpace;
+		vk::CompositeAlphaFlagBitsKHR compositeAlpha;
+		vk::PresentModeKHR presentMode;
+	};
+
+	// Customizable pipeline settings
+	struct PipelineSettings
+	{
+		vk::PrimitiveTopology inputAssemblyPrimitiveTopology;
+		vk::PolygonMode rasterizationPolygonMode;
+		vk::CullModeFlags rasterizationCullMode;
+		vk::FrontFace rasterizationFrontFace;
+	};
+
 	// Frame synchronization bundle
 	struct SynchronizationBundle
 	{

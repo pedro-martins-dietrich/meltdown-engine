@@ -4,10 +4,8 @@
 
 #include "Utils/Logger.hpp"
 
-#define MAX_FRAMES_IN_FLIGHT 3
-
 mtd::Engine::Engine()
-	: window{FrameDimensions{800, 600}},
+	: window{FrameDimensions{1280, 720}},
 	vulkanInstance{"Meltdown", VK_MAKE_API_VERSION(0, 1, 0, 0), window},
 	device{vulkanInstance},
 	swapchain{device, window.getDimensions(), vulkanInstance.getSurface()},
@@ -16,10 +14,23 @@ mtd::Engine::Engine()
 	meshManager{device},
 	inputHandler{},
 	descriptorPool{device.getDevice()},
+	imgui{device.getDevice(), inputHandler},
+	settingsGui{swapchain.getSettings(), pipeline.getSettings(), shouldUpdateEngine},
 	camera{inputHandler, glm::vec3{0.0f, -1.5f, -4.5f}, 70.0f, window.getAspectRatio()},
-	scene{"meltdown_demo.json"}
+	scene{"meltdown_demo.json"},
+	shouldUpdateEngine{false}
 {
 	window.setInputCallbacks(inputHandler);
+
+	imgui.init
+	(
+		window,
+		vulkanInstance.getInstance(),
+		device,
+		pipeline.getRenderPass(),
+		swapchain.getSettings().frameCount
+	);
+	imgui.addGuiWindow(&settingsGui);
 
 	LOG_INFO("Engine ready.\n");
 
@@ -68,6 +79,13 @@ void mtd::Engine::start()
 
 		updateScene(frameTime);
 
+		if(shouldUpdateEngine)
+		{
+			updateEngine();
+			currentFrameIndex = 0;
+			continue;
+		}
+
 		const Frame& frame = swapchain.getFrame(currentFrameIndex);
 		const vk::Fence& inFlightFence = frame.getInFlightFence();
 
@@ -90,9 +108,7 @@ void mtd::Engine::start()
 			if(result == vk::Result::eErrorOutOfDateKHR ||
 				result == vk::Result::eErrorIncompatibleDisplayKHR)
 			{
-				handleWindowResize();
-				currentFrameIndex = 0;
-				continue;
+				shouldUpdateEngine = true;
 			}
 			else
 			{
@@ -101,9 +117,16 @@ void mtd::Engine::start()
 			}
 		}
 
-		swapchain.getFrame(currentFrameIndex).drawFrame(drawInfo);
+		if(shouldUpdateEngine)
+		{
+			updateEngine();
+			currentFrameIndex = 0;
+			continue;
+		}
 
-		currentFrameIndex = (currentFrameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
+		swapchain.getFrame(currentFrameIndex).drawFrame(drawInfo, imgui);
+
+		currentFrameIndex = (currentFrameIndex + 1) % swapchain.getSettings().frameCount;
 
 		lastTime = currentTime;
 		currentTime = glfwGetTime();
@@ -194,8 +217,8 @@ void mtd::Engine::updateScene(float frameTime)
 	mesh.updateTransformationMatrix(matrix, 0);
 }
 
-// Recreates swapchain and pipeline to use new dimensions
-void mtd::Engine::handleWindowResize()
+// Recreates swapchain and pipeline to apply new settings
+void mtd::Engine::updateEngine()
 {
 	window.waitForValidWindowSize();
 	device.getDevice().waitIdle();
@@ -203,4 +226,6 @@ void mtd::Engine::handleWindowResize()
 	swapchain.recreate(device, window.getDimensions(), vulkanInstance.getSurface());
 	pipeline.recreate(swapchain);
 	camera.updatePerspective(70.0f, window.getAspectRatio());
+
+	shouldUpdateEngine = false;
 }

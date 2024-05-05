@@ -4,6 +4,8 @@
 
 namespace mtd
 {
+	class Gui;
+
 	// Handles Vulkan commands to the GPU
 	class CommandHandler
 	{
@@ -25,7 +27,7 @@ namespace mtd
 			void endSingleTimeCommand(const vk::CommandBuffer& commandBuffer) const;
 
 			// Draws frame
-			void draw(const DrawInfo& drawInfo) const;
+			void draw(const DrawInfo& drawInfo, const Gui& gui) const;
 
 		private:
 			// Command buffer allocator
@@ -42,7 +44,7 @@ namespace mtd
 			void endCommand() const;
 
 			// Records draw command to the command buffer
-			void recordDrawCommand(const DrawInfo& drawInfo) const;
+			void recordDrawCommand(const DrawInfo& drawInfo, const Gui& gui) const;
 			// Submits recorded draw command
 			void submitCommandBuffer(const SynchronizationBundle& syncBudle) const;
 			// Presents frame to screen when ready

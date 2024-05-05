@@ -12,7 +12,10 @@ mtd::DescriptorPool::~DescriptorPool()
 }
 
 // Creates a descriptor pool
-void mtd::DescriptorPool::createDescriptorPool(const std::vector<PoolSizeData>& poolSizesInfo)
+void mtd::DescriptorPool::createDescriptorPool
+(
+	const std::vector<PoolSizeData>& poolSizesInfo, vk::DescriptorPoolCreateFlags flags
+)
 {
 	uint32_t maxSets = 0;
 
@@ -25,7 +28,7 @@ void mtd::DescriptorPool::createDescriptorPool(const std::vector<PoolSizeData>& 
 	}
 
 	vk::DescriptorPoolCreateInfo descriptorPoolCreateInfo{};
-	descriptorPoolCreateInfo.flags = vk::DescriptorPoolCreateFlags();
+	descriptorPoolCreateInfo.flags = flags;
 	descriptorPoolCreateInfo.maxSets = maxSets;
 	descriptorPoolCreateInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
 	descriptorPoolCreateInfo.pPoolSizes = poolSizes.data();
