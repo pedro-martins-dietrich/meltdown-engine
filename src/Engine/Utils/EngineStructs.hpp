@@ -62,6 +62,7 @@ namespace mtd
 	struct Vertex
 	{
 		glm::vec3 position;
+		glm::vec2 textureCoordinates;
 		glm::vec3 normal;
 		glm::vec3 color;
 	};

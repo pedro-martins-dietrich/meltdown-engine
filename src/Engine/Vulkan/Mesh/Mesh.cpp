@@ -53,8 +53,10 @@ const std::vector<vk::VertexInputAttributeDescription> mtd::Mesh::attributeDescr
 {
 	// Position
 	vk::VertexInputAttributeDescription{0, 0, vk::Format::eR32G32B32Sfloat, 0},
+	// Texture coordinates
+	vk::VertexInputAttributeDescription{1, 0, vk::Format::eR32G32Sfloat, 3 * sizeof(float)},
 	// Normal vectors
-	vk::VertexInputAttributeDescription{1, 0, vk::Format::eR32G32B32Sfloat, 3 * sizeof(float)},
+	vk::VertexInputAttributeDescription{2, 0, vk::Format::eR32G32B32Sfloat, 5 * sizeof(float)},
 	// Color
-	vk::VertexInputAttributeDescription{2, 0, vk::Format::eR32G32B32Sfloat, 6 * sizeof(float)}
+	vk::VertexInputAttributeDescription{3, 0, vk::Format::eR32G32B32Sfloat, 8 * sizeof(float)}
 };
