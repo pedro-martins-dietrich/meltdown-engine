@@ -20,11 +20,13 @@ find_package(glm REQUIRED)
 find_package(Vulkan REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(imgui REQUIRED)
+find_package(Stb REQUIRED)
 
 # Sets include directories and libraries
 set(
     INCLUDES
     ${Vulkan_INCLUDE_DIRS}
+    ${Stb_INCLUDE_DIRS}
 )
 set(
     LIBRARIES

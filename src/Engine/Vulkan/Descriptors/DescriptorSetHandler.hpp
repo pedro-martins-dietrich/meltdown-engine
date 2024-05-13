@@ -11,6 +11,7 @@ namespace mtd
 		vk::DescriptorBufferInfo descriptorBufferInfo;
 		void* descriptorBufferWriteLocation;
 		vk::DescriptorType descriptorType;
+		vk::DescriptorImageInfo descriptorImageInfo;
 	};
 
 	// Handles the data to be sent to the GPU through descriptors
@@ -47,6 +48,13 @@ namespace mtd
 				vk::BufferUsageFlags usageFlags,
 				uint32_t setIndex,
 				uint32_t resourceIndex
+			);
+			// Creates the resources for an image descriptor
+			void createImageDescriptorResources
+			(
+				uint32_t setIndex,
+				uint32_t resourceIndex,
+				const vk::DescriptorImageInfo& descriptorImageInfo
 			);
 
 			// Updates the descriptor set data

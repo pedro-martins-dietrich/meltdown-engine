@@ -71,19 +71,37 @@ void mtd::DescriptorSetHandler::createDescriptorResources
 	resources.descriptorBufferInfo.range = resourceSize;
 }
 
+// Creates the resources for an image descriptor
+void mtd::DescriptorSetHandler::createImageDescriptorResources
+(
+	uint32_t setIndex, uint32_t resourceIndex, const vk::DescriptorImageInfo& descriptorImageInfo
+)
+{
+	resourcesList[setIndex][resourceIndex].descriptorImageInfo = descriptorImageInfo;
+}
+
 // Updates the descriptor set data
 void mtd::DescriptorSetHandler::writeDescriptorSet(uint32_t setIndex)
 {
 	writeOps.resize(resourcesList[setIndex].size());
 	for(uint32_t i = 0; i < resourcesList[setIndex].size(); i++)
 	{
+		vk::DescriptorImageInfo* pImageInfo =
+			resourcesList[setIndex][i].descriptorType == vk::DescriptorType::eCombinedImageSampler
+			? &resourcesList[setIndex][i].descriptorImageInfo
+			: nullptr;
+		vk::DescriptorBufferInfo* pBufferInfo =
+			resourcesList[setIndex][i].descriptorType == vk::DescriptorType::eCombinedImageSampler
+			? nullptr
+			: &resourcesList[setIndex][i].descriptorBufferInfo;
+
 		writeOps[i].dstSet = descriptorSets[setIndex];
 		writeOps[i].dstBinding = i;
 		writeOps[i].dstArrayElement = 0;
 		writeOps[i].descriptorCount = 1;
 		writeOps[i].descriptorType = resourcesList[setIndex][i].descriptorType;
-		writeOps[i].pImageInfo = nullptr;
-		writeOps[i].pBufferInfo = &resourcesList[setIndex][i].descriptorBufferInfo;
+		writeOps[i].pImageInfo = pImageInfo;
+		writeOps[i].pBufferInfo = pBufferInfo;
 		writeOps[i].pTexelBufferView = nullptr;
 	}
 
