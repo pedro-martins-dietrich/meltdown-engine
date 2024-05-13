@@ -10,12 +10,12 @@
 					1.0, 0.0, 0.0, 0.0,
 					0.0, 1.0, 0.0, 0.0,
 					0.0, 0.0, 1.0, 0.0,
-					0.0, 0.0, 0.0, 1.0
+					0.0, 0.3, 0.0, 1.0
 				]
 			]
 		},
 		{
-			"file": "polyhedra/tetrahedron.obj",
+			"file": "tetrahedron/tetrahedron.obj",
 			"pre-transforms":
 			[
 				[
@@ -33,7 +33,7 @@
 			]
 		},
 		{
-			"file": "polyhedra/cube.obj",
+			"file": "cube/cube.obj",
 			"pre-transforms":
 			[
 				[
@@ -51,7 +51,7 @@
 			]
 		},
 		{
-			"file": "polyhedra/octahedron.obj",
+			"file": "octahedron/octahedron.obj",
 			"pre-transforms":
 			[
 				[
@@ -69,7 +69,7 @@
 			]
 		},
 		{
-			"file": "polyhedra/dodecahedron.obj",
+			"file": "dodecahedron/dodecahedron.obj",
 			"pre-transforms":
 			[
 				[
@@ -87,7 +87,7 @@
 			]
 		},
 		{
-			"file": "polyhedra/icosahedron.obj",
+			"file": "icosahedron/icosahedron.obj",
 			"pre-transforms":
 			[
 				[
