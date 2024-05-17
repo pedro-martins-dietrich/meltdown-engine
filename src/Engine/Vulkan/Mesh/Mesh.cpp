@@ -5,7 +5,7 @@
 mtd::Mesh::Mesh(const char* fileName, uint32_t id, glm::mat4 preTransform)
 	: id{id}, transforms{preTransform}, transformsMemoryLocation{nullptr}
 {
-	ObjMeshLoader::load(fileName, vertices, indices);
+	ObjMeshLoader::load(fileName, vertices, indices, diffuseTexturePath);
 }
 
 mtd::Mesh::Mesh(Mesh&& other) noexcept
@@ -13,7 +13,8 @@ mtd::Mesh::Mesh(Mesh&& other) noexcept
 	transforms{std::move(other.transforms)},
 	vertices{std::move(other.vertices)},
 	indices{std::move(other.indices)},
-	transformsMemoryLocation{other.transformsMemoryLocation}
+	transformsMemoryLocation{other.transformsMemoryLocation},
+	diffuseTexturePath{std::move(other.diffuseTexturePath)}
 {
 	transformsMemoryLocation = nullptr;
 }
