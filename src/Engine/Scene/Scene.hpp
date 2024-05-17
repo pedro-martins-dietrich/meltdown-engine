@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "SceneLoader.hpp"
 #include "../Vulkan/Mesh/MeshManager.hpp"
 #include "../Vulkan/Image/Texture.hpp"
