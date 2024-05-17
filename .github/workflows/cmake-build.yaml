@@ -59,7 +59,7 @@ jobs:
       - name: Install vcpkg dependencies
         run: |
           vcpkg --version
-          vcpkg install glfw3 glm vulkan nlohmann-json imgui[core,glfw-binding,vulkan-binding]
+          vcpkg install glfw3 glm vulkan nlohmann-json imgui[core,glfw-binding,vulkan-binding] stb
 
       - name: Configure CMake for Windows
         if: matrix.os == 'windows-latest'

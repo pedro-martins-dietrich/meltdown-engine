@@ -21,8 +21,8 @@ namespace mtd
 			const vk::PipelineLayout& getLayout() const { return pipelineLayout; }
 			const vk::RenderPass& getRenderPass() const { return renderPass; }
 			PipelineSettings& getSettings() { return settings; }
-			DescriptorSetHandler& getDescriptorSet(uint32_t index)
-				{ return descriptorSets[index]; }
+			DescriptorSetHandler& getDescriptorSetHandler(uint32_t index)
+				{ return descriptorSetHandlers[index]; }
 
 			// Recreates the pipeline
 			void recreate(Swapchain& swapchain);
@@ -36,7 +36,7 @@ namespace mtd
 			vk::RenderPass renderPass;
 
 			// Descriptor sets and their layouts
-			std::vector<DescriptorSetHandler> descriptorSets;
+			std::vector<DescriptorSetHandler> descriptorSetHandlers;
 
 			// Customizable pipeline settings
 			PipelineSettings settings;

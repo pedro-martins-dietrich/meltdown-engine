@@ -15,6 +15,7 @@ struct ObjData
 	std::vector<mtd::Vertex>& vertices;
 	std::vector<uint32_t>& indices;
 	std::vector<glm::vec3> positions;
+	std::vector<glm::vec2> textureCoordinates;
 	std::vector<glm::vec3> normals;
 	std::unordered_map<std::string, uint32_t> history;
 	std::unordered_map<std::string, glm::vec3> colors;
@@ -29,7 +30,10 @@ static void readVertex(const std::string& vertexDescription, ObjData& data);
 // Loads a mesh from an Wavefront .obj file
 void mtd::ObjMeshLoader::load
 (
-	const char* fileName, std::vector<Vertex>& vertices, std::vector<uint32_t>& indices
+	const char* fileName,
+	std::vector<Vertex>& vertices,
+	std::vector<uint32_t>& indices,
+	std::string& diffuseTexturePath
 )
 {
 	std::string objMeshPath{MTD_RESOURCES_PATH};
@@ -64,6 +68,14 @@ void mtd::ObjMeshLoader::load
 			data.brushColor =
 				glm::vec3{std::stof(words[1]), std::stof(words[2]), std::stof(words[3])};
 			data.colors.insert({materialName, data.brushColor});
+			continue;
+		}
+		if(!words[0].compare("map_Kd"))
+		{
+			diffuseTexturePath = "meshes/";
+			diffuseTexturePath.append(fileName);
+			diffuseTexturePath = diffuseTexturePath.substr(0, diffuseTexturePath.find_last_of("/\\") + 1);
+			diffuseTexturePath.append(words[1]);
 		}
 	}
 	file.close();
@@ -76,17 +88,22 @@ void mtd::ObjMeshLoader::load
 
 		if(!words[0].compare("v"))
 		{
-			data.positions.push_back
+			data.positions.emplace_back
 			(
-				glm::vec3{std::stof(words[1]), std::stof(words[2]), std::stof(words[3])}
+				std::stof(words[1]), std::stof(words[2]), std::stof(words[3])
 			);
+			continue;
+		}
+		if(!words[0].compare("vt"))
+		{
+			data.textureCoordinates.emplace_back(std::stof(words[1]), std::stof(words[2]));
 			continue;
 		}
 		if(!words[0].compare("vn"))
 		{
-			data.normals.push_back
+			data.normals.emplace_back
 			(
-				glm::vec3{std::stof(words[1]), std::stof(words[2]), std::stof(words[3])}
+				std::stof(words[1]), std::stof(words[2]), std::stof(words[3])
 			);
 			continue;
 		}
@@ -139,9 +156,13 @@ void readVertex(const std::string& vertexDescription, ObjData& data)
 
 	glm::vec3 pos = data.positions[stol(fullVertexData[0]) - 1];
 
+	glm::vec2 texCoord{0.0f, 0.0f};
+	if(fullVertexData.size() > 1 && fullVertexData[1].size() > 0)
+		texCoord = data.textureCoordinates[stol(fullVertexData[1]) - 1];
+
 	glm::vec3 normal{0.0f, 0.0f, -1.0f};
 	if(fullVertexData.size() > 2 && fullVertexData[2].size() > 0)
 		normal = data.normals[stol(fullVertexData[2]) - 1];
 
-	data.vertices.emplace_back(pos, normal, data.brushColor);
+	data.vertices.emplace_back(pos, texCoord, normal, data.brushColor);
 }

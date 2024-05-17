@@ -34,4 +34,21 @@ namespace mtd::Image
 		vk::ImageViewType viewType,
 		vk::ImageView& view
 	);
+
+	// Changes the Vulkan image layout
+	void transitionImageLayout
+	(
+		const vk::Image& image,
+		const CommandHandler& commandHandler,
+		vk::ImageLayout oldLayout,
+		vk::ImageLayout newLayout
+	);
+	// Copies buffer data to Vulkan image
+	void copyBufferToImage
+	(
+		const vk::Image& image,
+		const CommandHandler& commandHandler,
+		vk::Buffer srcBuffer,
+		FrameDimensions dimensions
+	);
 }

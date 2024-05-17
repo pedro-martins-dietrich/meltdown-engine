@@ -96,3 +96,105 @@ void mtd::Image::createImageView
 	if(result != vk::Result::eSuccess)
 		LOG_ERROR("Failed to create image view. Vulkan result: %d", result);
 }
+
+// Changes the Vulkan image layout
+void mtd::Image::transitionImageLayout
+(
+	const vk::Image& image,
+	const CommandHandler& commandHandler,
+	vk::ImageLayout oldLayout,
+	vk::ImageLayout newLayout
+)
+{
+	vk::ImageSubresourceRange subresource{};
+	subresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+	subresource.baseMipLevel = 0;
+	subresource.levelCount = 1;
+	subresource.baseArrayLayer = 0;
+	subresource.layerCount = 1;
+
+	vk::ImageMemoryBarrier barrier{};
+	barrier.srcAccessMask = vk::AccessFlagBits::eNone;
+	barrier.dstAccessMask = vk::AccessFlagBits::eNone;
+	barrier.oldLayout = oldLayout;
+	barrier.newLayout = newLayout;
+	barrier.srcQueueFamilyIndex = vk::QueueFamilyIgnored;
+	barrier.dstQueueFamilyIndex = vk::QueueFamilyIgnored;
+	barrier.image = image;
+	barrier.subresourceRange = subresource;
+
+	vk::PipelineStageFlags srcStage, dstStage;
+	switch(oldLayout)
+	{
+		case vk::ImageLayout::eUndefined:
+			barrier.srcAccessMask = vk::AccessFlagBits::eNone;
+			srcStage = vk::PipelineStageFlagBits::eTopOfPipe;
+			break;
+		case vk::ImageLayout::eTransferDstOptimal:
+			barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
+			srcStage = vk::PipelineStageFlagBits::eTransfer;
+			break;
+		default:
+			LOG_WARNING("Unexpected source image layout for transition: %d.", oldLayout);
+			srcStage = vk::PipelineStageFlagBits::eNone;
+	}
+	switch(newLayout)
+	{
+		case vk::ImageLayout::eTransferDstOptimal:
+			barrier.dstAccessMask = vk::AccessFlagBits::eTransferWrite;
+			dstStage = vk::PipelineStageFlagBits::eTransfer;
+			break;
+		case vk::ImageLayout::eShaderReadOnlyOptimal:
+			barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+			dstStage = vk::PipelineStageFlagBits::eFragmentShader;
+			break;
+		default:
+			LOG_WARNING("Unexpected destination image layout for transition: %d.", newLayout);
+			dstStage = vk::PipelineStageFlagBits::eNone;
+	}
+
+	vk::CommandBuffer commandBuffer = commandHandler.beginSingleTimeCommand();
+
+	commandBuffer.pipelineBarrier
+	(
+		srcStage, dstStage, vk::DependencyFlags(), nullptr, nullptr, barrier
+	);
+
+	commandHandler.endSingleTimeCommand(commandBuffer);
+}
+
+// Copies buffer data to Vulkan image
+void mtd::Image::copyBufferToImage
+(
+	const vk::Image& image,
+	const CommandHandler& commandHandler,
+	vk::Buffer srcBuffer,
+	FrameDimensions dimensions
+)
+{
+	vk::ImageSubresourceLayers subresource{};
+	subresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+	subresource.mipLevel = 0;
+	subresource.baseArrayLayer = 0;
+	subresource.layerCount = 1;
+
+	vk::BufferImageCopy bufferImageCopy{};
+	bufferImageCopy.bufferOffset = 0;
+	bufferImageCopy.bufferRowLength = 0;
+	bufferImageCopy.bufferImageHeight = 0;
+	bufferImageCopy.imageSubresource = subresource;
+	bufferImageCopy.imageOffset = vk::Offset3D{0, 0, 0};
+	bufferImageCopy.imageExtent = vk::Extent3D{dimensions.width, dimensions.height, 1};
+
+	vk::CommandBuffer commandBuffer = commandHandler.beginSingleTimeCommand();
+
+	commandBuffer.copyBufferToImage
+	(
+		srcBuffer,
+		image,
+		vk::ImageLayout::eTransferDstOptimal,
+		bufferImageCopy
+	);
+
+	commandHandler.endSingleTimeCommand(commandBuffer);
+}

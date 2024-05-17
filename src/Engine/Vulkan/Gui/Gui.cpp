@@ -44,19 +44,20 @@ void mtd::Gui::init
 	imGuiInitInfo.Device = device.getDevice();
 	imGuiInitInfo.QueueFamily = device.getQueueFamilies().getGraphicsFamilyIndex();
 	imGuiInitInfo.Queue = device.getGraphicsQueue();
-	imGuiInitInfo.PipelineCache = nullptr;
 	imGuiInitInfo.DescriptorPool = guiDescriptorPool.getDescriptorPool();
-	imGuiInitInfo.Subpass = 0;
+	imGuiInitInfo.RenderPass = renderPass;
 	imGuiInitInfo.MinImageCount = framesInFlight;
 	imGuiInitInfo.ImageCount = framesInFlight;
 	imGuiInitInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+	imGuiInitInfo.PipelineCache = nullptr;
+	imGuiInitInfo.Subpass = 0;
 	imGuiInitInfo.UseDynamicRendering = false;
-	imGuiInitInfo.ColorAttachmentFormat = {};
+	imGuiInitInfo.PipelineRenderingCreateInfo = {};
 	imGuiInitInfo.Allocator = nullptr;
 	imGuiInitInfo.CheckVkResultFn = checkVulkanResult;
 	imGuiInitInfo.MinAllocationSize = 1048576U;
 
-	ImGui_ImplVulkan_Init(&imGuiInitInfo, renderPass);
+	ImGui_ImplVulkan_Init(&imGuiInitInfo);
 }
 
 // Renders the GUI in the current frame

@@ -20,6 +20,7 @@ namespace mtd
 			uint32_t getMeshID() const { return id; }
 			const std::vector<Vertex>& getVertices() const { return vertices; }
 			const std::vector<uint32_t>& getIndices() const { return indices; }
+			const std::string& getTexturePath() const { return diffuseTexturePath; }
 			uint32_t getInstanceCount() const { return static_cast<uint32_t>(transforms.size()); }
 			const std::vector<glm::mat4>& getTransformationMatrices() const
 				{ return transforms; }
@@ -63,5 +64,8 @@ namespace mtd
 			// Mesh data
 			std::vector<Vertex> vertices;
 			std::vector<uint32_t> indices;
+
+			// Mesh texture file path
+			std::string diffuseTexturePath;
 	};
 }

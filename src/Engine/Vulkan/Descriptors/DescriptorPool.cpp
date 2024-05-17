@@ -39,16 +39,21 @@ void mtd::DescriptorPool::createDescriptorPool
 		LOG_ERROR("Failed to create descriptor pool. Vulkan result: %d", result);
 }
 
-// Allocates a descriptor set in the pool
+// Allocates descriptor sets in the pool
 void mtd::DescriptorPool::allocateDescriptorSet(DescriptorSetHandler& descriptorSetHandler) const
 {
+	std::vector<vk::DescriptorSetLayout> layouts
+	{
+		descriptorSetHandler.getSetCount(), descriptorSetHandler.getLayout()
+	};
+
 	vk::DescriptorSetAllocateInfo setAllocateInfo{};
 	setAllocateInfo.descriptorPool = descriptorPool;
-	setAllocateInfo.descriptorSetCount = 1;
-	setAllocateInfo.pSetLayouts = &descriptorSetHandler.getLayout();
+	setAllocateInfo.descriptorSetCount = descriptorSetHandler.getSetCount();
+	setAllocateInfo.pSetLayouts = layouts.data();
 
 	vk::Result result =
-		device.allocateDescriptorSets(&setAllocateInfo, &descriptorSetHandler.getSet());
+		device.allocateDescriptorSets(&setAllocateInfo, descriptorSetHandler.getSets().data());
 	if(result != vk::Result::eSuccess)
 		LOG_ERROR("Failed to allocate descriptor set. Vulkan result: %d", result);
 }

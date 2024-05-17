@@ -10,7 +10,7 @@ namespace mtd
 		Memory::Buffer descriptorBuffer;
 		vk::DescriptorBufferInfo descriptorBufferInfo;
 		void* descriptorBufferWriteLocation;
-		vk::DescriptorType descriptorType;
+		vk::DescriptorImageInfo descriptorImageInfo;
 	};
 
 	// Handles the data to be sent to the GPU through descriptors
@@ -31,11 +31,16 @@ namespace mtd
 
 			// Getters
 			const vk::DescriptorSetLayout& getLayout() const { return descriptorSetLayout; }
-			vk::DescriptorSet& getSet() { return descriptorSet; }
-			void* getBufferWriteLocation(uint32_t index) const
-				{ return resourcesList[index].descriptorBufferWriteLocation; }
-			vk::DescriptorType getDescriptorType(uint32_t index) const
-				{ return resourcesList[index].descriptorType; }
+			uint32_t getSetCount() const { return static_cast<uint32_t>(descriptorSets.size()); }
+			vk::DescriptorSet& getSet(uint32_t index) { return descriptorSets[index]; }
+			std::vector<vk::DescriptorSet>& getSets() { return descriptorSets; }
+			void* getBufferWriteLocation(uint32_t setIndex, uint32_t descriptorIndex) const
+				{ return resourcesList[setIndex][descriptorIndex].descriptorBufferWriteLocation; }
+			vk::DescriptorType getDescriptorType(uint32_t descriptorIndex) const
+				{ return descriptorTypes[descriptorIndex]; }
+
+			// Defines how many descriptor sets can be associated with the descriptor set layout
+			void defineDescriptorSetsAmount(uint32_t setsAmount);
 
 			// Creates a descriptor and assings it to a descriptor set
 			void createDescriptorResources
@@ -43,20 +48,31 @@ namespace mtd
 				const Device& mtdDevice,
 				vk::DeviceSize resourceSize,
 				vk::BufferUsageFlags usageFlags,
+				uint32_t setIndex,
 				uint32_t resourceIndex
+			);
+			// Creates the resources for an image descriptor
+			void createImageDescriptorResources
+			(
+				uint32_t setIndex,
+				uint32_t resourceIndex,
+				const vk::DescriptorImageInfo& descriptorImageInfo
 			);
 
 			// Updates the descriptor set data
-			void writeDescriptorSet();
+			void writeDescriptorSet(uint32_t setIndex);
 
 		private:
 			// Layout for the descriptor set
 			vk::DescriptorSetLayout descriptorSetLayout;
-			// Descriptor set
-			vk::DescriptorSet descriptorSet;
+			// Descriptor sets
+			std::vector<vk::DescriptorSet> descriptorSets;
 
-			// Data about the descriptors used in the descriptor set
-			std::vector<DescriptorResources> resourcesList;
+			// Descriptor type for each binding in the set layout
+			std::vector<vk::DescriptorType> descriptorTypes;
+
+			// Data about the descriptors used in each descriptor set
+			std::vector<std::vector<DescriptorResources>> resourcesList;
 			// Write operations
 			std::vector<vk::WriteDescriptorSet> writeOps;
 
