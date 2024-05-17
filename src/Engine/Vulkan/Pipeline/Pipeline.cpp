@@ -99,6 +99,8 @@ void mtd::Pipeline::createPipeline(Swapchain& swapchain)
 // Configures the descriptor set handlers to be used
 void mtd::Pipeline::createDescriptorSetLayouts()
 {
+	descriptorSetHandlers.reserve(2);
+
 	std::vector<vk::DescriptorSetLayoutBinding> bindings;
 	bindings.resize(2);
 	// Transformation matrices
@@ -114,7 +116,7 @@ void mtd::Pipeline::createDescriptorSetLayouts()
 	bindings[1].stageFlags = vk::ShaderStageFlagBits::eVertex;
 	bindings[1].pImmutableSamplers = nullptr;
 
-	descriptorSetHandlers.emplace_back(device, bindings, 1);
+	descriptorSetHandlers.emplace_back(device, bindings);
 
 	bindings.resize(1);
 	// Mesh diffuse texture
@@ -124,7 +126,7 @@ void mtd::Pipeline::createDescriptorSetLayouts()
 	bindings[0].stageFlags = vk::ShaderStageFlagBits::eFragment;
 	bindings[0].pImmutableSamplers = nullptr;
 
-	descriptorSetHandlers.emplace_back(device, bindings, 6);
+	descriptorSetHandlers.emplace_back(device, bindings);
 }
 
 // Sets create info for the vertex input

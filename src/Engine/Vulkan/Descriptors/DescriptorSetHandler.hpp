@@ -10,7 +10,6 @@ namespace mtd
 		Memory::Buffer descriptorBuffer;
 		vk::DescriptorBufferInfo descriptorBufferInfo;
 		void* descriptorBufferWriteLocation;
-		vk::DescriptorType descriptorType;
 		vk::DescriptorImageInfo descriptorImageInfo;
 	};
 
@@ -21,8 +20,7 @@ namespace mtd
 			DescriptorSetHandler
 			(
 				const vk::Device& device,
-				const std::vector<vk::DescriptorSetLayoutBinding>& setLayoutBindings,
-				uint32_t maxSets
+				const std::vector<vk::DescriptorSetLayoutBinding>& setLayoutBindings
 			);
 			~DescriptorSetHandler();
 
@@ -38,8 +36,11 @@ namespace mtd
 			std::vector<vk::DescriptorSet>& getSets() { return descriptorSets; }
 			void* getBufferWriteLocation(uint32_t setIndex, uint32_t descriptorIndex) const
 				{ return resourcesList[setIndex][descriptorIndex].descriptorBufferWriteLocation; }
-			vk::DescriptorType getDescriptorType(uint32_t setIndex, uint32_t descriptorIndex) const
-				{ return resourcesList[setIndex][descriptorIndex].descriptorType; }
+			vk::DescriptorType getDescriptorType(uint32_t descriptorIndex) const
+				{ return descriptorTypes[descriptorIndex]; }
+
+			// Defines how many descriptor sets can be associated with the descriptor set layout
+			void defineDescriptorSetsAmount(uint32_t setsAmount);
 
 			// Creates a descriptor and assings it to a descriptor set
 			void createDescriptorResources
@@ -66,6 +67,9 @@ namespace mtd
 			vk::DescriptorSetLayout descriptorSetLayout;
 			// Descriptor sets
 			std::vector<vk::DescriptorSet> descriptorSets;
+
+			// Descriptor type for each binding in the set layout
+			std::vector<vk::DescriptorType> descriptorTypes;
 
 			// Data about the descriptors used in each descriptor set
 			std::vector<std::vector<DescriptorResources>> resourcesList;

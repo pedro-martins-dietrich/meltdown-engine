@@ -157,6 +157,7 @@ void mtd::Engine::configureDescriptors()
 
 	// Default descriptor set handler
 	DescriptorSetHandler& defaultDescriptorSetHandler = pipeline.getDescriptorSetHandler(0);
+	defaultDescriptorSetHandler.defineDescriptorSetsAmount(1);
 	descriptorPool.allocateDescriptorSet(defaultDescriptorSetHandler);
 	defaultDescriptorSetHandler.createDescriptorResources
 	(
@@ -184,6 +185,10 @@ void mtd::Engine::configureDescriptors()
 
 	// Textures descriptor set handler
 	DescriptorSetHandler& texturesDescriptorSetHandler = pipeline.getDescriptorSetHandler(1);
+	texturesDescriptorSetHandler.defineDescriptorSetsAmount
+	(
+		static_cast<uint32_t>(scene.getMeshes().size())
+	);
 	descriptorPool.allocateDescriptorSet(texturesDescriptorSetHandler);
 
 	scene.loadTextures(device, commandHandler, texturesDescriptorSetHandler);
