@@ -48,8 +48,6 @@ namespace mtd
 			// Flag for updating the engine
 			bool shouldUpdateEngine;
 
-			// Loads all the meshes
-			void loadScene();
 			// Sets up the descriptor pools and sets
 			void configureDescriptors();
 

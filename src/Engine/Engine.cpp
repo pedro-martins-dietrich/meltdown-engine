@@ -17,7 +17,6 @@ mtd::Engine::Engine()
 	imgui{device.getDevice(), inputHandler},
 	settingsGui{swapchain.getSettings(), pipeline.getSettings(), shouldUpdateEngine},
 	camera{inputHandler, glm::vec3{0.0f, -1.5f, -4.5f}, 70.0f, window.getAspectRatio()},
-	scene{"meltdown_demo.json"},
 	shouldUpdateEngine{false}
 {
 	window.setInputCallbacks(inputHandler);
@@ -34,7 +33,13 @@ mtd::Engine::Engine()
 
 	LOG_INFO("Engine ready.\n");
 
-	loadScene();
+	scene.loadScene
+	(
+		"meltdown_demo.json",
+		meshManager,
+		commandHandler
+	);
+
 	configureDescriptors();
 }
 
@@ -71,6 +76,10 @@ void mtd::Engine::start()
 		swapchain.getExtent(),
 	};
 	drawInfo.descriptorSets.push_back(pipeline.getDescriptorSetHandler(0).getSet(0));
+	for(uint32_t i = 0; i < pipeline.getDescriptorSetHandler(1).getSetCount(); i++)
+	{
+		drawInfo.descriptorSets.push_back(pipeline.getDescriptorSetHandler(1).getSet(i));
+	}
 
 	while(window.keepOpen())
 	{
@@ -134,40 +143,32 @@ void mtd::Engine::start()
 	}
 }
 
-// Loads all the meshes
-void mtd::Engine::loadScene()
-{
-	for(Mesh& mesh: scene.getMeshes())
-	{
-		meshManager.loadMeshToLump(mesh);
-	}
-	meshManager.loadMeshesToGPU(commandHandler);
-
-	LOG_INFO("Meshes loaded to the GPU.\n");
-}
-
 // Sets up the descriptors
 void mtd::Engine::configureDescriptors()
 {
-	std::vector<PoolSizeData> poolSizesInfo{2};
+	std::vector<PoolSizeData> poolSizesInfo{3};
 	poolSizesInfo[0].descriptorCount = 1;
 	poolSizesInfo[0].descriptorType = vk::DescriptorType::eStorageBuffer;
 	poolSizesInfo[1].descriptorCount = 1;
 	poolSizesInfo[1].descriptorType = vk::DescriptorType::eUniformBuffer;
+	poolSizesInfo[2].descriptorCount = static_cast<uint32_t>(scene.getMeshes().size());
+	poolSizesInfo[2].descriptorType = vk::DescriptorType::eCombinedImageSampler;
 	descriptorPool.createDescriptorPool(poolSizesInfo);
 
-	DescriptorSetHandler& descriptorSetHandler = pipeline.getDescriptorSetHandler(0);
-	descriptorPool.allocateDescriptorSet(descriptorSetHandler);
-	descriptorSetHandler.createDescriptorResources
+	// Default descriptor set handler
+	DescriptorSetHandler& defaultDescriptorSetHandler = pipeline.getDescriptorSetHandler(0);
+	descriptorPool.allocateDescriptorSet(defaultDescriptorSetHandler);
+	defaultDescriptorSetHandler.createDescriptorResources
 	(
 		device, meshManager.getModelMatricesSize(), vk::BufferUsageFlagBits::eStorageBuffer, 0, 0
 	);
-	descriptorSetHandler.createDescriptorResources
+	defaultDescriptorSetHandler.createDescriptorResources
 	(
 		device, sizeof(CameraMatrices), vk::BufferUsageFlagBits::eUniformBuffer, 0, 1
 	);
 
-	char* bufferWriteLocation = static_cast<char*>(descriptorSetHandler.getBufferWriteLocation(0, 0));
+	char* bufferWriteLocation =
+		static_cast<char*>(defaultDescriptorSetHandler.getBufferWriteLocation(0, 0));
 	for(Mesh& mesh: scene.getMeshes())
 	{
 		mesh.setTransformsWriteLocation(bufferWriteLocation);
@@ -176,10 +177,16 @@ void mtd::Engine::configureDescriptors()
 		bufferWriteLocation += mesh.getModelMatricesSize();
 	}
 
-	void* cameraWriteLocation = descriptorSetHandler.getBufferWriteLocation(0, 1);
+	void* cameraWriteLocation = defaultDescriptorSetHandler.getBufferWriteLocation(0, 1);
 	camera.setWriteLocation(cameraWriteLocation);
 
-	descriptorSetHandler.writeDescriptorSet(0);
+	defaultDescriptorSetHandler.writeDescriptorSet(0);
+
+	// Textures descriptor set handler
+	DescriptorSetHandler& texturesDescriptorSetHandler = pipeline.getDescriptorSetHandler(1);
+	descriptorPool.allocateDescriptorSet(texturesDescriptorSetHandler);
+
+	scene.loadTextures(device, commandHandler, texturesDescriptorSetHandler);
 }
 
 // Changes the scene

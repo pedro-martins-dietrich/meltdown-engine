@@ -115,6 +115,16 @@ void mtd::Pipeline::createDescriptorSetLayouts()
 	bindings[1].pImmutableSamplers = nullptr;
 
 	descriptorSetHandlers.emplace_back(device, bindings, 1);
+
+	bindings.resize(1);
+	// Mesh diffuse texture
+	bindings[0].binding = 0;
+	bindings[0].descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	bindings[0].descriptorCount = 1;
+	bindings[0].stageFlags = vk::ShaderStageFlagBits::eFragment;
+	bindings[0].pImmutableSamplers = nullptr;
+
+	descriptorSetHandlers.emplace_back(device, bindings, 6);
 }
 
 // Sets create info for the vertex input

@@ -142,7 +142,7 @@ void mtd::CommandHandler::recordDrawCommand(const DrawInfo& drawInfo, const Gui&
 		vk::PipelineBindPoint::eGraphics,
 		drawInfo.pipelineLayout,
 		0,
-		static_cast<uint32_t>(drawInfo.descriptorSets.size()),
+		1,
 		drawInfo.descriptorSets.data(),
 		0, nullptr
 	);
@@ -156,6 +156,15 @@ void mtd::CommandHandler::recordDrawCommand(const DrawInfo& drawInfo, const Gui&
 	uint32_t startInstance = 0;
 	for(uint32_t i = 0; i < drawInfo.meshLumpData.indexCounts.size(); i++)
 	{
+		mainCommandBuffer.bindDescriptorSets
+		(
+			vk::PipelineBindPoint::eGraphics,
+			drawInfo.pipelineLayout,
+			1,
+			1, &drawInfo.descriptorSets[i+1],
+			0, nullptr
+		);
+
 		mainCommandBuffer.drawIndexed
 		(
 			drawInfo.meshLumpData.indexCounts[i],

@@ -15,7 +15,8 @@ namespace mtd
 				const Device& mtdDevice,
 				const char* fileName,
 				const CommandHandler& commandHandler,
-				DescriptorSetHandler& descriptorSetHandler
+				DescriptorSetHandler& descriptorSetHandler,
+				uint32_t setIndex
 			);
 			~Texture();
 
@@ -48,6 +49,9 @@ namespace mtd
 			// Creates sampler to define how the texture should be rendered
 			void createSampler();
 			// Configures the texture descriptor set
-			void createDescriptorResource(DescriptorSetHandler& descriptorSetHandler) const;
+			void createDescriptorResource
+			(
+				DescriptorSetHandler& descriptorSetHandler, uint32_t setIndex
+			) const;
 	};
 }
