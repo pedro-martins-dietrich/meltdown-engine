@@ -30,7 +30,7 @@ namespace mtd
 			VulkanInstance vulkanInstance;
 			Device device;
 			Swapchain swapchain;
-			Pipeline pipeline;
+			std::unordered_map<PipelineType, Pipeline> pipelines;
 			CommandHandler commandHandler;
 			MeshManager meshManager;
 			InputHandler inputHandler;
@@ -48,12 +48,13 @@ namespace mtd
 			// Flag for updating the engine
 			bool shouldUpdateEngine;
 
+			// Sets up the pipelines to be used
+			void configurePipelines();
 			// Sets up the descriptor pools and sets
 			void configureDescriptors();
 
 			// Changes the scene
 			void updateScene(float frameTime);
-
 			// Recreates swapchain and pipeline to apply new settings
 			void updateEngine();
 	};

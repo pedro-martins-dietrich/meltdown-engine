@@ -1,6 +1,7 @@
 #pragma once
 
 #include "GuiWindow.hpp"
+#include "../../Utils/EngineEnums.hpp"
 #include "../Pipeline/Pipeline.hpp"
 
 namespace mtd
@@ -9,16 +10,14 @@ namespace mtd
 	class SettingsGui : public GuiWindow
 	{
 		public:
-			SettingsGui
-			(
-				SwapchainSettings& swapchainSettings,
-				PipelineSettings& pipelineSettings,
-				bool& shouldUpdateEngine
-			);
+			SettingsGui(SwapchainSettings& swapchainSettings, bool& shouldUpdateEngine);
 			~SettingsGui() {}
 
 			SettingsGui(const SettingsGui&) = delete;
 			SettingsGui& operator=(const SettingsGui&) = delete;
+
+			// Sets the pipeline settings vector
+			void setPipelinesSettings(std::unordered_map<PipelineType, Pipeline>& pipelines);
 
 			// Exhibits the GUI window
 			virtual void renderGui() override;
@@ -26,7 +25,7 @@ namespace mtd
 		private:
 			// References to relevant objects
 			SwapchainSettings& swapchainSettings;
-			PipelineSettings& pipelineSettings;
+			std::vector<PipelineSettings*> pipelineSettings;
 			bool& shouldUpdateEngine;
 
 			// Exhibit GUI

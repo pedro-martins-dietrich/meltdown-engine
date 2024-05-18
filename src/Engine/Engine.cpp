@@ -9,16 +9,17 @@ mtd::Engine::Engine()
 	vulkanInstance{"Meltdown", VK_MAKE_API_VERSION(0, 1, 0, 0), window},
 	device{vulkanInstance},
 	swapchain{device, window.getDimensions(), vulkanInstance.getSurface()},
-	pipeline{device.getDevice(), swapchain},
 	commandHandler{device},
 	meshManager{device},
 	inputHandler{},
 	descriptorPool{device.getDevice()},
 	imgui{device.getDevice(), inputHandler},
-	settingsGui{swapchain.getSettings(), pipeline.getSettings(), shouldUpdateEngine},
+	settingsGui{swapchain.getSettings(), shouldUpdateEngine},
 	camera{inputHandler, glm::vec3{0.0f, -1.5f, -4.5f}, 70.0f, window.getAspectRatio()},
 	shouldUpdateEngine{false}
 {
+	configurePipelines();
+
 	window.setInputCallbacks(inputHandler);
 
 	imgui.init
@@ -26,7 +27,7 @@ mtd::Engine::Engine()
 		window,
 		vulkanInstance.getInstance(),
 		device,
-		pipeline.getRenderPass(),
+		pipelines.at(PipelineType::DEFAULT).getRenderPass(),
 		swapchain.getSettings().frameCount
 	);
 	imgui.addGuiWindow(&settingsGui);
@@ -69,16 +70,21 @@ void mtd::Engine::start()
 			meshManager.getVertexBuffer(),
 			meshManager.getIndexBuffer()
 		},
-		pipeline.getPipeline(),
-		pipeline.getLayout(),
-		pipeline.getRenderPass(),
+		pipelines.at(PipelineType::DEFAULT).getPipeline(),
+		pipelines.at(PipelineType::DEFAULT).getLayout(),
+		pipelines.at(PipelineType::DEFAULT).getRenderPass(),
 		swapchain.getSwapchain(),
 		swapchain.getExtent(),
 	};
-	drawInfo.descriptorSets.push_back(pipeline.getDescriptorSetHandler(0).getSet(0));
-	for(uint32_t i = 0; i < pipeline.getDescriptorSetHandler(1).getSetCount(); i++)
+	drawInfo.descriptorSets.push_back
+	(
+		pipelines.at(PipelineType::DEFAULT).getDescriptorSetHandler(0).getSet(0)
+	);
+
+	DescriptorSetHandler& setHandler = pipelines.at(PipelineType::DEFAULT).getDescriptorSetHandler(1);
+	for(uint32_t i = 0; i < setHandler.getSetCount(); i++)
 	{
-		drawInfo.descriptorSets.push_back(pipeline.getDescriptorSetHandler(1).getSet(i));
+		drawInfo.descriptorSets.push_back(setHandler.getSet(i));
 	}
 
 	while(window.keepOpen())
@@ -143,6 +149,19 @@ void mtd::Engine::start()
 	}
 }
 
+// Sets up the pipelines to be used
+void mtd::Engine::configurePipelines()
+{
+	pipelines.emplace
+	(
+		std::piecewise_construct,
+		std::forward_as_tuple(PipelineType::DEFAULT),
+		std::forward_as_tuple(device.getDevice(), swapchain)
+	);
+
+	settingsGui.setPipelinesSettings(pipelines);
+}
+
 // Sets up the descriptors
 void mtd::Engine::configureDescriptors()
 {
@@ -156,7 +175,8 @@ void mtd::Engine::configureDescriptors()
 	descriptorPool.createDescriptorPool(poolSizesInfo);
 
 	// Default descriptor set handler
-	DescriptorSetHandler& defaultDescriptorSetHandler = pipeline.getDescriptorSetHandler(0);
+	DescriptorSetHandler& defaultDescriptorSetHandler =
+		pipelines.at(PipelineType::DEFAULT).getDescriptorSetHandler(0);
 	defaultDescriptorSetHandler.defineDescriptorSetsAmount(1);
 	descriptorPool.allocateDescriptorSet(defaultDescriptorSetHandler);
 	defaultDescriptorSetHandler.createDescriptorResources
@@ -184,7 +204,8 @@ void mtd::Engine::configureDescriptors()
 	defaultDescriptorSetHandler.writeDescriptorSet(0);
 
 	// Textures descriptor set handler
-	DescriptorSetHandler& texturesDescriptorSetHandler = pipeline.getDescriptorSetHandler(1);
+	DescriptorSetHandler& texturesDescriptorSetHandler =
+		pipelines.at(PipelineType::DEFAULT).getDescriptorSetHandler(1);
 	texturesDescriptorSetHandler.defineDescriptorSetsAmount
 	(
 		static_cast<uint32_t>(scene.getMeshes().size())
@@ -236,7 +257,10 @@ void mtd::Engine::updateEngine()
 	device.getDevice().waitIdle();
 
 	swapchain.recreate(device, window.getDimensions(), vulkanInstance.getSurface());
-	pipeline.recreate(swapchain);
+
+	for(auto& [type, pipeline]: pipelines)
+		pipeline.recreate(swapchain);
+
 	camera.updatePerspective(70.0f, window.getAspectRatio());
 
 	shouldUpdateEngine = false;
