@@ -10,7 +10,12 @@ namespace mtd
 	class Pipeline
 	{
 		public:
-			Pipeline(const vk::Device& device, Swapchain& swapchain);
+			Pipeline
+			(
+				const vk::Device& device,
+				Swapchain& swapchain,
+				DescriptorSetHandler* globalDescriptorSet
+			);
 			~Pipeline();
 
 			Pipeline(const Pipeline&) = delete;
@@ -25,7 +30,7 @@ namespace mtd
 				{ return descriptorSetHandlers[index]; }
 
 			// Recreates the pipeline
-			void recreate(Swapchain& swapchain);
+			void recreate(Swapchain& swapchain, DescriptorSetHandler* globalDescriptorSet);
 
 		private:
 			// Vulkan graphics pipeline
@@ -48,7 +53,7 @@ namespace mtd
 			void configureDefaultSettings();
 
 			// Creates the graphics pipeline
-			void createPipeline(Swapchain& swapchain);
+			void createPipeline(Swapchain& swapchain, DescriptorSetHandler* globalDescriptorSet);
 
 			// Configures the descriptor set handlers to be used
 			void createDescriptorSetLayouts();
@@ -86,7 +91,7 @@ namespace mtd
 			) const;
 
 			// Creates the layout for the pipeline
-			void createPipelineLayout();
+			void createPipelineLayout(DescriptorSetHandler* globalDescriptorSet);
 			// Creates pipeline render pass
 			void createRenderPass(Swapchain& swapchain);
 

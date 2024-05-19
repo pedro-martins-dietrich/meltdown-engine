@@ -18,6 +18,7 @@ mtd::Engine::Engine()
 	camera{inputHandler, glm::vec3{0.0f, -1.5f, -4.5f}, 70.0f, window.getAspectRatio()},
 	shouldUpdateEngine{false}
 {
+	configureGlobalDescriptorSetHandler();
 	configurePipelines();
 
 	window.setInputCallbacks(inputHandler);
@@ -76,12 +77,10 @@ void mtd::Engine::start()
 		swapchain.getSwapchain(),
 		swapchain.getExtent(),
 	};
-	drawInfo.descriptorSets.push_back
-	(
-		pipelines.at(PipelineType::DEFAULT).getDescriptorSetHandler(0).getSet(0)
-	);
+	drawInfo.descriptorSets.push_back(globalDescriptorSetHandler->getSet(0));
 
-	DescriptorSetHandler& setHandler = pipelines.at(PipelineType::DEFAULT).getDescriptorSetHandler(1);
+	DescriptorSetHandler& setHandler =
+		pipelines.at(PipelineType::DEFAULT).getDescriptorSetHandler(0);
 	for(uint32_t i = 0; i < setHandler.getSetCount(); i++)
 	{
 		drawInfo.descriptorSets.push_back(setHandler.getSet(i));
@@ -149,6 +148,27 @@ void mtd::Engine::start()
 	}
 }
 
+// Sets up descriptor set shared across pipelines
+void mtd::Engine::configureGlobalDescriptorSetHandler()
+{
+	std::vector<vk::DescriptorSetLayoutBinding> bindings(2);
+	// Transformation matrices
+	bindings[0].binding = 0;
+	bindings[0].descriptorType = vk::DescriptorType::eStorageBuffer;
+	bindings[0].descriptorCount = 1;
+	bindings[0].stageFlags = vk::ShaderStageFlagBits::eVertex;
+	bindings[0].pImmutableSamplers = nullptr;
+	// Camera data
+	bindings[1].binding = 1;
+	bindings[1].descriptorType = vk::DescriptorType::eUniformBuffer;
+	bindings[1].descriptorCount = 1;
+	bindings[1].stageFlags = vk::ShaderStageFlagBits::eVertex;
+	bindings[1].pImmutableSamplers = nullptr;
+
+	globalDescriptorSetHandler =
+		std::make_unique<DescriptorSetHandler>(device.getDevice(), bindings);
+}
+
 // Sets up the pipelines to be used
 void mtd::Engine::configurePipelines()
 {
@@ -156,7 +176,7 @@ void mtd::Engine::configurePipelines()
 	(
 		std::piecewise_construct,
 		std::forward_as_tuple(PipelineType::DEFAULT),
-		std::forward_as_tuple(device.getDevice(), swapchain)
+		std::forward_as_tuple(device.getDevice(), swapchain, globalDescriptorSetHandler.get())
 	);
 
 	settingsGui.setPipelinesSettings(pipelines);
@@ -174,22 +194,20 @@ void mtd::Engine::configureDescriptors()
 	poolSizesInfo[2].descriptorType = vk::DescriptorType::eCombinedImageSampler;
 	descriptorPool.createDescriptorPool(poolSizesInfo);
 
-	// Default descriptor set handler
-	DescriptorSetHandler& defaultDescriptorSetHandler =
-		pipelines.at(PipelineType::DEFAULT).getDescriptorSetHandler(0);
-	defaultDescriptorSetHandler.defineDescriptorSetsAmount(1);
-	descriptorPool.allocateDescriptorSet(defaultDescriptorSetHandler);
-	defaultDescriptorSetHandler.createDescriptorResources
+	// Global descriptor set handler
+	globalDescriptorSetHandler->defineDescriptorSetsAmount(1);
+	descriptorPool.allocateDescriptorSet(*globalDescriptorSetHandler);
+	globalDescriptorSetHandler->createDescriptorResources
 	(
 		device, meshManager.getModelMatricesSize(), vk::BufferUsageFlagBits::eStorageBuffer, 0, 0
 	);
-	defaultDescriptorSetHandler.createDescriptorResources
+	globalDescriptorSetHandler->createDescriptorResources
 	(
 		device, sizeof(CameraMatrices), vk::BufferUsageFlagBits::eUniformBuffer, 0, 1
 	);
 
 	char* bufferWriteLocation =
-		static_cast<char*>(defaultDescriptorSetHandler.getBufferWriteLocation(0, 0));
+		static_cast<char*>(globalDescriptorSetHandler->getBufferWriteLocation(0, 0));
 	for(Mesh& mesh: scene.getMeshes())
 	{
 		mesh.setTransformsWriteLocation(bufferWriteLocation);
@@ -198,14 +216,14 @@ void mtd::Engine::configureDescriptors()
 		bufferWriteLocation += mesh.getModelMatricesSize();
 	}
 
-	void* cameraWriteLocation = defaultDescriptorSetHandler.getBufferWriteLocation(0, 1);
+	void* cameraWriteLocation = globalDescriptorSetHandler->getBufferWriteLocation(0, 1);
 	camera.setWriteLocation(cameraWriteLocation);
 
-	defaultDescriptorSetHandler.writeDescriptorSet(0);
+	globalDescriptorSetHandler->writeDescriptorSet(0);
 
 	// Textures descriptor set handler
 	DescriptorSetHandler& texturesDescriptorSetHandler =
-		pipelines.at(PipelineType::DEFAULT).getDescriptorSetHandler(1);
+		pipelines.at(PipelineType::DEFAULT).getDescriptorSetHandler(0);
 	texturesDescriptorSetHandler.defineDescriptorSetsAmount
 	(
 		static_cast<uint32_t>(scene.getMeshes().size())
@@ -259,7 +277,7 @@ void mtd::Engine::updateEngine()
 	swapchain.recreate(device, window.getDimensions(), vulkanInstance.getSurface());
 
 	for(auto& [type, pipeline]: pipelines)
-		pipeline.recreate(swapchain);
+		pipeline.recreate(swapchain, globalDescriptorSetHandler.get());
 
 	camera.updatePerspective(70.0f, window.getAspectRatio());
 

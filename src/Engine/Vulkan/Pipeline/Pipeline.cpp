@@ -3,12 +3,14 @@
 #include "../../Utils/Logger.hpp"
 #include "../Mesh/Mesh.hpp"
 
-mtd::Pipeline::Pipeline(const vk::Device& device, Swapchain& swapchain)
-	: device{device}
+mtd::Pipeline::Pipeline
+(
+	const vk::Device& device, Swapchain& swapchain, DescriptorSetHandler* globalDescriptorSet
+) : device{device}
 {
 	configureDefaultSettings();
 	createDescriptorSetLayouts();
-	createPipeline(swapchain);
+	createPipeline(swapchain, globalDescriptorSet);
 }
 
 mtd::Pipeline::~Pipeline()
@@ -17,11 +19,11 @@ mtd::Pipeline::~Pipeline()
 }
 
 // Recreates the pipeline
-void mtd::Pipeline::recreate(Swapchain& swapchain)
+void mtd::Pipeline::recreate(Swapchain& swapchain, DescriptorSetHandler* globalDescriptorSet)
 {
 	destroy();
 
-	createPipeline(swapchain);
+	createPipeline(swapchain, globalDescriptorSet);
 }
 
 // Sets up default pipeline settings
@@ -34,7 +36,7 @@ void mtd::Pipeline::configureDefaultSettings()
 }
 
 // Creates the graphics pipeline
-void mtd::Pipeline::createPipeline(Swapchain& swapchain)
+void mtd::Pipeline::createPipeline(Swapchain& swapchain, DescriptorSetHandler* globalDescriptorSet)
 {
 	std::vector<vk::PipelineShaderStageCreateInfo> shaderStagesCreateInfos;
 	vk::Viewport viewport{};
@@ -62,7 +64,7 @@ void mtd::Pipeline::createPipeline(Swapchain& swapchain)
 	setDepthStencil(depthStencilCreateInfo);
 	setColorBlending(colorBlendCreateInfo, colorBlendAttachment);
 
-	createPipelineLayout();
+	createPipelineLayout(globalDescriptorSet);
 	createRenderPass(swapchain);
 
 	vk::GraphicsPipelineCreateInfo graphicsPipelineCreateInfo{};
@@ -99,26 +101,10 @@ void mtd::Pipeline::createPipeline(Swapchain& swapchain)
 // Configures the descriptor set handlers to be used
 void mtd::Pipeline::createDescriptorSetLayouts()
 {
-	descriptorSetHandlers.reserve(2);
+	descriptorSetHandlers.reserve(1);
 
-	std::vector<vk::DescriptorSetLayoutBinding> bindings;
-	bindings.resize(2);
-	// Transformation matrices
-	bindings[0].binding = 0;
-	bindings[0].descriptorType = vk::DescriptorType::eStorageBuffer;
-	bindings[0].descriptorCount = 1;
-	bindings[0].stageFlags = vk::ShaderStageFlagBits::eVertex;
-	bindings[0].pImmutableSamplers = nullptr;
-	// Camera data
-	bindings[1].binding = 1;
-	bindings[1].descriptorType = vk::DescriptorType::eUniformBuffer;
-	bindings[1].descriptorCount = 1;
-	bindings[1].stageFlags = vk::ShaderStageFlagBits::eVertex;
-	bindings[1].pImmutableSamplers = nullptr;
+	std::vector<vk::DescriptorSetLayoutBinding> bindings(1);
 
-	descriptorSetHandlers.emplace_back(device, bindings);
-
-	bindings.resize(1);
 	// Mesh diffuse texture
 	bindings[0].binding = 0;
 	bindings[0].descriptorType = vk::DescriptorType::eCombinedImageSampler;
@@ -292,9 +278,9 @@ void mtd::Pipeline::setColorBlending
 }
 
 // Creates the layout for the pipeline
-void mtd::Pipeline::createPipelineLayout()
+void mtd::Pipeline::createPipelineLayout(DescriptorSetHandler* globalDescriptorSet)
 {
-	std::vector<vk::DescriptorSetLayout> descriptorSetLayouts;
+	std::vector<vk::DescriptorSetLayout> descriptorSetLayouts{globalDescriptorSet->getLayout()};
 	for(const DescriptorSetHandler& descriptorSetHandler: descriptorSetHandlers)
 		descriptorSetLayouts.push_back(descriptorSetHandler.getLayout());
 
@@ -305,7 +291,8 @@ void mtd::Pipeline::createPipelineLayout()
 	pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
 	pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
 
-	vk::Result result = device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &pipelineLayout);
+	vk::Result result =
+		device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &pipelineLayout);
 	if(result != vk::Result::eSuccess)
 	{
 		LOG_ERROR("Failed to create pipeline layout. Vulkan result: %d", result);

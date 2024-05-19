@@ -31,6 +31,7 @@ namespace mtd
 			Device device;
 			Swapchain swapchain;
 			std::unordered_map<PipelineType, Pipeline> pipelines;
+			std::unique_ptr<DescriptorSetHandler> globalDescriptorSetHandler;
 			CommandHandler commandHandler;
 			MeshManager meshManager;
 			InputHandler inputHandler;
@@ -48,6 +49,8 @@ namespace mtd
 			// Flag for updating the engine
 			bool shouldUpdateEngine;
 
+			// Sets up descriptor set shared across pipelines
+			void configureGlobalDescriptorSetHandler();
 			// Sets up the pipelines to be used
 			void configurePipelines();
 			// Sets up the descriptor pools and sets
