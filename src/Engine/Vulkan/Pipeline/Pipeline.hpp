@@ -24,21 +24,22 @@ namespace mtd
 			// Getters
 			const vk::Pipeline& getPipeline() const { return pipeline; }
 			const vk::PipelineLayout& getLayout() const { return pipelineLayout; }
-			const vk::RenderPass& getRenderPass() const { return renderPass; }
 			PipelineSettings& getSettings() { return settings; }
 			DescriptorSetHandler& getDescriptorSetHandler(uint32_t index)
 				{ return descriptorSetHandlers[index]; }
 
 			// Recreates the pipeline
-			void recreate(Swapchain& swapchain, DescriptorSetHandler* globalDescriptorSet);
+			void recreate
+			(
+				Swapchain& swapchain,
+				DescriptorSetHandler* globalDescriptorSet
+			);
 
 		private:
 			// Vulkan graphics pipeline
 			vk::Pipeline pipeline;
 			// Pipeline layout
 			vk::PipelineLayout pipelineLayout;
-			// Pipeline render pass
-			vk::RenderPass renderPass;
 
 			// Descriptor sets and their layouts
 			std::vector<DescriptorSetHandler> descriptorSetHandlers;
@@ -53,7 +54,11 @@ namespace mtd
 			void configureDefaultSettings();
 
 			// Creates the graphics pipeline
-			void createPipeline(Swapchain& swapchain, DescriptorSetHandler* globalDescriptorSet);
+			void createPipeline
+			(
+				Swapchain& swapchain,
+				DescriptorSetHandler* globalDescriptorSet
+			);
 
 			// Configures the descriptor set handlers to be used
 			void createDescriptorSetLayouts();
@@ -92,8 +97,6 @@ namespace mtd
 
 			// Creates the layout for the pipeline
 			void createPipelineLayout(DescriptorSetHandler* globalDescriptorSet);
-			// Creates pipeline render pass
-			void createRenderPass(Swapchain& swapchain);
 
 			// Clears pipeline objects
 			void destroy();

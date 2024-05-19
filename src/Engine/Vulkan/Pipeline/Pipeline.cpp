@@ -5,7 +5,9 @@
 
 mtd::Pipeline::Pipeline
 (
-	const vk::Device& device, Swapchain& swapchain, DescriptorSetHandler* globalDescriptorSet
+	const vk::Device& device,
+	Swapchain& swapchain,
+	DescriptorSetHandler* globalDescriptorSet
 ) : device{device}
 {
 	configureDefaultSettings();
@@ -19,7 +21,11 @@ mtd::Pipeline::~Pipeline()
 }
 
 // Recreates the pipeline
-void mtd::Pipeline::recreate(Swapchain& swapchain, DescriptorSetHandler* globalDescriptorSet)
+void mtd::Pipeline::recreate
+(
+	Swapchain& swapchain,
+	DescriptorSetHandler* globalDescriptorSet
+)
 {
 	destroy();
 
@@ -36,7 +42,11 @@ void mtd::Pipeline::configureDefaultSettings()
 }
 
 // Creates the graphics pipeline
-void mtd::Pipeline::createPipeline(Swapchain& swapchain, DescriptorSetHandler* globalDescriptorSet)
+void mtd::Pipeline::createPipeline
+(
+	Swapchain& swapchain,
+	DescriptorSetHandler* globalDescriptorSet
+)
 {
 	std::vector<vk::PipelineShaderStageCreateInfo> shaderStagesCreateInfos;
 	vk::Viewport viewport{};
@@ -65,7 +75,6 @@ void mtd::Pipeline::createPipeline(Swapchain& swapchain, DescriptorSetHandler* g
 	setColorBlending(colorBlendCreateInfo, colorBlendAttachment);
 
 	createPipelineLayout(globalDescriptorSet);
-	createRenderPass(swapchain);
 
 	vk::GraphicsPipelineCreateInfo graphicsPipelineCreateInfo{};
 	graphicsPipelineCreateInfo.flags = vk::PipelineCreateFlags();
@@ -81,7 +90,7 @@ void mtd::Pipeline::createPipeline(Swapchain& swapchain, DescriptorSetHandler* g
 	graphicsPipelineCreateInfo.pColorBlendState = &colorBlendCreateInfo;
 	graphicsPipelineCreateInfo.pDynamicState = nullptr;
 	graphicsPipelineCreateInfo.layout = pipelineLayout;
-	graphicsPipelineCreateInfo.renderPass = renderPass;
+	graphicsPipelineCreateInfo.renderPass = swapchain.getRenderPass();
 	graphicsPipelineCreateInfo.subpass = 0;
 	graphicsPipelineCreateInfo.basePipelineHandle = nullptr;
 	graphicsPipelineCreateInfo.basePipelineIndex = 0;
@@ -301,79 +310,10 @@ void mtd::Pipeline::createPipelineLayout(DescriptorSetHandler* globalDescriptorS
 	LOG_VERBOSE("Created pipeline layout.");
 }
 
-// Creates pipeline render pass
-void mtd::Pipeline::createRenderPass(Swapchain& swapchain)
-{
-	vk::AttachmentDescription colorAttachmentDescription{};
-	colorAttachmentDescription.flags = vk::AttachmentDescriptionFlags();
-	colorAttachmentDescription.format = swapchain.getColorFormat();
-	colorAttachmentDescription.samples = vk::SampleCountFlagBits::e1;
-	colorAttachmentDescription.loadOp = vk::AttachmentLoadOp::eClear;
-	colorAttachmentDescription.storeOp = vk::AttachmentStoreOp::eStore;
-	colorAttachmentDescription.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
-	colorAttachmentDescription.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
-	colorAttachmentDescription.initialLayout = vk::ImageLayout::eUndefined;
-	colorAttachmentDescription.finalLayout = vk::ImageLayout::ePresentSrcKHR;
-
-	vk::AttachmentReference colorAttachmentReference{};
-	colorAttachmentReference.attachment = 0;
-	colorAttachmentReference.layout = vk::ImageLayout::eColorAttachmentOptimal;
-
-	vk::AttachmentDescription depthAttachmentDescription{};
-	depthAttachmentDescription.flags = vk::AttachmentDescriptionFlags();
-	depthAttachmentDescription.format = swapchain.getDepthFormat();
-	depthAttachmentDescription.samples = vk::SampleCountFlagBits::e1;
-	depthAttachmentDescription.loadOp = vk::AttachmentLoadOp::eClear;
-	depthAttachmentDescription.storeOp = vk::AttachmentStoreOp::eStore;
-	depthAttachmentDescription.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
-	depthAttachmentDescription.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
-	depthAttachmentDescription.initialLayout = vk::ImageLayout::eUndefined;
-	depthAttachmentDescription.finalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
-
-	vk::AttachmentReference depthAttachmentReference{};
-	depthAttachmentReference.attachment = 1;
-	depthAttachmentReference.layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
-
-	std::vector<vk::AttachmentDescription> attachmentDescriptions
-	{
-		colorAttachmentDescription, depthAttachmentDescription
-	};
-
-	vk::SubpassDescription subpassDescription{};
-	subpassDescription.flags = vk::SubpassDescriptionFlags();
-	subpassDescription.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
-	subpassDescription.inputAttachmentCount = 0;
-	subpassDescription.pInputAttachments = nullptr;
-	subpassDescription.colorAttachmentCount = 1;
-	subpassDescription.pColorAttachments = &colorAttachmentReference;
-	subpassDescription.pResolveAttachments = nullptr;
-	subpassDescription.pDepthStencilAttachment = &depthAttachmentReference;
-	subpassDescription.preserveAttachmentCount = 0;
-	subpassDescription.pPreserveAttachments = nullptr;
-
-	vk::RenderPassCreateInfo renderPassCreateInfo{};
-	renderPassCreateInfo.flags = vk::RenderPassCreateFlags();
-	renderPassCreateInfo.attachmentCount = static_cast<uint32_t>(attachmentDescriptions.size());
-	renderPassCreateInfo.pAttachments = attachmentDescriptions.data();
-	renderPassCreateInfo.subpassCount = 1;
-	renderPassCreateInfo.pSubpasses = &subpassDescription;
-	renderPassCreateInfo.dependencyCount = 0;
-	renderPassCreateInfo.pDependencies = nullptr;
-
-	vk::Result result = device.createRenderPass(&renderPassCreateInfo, nullptr, &renderPass);
-	if(result != vk::Result::eSuccess)
-	{
-		LOG_ERROR("Failed to create render pass. Vulkan result: %d", result);
-		return;
-	}
-	LOG_VERBOSE("Created render pass.");
-	swapchain.createFramebuffers(renderPass);
-}
-
 // Clears pipeline objects
 void mtd::Pipeline::destroy()
 {
 	device.destroyPipeline(pipeline);
-	device.destroyRenderPass(renderPass);
+	//device.destroyRenderPass(renderPass);
 	device.destroyPipelineLayout(pipelineLayout);
 }

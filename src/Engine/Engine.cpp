@@ -28,7 +28,7 @@ mtd::Engine::Engine()
 		window,
 		vulkanInstance.getInstance(),
 		device,
-		pipelines.at(PipelineType::DEFAULT).getRenderPass(),
+		swapchain.getRenderPass(),
 		swapchain.getSettings().frameCount
 	);
 	imgui.addGuiWindow(&settingsGui);
@@ -73,7 +73,7 @@ void mtd::Engine::start()
 		},
 		pipelines.at(PipelineType::DEFAULT).getPipeline(),
 		pipelines.at(PipelineType::DEFAULT).getLayout(),
-		pipelines.at(PipelineType::DEFAULT).getRenderPass(),
+		swapchain.getRenderPass(),
 		swapchain.getSwapchain(),
 		swapchain.getExtent(),
 	};
@@ -176,7 +176,12 @@ void mtd::Engine::configurePipelines()
 	(
 		std::piecewise_construct,
 		std::forward_as_tuple(PipelineType::DEFAULT),
-		std::forward_as_tuple(device.getDevice(), swapchain, globalDescriptorSetHandler.get())
+		std::forward_as_tuple
+		(
+			device.getDevice(),
+			swapchain,
+			globalDescriptorSetHandler.get()
+		)
 	);
 
 	settingsGui.setPipelinesSettings(pipelines);

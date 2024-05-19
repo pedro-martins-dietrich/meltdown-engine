@@ -13,20 +13,12 @@ mtd::Swapchain::Swapchain
 	getSupportedDetails(device.getPhysicalDevice(), surface);
 	checkImageCount();
 	createSwapchain(device, frameDimensions, surface);
+	createRenderPass();
 }
 
 mtd::Swapchain::~Swapchain()
 {
 	destroy();
-}
-
-// Create framebuffers for each frame
-void mtd::Swapchain::createFramebuffers(const vk::RenderPass& renderPass)
-{
-	for(Frame& frame: frames)
-	{
-		frame.createFramebuffer(renderPass);
-	}
 }
 
 // Recreates swapchain to handle resizes
@@ -38,9 +30,11 @@ void mtd::Swapchain::recreate
 )
 {
 	destroy();
+
 	getSupportedDetails(device.getPhysicalDevice(), surface);
 	checkImageCount();
 	createSwapchain(device, frameDimensions, surface);
+	createRenderPass();
 }
 
 // Sets up default swapchain settings
@@ -111,6 +105,82 @@ void mtd::Swapchain::createSwapchain
 	setSwapchainFrames(device, frameDimensions);
 
 	LOG_INFO("Created swapchain.\n");
+}
+
+// Creates pipeline render pass
+void mtd::Swapchain::createRenderPass()
+{
+	vk::AttachmentDescription colorAttachmentDescription{};
+	colorAttachmentDescription.flags = vk::AttachmentDescriptionFlags();
+	colorAttachmentDescription.format = settings.colorFormat;
+	colorAttachmentDescription.samples = vk::SampleCountFlagBits::e1;
+	colorAttachmentDescription.loadOp = vk::AttachmentLoadOp::eClear;
+	colorAttachmentDescription.storeOp = vk::AttachmentStoreOp::eStore;
+	colorAttachmentDescription.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
+	colorAttachmentDescription.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
+	colorAttachmentDescription.initialLayout = vk::ImageLayout::eUndefined;
+	colorAttachmentDescription.finalLayout = vk::ImageLayout::ePresentSrcKHR;
+
+	vk::AttachmentReference colorAttachmentReference{};
+	colorAttachmentReference.attachment = 0;
+	colorAttachmentReference.layout = vk::ImageLayout::eColorAttachmentOptimal;
+
+	vk::AttachmentDescription depthAttachmentDescription{};
+	depthAttachmentDescription.flags = vk::AttachmentDescriptionFlags();
+	depthAttachmentDescription.format = frames[0].getDepthFormat();
+	depthAttachmentDescription.samples = vk::SampleCountFlagBits::e1;
+	depthAttachmentDescription.loadOp = vk::AttachmentLoadOp::eClear;
+	depthAttachmentDescription.storeOp = vk::AttachmentStoreOp::eStore;
+	depthAttachmentDescription.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
+	depthAttachmentDescription.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
+	depthAttachmentDescription.initialLayout = vk::ImageLayout::eUndefined;
+	depthAttachmentDescription.finalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+
+	vk::AttachmentReference depthAttachmentReference{};
+	depthAttachmentReference.attachment = 1;
+	depthAttachmentReference.layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+
+	std::vector<vk::AttachmentDescription> attachmentDescriptions
+	{
+		colorAttachmentDescription, depthAttachmentDescription
+	};
+
+	vk::SubpassDescription subpassDescription{};
+	subpassDescription.flags = vk::SubpassDescriptionFlags();
+	subpassDescription.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
+	subpassDescription.inputAttachmentCount = 0;
+	subpassDescription.pInputAttachments = nullptr;
+	subpassDescription.colorAttachmentCount = 1;
+	subpassDescription.pColorAttachments = &colorAttachmentReference;
+	subpassDescription.pResolveAttachments = nullptr;
+	subpassDescription.pDepthStencilAttachment = &depthAttachmentReference;
+	subpassDescription.preserveAttachmentCount = 0;
+	subpassDescription.pPreserveAttachments = nullptr;
+
+	vk::RenderPassCreateInfo renderPassCreateInfo{};
+	renderPassCreateInfo.flags = vk::RenderPassCreateFlags();
+	renderPassCreateInfo.attachmentCount = static_cast<uint32_t>(attachmentDescriptions.size());
+	renderPassCreateInfo.pAttachments = attachmentDescriptions.data();
+	renderPassCreateInfo.subpassCount = 1;
+	renderPassCreateInfo.pSubpasses = &subpassDescription;
+	renderPassCreateInfo.dependencyCount = 0;
+	renderPassCreateInfo.pDependencies = nullptr;
+
+	vk::Result result = device.createRenderPass(&renderPassCreateInfo, nullptr, &renderPass);
+	if(result != vk::Result::eSuccess)
+	{
+		LOG_ERROR("Failed to create render pass. Vulkan result: %d", result);
+		return;
+	}
+	LOG_VERBOSE("Created render pass.");
+	createFramebuffers();
+}
+
+// Create framebuffers for each frame
+void mtd::Swapchain::createFramebuffers()
+{
+	for(Frame& frame: frames)
+		frame.createFramebuffer(renderPass);
 }
 
 // Ensures the swapchain uses a valid surface format
@@ -205,6 +275,7 @@ void mtd::Swapchain::setSwapchainFrames
 // Destroys the swapchain
 void mtd::Swapchain::destroy()
 {
+	device.destroyRenderPass(renderPass);
 	frames.clear();
 	device.destroySwapchainKHR(swapchain);
 }
