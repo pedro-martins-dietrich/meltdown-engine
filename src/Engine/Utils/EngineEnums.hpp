@@ -5,6 +5,7 @@ namespace mtd
 	// Pipelines for rendering different models
 	enum class PipelineType
 	{
-		DEFAULT
+		DEFAULT,
+		BILLBOARD
 	};
 }
