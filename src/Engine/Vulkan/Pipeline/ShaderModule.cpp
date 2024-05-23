@@ -20,14 +20,24 @@ mtd::ShaderModule::ShaderModule(const char* shaderFile, const vk::Device& device
 
 	vk::Result result = device.createShaderModule(&shaderModuleCreateInfo, nullptr, &shaderModule);
 	if(result != vk::Result::eSuccess)
+	{
 		LOG_ERROR
 		(
 			"Failed to create shader module for \"%s\". Vulkan result: %d",
 			shaderPath.c_str(), result
 		);
+		return;
+	}
+	LOG_VERBOSE("Loaded shader module: \"%s\"", shaderPath.c_str());
 }
 
 mtd::ShaderModule::~ShaderModule()
 {
 	device.destroyShaderModule(shaderModule);
+}
+
+mtd::ShaderModule::ShaderModule(ShaderModule&& other) noexcept
+	: device{other.device}, shaderModule{std::move(other.shaderModule)}
+{
+	shaderModule = nullptr;
 }
