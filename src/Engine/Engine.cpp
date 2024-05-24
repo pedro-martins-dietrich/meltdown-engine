@@ -71,19 +71,27 @@ void mtd::Engine::start()
 			meshManager.getVertexBuffer(),
 			meshManager.getIndexBuffer()
 		},
-		pipelines.at(PipelineType::DEFAULT).getPipeline(),
-		pipelines.at(PipelineType::DEFAULT).getLayout(),
 		swapchain.getRenderPass(),
 		swapchain.getSwapchain(),
 		swapchain.getExtent(),
+		globalDescriptorSetHandler->getSet(0)
 	};
-	drawInfo.descriptorSets.push_back(globalDescriptorSetHandler->getSet(0));
 
-	DescriptorSetHandler& setHandler =
+	DescriptorSetHandler& defaultSetHandler =
 		pipelines.at(PipelineType::DEFAULT).getDescriptorSetHandler(0);
-	for(uint32_t i = 0; i < setHandler.getSetCount(); i++)
+
+	for(auto& [type, pipeline]: pipelines)
 	{
-		drawInfo.descriptorSets.push_back(setHandler.getSet(i));
+		drawInfo.pipelineInfos.emplace
+		(
+			std::piecewise_construct,
+			std::forward_as_tuple(type),
+			std::forward_as_tuple(pipeline.getPipeline(), pipeline.getLayout())
+		);
+		for(const vk::DescriptorSet& set: pipeline.getDescriptorSetHandler(0).getSets())
+		{
+			drawInfo.pipelineInfos.at(type).descriptorSets.push_back(set);
+		}
 	}
 
 	while(window.keepOpen())
@@ -172,6 +180,7 @@ void mtd::Engine::configureGlobalDescriptorSetHandler()
 // Sets up the pipelines to be used
 void mtd::Engine::configurePipelines()
 {
+	pipelines.reserve(2);
 	pipelines.emplace
 	(
 		std::piecewise_construct,
@@ -179,6 +188,19 @@ void mtd::Engine::configurePipelines()
 		std::forward_as_tuple
 		(
 			device.getDevice(),
+			PipelineType::DEFAULT,
+			swapchain,
+			globalDescriptorSetHandler.get()
+		)
+	);
+	pipelines.emplace
+	(
+		std::piecewise_construct,
+		std::forward_as_tuple(PipelineType::BILLBOARD),
+		std::forward_as_tuple
+		(
+			device.getDevice(),
+			PipelineType::BILLBOARD,
 			swapchain,
 			globalDescriptorSetHandler.get()
 		)
@@ -204,7 +226,11 @@ void mtd::Engine::configureDescriptors()
 	descriptorPool.allocateDescriptorSet(*globalDescriptorSetHandler);
 	globalDescriptorSetHandler->createDescriptorResources
 	(
-		device, meshManager.getModelMatricesSize(), vk::BufferUsageFlagBits::eStorageBuffer, 0, 0
+		device,
+		meshManager.getModelMatricesSize() + sizeof(glm::mat4),
+		vk::BufferUsageFlagBits::eStorageBuffer,
+		0,
+		0
 	);
 	globalDescriptorSetHandler->createDescriptorResources
 	(
@@ -220,6 +246,14 @@ void mtd::Engine::configureDescriptors()
 
 		bufferWriteLocation += mesh.getModelMatricesSize();
 	}
+	glm::mat4 billboardTransform
+	{
+		0.5f, 0.0f, 0.0f, 0.0f,
+		0.0f, 0.5f, 0.0f, 0.0f,
+		0.0f, 0.0f, 1.0f, 0.0f,
+		0.0f, -2.0f, 0.0f, 1.0f
+	};
+	memcpy(bufferWriteLocation, &billboardTransform, sizeof(glm::mat4));
 
 	void* cameraWriteLocation = globalDescriptorSetHandler->getBufferWriteLocation(0, 1);
 	camera.setWriteLocation(cameraWriteLocation);
@@ -236,6 +270,16 @@ void mtd::Engine::configureDescriptors()
 	descriptorPool.allocateDescriptorSet(texturesDescriptorSetHandler);
 
 	scene.loadTextures(device, commandHandler, texturesDescriptorSetHandler);
+
+	// Billboard texture
+	DescriptorSetHandler& billboardTexturesDescriptorSetHandler =
+		pipelines.at(PipelineType::BILLBOARD).getDescriptorSetHandler(0);
+	billboardTexturesDescriptorSetHandler.defineDescriptorSetsAmount(1);
+	descriptorPool.allocateDescriptorSet(billboardTexturesDescriptorSetHandler);
+	billboardTexture = std::make_unique<Texture>
+	(
+		device, "textures/orb.png", commandHandler, billboardTexturesDescriptorSetHandler, 0
+	);
 }
 
 // Changes the scene

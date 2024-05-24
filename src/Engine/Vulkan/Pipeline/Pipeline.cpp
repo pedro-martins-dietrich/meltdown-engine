@@ -1,17 +1,21 @@
 #include "Pipeline.hpp"
 
 #include "../../Utils/Logger.hpp"
-#include "../Mesh/Mesh.hpp"
+#include "Builders/ShaderLoader.hpp"
+#include "Builders/VertexInputBuilder.hpp"
+#include "Builders/ColorBlendBuilder.hpp"
 
 mtd::Pipeline::Pipeline
 (
 	const vk::Device& device,
+	PipelineType type,
 	Swapchain& swapchain,
 	DescriptorSetHandler* globalDescriptorSet
-) : device{device}
+) : device{device}, type{type}
 {
 	configureDefaultSettings();
 	createDescriptorSetLayouts();
+	ShaderLoader::loadShaders(type, device, shaders);
 	createPipeline(swapchain, globalDescriptorSet);
 }
 
@@ -53,9 +57,6 @@ void mtd::Pipeline::createPipeline
 	vk::Rect2D scissor{};
 	vk::PipelineColorBlendAttachmentState colorBlendAttachment{};
 
-	ShaderModule vertexShaderModule{"default.vert.spv", device};
-	ShaderModule fragmentShaderModule{"default.frag.spv", device};
-
 	vk::PipelineVertexInputStateCreateInfo vertexInputCreateInfo{};
 	vk::PipelineInputAssemblyStateCreateInfo inputAssemblyCreateInfo{};
 	vk::PipelineViewportStateCreateInfo viewportCreateInfo{};
@@ -64,15 +65,15 @@ void mtd::Pipeline::createPipeline
 	vk::PipelineDepthStencilStateCreateInfo depthStencilCreateInfo{};
 	vk::PipelineColorBlendStateCreateInfo colorBlendCreateInfo{};
 
-	setVertexInput(vertexInputCreateInfo);
+	VertexInputBuilder::setVertexInput(type, vertexInputCreateInfo);
 	setInputAssembly(inputAssemblyCreateInfo);
-	setVertexShader(shaderStagesCreateInfos, vertexShaderModule);
+	setVertexShader(shaderStagesCreateInfos, shaders[0]);
 	setViewport(viewportCreateInfo, viewport, scissor, swapchain);
 	setRasterizer(rasterizationCreateInfo);
-	setFragmentShader(shaderStagesCreateInfos, fragmentShaderModule);
+	setFragmentShader(shaderStagesCreateInfos, shaders[1]);
 	setMultisampling(multisampleCreateInfo);
 	setDepthStencil(depthStencilCreateInfo);
-	setColorBlending(colorBlendCreateInfo, colorBlendAttachment);
+	ColorBlendBuilder::setColorBlending(type, colorBlendCreateInfo, colorBlendAttachment);
 
 	createPipelineLayout(globalDescriptorSet);
 
@@ -122,21 +123,6 @@ void mtd::Pipeline::createDescriptorSetLayouts()
 	bindings[0].pImmutableSamplers = nullptr;
 
 	descriptorSetHandlers.emplace_back(device, bindings);
-}
-
-// Sets create info for the vertex input
-void mtd::Pipeline::setVertexInput(vk::PipelineVertexInputStateCreateInfo& vertexInputInfo) const
-{
-	const vk::VertexInputBindingDescription& bindingDescription =
-		Mesh::getInputBindingDescription();
-	const std::vector<vk::VertexInputAttributeDescription>& attributeDescriptions =
-		Mesh::getInputAttributeDescriptions();
-
-	vertexInputInfo.flags = vk::PipelineVertexInputStateCreateFlags();
-	vertexInputInfo.vertexBindingDescriptionCount = 1;
-	vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
-	vertexInputInfo.vertexAttributeDescriptionCount = attributeDescriptions.size();
-	vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 }
 
 // Sets create info for the input assembly
@@ -260,32 +246,6 @@ void mtd::Pipeline::setDepthStencil
 	depthStencilInfo.maxDepthBounds = 0.0f;
 }
 
-// Sets create info for the color blend
-void mtd::Pipeline::setColorBlending
-(
-	vk::PipelineColorBlendStateCreateInfo& colorBlendInfo,
-	vk::PipelineColorBlendAttachmentState& colorBlendAttachment
-) const
-{
-	colorBlendAttachment.blendEnable = vk::False;
-	colorBlendAttachment.srcColorBlendFactor = vk::BlendFactor::eZero;
-	colorBlendAttachment.dstColorBlendFactor = vk::BlendFactor::eZero;
-	colorBlendAttachment.colorBlendOp = vk::BlendOp::eAdd;
-	colorBlendAttachment.srcAlphaBlendFactor = vk::BlendFactor::eZero;
-	colorBlendAttachment.dstAlphaBlendFactor = vk::BlendFactor::eZero;
-	colorBlendAttachment.alphaBlendOp = vk::BlendOp::eAdd;
-	colorBlendAttachment.colorWriteMask = vk::ColorComponentFlagBits::eR |
-		vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB |
-		vk::ColorComponentFlagBits::eA;
-
-	colorBlendInfo.flags = vk::PipelineColorBlendStateCreateFlags();
-	colorBlendInfo.logicOpEnable = vk::False;
-	colorBlendInfo.logicOp = vk::LogicOp::eCopy;
-	colorBlendInfo.attachmentCount = 1;
-	colorBlendInfo.pAttachments = &colorBlendAttachment;
-	colorBlendInfo.blendConstants = std::array<float, 4>{0.0f, 0.0f, 0.0f, 0.0f};
-}
-
 // Creates the layout for the pipeline
 void mtd::Pipeline::createPipelineLayout(DescriptorSetHandler* globalDescriptorSet)
 {
@@ -314,6 +274,5 @@ void mtd::Pipeline::createPipelineLayout(DescriptorSetHandler* globalDescriptorS
 void mtd::Pipeline::destroy()
 {
 	device.destroyPipeline(pipeline);
-	//device.destroyRenderPass(renderPass);
 	device.destroyPipelineLayout(pipelineLayout);
 }

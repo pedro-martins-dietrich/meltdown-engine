@@ -137,17 +137,18 @@ void mtd::CommandHandler::recordDrawCommand(const DrawInfo& drawInfo, const Gui&
 
 	mainCommandBuffer.beginRenderPass(&renderPassBeginInfo, vk::SubpassContents::eInline);
 
+	// Default pipeline
+	const PipelineDrawData& defaultDrawInfo = drawInfo.pipelineInfos.at(PipelineType::DEFAULT);
 	mainCommandBuffer.bindDescriptorSets
 	(
 		vk::PipelineBindPoint::eGraphics,
-		drawInfo.pipelineLayout,
+		defaultDrawInfo.layout,
 		0,
-		1,
-		drawInfo.descriptorSets.data(),
+		1, &(drawInfo.globalDescriptorSet),
 		0, nullptr
 	);
 
-	mainCommandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, drawInfo.pipeline);
+	mainCommandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, defaultDrawInfo.pipeline);
 
 	vk::DeviceSize offset = 0;
 	mainCommandBuffer.bindVertexBuffers(0, 1, &(drawInfo.meshLumpData.vertexBuffer), &offset);
@@ -159,9 +160,9 @@ void mtd::CommandHandler::recordDrawCommand(const DrawInfo& drawInfo, const Gui&
 		mainCommandBuffer.bindDescriptorSets
 		(
 			vk::PipelineBindPoint::eGraphics,
-			drawInfo.pipelineLayout,
+			defaultDrawInfo.layout,
 			1,
-			1, &drawInfo.descriptorSets[i+1],
+			1, &defaultDrawInfo.descriptorSets[i],
 			0, nullptr
 		);
 
@@ -175,6 +176,19 @@ void mtd::CommandHandler::recordDrawCommand(const DrawInfo& drawInfo, const Gui&
 		);
 		startInstance += drawInfo.meshLumpData.instanceCounts[i];
 	}
+
+	// Billboard pipeline
+	const PipelineDrawData& billboardDrawInfo = drawInfo.pipelineInfos.at(PipelineType::BILLBOARD);
+	mainCommandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, billboardDrawInfo.pipeline);
+	mainCommandBuffer.bindDescriptorSets
+	(
+		vk::PipelineBindPoint::eGraphics,
+		billboardDrawInfo.layout,
+		1,
+		1, billboardDrawInfo.descriptorSets.data(),
+		0, nullptr
+	);
+	mainCommandBuffer.draw(6, 1, 0, startInstance);
 
 	gui.renderGui(mainCommandBuffer);
 

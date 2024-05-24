@@ -1,8 +1,8 @@
 #pragma once
 
 #include "../Frame/Swapchain.hpp"
-#include "ShaderModule.hpp"
 #include "../Descriptors/DescriptorSetHandler.hpp"
+#include "ShaderModule.hpp"
 
 namespace mtd
 {
@@ -13,6 +13,7 @@ namespace mtd
 			Pipeline
 			(
 				const vk::Device& device,
+				PipelineType type,
 				Swapchain& swapchain,
 				DescriptorSetHandler* globalDescriptorSet
 			);
@@ -36,11 +37,16 @@ namespace mtd
 			);
 
 		private:
+			// Pipeline type
+			PipelineType type;
+
 			// Vulkan graphics pipeline
 			vk::Pipeline pipeline;
 			// Pipeline layout
 			vk::PipelineLayout pipelineLayout;
 
+			// Shader modules used in the pipeline
+			std::vector<ShaderModule> shaders;
 			// Descriptor sets and their layouts
 			std::vector<DescriptorSetHandler> descriptorSetHandlers;
 
@@ -64,7 +70,6 @@ namespace mtd
 			void createDescriptorSetLayouts();
 
 			// Sets create infos for pipeline creation
-			void setVertexInput(vk::PipelineVertexInputStateCreateInfo& vertexInputInfo) const;
 			void setInputAssembly
 			(
 				vk::PipelineInputAssemblyStateCreateInfo& inputAssemblyInfo
@@ -89,11 +94,6 @@ namespace mtd
 			) const;
 			void setMultisampling(vk::PipelineMultisampleStateCreateInfo& multisampleInfo) const;
 			void setDepthStencil(vk::PipelineDepthStencilStateCreateInfo& depthStencilInfo) const;
-			void setColorBlending
-			(
-				vk::PipelineColorBlendStateCreateInfo& colorBlendInfo,
-				vk::PipelineColorBlendAttachmentState& colorBlendAttachment
-			) const;
 
 			// Creates the layout for the pipeline
 			void createPipelineLayout(DescriptorSetHandler* globalDescriptorSet);

@@ -45,6 +45,7 @@ namespace mtd
 
 			// Scene being currently rendered
 			Scene scene;
+			std::unique_ptr<Texture> billboardTexture;
 
 			// Flag for updating the engine
 			bool shouldUpdateEngine;
