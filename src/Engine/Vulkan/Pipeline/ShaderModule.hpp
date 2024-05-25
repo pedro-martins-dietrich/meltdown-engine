@@ -14,6 +14,8 @@ namespace mtd
 			ShaderModule(const ShaderModule&) = delete;
 			ShaderModule& operator=(const ShaderModule&) = delete;
 
+			ShaderModule(ShaderModule&& other) noexcept;
+
 			// Getter
 			const vk::ShaderModule& getShaderModule() const { return shaderModule; }
 

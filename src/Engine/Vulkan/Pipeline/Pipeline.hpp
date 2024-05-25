@@ -1,8 +1,8 @@
 #pragma once
 
 #include "../Frame/Swapchain.hpp"
-#include "ShaderModule.hpp"
 #include "../Descriptors/DescriptorSetHandler.hpp"
+#include "ShaderModule.hpp"
 
 namespace mtd
 {
@@ -10,7 +10,13 @@ namespace mtd
 	class Pipeline
 	{
 		public:
-			Pipeline(const vk::Device& device, Swapchain& swapchain);
+			Pipeline
+			(
+				const vk::Device& device,
+				PipelineType type,
+				Swapchain& swapchain,
+				DescriptorSetHandler* globalDescriptorSet
+			);
 			~Pipeline();
 
 			Pipeline(const Pipeline&) = delete;
@@ -19,22 +25,28 @@ namespace mtd
 			// Getters
 			const vk::Pipeline& getPipeline() const { return pipeline; }
 			const vk::PipelineLayout& getLayout() const { return pipelineLayout; }
-			const vk::RenderPass& getRenderPass() const { return renderPass; }
 			PipelineSettings& getSettings() { return settings; }
 			DescriptorSetHandler& getDescriptorSetHandler(uint32_t index)
 				{ return descriptorSetHandlers[index]; }
 
 			// Recreates the pipeline
-			void recreate(Swapchain& swapchain);
+			void recreate
+			(
+				Swapchain& swapchain,
+				DescriptorSetHandler* globalDescriptorSet
+			);
 
 		private:
+			// Pipeline type
+			PipelineType type;
+
 			// Vulkan graphics pipeline
 			vk::Pipeline pipeline;
 			// Pipeline layout
 			vk::PipelineLayout pipelineLayout;
-			// Pipeline render pass
-			vk::RenderPass renderPass;
 
+			// Shader modules used in the pipeline
+			std::vector<ShaderModule> shaders;
 			// Descriptor sets and their layouts
 			std::vector<DescriptorSetHandler> descriptorSetHandlers;
 
@@ -48,13 +60,16 @@ namespace mtd
 			void configureDefaultSettings();
 
 			// Creates the graphics pipeline
-			void createPipeline(Swapchain& swapchain);
+			void createPipeline
+			(
+				Swapchain& swapchain,
+				DescriptorSetHandler* globalDescriptorSet
+			);
 
 			// Configures the descriptor set handlers to be used
 			void createDescriptorSetLayouts();
 
 			// Sets create infos for pipeline creation
-			void setVertexInput(vk::PipelineVertexInputStateCreateInfo& vertexInputInfo) const;
 			void setInputAssembly
 			(
 				vk::PipelineInputAssemblyStateCreateInfo& inputAssemblyInfo
@@ -79,16 +94,9 @@ namespace mtd
 			) const;
 			void setMultisampling(vk::PipelineMultisampleStateCreateInfo& multisampleInfo) const;
 			void setDepthStencil(vk::PipelineDepthStencilStateCreateInfo& depthStencilInfo) const;
-			void setColorBlending
-			(
-				vk::PipelineColorBlendStateCreateInfo& colorBlendInfo,
-				vk::PipelineColorBlendAttachmentState& colorBlendAttachment
-			) const;
 
 			// Creates the layout for the pipeline
-			void createPipelineLayout();
-			// Creates pipeline render pass
-			void createRenderPass(Swapchain& swapchain);
+			void createPipelineLayout(DescriptorSetHandler* globalDescriptorSet);
 
 			// Clears pipeline objects
 			void destroy();

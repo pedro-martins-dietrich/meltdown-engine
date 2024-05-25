@@ -1,14 +1,22 @@
 #include "Pipeline.hpp"
 
 #include "../../Utils/Logger.hpp"
-#include "../Mesh/Mesh.hpp"
+#include "Builders/ShaderLoader.hpp"
+#include "Builders/VertexInputBuilder.hpp"
+#include "Builders/ColorBlendBuilder.hpp"
 
-mtd::Pipeline::Pipeline(const vk::Device& device, Swapchain& swapchain)
-	: device{device}
+mtd::Pipeline::Pipeline
+(
+	const vk::Device& device,
+	PipelineType type,
+	Swapchain& swapchain,
+	DescriptorSetHandler* globalDescriptorSet
+) : device{device}, type{type}
 {
 	configureDefaultSettings();
 	createDescriptorSetLayouts();
-	createPipeline(swapchain);
+	ShaderLoader::loadShaders(type, device, shaders);
+	createPipeline(swapchain, globalDescriptorSet);
 }
 
 mtd::Pipeline::~Pipeline()
@@ -17,11 +25,15 @@ mtd::Pipeline::~Pipeline()
 }
 
 // Recreates the pipeline
-void mtd::Pipeline::recreate(Swapchain& swapchain)
+void mtd::Pipeline::recreate
+(
+	Swapchain& swapchain,
+	DescriptorSetHandler* globalDescriptorSet
+)
 {
 	destroy();
 
-	createPipeline(swapchain);
+	createPipeline(swapchain, globalDescriptorSet);
 }
 
 // Sets up default pipeline settings
@@ -34,15 +46,16 @@ void mtd::Pipeline::configureDefaultSettings()
 }
 
 // Creates the graphics pipeline
-void mtd::Pipeline::createPipeline(Swapchain& swapchain)
+void mtd::Pipeline::createPipeline
+(
+	Swapchain& swapchain,
+	DescriptorSetHandler* globalDescriptorSet
+)
 {
 	std::vector<vk::PipelineShaderStageCreateInfo> shaderStagesCreateInfos;
 	vk::Viewport viewport{};
 	vk::Rect2D scissor{};
 	vk::PipelineColorBlendAttachmentState colorBlendAttachment{};
-
-	ShaderModule vertexShaderModule{"default.vert.spv", device};
-	ShaderModule fragmentShaderModule{"default.frag.spv", device};
 
 	vk::PipelineVertexInputStateCreateInfo vertexInputCreateInfo{};
 	vk::PipelineInputAssemblyStateCreateInfo inputAssemblyCreateInfo{};
@@ -52,18 +65,17 @@ void mtd::Pipeline::createPipeline(Swapchain& swapchain)
 	vk::PipelineDepthStencilStateCreateInfo depthStencilCreateInfo{};
 	vk::PipelineColorBlendStateCreateInfo colorBlendCreateInfo{};
 
-	setVertexInput(vertexInputCreateInfo);
+	VertexInputBuilder::setVertexInput(type, vertexInputCreateInfo);
 	setInputAssembly(inputAssemblyCreateInfo);
-	setVertexShader(shaderStagesCreateInfos, vertexShaderModule);
+	setVertexShader(shaderStagesCreateInfos, shaders[0]);
 	setViewport(viewportCreateInfo, viewport, scissor, swapchain);
 	setRasterizer(rasterizationCreateInfo);
-	setFragmentShader(shaderStagesCreateInfos, fragmentShaderModule);
+	setFragmentShader(shaderStagesCreateInfos, shaders[1]);
 	setMultisampling(multisampleCreateInfo);
 	setDepthStencil(depthStencilCreateInfo);
-	setColorBlending(colorBlendCreateInfo, colorBlendAttachment);
+	ColorBlendBuilder::setColorBlending(type, colorBlendCreateInfo, colorBlendAttachment);
 
-	createPipelineLayout();
-	createRenderPass(swapchain);
+	createPipelineLayout(globalDescriptorSet);
 
 	vk::GraphicsPipelineCreateInfo graphicsPipelineCreateInfo{};
 	graphicsPipelineCreateInfo.flags = vk::PipelineCreateFlags();
@@ -79,7 +91,7 @@ void mtd::Pipeline::createPipeline(Swapchain& swapchain)
 	graphicsPipelineCreateInfo.pColorBlendState = &colorBlendCreateInfo;
 	graphicsPipelineCreateInfo.pDynamicState = nullptr;
 	graphicsPipelineCreateInfo.layout = pipelineLayout;
-	graphicsPipelineCreateInfo.renderPass = renderPass;
+	graphicsPipelineCreateInfo.renderPass = swapchain.getRenderPass();
 	graphicsPipelineCreateInfo.subpass = 0;
 	graphicsPipelineCreateInfo.basePipelineHandle = nullptr;
 	graphicsPipelineCreateInfo.basePipelineIndex = 0;
@@ -99,26 +111,10 @@ void mtd::Pipeline::createPipeline(Swapchain& swapchain)
 // Configures the descriptor set handlers to be used
 void mtd::Pipeline::createDescriptorSetLayouts()
 {
-	descriptorSetHandlers.reserve(2);
+	descriptorSetHandlers.reserve(1);
 
-	std::vector<vk::DescriptorSetLayoutBinding> bindings;
-	bindings.resize(2);
-	// Transformation matrices
-	bindings[0].binding = 0;
-	bindings[0].descriptorType = vk::DescriptorType::eStorageBuffer;
-	bindings[0].descriptorCount = 1;
-	bindings[0].stageFlags = vk::ShaderStageFlagBits::eVertex;
-	bindings[0].pImmutableSamplers = nullptr;
-	// Camera data
-	bindings[1].binding = 1;
-	bindings[1].descriptorType = vk::DescriptorType::eUniformBuffer;
-	bindings[1].descriptorCount = 1;
-	bindings[1].stageFlags = vk::ShaderStageFlagBits::eVertex;
-	bindings[1].pImmutableSamplers = nullptr;
+	std::vector<vk::DescriptorSetLayoutBinding> bindings(1);
 
-	descriptorSetHandlers.emplace_back(device, bindings);
-
-	bindings.resize(1);
 	// Mesh diffuse texture
 	bindings[0].binding = 0;
 	bindings[0].descriptorType = vk::DescriptorType::eCombinedImageSampler;
@@ -127,21 +123,6 @@ void mtd::Pipeline::createDescriptorSetLayouts()
 	bindings[0].pImmutableSamplers = nullptr;
 
 	descriptorSetHandlers.emplace_back(device, bindings);
-}
-
-// Sets create info for the vertex input
-void mtd::Pipeline::setVertexInput(vk::PipelineVertexInputStateCreateInfo& vertexInputInfo) const
-{
-	const vk::VertexInputBindingDescription& bindingDescription =
-		Mesh::getInputBindingDescription();
-	const std::vector<vk::VertexInputAttributeDescription>& attributeDescriptions =
-		Mesh::getInputAttributeDescriptions();
-
-	vertexInputInfo.flags = vk::PipelineVertexInputStateCreateFlags();
-	vertexInputInfo.vertexBindingDescriptionCount = 1;
-	vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
-	vertexInputInfo.vertexAttributeDescriptionCount = attributeDescriptions.size();
-	vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 }
 
 // Sets create info for the input assembly
@@ -265,36 +246,10 @@ void mtd::Pipeline::setDepthStencil
 	depthStencilInfo.maxDepthBounds = 0.0f;
 }
 
-// Sets create info for the color blend
-void mtd::Pipeline::setColorBlending
-(
-	vk::PipelineColorBlendStateCreateInfo& colorBlendInfo,
-	vk::PipelineColorBlendAttachmentState& colorBlendAttachment
-) const
-{
-	colorBlendAttachment.blendEnable = vk::False;
-	colorBlendAttachment.srcColorBlendFactor = vk::BlendFactor::eZero;
-	colorBlendAttachment.dstColorBlendFactor = vk::BlendFactor::eZero;
-	colorBlendAttachment.colorBlendOp = vk::BlendOp::eAdd;
-	colorBlendAttachment.srcAlphaBlendFactor = vk::BlendFactor::eZero;
-	colorBlendAttachment.dstAlphaBlendFactor = vk::BlendFactor::eZero;
-	colorBlendAttachment.alphaBlendOp = vk::BlendOp::eAdd;
-	colorBlendAttachment.colorWriteMask = vk::ColorComponentFlagBits::eR |
-		vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB |
-		vk::ColorComponentFlagBits::eA;
-
-	colorBlendInfo.flags = vk::PipelineColorBlendStateCreateFlags();
-	colorBlendInfo.logicOpEnable = vk::False;
-	colorBlendInfo.logicOp = vk::LogicOp::eCopy;
-	colorBlendInfo.attachmentCount = 1;
-	colorBlendInfo.pAttachments = &colorBlendAttachment;
-	colorBlendInfo.blendConstants = std::array<float, 4>{0.0f, 0.0f, 0.0f, 0.0f};
-}
-
 // Creates the layout for the pipeline
-void mtd::Pipeline::createPipelineLayout()
+void mtd::Pipeline::createPipelineLayout(DescriptorSetHandler* globalDescriptorSet)
 {
-	std::vector<vk::DescriptorSetLayout> descriptorSetLayouts;
+	std::vector<vk::DescriptorSetLayout> descriptorSetLayouts{globalDescriptorSet->getLayout()};
 	for(const DescriptorSetHandler& descriptorSetHandler: descriptorSetHandlers)
 		descriptorSetLayouts.push_back(descriptorSetHandler.getLayout());
 
@@ -305,7 +260,8 @@ void mtd::Pipeline::createPipelineLayout()
 	pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
 	pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
 
-	vk::Result result = device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &pipelineLayout);
+	vk::Result result =
+		device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &pipelineLayout);
 	if(result != vk::Result::eSuccess)
 	{
 		LOG_ERROR("Failed to create pipeline layout. Vulkan result: %d", result);
@@ -314,79 +270,9 @@ void mtd::Pipeline::createPipelineLayout()
 	LOG_VERBOSE("Created pipeline layout.");
 }
 
-// Creates pipeline render pass
-void mtd::Pipeline::createRenderPass(Swapchain& swapchain)
-{
-	vk::AttachmentDescription colorAttachmentDescription{};
-	colorAttachmentDescription.flags = vk::AttachmentDescriptionFlags();
-	colorAttachmentDescription.format = swapchain.getColorFormat();
-	colorAttachmentDescription.samples = vk::SampleCountFlagBits::e1;
-	colorAttachmentDescription.loadOp = vk::AttachmentLoadOp::eClear;
-	colorAttachmentDescription.storeOp = vk::AttachmentStoreOp::eStore;
-	colorAttachmentDescription.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
-	colorAttachmentDescription.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
-	colorAttachmentDescription.initialLayout = vk::ImageLayout::eUndefined;
-	colorAttachmentDescription.finalLayout = vk::ImageLayout::ePresentSrcKHR;
-
-	vk::AttachmentReference colorAttachmentReference{};
-	colorAttachmentReference.attachment = 0;
-	colorAttachmentReference.layout = vk::ImageLayout::eColorAttachmentOptimal;
-
-	vk::AttachmentDescription depthAttachmentDescription{};
-	depthAttachmentDescription.flags = vk::AttachmentDescriptionFlags();
-	depthAttachmentDescription.format = swapchain.getDepthFormat();
-	depthAttachmentDescription.samples = vk::SampleCountFlagBits::e1;
-	depthAttachmentDescription.loadOp = vk::AttachmentLoadOp::eClear;
-	depthAttachmentDescription.storeOp = vk::AttachmentStoreOp::eStore;
-	depthAttachmentDescription.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
-	depthAttachmentDescription.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
-	depthAttachmentDescription.initialLayout = vk::ImageLayout::eUndefined;
-	depthAttachmentDescription.finalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
-
-	vk::AttachmentReference depthAttachmentReference{};
-	depthAttachmentReference.attachment = 1;
-	depthAttachmentReference.layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
-
-	std::vector<vk::AttachmentDescription> attachmentDescriptions
-	{
-		colorAttachmentDescription, depthAttachmentDescription
-	};
-
-	vk::SubpassDescription subpassDescription{};
-	subpassDescription.flags = vk::SubpassDescriptionFlags();
-	subpassDescription.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
-	subpassDescription.inputAttachmentCount = 0;
-	subpassDescription.pInputAttachments = nullptr;
-	subpassDescription.colorAttachmentCount = 1;
-	subpassDescription.pColorAttachments = &colorAttachmentReference;
-	subpassDescription.pResolveAttachments = nullptr;
-	subpassDescription.pDepthStencilAttachment = &depthAttachmentReference;
-	subpassDescription.preserveAttachmentCount = 0;
-	subpassDescription.pPreserveAttachments = nullptr;
-
-	vk::RenderPassCreateInfo renderPassCreateInfo{};
-	renderPassCreateInfo.flags = vk::RenderPassCreateFlags();
-	renderPassCreateInfo.attachmentCount = static_cast<uint32_t>(attachmentDescriptions.size());
-	renderPassCreateInfo.pAttachments = attachmentDescriptions.data();
-	renderPassCreateInfo.subpassCount = 1;
-	renderPassCreateInfo.pSubpasses = &subpassDescription;
-	renderPassCreateInfo.dependencyCount = 0;
-	renderPassCreateInfo.pDependencies = nullptr;
-
-	vk::Result result = device.createRenderPass(&renderPassCreateInfo, nullptr, &renderPass);
-	if(result != vk::Result::eSuccess)
-	{
-		LOG_ERROR("Failed to create render pass. Vulkan result: %d", result);
-		return;
-	}
-	LOG_VERBOSE("Created render pass.");
-	swapchain.createFramebuffers(renderPass);
-}
-
 // Clears pipeline objects
 void mtd::Pipeline::destroy()
 {
 	device.destroyPipeline(pipeline);
-	device.destroyRenderPass(renderPass);
 	device.destroyPipelineLayout(pipelineLayout);
 }

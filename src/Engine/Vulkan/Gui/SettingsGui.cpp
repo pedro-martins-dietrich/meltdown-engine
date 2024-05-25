@@ -2,17 +2,23 @@
 
 #include <imgui.h>
 
-mtd::SettingsGui::SettingsGui
-(
-	SwapchainSettings& swapchainSettings,
-	PipelineSettings& pipelineSettings,
-	bool& shouldUpdateEngine
-) : swapchainSettings{swapchainSettings},
-	pipelineSettings{pipelineSettings},
+#include "../../Utils/Logger.hpp"
+
+mtd::SettingsGui::SettingsGui(SwapchainSettings& swapchainSettings, bool& shouldUpdateEngine)
+	: swapchainSettings{swapchainSettings},
 	shouldUpdateEngine{shouldUpdateEngine},
-	showGui{true}
+	showGui{true},
+	pipelineTypeID{0}
 {
 	setNames();
+}
+
+// Sets the pipeline settings vector
+void mtd::SettingsGui::setPipelinesSettings(std::unordered_map<PipelineType, Pipeline>& pipelines)
+{
+	pipelineSettings.clear();
+	for(auto& [type, pipeline]: pipelines)
+		pipelineSettings.push_back(&pipeline.getSettings());
 }
 
 // Exhibits the GUI window
@@ -89,8 +95,14 @@ void mtd::SettingsGui::pipelineSettingsGui()
 {
 	ImGui::SeparatorText("Pipeline");
 
+	ImGui::InputInt("Pipeline selection:", &pipelineTypeID, 1, 1);
+	pipelineTypeID = std::clamp(pipelineTypeID, 0, static_cast<int>(pipelineSettings.size() - 1));
+
+	ImGui::Separator();
+
 	ImGui::Text("Input assembly primitive topology:");
-	int topologyIndex = static_cast<int>(pipelineSettings.inputAssemblyPrimitiveTopology);
+	int topologyIndex =
+		static_cast<int>(pipelineSettings[pipelineTypeID]->inputAssemblyPrimitiveTopology);
 	shouldUpdateEngine |= ImGui::Combo
 	(
 		"##Primitive topology",
@@ -98,38 +110,42 @@ void mtd::SettingsGui::pipelineSettingsGui()
 		primitiveTopologyNames.data(),
 		primitiveTopologyNames.size()
 	);
-	pipelineSettings.inputAssemblyPrimitiveTopology =
+	pipelineSettings[pipelineTypeID]->inputAssemblyPrimitiveTopology =
 		static_cast<vk::PrimitiveTopology>(topologyIndex);
 
 	ImGui::Separator();
 
 	ImGui::Text("Rasterizer polygon mode:");
 	int polygonModeIndex =
-		(pipelineSettings.rasterizationPolygonMode == vk::PolygonMode::eFillRectangleNV) ? 3
-		: static_cast<int>(pipelineSettings.rasterizationPolygonMode);
+		(pipelineSettings[pipelineTypeID]->rasterizationPolygonMode ==
+			vk::PolygonMode::eFillRectangleNV) ? 3
+		: static_cast<int>(pipelineSettings[pipelineTypeID]->rasterizationPolygonMode);
 	shouldUpdateEngine |= ImGui::Combo
 	(
 		"##Polygon mode", &polygonModeIndex, polygonModeNames.data(), polygonModeNames.size()
 	);
-	pipelineSettings.rasterizationPolygonMode = (polygonModeIndex == 3)
+	pipelineSettings[pipelineTypeID]->rasterizationPolygonMode = (polygonModeIndex == 3)
 		? vk::PolygonMode::eFillRectangleNV
 		: static_cast<vk::PolygonMode>(polygonModeIndex);
 
 	ImGui::Separator();
 
 	ImGui::Text("Rasterizer cull mode:");
-	int cullModeIndex = static_cast<uint32_t>(pipelineSettings.rasterizationCullMode);
+	int cullModeIndex =
+		static_cast<uint32_t>(pipelineSettings[pipelineTypeID]->rasterizationCullMode);
 	shouldUpdateEngine |=
 		ImGui::Combo("##Cull mode", &cullModeIndex, cullModeNames.data(), cullModeNames.size());
-	pipelineSettings.rasterizationCullMode = static_cast<vk::CullModeFlags>(cullModeIndex);
+	pipelineSettings[pipelineTypeID]->rasterizationCullMode =
+		static_cast<vk::CullModeFlags>(cullModeIndex);
 
 	ImGui::Separator();
 
 	ImGui::Text("Rasterizer front face:");
-	int frontFace = static_cast<int>(pipelineSettings.rasterizationFrontFace);
+	int frontFace = static_cast<int>(pipelineSettings[pipelineTypeID]->rasterizationFrontFace);
 	shouldUpdateEngine |= ImGui::RadioButton("Counter-clockwise", &frontFace, 0);
 	shouldUpdateEngine |= ImGui::RadioButton("Clockwise", &frontFace, 1);
-	pipelineSettings.rasterizationFrontFace = static_cast<vk::FrontFace>(frontFace);
+	pipelineSettings[pipelineTypeID]->rasterizationFrontFace =
+		static_cast<vk::FrontFace>(frontFace);
 }
 
 // Configures strings to show in the GUI

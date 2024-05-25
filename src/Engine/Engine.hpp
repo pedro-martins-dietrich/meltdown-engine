@@ -30,7 +30,8 @@ namespace mtd
 			VulkanInstance vulkanInstance;
 			Device device;
 			Swapchain swapchain;
-			Pipeline pipeline;
+			std::unordered_map<PipelineType, Pipeline> pipelines;
+			std::unique_ptr<DescriptorSetHandler> globalDescriptorSetHandler;
 			CommandHandler commandHandler;
 			MeshManager meshManager;
 			InputHandler inputHandler;
@@ -44,16 +45,20 @@ namespace mtd
 
 			// Scene being currently rendered
 			Scene scene;
+			std::unique_ptr<Texture> billboardTexture;
 
 			// Flag for updating the engine
 			bool shouldUpdateEngine;
 
+			// Sets up descriptor set shared across pipelines
+			void configureGlobalDescriptorSetHandler();
+			// Sets up the pipelines to be used
+			void configurePipelines();
 			// Sets up the descriptor pools and sets
 			void configureDescriptors();
 
 			// Changes the scene
 			void updateScene(float frameTime);
-
 			// Recreates swapchain and pipeline to apply new settings
 			void updateEngine();
 	};

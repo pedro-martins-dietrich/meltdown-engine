@@ -23,13 +23,9 @@ namespace mtd
 			// Getters
 			const vk::SwapchainKHR& getSwapchain() const { return swapchain; }
 			const vk::Extent2D& getExtent() const { return extent; }
+			const vk::RenderPass& getRenderPass() const { return renderPass; }
 			const Frame& getFrame(uint32_t index) const { return frames[index]; }
-			vk::Format getColorFormat() const { return settings.colorFormat; }
-			vk::Format getDepthFormat() const { return frames[0].getDepthFormat(); }
 			SwapchainSettings& getSettings() { return settings; }
-
-			// Create framebuffers for each frame
-			void createFramebuffers(const vk::RenderPass& renderPass);
 
 			// Recreates swapchain to handle resizes
 			void recreate
@@ -44,6 +40,8 @@ namespace mtd
 			vk::SwapchainKHR swapchain;
 			// Features supported by the current device
 			SwapchainSupportedDetails supportedDetails;
+			// Vulkan render pass shared among the pipelines
+			vk::RenderPass renderPass;
 
 			// Frames stored by the swapchain
 			std::vector<Frame> frames;
@@ -72,6 +70,10 @@ namespace mtd
 				const FrameDimensions& frameDimensions,
 				const vk::SurfaceKHR& surface
 			);
+			// Creates render pass
+			void createRenderPass();
+			// Create framebuffers for each frame
+			void createFramebuffers();
 
 			// Ensures the swapchain uses a valid surface format
 			void checkSurfaceFormat();
