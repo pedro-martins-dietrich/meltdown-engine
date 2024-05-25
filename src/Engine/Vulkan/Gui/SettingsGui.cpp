@@ -2,10 +2,13 @@
 
 #include <imgui.h>
 
+#include "../../Utils/Logger.hpp"
+
 mtd::SettingsGui::SettingsGui(SwapchainSettings& swapchainSettings, bool& shouldUpdateEngine)
 	: swapchainSettings{swapchainSettings},
 	shouldUpdateEngine{shouldUpdateEngine},
-	showGui{true}
+	showGui{true},
+	pipelineTypeID{0}
 {
 	setNames();
 }
@@ -92,7 +95,6 @@ void mtd::SettingsGui::pipelineSettingsGui()
 {
 	ImGui::SeparatorText("Pipeline");
 
-	int pipelineTypeID = 0;
 	ImGui::InputInt("Pipeline selection:", &pipelineTypeID, 1, 1);
 	pipelineTypeID = std::clamp(pipelineTypeID, 0, static_cast<int>(pipelineSettings.size() - 1));
 

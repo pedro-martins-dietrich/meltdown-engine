@@ -30,6 +30,8 @@ namespace mtd
 
 			// Exhibit GUI
 			bool showGui;
+			// Current pipeline type index
+			int pipelineTypeID;
 
 			// List of names for the selections
 			std::vector<const char*> presentModeNames;
