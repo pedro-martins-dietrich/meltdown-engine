@@ -15,6 +15,7 @@ mtd::Engine::Engine()
 	descriptorPool{device.getDevice()},
 	imgui{device.getDevice(), inputHandler},
 	settingsGui{swapchain.getSettings(), shouldUpdateEngine},
+	renderer{},
 	camera{inputHandler, glm::vec3{0.0f, -1.5f, -4.5f}, 70.0f, window.getAspectRatio()},
 	shouldUpdateEngine{false}
 {
@@ -55,8 +56,6 @@ mtd::Engine::~Engine()
 // Begins the engine main loop
 void mtd::Engine::start()
 {
-	uint32_t currentFrameIndex = 0;
-
 	double lastTime;
 	double currentTime = glfwGetTime();
 	double frameTime = 0.016;
@@ -101,54 +100,10 @@ void mtd::Engine::start()
 
 		updateScene(frameTime);
 
-		if(shouldUpdateEngine)
-		{
-			updateEngine();
-			currentFrameIndex = 0;
-			continue;
-		}
-
-		const Frame& frame = swapchain.getFrame(currentFrameIndex);
-		const vk::Fence& inFlightFence = frame.getInFlightFence();
-
-		(void) device.getDevice().waitForFences
-		(
-			1, &inFlightFence, vk::True, UINT64_MAX
-		);
-		(void) device.getDevice().resetFences(1, &inFlightFence);
-
-		vk::Result result = device.getDevice().acquireNextImageKHR
-		(
-			swapchain.getSwapchain(),
-			UINT64_MAX,
-			frame.getImageAvailableSemaphore(),
-			nullptr,
-			&currentFrameIndex
-		);
-		if(result != vk::Result::eSuccess)
-		{
-			if(result == vk::Result::eErrorOutOfDateKHR ||
-				result == vk::Result::eErrorIncompatibleDisplayKHR)
-			{
-				shouldUpdateEngine = true;
-			}
-			else
-			{
-				LOG_ERROR("Failed to acquire swapchain image. Vulkan result: %d", result);
-				break;
-			}
-		}
+		renderer.render(device.getDevice(), swapchain, imgui, drawInfo, shouldUpdateEngine);
 
 		if(shouldUpdateEngine)
-		{
 			updateEngine();
-			currentFrameIndex = 0;
-			continue;
-		}
-
-		swapchain.getFrame(currentFrameIndex).drawFrame(drawInfo, imgui);
-
-		currentFrameIndex = (currentFrameIndex + 1) % swapchain.getSettings().frameCount;
 
 		lastTime = currentTime;
 		currentTime = glfwGetTime();
