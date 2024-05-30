@@ -100,7 +100,7 @@ void mtd::Engine::start()
 
 		updateScene(frameTime);
 
-		renderer.render(device.getDevice(), swapchain, imgui, drawInfo, shouldUpdateEngine);
+		renderer.render(device, swapchain, imgui, drawInfo, shouldUpdateEngine);
 
 		if(shouldUpdateEngine)
 			updateEngine();

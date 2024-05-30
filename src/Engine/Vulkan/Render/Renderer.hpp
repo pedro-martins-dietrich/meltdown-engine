@@ -17,7 +17,7 @@ namespace mtd
 			// Renders frame to screen
 			void render
 			(
-				const vk::Device& device,
+				const Device& device,
 				const Swapchain& swapchain,
 				const Gui& gui,
 				DrawInfo& drawInfo,
@@ -27,5 +27,19 @@ namespace mtd
 		private:
 			// Index of the frame being rendered
 			uint32_t currentFrameIndex;
+
+			// Records draw command to the command buffer
+			void recordDrawCommand
+			(
+				const CommandHandler& commandHandler, const DrawInfo& drawInfo, const Gui& gui
+			) const;
+
+			// Presents frame to screen when ready
+			void presentFrame
+			(
+				const vk::SwapchainKHR& swapchain,
+				const vk::Queue& presentQueue,
+				const vk::Semaphore& renderFinished
+			) const;
 	};
 }

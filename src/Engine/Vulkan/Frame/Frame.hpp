@@ -25,7 +25,7 @@ namespace mtd
 			Frame(const Frame&) = delete;
 			Frame& operator=(const Frame&) = delete;
 
-			Frame(Frame&& otherFrame) noexcept;
+			Frame(Frame&& other) noexcept;
 
 			// Getters
 			vk::Format getDepthFormat() const { return depthBufferFormat; }
@@ -33,12 +33,13 @@ namespace mtd
 				{ return synchronizationBundle.inFlightFence; }
 			const vk::Semaphore& getImageAvailableSemaphore() const
 				{ return synchronizationBundle.imageAvailable; }
+			const CommandHandler& getCommandHandler() const { return commandHandler; }
+
+			// Adds frame data to the draw info
+			void fetchFrameDrawData(DrawInfo& drawInfo) const;
 
 			// Set up framebuffer
 			void createFramebuffer(const vk::RenderPass& renderPass);
-
-			// Draws frame to screen
-			void drawFrame(DrawInfo& drawInfo, const Gui& gui) const;
 
 		private:
 			// Image data

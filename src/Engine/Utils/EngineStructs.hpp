@@ -99,7 +99,6 @@ namespace mtd
 		const vk::DescriptorSet& globalDescriptorSet;
 		const vk::Framebuffer* framebuffer;
 		const SynchronizationBundle* syncBundle;
-		uint32_t frameIndex;
 		std::unordered_map<PipelineType, PipelineDrawData> pipelineInfos;
 	};
 }
