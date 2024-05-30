@@ -32,8 +32,26 @@ void mtd::Pipeline::recreate
 )
 {
 	destroy();
-
 	createPipeline(swapchain, globalDescriptorSet);
+}
+
+// Binds the pipeline to the command buffer
+void mtd::Pipeline::bind(const vk::CommandBuffer& commandBuffer) const
+{
+	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
+}
+
+// Binds per mesh descriptors
+void mtd::Pipeline::bindDescriptors(const vk::CommandBuffer& commandBuffer, uint32_t index) const
+{
+	commandBuffer.bindDescriptorSets
+	(
+		vk::PipelineBindPoint::eGraphics,
+		pipelineLayout,
+		1,
+		1, &(descriptorSetHandlers[0].getSet(index)),
+		0, nullptr
+	);
 }
 
 // Sets up default pipeline settings

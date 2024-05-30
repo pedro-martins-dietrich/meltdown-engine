@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../Frame/Swapchain.hpp"
+#include "../Pipeline/Pipeline.hpp"
 
 namespace mtd
 {
@@ -20,6 +20,7 @@ namespace mtd
 				const Device& device,
 				const Swapchain& swapchain,
 				const Gui& gui,
+				const std::unordered_map<PipelineType, Pipeline>& pipelines,
 				DrawInfo& drawInfo,
 				bool& shouldUpdateEngine
 			);
@@ -31,7 +32,10 @@ namespace mtd
 			// Records draw command to the command buffer
 			void recordDrawCommand
 			(
-				const CommandHandler& commandHandler, const DrawInfo& drawInfo, const Gui& gui
+				const std::unordered_map<PipelineType, Pipeline>& pipelines,
+				const CommandHandler& commandHandler,
+				const DrawInfo& drawInfo,
+				const Gui& gui
 			) const;
 
 			// Presents frame to screen when ready

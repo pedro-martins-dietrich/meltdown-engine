@@ -71,27 +71,9 @@ void mtd::Engine::start()
 			meshManager.getIndexBuffer()
 		},
 		swapchain.getRenderPass(),
-		swapchain.getSwapchain(),
 		swapchain.getExtent(),
 		globalDescriptorSetHandler->getSet(0)
 	};
-
-	DescriptorSetHandler& defaultSetHandler =
-		pipelines.at(PipelineType::DEFAULT).getDescriptorSetHandler(0);
-
-	for(auto& [type, pipeline]: pipelines)
-	{
-		drawInfo.pipelineInfos.emplace
-		(
-			std::piecewise_construct,
-			std::forward_as_tuple(type),
-			std::forward_as_tuple(pipeline.getPipeline(), pipeline.getLayout())
-		);
-		for(const vk::DescriptorSet& set: pipeline.getDescriptorSetHandler(0).getSets())
-		{
-			drawInfo.pipelineInfos.at(type).descriptorSets.push_back(set);
-		}
-	}
 
 	while(window.keepOpen())
 	{
@@ -100,7 +82,7 @@ void mtd::Engine::start()
 
 		updateScene(frameTime);
 
-		renderer.render(device, swapchain, imgui, drawInfo, shouldUpdateEngine);
+		renderer.render(device, swapchain, imgui, pipelines, drawInfo, shouldUpdateEngine);
 
 		if(shouldUpdateEngine)
 			updateEngine();

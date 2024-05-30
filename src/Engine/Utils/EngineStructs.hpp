@@ -81,24 +81,14 @@ namespace mtd
 		const vk::Buffer& indexBuffer;
 	};
 
-	// Pipeline information for drawing
-	struct PipelineDrawData
-	{
-		const vk::Pipeline& pipeline;
-		const vk::PipelineLayout& layout;
-		std::vector<vk::DescriptorSet> descriptorSets;
-	};
-
 	// Information required for drawing a frame
 	struct DrawInfo
 	{
 		MeshLumpData meshLumpData;
 		const vk::RenderPass& renderPass;
-		const vk::SwapchainKHR& swapchain;
 		const vk::Extent2D& extent;
 		const vk::DescriptorSet& globalDescriptorSet;
 		const vk::Framebuffer* framebuffer;
 		const SynchronizationBundle* syncBundle;
-		std::unordered_map<PipelineType, PipelineDrawData> pipelineInfos;
 	};
 }

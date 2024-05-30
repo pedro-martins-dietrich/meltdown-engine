@@ -36,6 +36,11 @@ namespace mtd
 				DescriptorSetHandler* globalDescriptorSet
 			);
 
+			// Binds the pipeline to the command buffer
+			void bind(const vk::CommandBuffer& commandBuffer) const;
+			// Binds per mesh descriptors
+			void bindDescriptors(const vk::CommandBuffer& commandBuffer, uint32_t index) const;
+
 		private:
 			// Pipeline type
 			PipelineType type;

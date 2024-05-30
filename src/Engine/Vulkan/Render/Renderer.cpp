@@ -13,6 +13,7 @@ void mtd::Renderer::render
 	const Device& mtdDevice,
 	const Swapchain& swapchain,
 	const Gui& gui,
+	const std::unordered_map<PipelineType, Pipeline>& pipelines,
 	DrawInfo& drawInfo,
 	bool& shouldUpdateEngine
 )
@@ -51,7 +52,7 @@ void mtd::Renderer::render
 	const CommandHandler& commandHandler =
 		swapchain.getFrame(currentFrameIndex).getCommandHandler();
 
-	recordDrawCommand(commandHandler, drawInfo, gui);
+	recordDrawCommand(pipelines, commandHandler, drawInfo, gui);
 	commandHandler.submitDrawCommandBuffer(*(drawInfo.syncBundle));
 	presentFrame
 	(
@@ -67,7 +68,10 @@ void mtd::Renderer::render
 // Records draw command to the command buffer
 void mtd::Renderer::recordDrawCommand
 (
-	const CommandHandler& commandHandler, const DrawInfo& drawInfo, const Gui& gui
+	const std::unordered_map<PipelineType, Pipeline>& pipelines,
+	const CommandHandler& commandHandler,
+	const DrawInfo& drawInfo,
+	const Gui& gui
 ) const
 {
 	commandHandler.beginCommand();
@@ -91,63 +95,52 @@ void mtd::Renderer::recordDrawCommand
 
 	commandBuffer.beginRenderPass(&renderPassBeginInfo, vk::SubpassContents::eInline);
 
-	// Default pipeline
-	const PipelineDrawData& defaultDrawInfo = drawInfo.pipelineInfos.at(PipelineType::DEFAULT);
+	// Global descriptor set
 	commandBuffer.bindDescriptorSets
 	(
 		vk::PipelineBindPoint::eGraphics,
-		defaultDrawInfo.layout,
+		pipelines.at(PipelineType::DEFAULT).getLayout(),
 		0,
 		1, &(drawInfo.globalDescriptorSet),
 		0, nullptr
 	);
 
-	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, defaultDrawInfo.pipeline);
-
-	vk::DeviceSize offset = 0;
-	commandBuffer.bindVertexBuffers(0, 1, &(drawInfo.meshLumpData.vertexBuffer), &offset);
-	commandBuffer.bindIndexBuffer(drawInfo.meshLumpData.indexBuffer, 0, vk::IndexType::eUint32);
-
 	uint32_t startInstance = 0;
-	for(uint32_t i = 0; i < drawInfo.meshLumpData.indexCounts.size(); i++)
+	for(const auto& [type, pipeline]: pipelines)
 	{
-		commandBuffer.bindDescriptorSets
-		(
-			vk::PipelineBindPoint::eGraphics,
-			defaultDrawInfo.layout,
-			1,
-			1, &defaultDrawInfo.descriptorSets[i],
-			0, nullptr
-		);
+		pipeline.bind(commandBuffer);
 
-		commandBuffer.drawIndexed
-		(
-			drawInfo.meshLumpData.indexCounts[i],
-			drawInfo.meshLumpData.instanceCounts[i],
-			drawInfo.meshLumpData.indexOffsets[i],
-			0,
-			startInstance
-		);
-		startInstance += drawInfo.meshLumpData.instanceCounts[i];
+		if(type == PipelineType::DEFAULT)
+		{
+			vk::DeviceSize offset = 0;
+			commandBuffer.bindVertexBuffers(0, 1, &(drawInfo.meshLumpData.vertexBuffer), &offset);
+			commandBuffer.bindIndexBuffer(drawInfo.meshLumpData.indexBuffer, 0, vk::IndexType::eUint32);
+
+			for(uint32_t i = 0; i < drawInfo.meshLumpData.indexCounts.size(); i++)
+			{
+				pipeline.bindDescriptors(commandBuffer, i);
+
+				commandBuffer.drawIndexed
+				(
+					drawInfo.meshLumpData.indexCounts[i],
+					drawInfo.meshLumpData.instanceCounts[i],
+					drawInfo.meshLumpData.indexOffsets[i],
+					0,
+					startInstance
+				);
+				startInstance += drawInfo.meshLumpData.instanceCounts[i];
+			}
+		}
+		if(type == PipelineType::BILLBOARD)
+		{
+			pipeline.bindDescriptors(commandBuffer, 0);
+			commandBuffer.draw(6, 1, 0, startInstance);
+		}
 	}
-
-	// Billboard pipeline
-	const PipelineDrawData& billboardDrawInfo = drawInfo.pipelineInfos.at(PipelineType::BILLBOARD);
-	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, billboardDrawInfo.pipeline);
-	commandBuffer.bindDescriptorSets
-	(
-		vk::PipelineBindPoint::eGraphics,
-		billboardDrawInfo.layout,
-		1,
-		1, billboardDrawInfo.descriptorSets.data(),
-		0, nullptr
-	);
-	commandBuffer.draw(6, 1, 0, startInstance);
 
 	gui.renderGui(commandBuffer);
 
 	commandBuffer.endRenderPass();
-
 	commandHandler.endCommand();
 }
 
