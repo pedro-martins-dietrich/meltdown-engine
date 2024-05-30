@@ -37,27 +37,3 @@ void mtd::Mesh::updateTransformationMatrix(glm::mat4 newTransform, uint32_t inst
 
 	memcpy(transformsMemoryLocation + instance, &transforms[instance], sizeof(glm::mat4));
 }
-
-// Floats per vertex
-const uint32_t mtd::Mesh::floatsPerVertex = sizeof(Vertex) / sizeof(float);
-
-// Mesh binding description
-const vk::VertexInputBindingDescription mtd::Mesh::bindingDescription
-{
-	0,										// Binding
-	static_cast<uint32_t>(sizeof(Vertex)),	// Stride
-	vk::VertexInputRate::eVertex			// Input rate
-};
-
-// Mesh attribute descriptions
-const std::vector<vk::VertexInputAttributeDescription> mtd::Mesh::attributeDescriptions
-{
-	// Position
-	vk::VertexInputAttributeDescription{0, 0, vk::Format::eR32G32B32Sfloat, 0},
-	// Texture coordinates
-	vk::VertexInputAttributeDescription{1, 0, vk::Format::eR32G32Sfloat, 3 * sizeof(float)},
-	// Normal vectors
-	vk::VertexInputAttributeDescription{2, 0, vk::Format::eR32G32B32Sfloat, 5 * sizeof(float)},
-	// Color
-	vk::VertexInputAttributeDescription{3, 0, vk::Format::eR32G32B32Sfloat, 8 * sizeof(float)}
-};

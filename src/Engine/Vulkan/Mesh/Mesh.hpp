@@ -40,19 +40,7 @@ namespace mtd
 			void updateTransformationMatricesDescriptor() const;
 			void updateTransformationMatrix(glm::mat4 newTransform, uint32_t instance);
 
-			// Gets mesh data
-			static const vk::VertexInputBindingDescription&
-				getInputBindingDescription() { return bindingDescription; }
-			static const std::vector<vk::VertexInputAttributeDescription>&
-				getInputAttributeDescriptions() { return attributeDescriptions; }
-
 		private:
-			// Floats per vertex
-			static const uint32_t floatsPerVertex;
-			// Vertex input data
-			static const vk::VertexInputBindingDescription bindingDescription;
-			static const std::vector<vk::VertexInputAttributeDescription> attributeDescriptions;
-
 			// Mesh ID
 			uint32_t id;
 
