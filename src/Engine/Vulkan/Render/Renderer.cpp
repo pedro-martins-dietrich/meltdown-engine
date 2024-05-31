@@ -14,6 +14,7 @@ void mtd::Renderer::render
 	const Swapchain& swapchain,
 	const Gui& gui,
 	const std::unordered_map<PipelineType, Pipeline>& pipelines,
+	const Scene& scene,
 	DrawInfo& drawInfo,
 	bool& shouldUpdateEngine
 )
@@ -52,7 +53,7 @@ void mtd::Renderer::render
 	const CommandHandler& commandHandler =
 		swapchain.getFrame(currentFrameIndex).getCommandHandler();
 
-	recordDrawCommand(pipelines, commandHandler, drawInfo, gui);
+	recordDrawCommand(pipelines, scene, commandHandler, drawInfo, gui);
 	commandHandler.submitDrawCommandBuffer(*(drawInfo.syncBundle));
 	presentFrame
 	(
@@ -69,6 +70,7 @@ void mtd::Renderer::render
 void mtd::Renderer::recordDrawCommand
 (
 	const std::unordered_map<PipelineType, Pipeline>& pipelines,
+	const Scene& scene,
 	const CommandHandler& commandHandler,
 	const DrawInfo& drawInfo,
 	const Gui& gui
@@ -112,24 +114,16 @@ void mtd::Renderer::recordDrawCommand
 
 		if(type == PipelineType::DEFAULT)
 		{
-			vk::DeviceSize offset = 0;
-			commandBuffer.bindVertexBuffers(0, 1, &(drawInfo.meshLumpData.vertexBuffer), &offset);
-			commandBuffer.bindIndexBuffer(drawInfo.meshLumpData.indexBuffer, 0, vk::IndexType::eUint32);
+			const MeshManager& meshManager = scene.getMeshManager();
+			meshManager.bindBuffers(commandBuffer);
 
-			for(uint32_t i = 0; i < drawInfo.meshLumpData.indexCounts.size(); i++)
+			for(uint32_t i = 0; i < meshManager.getMeshCount(); i++)
 			{
 				pipeline.bindDescriptors(commandBuffer, i);
 
-				commandBuffer.drawIndexed
-				(
-					drawInfo.meshLumpData.indexCounts[i],
-					drawInfo.meshLumpData.instanceCounts[i],
-					drawInfo.meshLumpData.indexOffsets[i],
-					0,
-					startInstance
-				);
-				startInstance += drawInfo.meshLumpData.instanceCounts[i];
+				meshManager.drawMesh(commandBuffer, i);
 			}
+			startInstance = scene.getMeshManager().getTotalInstanceCount();
 		}
 		if(type == PipelineType::BILLBOARD)
 		{

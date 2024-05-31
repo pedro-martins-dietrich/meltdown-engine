@@ -1,7 +1,5 @@
 #pragma once
 
-#include "Vulkan/Pipeline/Pipeline.hpp"
-#include "Vulkan/Mesh/MeshManager.hpp"
 #include "Vulkan/Descriptors/DescriptorPool.hpp"
 #include "Vulkan/Gui/Gui.hpp"
 #include "Vulkan/Gui/SettingsGui.hpp"
@@ -34,7 +32,6 @@ namespace mtd
 			std::unordered_map<PipelineType, Pipeline> pipelines;
 			std::unique_ptr<DescriptorSetHandler> globalDescriptorSetHandler;
 			CommandHandler commandHandler;
-			MeshManager meshManager;
 			InputHandler inputHandler;
 			DescriptorPool descriptorPool;
 			Camera camera;

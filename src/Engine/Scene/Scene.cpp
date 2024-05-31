@@ -2,21 +2,20 @@
 
 #include "../Utils/Logger.hpp"
 
+mtd::Scene::Scene(const Device& device) : defaultMeshManager{device}
+{
+}
+
 // Loads scene from file
-void mtd::Scene::loadScene
-(
-	const char* sceneFileName,
-	MeshManager& meshManager,
-	const CommandHandler& commandHandler
-)
+void mtd::Scene::loadScene(const char* sceneFileName, const CommandHandler& commandHandler)
 {
 	SceneLoader::load(sceneFileName, meshes);
 
 	for(Mesh& mesh: meshes)
 	{
-		meshManager.loadMeshToLump(mesh);
+		defaultMeshManager.loadMeshToLump(mesh);
 	}
-	meshManager.loadMeshesToGPU(commandHandler);
+	defaultMeshManager.loadMeshesToGPU(commandHandler);
 
 	LOG_INFO("Meshes loaded to the GPU.");
 }

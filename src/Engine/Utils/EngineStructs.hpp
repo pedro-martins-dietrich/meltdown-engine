@@ -71,20 +71,9 @@ namespace mtd
 		glm::vec3 color;
 	};
 
-	// Vertex array manager draw data
-	struct MeshLumpData
-	{
-		const std::vector<uint32_t>& indexCounts;
-		const std::vector<uint32_t>& instanceCounts;
-		const std::vector<uint32_t>& indexOffsets;
-		const vk::Buffer& vertexBuffer;
-		const vk::Buffer& indexBuffer;
-	};
-
 	// Information required for drawing a frame
 	struct DrawInfo
 	{
-		MeshLumpData meshLumpData;
 		const vk::RenderPass& renderPass;
 		const vk::Extent2D& extent;
 		const vk::DescriptorSet& globalDescriptorSet;

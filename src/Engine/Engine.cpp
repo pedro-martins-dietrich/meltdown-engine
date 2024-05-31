@@ -10,7 +10,7 @@ mtd::Engine::Engine()
 	device{vulkanInstance},
 	swapchain{device, window.getDimensions(), vulkanInstance.getSurface()},
 	commandHandler{device},
-	meshManager{device},
+	scene{device},
 	inputHandler{},
 	descriptorPool{device.getDevice()},
 	imgui{device.getDevice(), inputHandler},
@@ -36,12 +36,7 @@ mtd::Engine::Engine()
 
 	LOG_INFO("Engine ready.\n");
 
-	scene.loadScene
-	(
-		"meltdown_demo.json",
-		meshManager,
-		commandHandler
-	);
+	scene.loadScene("meltdown_demo.json", commandHandler);
 
 	configureDescriptors();
 }
@@ -62,14 +57,6 @@ void mtd::Engine::start()
 
 	DrawInfo drawInfo
 	{
-		MeshLumpData
-		{
-			meshManager.getIndexCounts(),
-			meshManager.getInstanceCounts(),
-			meshManager.getIndexOffsets(),
-			meshManager.getVertexBuffer(),
-			meshManager.getIndexBuffer()
-		},
 		swapchain.getRenderPass(),
 		swapchain.getExtent(),
 		globalDescriptorSetHandler->getSet(0)
@@ -82,7 +69,7 @@ void mtd::Engine::start()
 
 		updateScene(frameTime);
 
-		renderer.render(device, swapchain, imgui, pipelines, drawInfo, shouldUpdateEngine);
+		renderer.render(device, swapchain, imgui, pipelines, scene, drawInfo, shouldUpdateEngine);
 
 		if(shouldUpdateEngine)
 			updateEngine();
@@ -164,7 +151,7 @@ void mtd::Engine::configureDescriptors()
 	globalDescriptorSetHandler->createDescriptorResources
 	(
 		device,
-		meshManager.getModelMatricesSize() + sizeof(glm::mat4),
+		(scene.getInstanceCount() + 1) * sizeof(glm::mat4),
 		vk::BufferUsageFlagBits::eStorageBuffer,
 		0,
 		0

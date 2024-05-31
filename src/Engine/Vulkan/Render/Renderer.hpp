@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../Pipeline/Pipeline.hpp"
+#include "../../Scene/Scene.hpp"
 
 namespace mtd
 {
@@ -21,6 +22,7 @@ namespace mtd
 				const Swapchain& swapchain,
 				const Gui& gui,
 				const std::unordered_map<PipelineType, Pipeline>& pipelines,
+				const Scene& scene,
 				DrawInfo& drawInfo,
 				bool& shouldUpdateEngine
 			);
@@ -33,6 +35,7 @@ namespace mtd
 			void recordDrawCommand
 			(
 				const std::unordered_map<PipelineType, Pipeline>& pipelines,
+				const Scene& scene,
 				const CommandHandler& commandHandler,
 				const DrawInfo& drawInfo,
 				const Gui& gui
