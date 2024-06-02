@@ -20,7 +20,5 @@ namespace mtd
 			(
 				const vk::CommandBuffer& commandBuffer, uint32_t index
 			) const = 0;
-
-		protected:
 	};
 }

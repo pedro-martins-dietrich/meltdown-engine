@@ -4,6 +4,7 @@
 
 #include "SceneLoader.hpp"
 #include "../Vulkan/Mesh/Managers/DefaultMeshManager.hpp"
+#include "../Vulkan/Mesh/Managers/BillboardManager.hpp"
 #include "../Vulkan/Image/Texture.hpp"
 
 namespace mtd
@@ -21,8 +22,9 @@ namespace mtd
 			// Getters
 			std::vector<Mesh>& getMeshes() { return meshes; }
 			Mesh& getMesh(uint32_t index) { return meshes[index]; }
-			const DefaultMeshManager& getMeshManager() const { return defaultMeshManager; }
-			uint32_t getInstanceCount() const { return defaultMeshManager.getTotalInstanceCount(); }
+			const MeshManager* getMeshManager(PipelineType type) const
+				{ return meshManagers.at(type).get(); }
+			uint32_t getInstanceCount() const;
 
 			// Loads scene from file
 			void loadScene(const char* sceneFileName, const CommandHandler& commandHandler);
@@ -36,8 +38,8 @@ namespace mtd
 			);
 
 		private:
-			// Manager for the default meshes
-			DefaultMeshManager defaultMeshManager;
+			// Active mesh managers
+			std::unordered_map<PipelineType, std::unique_ptr<MeshManager>> meshManagers;
 
 			// List of meshes used in the scene
 			std::vector<Mesh> meshes;

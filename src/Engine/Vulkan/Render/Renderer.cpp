@@ -114,21 +114,21 @@ void mtd::Renderer::recordDrawCommand
 
 		if(type == PipelineType::DEFAULT)
 		{
-			const MeshManager& meshManager = scene.getMeshManager();
-			meshManager.bindBuffers(commandBuffer);
+			const MeshManager* meshManager = scene.getMeshManager(type);
+			meshManager->bindBuffers(commandBuffer);
 
-			for(uint32_t i = 0; i < meshManager.getMeshCount(); i++)
+			for(uint32_t i = 0; i < meshManager->getMeshCount(); i++)
 			{
 				pipeline.bindDescriptors(commandBuffer, i);
-
-				meshManager.drawMesh(commandBuffer, i);
+				meshManager->drawMesh(commandBuffer, i);
 			}
-			startInstance = scene.getMeshManager().getTotalInstanceCount();
+			startInstance =
+				dynamic_cast<const DefaultMeshManager*>(meshManager)->getTotalInstanceCount();
 		}
 		if(type == PipelineType::BILLBOARD)
 		{
 			pipeline.bindDescriptors(commandBuffer, 0);
-			commandBuffer.draw(6, 1, 0, startInstance);
+			scene.getMeshManager(type)->drawMesh(commandBuffer, startInstance);
 		}
 	}
 
