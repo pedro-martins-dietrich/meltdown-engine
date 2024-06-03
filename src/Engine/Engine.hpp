@@ -33,7 +33,6 @@ namespace mtd
 			std::unique_ptr<DescriptorSetHandler> globalDescriptorSetHandler;
 			CommandHandler commandHandler;
 			InputHandler inputHandler;
-			DescriptorPool descriptorPool;
 			Camera camera;
 			Renderer renderer;
 
@@ -44,7 +43,6 @@ namespace mtd
 
 			// Scene being currently rendered
 			Scene scene;
-			std::unique_ptr<Texture> billboardTexture;
 
 			// Flag for updating the engine
 			bool shouldUpdateEngine;

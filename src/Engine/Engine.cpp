@@ -12,7 +12,6 @@ mtd::Engine::Engine()
 	commandHandler{device},
 	scene{device},
 	inputHandler{},
-	descriptorPool{device.getDevice()},
 	imgui{device.getDevice(), inputHandler},
 	settingsGui{swapchain.getSettings(), shouldUpdateEngine},
 	renderer{},
@@ -36,7 +35,7 @@ mtd::Engine::Engine()
 
 	LOG_INFO("Engine ready.\n");
 
-	scene.loadScene("meltdown_demo.json", commandHandler);
+	scene.loadScene("meltdown_demo.json", commandHandler, pipelines);
 
 	configureDescriptors();
 }
@@ -136,18 +135,8 @@ void mtd::Engine::configurePipelines()
 // Sets up the descriptors
 void mtd::Engine::configureDescriptors()
 {
-	std::vector<PoolSizeData> poolSizesInfo{3};
-	poolSizesInfo[0].descriptorCount = 1;
-	poolSizesInfo[0].descriptorType = vk::DescriptorType::eStorageBuffer;
-	poolSizesInfo[1].descriptorCount = 1;
-	poolSizesInfo[1].descriptorType = vk::DescriptorType::eUniformBuffer;
-	poolSizesInfo[2].descriptorCount = static_cast<uint32_t>(scene.getMeshes().size());
-	poolSizesInfo[2].descriptorType = vk::DescriptorType::eCombinedImageSampler;
-	descriptorPool.createDescriptorPool(poolSizesInfo);
-
-	// Global descriptor set handler
 	globalDescriptorSetHandler->defineDescriptorSetsAmount(1);
-	descriptorPool.allocateDescriptorSet(*globalDescriptorSetHandler);
+	scene.getDescriptorPool().allocateDescriptorSet(*globalDescriptorSetHandler);
 	globalDescriptorSetHandler->createDescriptorResources
 	(
 		device,
@@ -183,27 +172,6 @@ void mtd::Engine::configureDescriptors()
 	camera.setWriteLocation(cameraWriteLocation);
 
 	globalDescriptorSetHandler->writeDescriptorSet(0);
-
-	// Textures descriptor set handler
-	DescriptorSetHandler& texturesDescriptorSetHandler =
-		pipelines.at(PipelineType::DEFAULT).getDescriptorSetHandler(0);
-	texturesDescriptorSetHandler.defineDescriptorSetsAmount
-	(
-		static_cast<uint32_t>(scene.getMeshes().size())
-	);
-	descriptorPool.allocateDescriptorSet(texturesDescriptorSetHandler);
-
-	scene.loadTextures(device, commandHandler, texturesDescriptorSetHandler);
-
-	// Billboard texture
-	DescriptorSetHandler& billboardTexturesDescriptorSetHandler =
-		pipelines.at(PipelineType::BILLBOARD).getDescriptorSetHandler(0);
-	billboardTexturesDescriptorSetHandler.defineDescriptorSetsAmount(1);
-	descriptorPool.allocateDescriptorSet(billboardTexturesDescriptorSetHandler);
-	billboardTexture = std::make_unique<Texture>
-	(
-		device, "textures/orb.png", commandHandler, billboardTexturesDescriptorSetHandler, 0
-	);
 }
 
 // Changes the scene

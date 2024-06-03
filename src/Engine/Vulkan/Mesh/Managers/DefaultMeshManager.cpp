@@ -1,5 +1,7 @@
 #include "DefaultMeshManager.hpp"
 
+#include "../../../Utils/Logger.hpp"
+
 mtd::DefaultMeshManager::DefaultMeshManager(const Device& device)
 	: device{device}, currentIndexOffset{0}, totalInstanceCount{0}
 {
@@ -14,6 +16,63 @@ mtd::DefaultMeshManager::~DefaultMeshManager()
 
 	vulkanDevice.destroyBuffer(indexBuffer.buffer);
 	vulkanDevice.freeMemory(indexBuffer.bufferMemory);
+}
+
+// Groups the meshes into a lump and pass to the GPU
+void mtd::DefaultMeshManager::loadMeshes(const CommandHandler& commandHandler)
+{
+	for(Mesh& mesh: meshes)
+		loadMeshToLump(mesh);
+	loadMeshesToGPU(commandHandler);
+}
+
+// Loads the textures of the meshes
+void mtd::DefaultMeshManager::loadTextures
+(
+	const CommandHandler& commandHandler, DescriptorSetHandler& textureDescriptorSetHandler
+)
+{
+	diffuseTextures.resize(getMeshCount());
+	for(uint32_t i = 0; i < getMeshCount(); i++)
+	{
+		diffuseTextures[i] = std::make_unique<Texture>
+		(
+			device,
+			meshes[i].getTexturePath().c_str(),
+			commandHandler,
+			textureDescriptorSetHandler,
+			i
+		);
+	}
+
+	LOG_VERBOSE("Default mesh textures loaded.");
+}
+
+// Binds vertex and index buffers
+void mtd::DefaultMeshManager::bindBuffers
+(
+	const vk::CommandBuffer& commandBuffer
+) const
+{
+	vk::DeviceSize offset = 0;
+	commandBuffer.bindVertexBuffers(0, 1, &(vertexBuffer.buffer), &offset);
+	commandBuffer.bindIndexBuffer(indexBuffer.buffer, 0, vk::IndexType::eUint32);
+}
+
+// Draws the mesh specified by the index
+void mtd::DefaultMeshManager::drawMesh
+(
+	const vk::CommandBuffer& commandBuffer, uint32_t index
+) const
+{
+	commandBuffer.drawIndexed
+	(
+		meshDrawInfos[index].indexCount,
+		meshDrawInfos[index].instanceCount,
+		meshDrawInfos[index].indexOffset,
+		0,
+		meshDrawInfos[index].startIndex
+	);
 }
 
 // Stores a mesh in the lump of data
@@ -105,31 +164,4 @@ void mtd::DefaultMeshManager::loadMeshesToGPU(const CommandHandler& commandHandl
 	vertexLump.clear();
 	indexLump.clear();
 	currentIndexOffset = 0;
-}
-
-// Binds vertex and index buffers
-void mtd::DefaultMeshManager::bindBuffers
-(
-	const vk::CommandBuffer& commandBuffer
-) const
-{
-	vk::DeviceSize offset = 0;
-	commandBuffer.bindVertexBuffers(0, 1, &(vertexBuffer.buffer), &offset);
-	commandBuffer.bindIndexBuffer(indexBuffer.buffer, 0, vk::IndexType::eUint32);
-}
-
-// Draws the mesh specified by the index
-void mtd::DefaultMeshManager::drawMesh
-(
-	const vk::CommandBuffer& commandBuffer, uint32_t index
-) const
-{
-	commandBuffer.drawIndexed
-	(
-		meshDrawInfos[index].indexCount,
-		meshDrawInfos[index].instanceCount,
-		meshDrawInfos[index].indexOffset,
-		0,
-		meshDrawInfos[index].startIndex
-	);
 }
