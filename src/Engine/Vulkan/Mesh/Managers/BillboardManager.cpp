@@ -32,6 +32,11 @@ void mtd::BillboardManager::loadTextures
 	LOG_VERBOSE("Billboard textures loaded.");
 }
 
+// Updates instances data
+void mtd::BillboardManager::update() const
+{
+}
+
 // Draws the mesh specified by the index
 void mtd::BillboardManager::drawMesh(const vk::CommandBuffer& commandBuffer, uint32_t index) const
 {

@@ -44,6 +44,9 @@ namespace mtd
 				DescriptorSetHandler& textureDescriptorSetHandler
 			) override;
 
+			// Updates instances data
+			virtual void update() const override;
+
 			// Binds vertex and index buffers
 			virtual void bindBuffers(const vk::CommandBuffer& commandBuffer) const override;
 			// Draws the mesh specified by the index
@@ -56,6 +59,8 @@ namespace mtd
 			// Vertex and index data of all meshes in the VRAM
 			Memory::Buffer vertexBuffer;
 			Memory::Buffer indexBuffer;
+			// Transformation matrices for each instance
+			Memory::Buffer instanceBuffer;
 
 			// Index and instance data for each mesh
 			std::vector<MeshDrawData> meshDrawInfos;
@@ -68,6 +73,7 @@ namespace mtd
 			// Lumps of data containing all vertices and indices from all meshes
 			std::vector<Vertex> vertexLump;
 			std::vector<uint32_t> indexLump;
+			std::vector<glm::mat4> instanceLump;
 
 			// Total number of instances
 			uint32_t totalInstanceCount;
@@ -78,7 +84,7 @@ namespace mtd
 			const Device& device;
 
 			// Stores a mesh in the lump of data
-			void loadMeshToLump(const Mesh& mesh);
+			void loadMeshToLump(Mesh& mesh);
 			// Loads the lumps into the VRAM and clears them
 			void loadMeshesToGPU(const CommandHandler& commandHandler);
 	};

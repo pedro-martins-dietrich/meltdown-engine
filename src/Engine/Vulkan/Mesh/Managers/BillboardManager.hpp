@@ -26,6 +26,9 @@ namespace mtd
 				DescriptorSetHandler& textureDescriptorSetHandler
 			) override;
 
+			// Updates instances data
+			virtual void update() const override;
+
 			// Does nothing, as it has no vertex or index buffers
 			virtual void bindBuffers(const vk::CommandBuffer& commandBuffer) const override {}
 			// Draws the mesh specified by the index

@@ -20,6 +20,9 @@ namespace mtd
 				DescriptorSetHandler& textureDescriptorSetHandler
 			) = 0;
 
+			// Updates mesh data
+			virtual void update() const = 0;
+
 			// Binds vertex and index buffers, if used
 			virtual void bindBuffers(const vk::CommandBuffer& commandBuffer) const = 0;
 			// Draws the mesh specified by the index

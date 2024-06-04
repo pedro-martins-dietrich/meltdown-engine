@@ -140,7 +140,7 @@ void mtd::Engine::configureDescriptors()
 	globalDescriptorSetHandler->createDescriptorResources
 	(
 		device,
-		(scene.getInstanceCount() + 1) * sizeof(glm::mat4),
+		sizeof(glm::mat4),
 		vk::BufferUsageFlagBits::eStorageBuffer,
 		0,
 		0
@@ -152,13 +152,6 @@ void mtd::Engine::configureDescriptors()
 
 	char* bufferWriteLocation =
 		static_cast<char*>(globalDescriptorSetHandler->getBufferWriteLocation(0, 0));
-	for(Mesh& mesh: scene.getMeshes())
-	{
-		mesh.setTransformsWriteLocation(bufferWriteLocation);
-		mesh.updateTransformationMatricesDescriptor();
-
-		bufferWriteLocation += mesh.getModelMatricesSize();
-	}
 	glm::mat4 billboardTransform
 	{
 		0.5f, 0.0f, 0.0f, 0.0f,
@@ -207,6 +200,8 @@ void mtd::Engine::updateScene(float frameTime)
 	matrix[3][0] -= frameTime * matrix[3][2];
 	matrix[3][2] += frameTime * matrix[3][0];
 	mesh.updateTransformationMatrix(matrix, 0);
+
+	scene.update();
 }
 
 // Recreates swapchain and pipeline to apply new settings

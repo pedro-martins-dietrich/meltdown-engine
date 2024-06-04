@@ -49,6 +49,13 @@ void mtd::Scene::loadScene
 	loadTextures(commandHandler, pipelines);
 }
 
+// Updates scene data
+void mtd::Scene::update() const
+{
+	for(auto& [type, pMeshManager]: meshManagers)
+		pMeshManager->update();
+}
+
 // Loads textures associated to meshes
 void mtd::Scene::loadTextures
 (

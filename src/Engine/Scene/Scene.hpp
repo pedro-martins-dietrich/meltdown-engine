@@ -35,6 +35,9 @@ namespace mtd
 				std::unordered_map<PipelineType, Pipeline>& pipelines
 			);
 
+			// Updates scene data
+			void update() const;
+
 		private:
 			// Active mesh managers
 			std::unordered_map<PipelineType, std::unique_ptr<MeshManager>> meshManagers;
