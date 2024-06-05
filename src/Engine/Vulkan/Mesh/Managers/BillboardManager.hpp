@@ -29,8 +29,8 @@ namespace mtd
 			// Updates instances data
 			virtual void update() const override;
 
-			// Does nothing, as it has no vertex or index buffers
-			virtual void bindBuffers(const vk::CommandBuffer& commandBuffer) const override {}
+			// Binds the vertex buffer for instances data
+			virtual void bindBuffers(const vk::CommandBuffer& commandBuffer) const override;
 			// Draws the mesh specified by the index
 			virtual void drawMesh
 			(
@@ -38,8 +38,14 @@ namespace mtd
 			) const override;
 
 		private:
+			// Transformation matrices for each instance
+			Memory::Buffer instanceBuffer;
+
 			// Textures for each billboard
 			std::vector<std::unique_ptr<Texture>> textures;
+
+			// Instances transforms lump
+			std::vector<glm::mat4> instanceLump;
 
 			// Device reference
 			const Device& device;

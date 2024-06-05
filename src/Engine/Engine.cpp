@@ -82,19 +82,13 @@ void mtd::Engine::start()
 // Sets up descriptor set shared across pipelines
 void mtd::Engine::configureGlobalDescriptorSetHandler()
 {
-	std::vector<vk::DescriptorSetLayoutBinding> bindings(2);
-	// Transformation matrices
+	std::vector<vk::DescriptorSetLayoutBinding> bindings(1);
+	// Camera data
 	bindings[0].binding = 0;
-	bindings[0].descriptorType = vk::DescriptorType::eStorageBuffer;
+	bindings[0].descriptorType = vk::DescriptorType::eUniformBuffer;
 	bindings[0].descriptorCount = 1;
 	bindings[0].stageFlags = vk::ShaderStageFlagBits::eVertex;
 	bindings[0].pImmutableSamplers = nullptr;
-	// Camera data
-	bindings[1].binding = 1;
-	bindings[1].descriptorType = vk::DescriptorType::eUniformBuffer;
-	bindings[1].descriptorCount = 1;
-	bindings[1].stageFlags = vk::ShaderStageFlagBits::eVertex;
-	bindings[1].pImmutableSamplers = nullptr;
 
 	globalDescriptorSetHandler =
 		std::make_unique<DescriptorSetHandler>(device.getDevice(), bindings);
@@ -139,29 +133,10 @@ void mtd::Engine::configureDescriptors()
 	scene.getDescriptorPool().allocateDescriptorSet(*globalDescriptorSetHandler);
 	globalDescriptorSetHandler->createDescriptorResources
 	(
-		device,
-		sizeof(glm::mat4),
-		vk::BufferUsageFlagBits::eStorageBuffer,
-		0,
-		0
-	);
-	globalDescriptorSetHandler->createDescriptorResources
-	(
-		device, sizeof(CameraMatrices), vk::BufferUsageFlagBits::eUniformBuffer, 0, 1
+		device, sizeof(CameraMatrices), vk::BufferUsageFlagBits::eUniformBuffer, 0, 0
 	);
 
-	char* bufferWriteLocation =
-		static_cast<char*>(globalDescriptorSetHandler->getBufferWriteLocation(0, 0));
-	glm::mat4 billboardTransform
-	{
-		0.5f, 0.0f, 0.0f, 0.0f,
-		0.0f, 0.5f, 0.0f, 0.0f,
-		0.0f, 0.0f, 1.0f, 0.0f,
-		0.0f, -2.0f, 0.0f, 1.0f
-	};
-	memcpy(bufferWriteLocation, &billboardTransform, sizeof(glm::mat4));
-
-	void* cameraWriteLocation = globalDescriptorSetHandler->getBufferWriteLocation(0, 1);
+	void* cameraWriteLocation = globalDescriptorSetHandler->getBufferWriteLocation(0, 0);
 	camera.setWriteLocation(cameraWriteLocation);
 
 	globalDescriptorSetHandler->writeDescriptorSet(0);

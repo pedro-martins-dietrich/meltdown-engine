@@ -83,9 +83,25 @@ void defaultVertexInput(vk::PipelineVertexInputStateCreateInfo& vertexInputInfo)
 // Sets no vertex input for pipeline
 void noVertexInput(vk::PipelineVertexInputStateCreateInfo& vertexInputInfo)
 {
+	static vk::VertexInputBindingDescription bindingDescription;
+	// Per instance binding
+	bindingDescription.binding = 0;
+	bindingDescription.stride = static_cast<uint32_t>(sizeof(glm::mat4));
+	bindingDescription.inputRate = vk::VertexInputRate::eInstance;
+
+	static std::array<vk::VertexInputAttributeDescription, 4> attributeDescriptions;
+	// Instance transformation matrix
+	for(size_t i = 0; i < 4; i++)
+	{
+		attributeDescriptions[i].location = i;
+		attributeDescriptions[i].binding = 0;
+		attributeDescriptions[i].format = vk::Format::eR32G32B32A32Sfloat;
+		attributeDescriptions[i].offset = 4 * i * sizeof(float);
+	}
+
 	vertexInputInfo.flags = vk::PipelineVertexInputStateCreateFlags();
-	vertexInputInfo.vertexBindingDescriptionCount = 0;
-	vertexInputInfo.pVertexBindingDescriptions = nullptr;
-	vertexInputInfo.vertexAttributeDescriptionCount = 0;
-	vertexInputInfo.pVertexAttributeDescriptions = nullptr;
+	vertexInputInfo.vertexBindingDescriptionCount = 1;
+	vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+	vertexInputInfo.vertexAttributeDescriptionCount = attributeDescriptions.size();
+	vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 }

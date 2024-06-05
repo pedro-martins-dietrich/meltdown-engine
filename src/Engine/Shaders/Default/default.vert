@@ -11,12 +11,7 @@ layout(location = 0) out vec3 fragColor;
 layout(location = 1) out vec2 fragTextureCoordinates;
 layout(location = 2) out vec3 fragNormal;
 
-layout(set = 0, binding = 0, std140) readonly buffer storageBuffer
-{
-	mat4 model[];
-} modelData;
-
-layout(set = 0, binding = 1) uniform CameraMatrices
+layout(set = 0, binding = 0) uniform CameraMatrices
 {
 	mat4 projection;
 	mat4 view;
