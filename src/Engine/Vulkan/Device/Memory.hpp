@@ -55,4 +55,42 @@ namespace mtd::Memory
 		uint32_t supportedMemoryIndex,
 		vk::MemoryPropertyFlags requestedProperties
 	);
+
+	// Creates buffer copies data to a device local memory
+	template<typename T>
+	void createDeviceLocalBuffer
+	(
+		const Device& device,
+		Buffer& buffer,
+		const std::vector<T>& data,
+		vk::BufferUsageFlags bufferUsage,
+		const CommandHandler& commandHandler
+	)
+	{
+		Buffer stagingBuffer;
+
+		vk::DeviceSize dataSize = data.size() * sizeof(T);
+		createBuffer
+		(
+			device,
+			stagingBuffer,
+			dataSize,
+			vk::BufferUsageFlagBits::eTransferSrc,
+			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
+		);
+		copyMemory(device.getDevice(), stagingBuffer.bufferMemory, dataSize, data.data());
+
+		createBuffer
+		(
+			device,
+			buffer,
+			dataSize,
+			vk::BufferUsageFlagBits::eTransferDst | bufferUsage,
+			vk::MemoryPropertyFlagBits::eDeviceLocal
+		);
+		copyBuffer(stagingBuffer, buffer, dataSize, commandHandler);
+
+		device.getDevice().destroyBuffer(stagingBuffer.buffer);
+		device.getDevice().freeMemory(stagingBuffer.bufferMemory);
+	}
 }

@@ -1,13 +1,10 @@
 #version 450
 
-layout(location = 1) out vec2 fragTextureCoordinates;
+layout(location = 0) in mat4 model;
 
-layout(set = 0, binding = 0, std140) readonly buffer storageBuffer
-{
-	mat4 model[];
-} modelData;
+layout(location = 0) out vec2 fragTextureCoordinates;
 
-layout(set = 0, binding = 1) uniform CameraMatrices
+layout(set = 0, binding = 0) uniform CameraMatrices
 {
 	mat4 projection;
 	mat4 view;
@@ -26,8 +23,6 @@ const vec2 vertices[6] =
 
 void main()
 {
-	mat4 model = modelData.model[gl_InstanceIndex];
-
 	vec4 worldPosition = camera.view * vec4(model[3][0], model[3][1], model[3][2], 1.0f);
 	vec4 vertexPosition = vec4
 	(

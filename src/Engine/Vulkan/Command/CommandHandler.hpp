@@ -18,6 +18,9 @@ namespace mtd
 
 			CommandHandler(CommandHandler&& otherCommandHandler) noexcept;
 
+			// Getter
+			const vk::CommandBuffer& getCommandBuffer() const { return mainCommandBuffer; }
+
 			// Allocates a command buffer in the command pool
 			void allocateCommandBuffer(vk::CommandBuffer& commandBuffer) const;
 
@@ -26,8 +29,13 @@ namespace mtd
 			// Submits and finalizes the single time command
 			void endSingleTimeCommand(const vk::CommandBuffer& commandBuffer) const;
 
-			// Draws frame
-			void draw(const DrawInfo& drawInfo, const Gui& gui) const;
+			// Begins main command buffer
+			void beginCommand() const;
+			// Ends main command buffer
+			void endCommand() const;
+
+			// Submits recorded draw command
+			void submitDrawCommandBuffer(const SynchronizationBundle& syncBudle) const;
 
 		private:
 			// Command buffer allocator
@@ -37,17 +45,5 @@ namespace mtd
 
 			// Device reference
 			const Device& device;
-
-			// Begin command buffer
-			void beginCommand() const;
-			// End command buffer
-			void endCommand() const;
-
-			// Records draw command to the command buffer
-			void recordDrawCommand(const DrawInfo& drawInfo, const Gui& gui) const;
-			// Submits recorded draw command
-			void submitCommandBuffer(const SynchronizationBundle& syncBudle) const;
-			// Presents frame to screen when ready
-			void presentFrame(const DrawInfo& drawInfo) const;
 	};
 }

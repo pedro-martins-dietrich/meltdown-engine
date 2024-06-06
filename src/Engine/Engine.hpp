@@ -1,10 +1,9 @@
 #pragma once
 
-#include "Vulkan/Pipeline/Pipeline.hpp"
-#include "Vulkan/Mesh/MeshManager.hpp"
 #include "Vulkan/Descriptors/DescriptorPool.hpp"
 #include "Vulkan/Gui/Gui.hpp"
 #include "Vulkan/Gui/SettingsGui.hpp"
+#include "Vulkan/Render/Renderer.hpp"
 #include "Camera/Camera.hpp"
 #include "Scene/Scene.hpp"
 
@@ -33,10 +32,9 @@ namespace mtd
 			std::unordered_map<PipelineType, Pipeline> pipelines;
 			std::unique_ptr<DescriptorSetHandler> globalDescriptorSetHandler;
 			CommandHandler commandHandler;
-			MeshManager meshManager;
 			InputHandler inputHandler;
-			DescriptorPool descriptorPool;
 			Camera camera;
+			Renderer renderer;
 
 			// Engine's user interface
 			Gui imgui;
@@ -45,7 +43,6 @@ namespace mtd
 
 			// Scene being currently rendered
 			Scene scene;
-			std::unique_ptr<Texture> billboardTexture;
 
 			// Flag for updating the engine
 			bool shouldUpdateEngine;

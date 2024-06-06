@@ -50,29 +50,36 @@ mtd::Frame::~Frame()
 	device.destroyImageView(imageView);
 }
 
-mtd::Frame::Frame(Frame&& frame) noexcept
-	: device{frame.device},
-	frameIndex{frame.frameIndex},
-	frameDimensions{frame.frameDimensions},
-	image{std::move(frame.image)},
-	imageView{std::move(frame.imageView)},
-	framebuffer{std::move(frame.framebuffer)},
-	depthBuffer{std::move(frame.depthBuffer)},
-	depthBufferView{std::move(frame.depthBufferView)},
-	depthBufferMemory{std::move(frame.depthBufferMemory)},
-	depthBufferFormat{frame.depthBufferFormat},
-	commandHandler{std::move(frame.commandHandler)},
-	synchronizationBundle{std::move(frame.synchronizationBundle)}
+mtd::Frame::Frame(Frame&& other) noexcept
+	: device{other.device},
+	frameIndex{other.frameIndex},
+	frameDimensions{other.frameDimensions},
+	image{std::move(other.image)},
+	imageView{std::move(other.imageView)},
+	framebuffer{std::move(other.framebuffer)},
+	depthBuffer{std::move(other.depthBuffer)},
+	depthBufferView{std::move(other.depthBufferView)},
+	depthBufferMemory{std::move(other.depthBufferMemory)},
+	depthBufferFormat{other.depthBufferFormat},
+	commandHandler{std::move(other.commandHandler)},
+	synchronizationBundle{std::move(other.synchronizationBundle)}
 {
-	frame.image = nullptr;
-	frame.imageView = nullptr;
-	frame.framebuffer = nullptr;
-	frame.depthBuffer = nullptr;
-	frame.depthBufferView = nullptr;
-	frame.depthBufferMemory = nullptr;
-	frame.synchronizationBundle.inFlightFence = nullptr;
-	frame.synchronizationBundle.imageAvailable = nullptr;
-	frame.synchronizationBundle.renderFinished = nullptr;
+	other.image = nullptr;
+	other.imageView = nullptr;
+	other.framebuffer = nullptr;
+	other.depthBuffer = nullptr;
+	other.depthBufferView = nullptr;
+	other.depthBufferMemory = nullptr;
+	other.synchronizationBundle.inFlightFence = nullptr;
+	other.synchronizationBundle.imageAvailable = nullptr;
+	other.synchronizationBundle.renderFinished = nullptr;
+}
+
+// Adds frame data to the draw info
+void mtd::Frame::fetchFrameDrawData(DrawInfo& drawInfo) const
+{
+	drawInfo.framebuffer = &framebuffer;
+	drawInfo.syncBundle = &synchronizationBundle;
 }
 
 // Set up framebuffer
@@ -97,16 +104,6 @@ void mtd::Frame::createFramebuffer(const vk::RenderPass& renderPass)
 	}
 
 	LOG_VERBOSE("Created framebuffer.");
-}
-
-// Draws frame to screen
-void mtd::Frame::drawFrame(DrawInfo& drawInfo, const Gui& gui) const
-{
-	drawInfo.framebuffer = &framebuffer;
-	drawInfo.syncBundle = &synchronizationBundle;
-	drawInfo.frameIndex = frameIndex;
-
-	commandHandler.draw(drawInfo, gui);
 }
 
 // Creates depth buffer data

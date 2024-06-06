@@ -27,13 +27,13 @@ mtd::CommandHandler::~CommandHandler()
 	device.getDevice().destroyCommandPool(commandPool);
 }
 
-mtd::CommandHandler::CommandHandler(CommandHandler&& otherCommandHandler) noexcept
-	: device{otherCommandHandler.device},
-	commandPool{std::move(otherCommandHandler.commandPool)},
-	mainCommandBuffer{std::move(otherCommandHandler.mainCommandBuffer)}
+mtd::CommandHandler::CommandHandler(CommandHandler&& other) noexcept
+	: device{other.device},
+	commandPool{std::move(other.commandPool)},
+	mainCommandBuffer{std::move(other.mainCommandBuffer)}
 {
-	otherCommandHandler.commandPool = nullptr;
-	otherCommandHandler.mainCommandBuffer = nullptr;
+	other.commandPool = nullptr;
+	other.mainCommandBuffer = nullptr;
 }
 
 // Allocates a command buffer in the command pool
@@ -87,15 +87,7 @@ void mtd::CommandHandler::endSingleTimeCommand(const vk::CommandBuffer& commandB
 	device.getDevice().freeCommandBuffers(commandPool, 1, &commandBuffer);
 }
 
-// Draws frame
-void mtd::CommandHandler::draw(const DrawInfo& drawInfo, const Gui& gui) const
-{
-	recordDrawCommand(drawInfo, gui);
-	submitCommandBuffer(*(drawInfo.syncBundle));
-	presentFrame(drawInfo);
-}
-
-// Begin command buffer
+// Begins main command buffer
 void mtd::CommandHandler::beginCommand() const
 {
 	mainCommandBuffer.reset();
@@ -109,96 +101,14 @@ void mtd::CommandHandler::beginCommand() const
 		LOG_ERROR("Failed to begin command buffer. Vulkan result: %d", result);
 }
 
-// End command buffer
+// Ends main command buffer
 void mtd::CommandHandler::endCommand() const
 {
 	mainCommandBuffer.end();
 }
 
-// Records draw command to the command buffer
-void mtd::CommandHandler::recordDrawCommand(const DrawInfo& drawInfo, const Gui& gui) const
-{
-	beginCommand();
-
-	vk::Rect2D renderArea{};
-	renderArea.offset = vk::Offset2D{0, 0};
-	renderArea.extent = drawInfo.extent;
-
-	std::vector<vk::ClearValue> clearValues;
-	clearValues.push_back(vk::ClearColorValue{0.3f, 0.6f, 1.0f, 1.0f});
-	clearValues.push_back(vk::ClearDepthStencilValue{1.0f, 0});
-
-	vk::RenderPassBeginInfo renderPassBeginInfo{};
-	renderPassBeginInfo.renderPass = drawInfo.renderPass;
-	renderPassBeginInfo.framebuffer = *(drawInfo.framebuffer);
-	renderPassBeginInfo.renderArea = renderArea;
-	renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-	renderPassBeginInfo.pClearValues = clearValues.data();
-
-	mainCommandBuffer.beginRenderPass(&renderPassBeginInfo, vk::SubpassContents::eInline);
-
-	// Default pipeline
-	const PipelineDrawData& defaultDrawInfo = drawInfo.pipelineInfos.at(PipelineType::DEFAULT);
-	mainCommandBuffer.bindDescriptorSets
-	(
-		vk::PipelineBindPoint::eGraphics,
-		defaultDrawInfo.layout,
-		0,
-		1, &(drawInfo.globalDescriptorSet),
-		0, nullptr
-	);
-
-	mainCommandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, defaultDrawInfo.pipeline);
-
-	vk::DeviceSize offset = 0;
-	mainCommandBuffer.bindVertexBuffers(0, 1, &(drawInfo.meshLumpData.vertexBuffer), &offset);
-	mainCommandBuffer.bindIndexBuffer(drawInfo.meshLumpData.indexBuffer, 0, vk::IndexType::eUint32);
-
-	uint32_t startInstance = 0;
-	for(uint32_t i = 0; i < drawInfo.meshLumpData.indexCounts.size(); i++)
-	{
-		mainCommandBuffer.bindDescriptorSets
-		(
-			vk::PipelineBindPoint::eGraphics,
-			defaultDrawInfo.layout,
-			1,
-			1, &defaultDrawInfo.descriptorSets[i],
-			0, nullptr
-		);
-
-		mainCommandBuffer.drawIndexed
-		(
-			drawInfo.meshLumpData.indexCounts[i],
-			drawInfo.meshLumpData.instanceCounts[i],
-			drawInfo.meshLumpData.indexOffsets[i],
-			0,
-			startInstance
-		);
-		startInstance += drawInfo.meshLumpData.instanceCounts[i];
-	}
-
-	// Billboard pipeline
-	const PipelineDrawData& billboardDrawInfo = drawInfo.pipelineInfos.at(PipelineType::BILLBOARD);
-	mainCommandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, billboardDrawInfo.pipeline);
-	mainCommandBuffer.bindDescriptorSets
-	(
-		vk::PipelineBindPoint::eGraphics,
-		billboardDrawInfo.layout,
-		1,
-		1, billboardDrawInfo.descriptorSets.data(),
-		0, nullptr
-	);
-	mainCommandBuffer.draw(6, 1, 0, startInstance);
-
-	gui.renderGui(mainCommandBuffer);
-
-	mainCommandBuffer.endRenderPass();
-
-	endCommand();
-}
-
 // Submits recorded draw command
-void mtd::CommandHandler::submitCommandBuffer(const SynchronizationBundle& syncBundle) const
+void mtd::CommandHandler::submitDrawCommandBuffer(const SynchronizationBundle& syncBundle) const
 {
 	vk::PipelineStageFlags waitStage = vk::PipelineStageFlagBits::eColorAttachmentOutput;
 	vk::SubmitInfo submitInfo{};
@@ -214,20 +124,4 @@ void mtd::CommandHandler::submitCommandBuffer(const SynchronizationBundle& syncB
 		device.getGraphicsQueue().submit(1, &submitInfo, syncBundle.inFlightFence);
 	if(result != vk::Result::eSuccess)
 		LOG_ERROR("Failed to submit draw command to the GPU. Vulkan result: %d", result);
-}
-
-// Presents frame to screen when ready
-void mtd::CommandHandler::presentFrame(const DrawInfo& drawInfo) const
-{
-	vk::PresentInfoKHR presentInfo{};
-	presentInfo.waitSemaphoreCount = 1;
-	presentInfo.pWaitSemaphores = &(drawInfo.syncBundle->renderFinished);
-	presentInfo.swapchainCount = 1;
-	presentInfo.pSwapchains = &(drawInfo.swapchain);
-	presentInfo.pImageIndices = &(drawInfo.frameIndex);
-	presentInfo.pResults = nullptr;
-
-	vk::Result result = device.getPresentQueue().presentKHR(&presentInfo);
-	if(result != vk::Result::eSuccess && result != vk::Result::eErrorOutOfDateKHR)
-		LOG_ERROR("Failed to present frame to screen. Vulkan result: %d", result);
 }

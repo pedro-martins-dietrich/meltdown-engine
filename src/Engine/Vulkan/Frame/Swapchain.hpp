@@ -25,6 +25,7 @@ namespace mtd
 			const vk::Extent2D& getExtent() const { return extent; }
 			const vk::RenderPass& getRenderPass() const { return renderPass; }
 			const Frame& getFrame(uint32_t index) const { return frames[index]; }
+			uint32_t getFrameCount() const { return static_cast<uint32_t>(frames.size()); }
 			SwapchainSettings& getSettings() { return settings; }
 
 			// Recreates swapchain to handle resizes

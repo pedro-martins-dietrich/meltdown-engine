@@ -33,6 +33,7 @@ namespace mtd
 			const vk::DescriptorSetLayout& getLayout() const { return descriptorSetLayout; }
 			uint32_t getSetCount() const { return static_cast<uint32_t>(descriptorSets.size()); }
 			vk::DescriptorSet& getSet(uint32_t index) { return descriptorSets[index]; }
+			const vk::DescriptorSet& getSet(uint32_t index) const { return descriptorSets[index]; }
 			std::vector<vk::DescriptorSet>& getSets() { return descriptorSets; }
 			void* getBufferWriteLocation(uint32_t setIndex, uint32_t descriptorIndex) const
 				{ return resourcesList[setIndex][descriptorIndex].descriptorBufferWriteLocation; }

@@ -10,11 +10,11 @@ mtd::Engine::Engine()
 	device{vulkanInstance},
 	swapchain{device, window.getDimensions(), vulkanInstance.getSurface()},
 	commandHandler{device},
-	meshManager{device},
+	scene{device},
 	inputHandler{},
-	descriptorPool{device.getDevice()},
 	imgui{device.getDevice(), inputHandler},
 	settingsGui{swapchain.getSettings(), shouldUpdateEngine},
+	renderer{},
 	camera{inputHandler, glm::vec3{0.0f, -1.5f, -4.5f}, 70.0f, window.getAspectRatio()},
 	shouldUpdateEngine{false}
 {
@@ -35,12 +35,7 @@ mtd::Engine::Engine()
 
 	LOG_INFO("Engine ready.\n");
 
-	scene.loadScene
-	(
-		"meltdown_demo.json",
-		meshManager,
-		commandHandler
-	);
+	scene.loadScene("meltdown_demo.json", commandHandler, pipelines);
 
 	configureDescriptors();
 }
@@ -55,44 +50,16 @@ mtd::Engine::~Engine()
 // Begins the engine main loop
 void mtd::Engine::start()
 {
-	uint32_t currentFrameIndex = 0;
-
 	double lastTime;
 	double currentTime = glfwGetTime();
 	double frameTime = 0.016;
 
 	DrawInfo drawInfo
 	{
-		MeshLumpData
-		{
-			meshManager.getIndexCounts(),
-			meshManager.getInstanceCounts(),
-			meshManager.getIndexOffsets(),
-			meshManager.getVertexBuffer(),
-			meshManager.getIndexBuffer()
-		},
 		swapchain.getRenderPass(),
-		swapchain.getSwapchain(),
 		swapchain.getExtent(),
 		globalDescriptorSetHandler->getSet(0)
 	};
-
-	DescriptorSetHandler& defaultSetHandler =
-		pipelines.at(PipelineType::DEFAULT).getDescriptorSetHandler(0);
-
-	for(auto& [type, pipeline]: pipelines)
-	{
-		drawInfo.pipelineInfos.emplace
-		(
-			std::piecewise_construct,
-			std::forward_as_tuple(type),
-			std::forward_as_tuple(pipeline.getPipeline(), pipeline.getLayout())
-		);
-		for(const vk::DescriptorSet& set: pipeline.getDescriptorSetHandler(0).getSets())
-		{
-			drawInfo.pipelineInfos.at(type).descriptorSets.push_back(set);
-		}
-	}
 
 	while(window.keepOpen())
 	{
@@ -101,54 +68,10 @@ void mtd::Engine::start()
 
 		updateScene(frameTime);
 
-		if(shouldUpdateEngine)
-		{
-			updateEngine();
-			currentFrameIndex = 0;
-			continue;
-		}
-
-		const Frame& frame = swapchain.getFrame(currentFrameIndex);
-		const vk::Fence& inFlightFence = frame.getInFlightFence();
-
-		(void) device.getDevice().waitForFences
-		(
-			1, &inFlightFence, vk::True, UINT64_MAX
-		);
-		(void) device.getDevice().resetFences(1, &inFlightFence);
-
-		vk::Result result = device.getDevice().acquireNextImageKHR
-		(
-			swapchain.getSwapchain(),
-			UINT64_MAX,
-			frame.getImageAvailableSemaphore(),
-			nullptr,
-			&currentFrameIndex
-		);
-		if(result != vk::Result::eSuccess)
-		{
-			if(result == vk::Result::eErrorOutOfDateKHR ||
-				result == vk::Result::eErrorIncompatibleDisplayKHR)
-			{
-				shouldUpdateEngine = true;
-			}
-			else
-			{
-				LOG_ERROR("Failed to acquire swapchain image. Vulkan result: %d", result);
-				break;
-			}
-		}
+		renderer.render(device, swapchain, imgui, pipelines, scene, drawInfo, shouldUpdateEngine);
 
 		if(shouldUpdateEngine)
-		{
 			updateEngine();
-			currentFrameIndex = 0;
-			continue;
-		}
-
-		swapchain.getFrame(currentFrameIndex).drawFrame(drawInfo, imgui);
-
-		currentFrameIndex = (currentFrameIndex + 1) % swapchain.getSettings().frameCount;
 
 		lastTime = currentTime;
 		currentTime = glfwGetTime();
@@ -159,19 +82,13 @@ void mtd::Engine::start()
 // Sets up descriptor set shared across pipelines
 void mtd::Engine::configureGlobalDescriptorSetHandler()
 {
-	std::vector<vk::DescriptorSetLayoutBinding> bindings(2);
-	// Transformation matrices
+	std::vector<vk::DescriptorSetLayoutBinding> bindings(1);
+	// Camera data
 	bindings[0].binding = 0;
-	bindings[0].descriptorType = vk::DescriptorType::eStorageBuffer;
+	bindings[0].descriptorType = vk::DescriptorType::eUniformBuffer;
 	bindings[0].descriptorCount = 1;
 	bindings[0].stageFlags = vk::ShaderStageFlagBits::eVertex;
 	bindings[0].pImmutableSamplers = nullptr;
-	// Camera data
-	bindings[1].binding = 1;
-	bindings[1].descriptorType = vk::DescriptorType::eUniformBuffer;
-	bindings[1].descriptorCount = 1;
-	bindings[1].stageFlags = vk::ShaderStageFlagBits::eVertex;
-	bindings[1].pImmutableSamplers = nullptr;
 
 	globalDescriptorSetHandler =
 		std::make_unique<DescriptorSetHandler>(device.getDevice(), bindings);
@@ -212,74 +129,17 @@ void mtd::Engine::configurePipelines()
 // Sets up the descriptors
 void mtd::Engine::configureDescriptors()
 {
-	std::vector<PoolSizeData> poolSizesInfo{3};
-	poolSizesInfo[0].descriptorCount = 1;
-	poolSizesInfo[0].descriptorType = vk::DescriptorType::eStorageBuffer;
-	poolSizesInfo[1].descriptorCount = 1;
-	poolSizesInfo[1].descriptorType = vk::DescriptorType::eUniformBuffer;
-	poolSizesInfo[2].descriptorCount = static_cast<uint32_t>(scene.getMeshes().size());
-	poolSizesInfo[2].descriptorType = vk::DescriptorType::eCombinedImageSampler;
-	descriptorPool.createDescriptorPool(poolSizesInfo);
-
-	// Global descriptor set handler
 	globalDescriptorSetHandler->defineDescriptorSetsAmount(1);
-	descriptorPool.allocateDescriptorSet(*globalDescriptorSetHandler);
+	scene.getDescriptorPool().allocateDescriptorSet(*globalDescriptorSetHandler);
 	globalDescriptorSetHandler->createDescriptorResources
 	(
-		device,
-		meshManager.getModelMatricesSize() + sizeof(glm::mat4),
-		vk::BufferUsageFlagBits::eStorageBuffer,
-		0,
-		0
-	);
-	globalDescriptorSetHandler->createDescriptorResources
-	(
-		device, sizeof(CameraMatrices), vk::BufferUsageFlagBits::eUniformBuffer, 0, 1
+		device, sizeof(CameraMatrices), vk::BufferUsageFlagBits::eUniformBuffer, 0, 0
 	);
 
-	char* bufferWriteLocation =
-		static_cast<char*>(globalDescriptorSetHandler->getBufferWriteLocation(0, 0));
-	for(Mesh& mesh: scene.getMeshes())
-	{
-		mesh.setTransformsWriteLocation(bufferWriteLocation);
-		mesh.updateTransformationMatricesDescriptor();
-
-		bufferWriteLocation += mesh.getModelMatricesSize();
-	}
-	glm::mat4 billboardTransform
-	{
-		0.5f, 0.0f, 0.0f, 0.0f,
-		0.0f, 0.5f, 0.0f, 0.0f,
-		0.0f, 0.0f, 1.0f, 0.0f,
-		0.0f, -2.0f, 0.0f, 1.0f
-	};
-	memcpy(bufferWriteLocation, &billboardTransform, sizeof(glm::mat4));
-
-	void* cameraWriteLocation = globalDescriptorSetHandler->getBufferWriteLocation(0, 1);
+	void* cameraWriteLocation = globalDescriptorSetHandler->getBufferWriteLocation(0, 0);
 	camera.setWriteLocation(cameraWriteLocation);
 
 	globalDescriptorSetHandler->writeDescriptorSet(0);
-
-	// Textures descriptor set handler
-	DescriptorSetHandler& texturesDescriptorSetHandler =
-		pipelines.at(PipelineType::DEFAULT).getDescriptorSetHandler(0);
-	texturesDescriptorSetHandler.defineDescriptorSetsAmount
-	(
-		static_cast<uint32_t>(scene.getMeshes().size())
-	);
-	descriptorPool.allocateDescriptorSet(texturesDescriptorSetHandler);
-
-	scene.loadTextures(device, commandHandler, texturesDescriptorSetHandler);
-
-	// Billboard texture
-	DescriptorSetHandler& billboardTexturesDescriptorSetHandler =
-		pipelines.at(PipelineType::BILLBOARD).getDescriptorSetHandler(0);
-	billboardTexturesDescriptorSetHandler.defineDescriptorSetsAmount(1);
-	descriptorPool.allocateDescriptorSet(billboardTexturesDescriptorSetHandler);
-	billboardTexture = std::make_unique<Texture>
-	(
-		device, "textures/orb.png", commandHandler, billboardTexturesDescriptorSetHandler, 0
-	);
 }
 
 // Changes the scene
@@ -315,6 +175,8 @@ void mtd::Engine::updateScene(float frameTime)
 	matrix[3][0] -= frameTime * matrix[3][2];
 	matrix[3][2] += frameTime * matrix[3][0];
 	mesh.updateTransformationMatrix(matrix, 0);
+
+	scene.update();
 }
 
 // Recreates swapchain and pipeline to apply new settings

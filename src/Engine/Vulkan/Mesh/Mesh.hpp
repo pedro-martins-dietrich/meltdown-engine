@@ -26,46 +26,31 @@ namespace mtd
 				{ return transforms; }
 			glm::mat4 getTransformationMatrix(uint32_t instance) const
 				{ return transforms[instance]; }
-			vk::DeviceSize getModelMatricesSize() const
-				{ return sizeof(glm::mat4) * transforms.size(); }
 
-			// Sets the write location for the transformation matrices
-			void setTransformsWriteLocation(void* location)
-				{ transformsMemoryLocation = static_cast<glm::mat4*>(location); }
+			// Sets a reference to the instance lump to update the instances data
+			void setInstancesLump(std::vector<glm::mat4>* instanceLumpPointer, size_t offset);
 
 			// Adds a new instance of the mesh
 			void addInstance(glm::mat4 preTransform = glm::mat4{1.0f});
 
 			// Writes the transformation matrices in the GPU mapped memory
-			void updateTransformationMatricesDescriptor() const;
 			void updateTransformationMatrix(glm::mat4 newTransform, uint32_t instance);
 
-			// Gets mesh data
-			static const vk::VertexInputBindingDescription&
-				getInputBindingDescription() { return bindingDescription; }
-			static const std::vector<vk::VertexInputAttributeDescription>&
-				getInputAttributeDescriptions() { return attributeDescriptions; }
-
 		private:
-			// Floats per vertex
-			static const uint32_t floatsPerVertex;
-			// Vertex input data
-			static const vk::VertexInputBindingDescription bindingDescription;
-			static const std::vector<vk::VertexInputAttributeDescription> attributeDescriptions;
-
 			// Mesh ID
 			uint32_t id;
-
-			// Transformation matrices for each instance
-			std::vector<glm::mat4> transforms;
-			// Memory location for the transformation matrices descriptor
-			glm::mat4* transformsMemoryLocation;
 
 			// Mesh data
 			std::vector<Vertex> vertices;
 			std::vector<uint32_t> indices;
-
+			// Transformation matrices for each instance
+			std::vector<glm::mat4> transforms;
+			
 			// Mesh texture file path
 			std::string diffuseTexturePath;
+
+			// Pointer to the instance lump vector and start index
+			size_t instanceLumpOffset;
+			std::vector<glm::mat4>* pInstanceLump;
 	};
 }

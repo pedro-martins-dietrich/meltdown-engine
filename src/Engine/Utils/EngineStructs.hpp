@@ -71,35 +71,13 @@ namespace mtd
 		glm::vec3 color;
 	};
 
-	// Vertex array manager draw data
-	struct MeshLumpData
-	{
-		const std::vector<uint32_t>& indexCounts;
-		const std::vector<uint32_t>& instanceCounts;
-		const std::vector<uint32_t>& indexOffsets;
-		const vk::Buffer& vertexBuffer;
-		const vk::Buffer& indexBuffer;
-	};
-
-	// Pipeline information for drawing
-	struct PipelineDrawData
-	{
-		const vk::Pipeline& pipeline;
-		const vk::PipelineLayout& layout;
-		std::vector<vk::DescriptorSet> descriptorSets;
-	};
-
 	// Information required for drawing a frame
 	struct DrawInfo
 	{
-		MeshLumpData meshLumpData;
 		const vk::RenderPass& renderPass;
-		const vk::SwapchainKHR& swapchain;
 		const vk::Extent2D& extent;
 		const vk::DescriptorSet& globalDescriptorSet;
 		const vk::Framebuffer* framebuffer;
 		const SynchronizationBundle* syncBundle;
-		uint32_t frameIndex;
-		std::unordered_map<PipelineType, PipelineDrawData> pipelineInfos;
 	};
 }

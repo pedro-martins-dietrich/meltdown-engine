@@ -3,8 +3,9 @@
 #include <memory>
 
 #include "SceneLoader.hpp"
-#include "../Vulkan/Mesh/MeshManager.hpp"
-#include "../Vulkan/Image/Texture.hpp"
+#include "../Vulkan/Mesh/Managers/DefaultMeshManager.hpp"
+#include "../Vulkan/Mesh/Managers/BillboardManager.hpp"
+#include "../Vulkan/Pipeline/Pipeline.hpp"
 
 namespace mtd
 {
@@ -12,35 +13,43 @@ namespace mtd
 	class Scene
 	{
 		public:
-			Scene() {}
-			~Scene() {}
+			Scene(const Device& device);
+			~Scene() = default;
 
 			Scene(const Scene&) = delete;
 			Scene& operator=(const Scene&) = delete;
 
 			// Getters
-			std::vector<Mesh>& getMeshes() { return meshes; }
-			Mesh& getMesh(uint32_t index) { return meshes[index]; }
+			const MeshManager* getMeshManager(PipelineType type) const
+				{ return meshManagers.at(type).get(); }
+			const DescriptorPool& getDescriptorPool() const { return descriptorPool; }
+			std::vector<Mesh>& getMeshes();
+			Mesh& getMesh(uint32_t index);
+			uint32_t getInstanceCount() const;
 
 			// Loads scene from file
 			void loadScene
 			(
 				const char* sceneFileName,
-				MeshManager& meshManager,
-				const CommandHandler& commandHandler
+				const CommandHandler& commandHandler,
+				std::unordered_map<PipelineType, Pipeline>& pipelines
 			);
+
+			// Updates scene data
+			void update() const;
+
+		private:
+			// Active mesh managers
+			std::unordered_map<PipelineType, std::unique_ptr<MeshManager>> meshManagers;
+
+			// Descriptor pool for the pipelines descriptor sets
+			DescriptorPool descriptorPool;
 
 			// Loads textures associated to meshes
 			void loadTextures
 			(
-				const Device& mtdDevice,
 				const CommandHandler& commandHandler,
-				DescriptorSetHandler& textureDescriptorSetHandler
+				std::unordered_map<PipelineType, Pipeline>& pipelines
 			);
-
-		private:
-			// List of meshes used in the scene
-			std::vector<Mesh> meshes;
-			std::vector<std::unique_ptr<Texture>> diffuseTextures;
 	};
 }

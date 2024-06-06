@@ -1,7 +1,7 @@
 #include "VertexInputBuilder.hpp"
 
+#include "../../../Utils/EngineStructs.hpp"
 #include "../../../Utils/Logger.hpp"
-#include "../../Mesh/Mesh.hpp"
 
 // Vertex input builders for each pipeline type
 static void defaultVertexInput(vk::PipelineVertexInputStateCreateInfo& vertexInputInfo);
@@ -33,14 +33,49 @@ void mtd::VertexInputBuilder::setVertexInput
 // Uses mesh data for vertex input
 void defaultVertexInput(vk::PipelineVertexInputStateCreateInfo& vertexInputInfo)
 {
-	const vk::VertexInputBindingDescription& bindingDescription =
-		mtd::Mesh::getInputBindingDescription();
-	const std::vector<vk::VertexInputAttributeDescription>& attributeDescriptions =
-		mtd::Mesh::getInputAttributeDescriptions();
+	static std::array<vk::VertexInputBindingDescription, 2> bindingDescriptions;
+	// Per vertex binding
+	bindingDescriptions[0].binding = 0;
+	bindingDescriptions[0].stride = static_cast<uint32_t>(sizeof(mtd::Vertex));
+	bindingDescriptions[0].inputRate = vk::VertexInputRate::eVertex;
+	// Per instance binding
+	bindingDescriptions[1].binding = 1;
+	bindingDescriptions[1].stride = static_cast<uint32_t>(sizeof(glm::mat4));
+	bindingDescriptions[1].inputRate = vk::VertexInputRate::eInstance;
+
+	static std::array<vk::VertexInputAttributeDescription, 8> attributeDescriptions;
+	// Vertex position
+	attributeDescriptions[0].location = 0;
+	attributeDescriptions[0].binding = 0;
+	attributeDescriptions[0].format = vk::Format::eR32G32B32Sfloat;
+	attributeDescriptions[0].offset = 0;
+	// Vertex texture coordinate
+	attributeDescriptions[1].location = 1;
+	attributeDescriptions[1].binding = 0;
+	attributeDescriptions[1].format = vk::Format::eR32G32Sfloat;
+	attributeDescriptions[1].offset = 3 * sizeof(float);
+	// Vertex normal vector
+	attributeDescriptions[2].location = 2;
+	attributeDescriptions[2].binding = 0;
+	attributeDescriptions[2].format = vk::Format::eR32G32B32Sfloat;
+	attributeDescriptions[2].offset = 5 * sizeof(float);
+	// Vertex color
+	attributeDescriptions[3].location = 3;
+	attributeDescriptions[3].binding = 0;
+	attributeDescriptions[3].format = vk::Format::eR32G32B32Sfloat;
+	attributeDescriptions[3].offset = 8 * sizeof(float);
+	// Instance transformation matrix
+	for(size_t i = 0; i < 4; i++)
+	{
+		attributeDescriptions[4 + i].location = 4 + i;
+		attributeDescriptions[4 + i].binding = 1;
+		attributeDescriptions[4 + i].format = vk::Format::eR32G32B32A32Sfloat;
+		attributeDescriptions[4 + i].offset = 4 * i * sizeof(float);
+	}
 
 	vertexInputInfo.flags = vk::PipelineVertexInputStateCreateFlags();
-	vertexInputInfo.vertexBindingDescriptionCount = 1;
-	vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+	vertexInputInfo.vertexBindingDescriptionCount = bindingDescriptions.size();
+	vertexInputInfo.pVertexBindingDescriptions = bindingDescriptions.data();
 	vertexInputInfo.vertexAttributeDescriptionCount = attributeDescriptions.size();
 	vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 }
@@ -48,9 +83,25 @@ void defaultVertexInput(vk::PipelineVertexInputStateCreateInfo& vertexInputInfo)
 // Sets no vertex input for pipeline
 void noVertexInput(vk::PipelineVertexInputStateCreateInfo& vertexInputInfo)
 {
+	static vk::VertexInputBindingDescription bindingDescription;
+	// Per instance binding
+	bindingDescription.binding = 0;
+	bindingDescription.stride = static_cast<uint32_t>(sizeof(glm::mat4));
+	bindingDescription.inputRate = vk::VertexInputRate::eInstance;
+
+	static std::array<vk::VertexInputAttributeDescription, 4> attributeDescriptions;
+	// Instance transformation matrix
+	for(size_t i = 0; i < 4; i++)
+	{
+		attributeDescriptions[i].location = i;
+		attributeDescriptions[i].binding = 0;
+		attributeDescriptions[i].format = vk::Format::eR32G32B32A32Sfloat;
+		attributeDescriptions[i].offset = 4 * i * sizeof(float);
+	}
+
 	vertexInputInfo.flags = vk::PipelineVertexInputStateCreateFlags();
-	vertexInputInfo.vertexBindingDescriptionCount = 0;
-	vertexInputInfo.pVertexBindingDescriptions = nullptr;
-	vertexInputInfo.vertexAttributeDescriptionCount = 0;
-	vertexInputInfo.pVertexAttributeDescriptions = nullptr;
+	vertexInputInfo.vertexBindingDescriptionCount = 1;
+	vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+	vertexInputInfo.vertexAttributeDescriptionCount = attributeDescriptions.size();
+	vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 }
