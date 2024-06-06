@@ -124,64 +124,16 @@ void mtd::DefaultMeshManager::loadMeshToLump(Mesh& mesh)
 // Loads the lumps into the VRAM and clears them
 void mtd::DefaultMeshManager::loadMeshesToGPU(const CommandHandler& commandHandler)
 {
-	Memory::Buffer stagingBuffer;
-
-	// Vertex loading
-	vk::DeviceSize vertexLumpSize = vertexLump.size() * sizeof(Vertex);
-	Memory::createBuffer
+	Memory::createDeviceLocalBuffer<Vertex>
 	(
-		device,
-		stagingBuffer,
-		vertexLumpSize,
-		vk::BufferUsageFlagBits::eTransferSrc,
-		vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
-	);
-	Memory::copyMemory
-	(
-		device.getDevice(), stagingBuffer.bufferMemory, vertexLumpSize, vertexLump.data()
+		device, vertexBuffer, vertexLump, vk::BufferUsageFlagBits::eVertexBuffer, commandHandler
 	);
 
-	Memory::createBuffer
+	Memory::createDeviceLocalBuffer<uint32_t>
 	(
-		device,
-		vertexBuffer,
-		vertexLumpSize,
-		vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer,
-		vk::MemoryPropertyFlagBits::eDeviceLocal
+		device, indexBuffer, indexLump, vk::BufferUsageFlagBits::eIndexBuffer, commandHandler
 	);
-	Memory::copyBuffer(stagingBuffer, vertexBuffer, vertexLumpSize, commandHandler);
 
-	device.getDevice().destroyBuffer(stagingBuffer.buffer);
-	device.getDevice().freeMemory(stagingBuffer.bufferMemory);
-
-	// Index loading
-	vk::DeviceSize indexLumpSize = indexLump.size() * sizeof(uint32_t);
-	Memory::createBuffer
-	(
-		device,
-		stagingBuffer,
-		indexLumpSize,
-		vk::BufferUsageFlagBits::eTransferSrc,
-		vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
-	);
-	Memory::copyMemory
-	(
-		device.getDevice(), stagingBuffer.bufferMemory, indexLumpSize, indexLump.data()
-	);
-	Memory::createBuffer
-	(
-		device,
-		indexBuffer,
-		indexLumpSize,
-		vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eIndexBuffer,
-		vk::MemoryPropertyFlagBits::eDeviceLocal
-	);
-	Memory::copyBuffer(stagingBuffer, indexBuffer, indexLumpSize, commandHandler);
-
-	device.getDevice().destroyBuffer(stagingBuffer.buffer);
-	device.getDevice().freeMemory(stagingBuffer.bufferMemory);
-
-	// Instance loading
 	vk::DeviceSize instanceLumpSize = instanceLump.size() * sizeof(glm::mat4);
 	Memory::createBuffer
 	(
@@ -196,7 +148,6 @@ void mtd::DefaultMeshManager::loadMeshesToGPU(const CommandHandler& commandHandl
 		device.getDevice(), instanceBuffer.bufferMemory, instanceLumpSize, instanceLump.data()
 	);
 
-	// Cleanup
 	vertexLump.clear();
 	indexLump.clear();
 	currentIndexOffset = 0;
