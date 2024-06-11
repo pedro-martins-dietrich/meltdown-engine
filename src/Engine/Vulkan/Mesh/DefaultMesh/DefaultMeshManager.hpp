@@ -1,23 +1,11 @@
 #pragma once
 
-#include <memory>
-
-#include "MeshManager.hpp"
-#include "../Mesh.hpp"
+#include "DefaultMesh.hpp"
+#include "../MeshManager.hpp"
 #include "../../Device/Memory.hpp"
-#include "../../Image/Texture.hpp"
 
 namespace mtd
 {
-	// Index and instance data for drawing a single mesh
-	struct MeshDrawData
-	{
-		uint32_t indexCount;
-		uint32_t instanceCount;
-		uint32_t indexOffset;
-		uint32_t startIndex;
-	};
-
 	// Handles the vertices of multiple default meshes
 	class DefaultMeshManager : public MeshManager
 	{
@@ -30,15 +18,12 @@ namespace mtd
 
 			// Getters
 			virtual uint32_t getMeshCount() const override
-				{ return static_cast<uint32_t>(meshDrawInfos.size()); }
+				{ return static_cast<uint32_t>(meshes.size()); }
 			uint32_t getTotalInstanceCount() const { return totalInstanceCount; }
-			std::vector<Mesh>& getMeshes() { return meshes; }
+			std::vector<DefaultMesh>& getMeshes() { return meshes; }
 
-			// Groups the meshes into a lump and pass to the GPU
-			void loadMeshes(const CommandHandler& commandHandler);
-
-			// Loads the textures of the meshes
-			virtual void loadTextures
+			// Loads textures and groups the meshes into a lump, then passes the data to the GPU
+			virtual void loadMeshes
 			(
 				const CommandHandler& commandHandler,
 				DescriptorSetHandler& textureDescriptorSetHandler
@@ -62,13 +47,8 @@ namespace mtd
 			// Transformation matrices for each instance
 			Memory::Buffer instanceBuffer;
 
-			// Index and instance data for each mesh
-			std::vector<MeshDrawData> meshDrawInfos;
-
 			// Default meshes
-			std::vector<Mesh> meshes;
-			// Diffuse textures for each mesh
-			std::vector<std::unique_ptr<Texture>> diffuseTextures;
+			std::vector<DefaultMesh> meshes;
 
 			// Lumps of data containing all vertices and indices from all meshes
 			std::vector<Vertex> vertexLump;
@@ -84,7 +64,7 @@ namespace mtd
 			const Device& device;
 
 			// Stores a mesh in the lump of data
-			void loadMeshToLump(Mesh& mesh);
+			void loadMeshToLump(DefaultMesh& mesh);
 			// Loads the lumps into the VRAM and clears them
 			void loadMeshesToGPU(const CommandHandler& commandHandler);
 	};

@@ -4,13 +4,30 @@
 
 mtd::BillboardManager::BillboardManager(const Device& device) : device{device}
 {
-	instanceLump.push_back(glm::mat4
+}
+
+mtd::BillboardManager::~BillboardManager()
+{
+	const vk::Device& vulkanDevice = device.getDevice();
+
+	vulkanDevice.destroyBuffer(instanceBuffer.buffer);
+	vulkanDevice.freeMemory(instanceBuffer.bufferMemory);
+}
+
+// Loads the billboards textures to the GPU
+void mtd::BillboardManager::loadMeshes
+(
+	const CommandHandler& commandHandler, DescriptorSetHandler& textureDescriptorSetHandler
+)
+{
+	for(Billboard& billboard: billboards)
 	{
-		0.5f, 0.0f, 0.0f, 0.0f,
-		0.0f, 0.5f, 0.0f, 0.0f,
-		0.0f, 0.0f, 1.0f, 0.0f,
-		0.0f, -2.0f, 0.0f, 1.0f
-	});
+		const std::vector<glm::mat4>& instancesData = billboard.getTransformationMatrices();
+		billboard.setInstancesLump(&instanceLump, instanceLump.size());
+		instanceLump.insert(instanceLump.end(), instancesData.begin(), instancesData.end());
+
+		billboard.loadTexture(device, commandHandler, textureDescriptorSetHandler);
+	}
 
 	vk::DeviceSize instanceLumpSize = instanceLump.size() * sizeof(glm::mat4);
 	Memory::createBuffer
@@ -25,36 +42,8 @@ mtd::BillboardManager::BillboardManager(const Device& device) : device{device}
 	(
 		device.getDevice(), instanceBuffer.bufferMemory, instanceLumpSize, instanceLump.data()
 	);
-}
 
-mtd::BillboardManager::~BillboardManager()
-{
-	const vk::Device& vulkanDevice = device.getDevice();
-
-	vulkanDevice.destroyBuffer(instanceBuffer.buffer);
-	vulkanDevice.freeMemory(instanceBuffer.bufferMemory);
-}
-
-// Loads the textures of the billboards
-void mtd::BillboardManager::loadTextures
-(
-	const CommandHandler& commandHandler, DescriptorSetHandler& textureDescriptorSetHandler
-)
-{
-	textures.resize(getMeshCount());
-	for(uint32_t i = 0; i < getMeshCount(); i++)
-	{
-		textures[i] = std::make_unique<Texture>
-		(
-			device,
-			"textures/orb.png",
-			commandHandler,
-			textureDescriptorSetHandler,
-			i
-		);
-	}
-
-	LOG_VERBOSE("Billboard textures loaded.");
+	LOG_VERBOSE("Billboards loaded.");
 }
 
 // Updates instances data
@@ -79,5 +68,6 @@ void mtd::BillboardManager::bindBuffers(const vk::CommandBuffer& commandBuffer) 
 // Draws the mesh specified by the index
 void mtd::BillboardManager::drawMesh(const vk::CommandBuffer& commandBuffer, uint32_t index) const
 {
-	commandBuffer.draw(6, 1, 0, index);
+	const Billboard& billboard = billboards[index];
+	commandBuffer.drawIndexed(6, billboard.getInstanceCount(), 0, 0, billboard.getInstanceOffset());
 }

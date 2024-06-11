@@ -16,14 +16,14 @@ uint32_t mtd::Scene::getInstanceCount() const
 		meshManagers.at(PipelineType::DEFAULT).get()
 	)->getTotalInstanceCount();
 }
-std::vector<mtd::Mesh>& mtd::Scene::getMeshes()
+std::vector<mtd::DefaultMesh>& mtd::Scene::getMeshes()
 {
 	return dynamic_cast<DefaultMeshManager*>
 	(
 		meshManagers.at(PipelineType::DEFAULT).get()
 	)->getMeshes();
 }
-mtd::Mesh& mtd::Scene::getMesh(uint32_t index)
+mtd::DefaultMesh& mtd::Scene::getMesh(uint32_t index)
 {
 	return dynamic_cast<DefaultMeshManager*>
 	(
@@ -39,14 +39,8 @@ void mtd::Scene::loadScene
 	std::unordered_map<PipelineType, Pipeline>& pipelines
 )
 {
-	DefaultMeshManager* defaultMeshManager =
-		dynamic_cast<DefaultMeshManager*>(meshManagers.at(PipelineType::DEFAULT).get());
-
-	SceneLoader::load(sceneFileName, defaultMeshManager->getMeshes());
-	defaultMeshManager->loadMeshes(commandHandler);
-	LOG_INFO("Meshes loaded to the GPU.\n");
-
-	loadTextures(commandHandler, pipelines);
+	SceneLoader::load(sceneFileName, meshManagers);
+	loadMeshes(commandHandler, pipelines);
 }
 
 // Updates scene data
@@ -56,8 +50,8 @@ void mtd::Scene::update() const
 		pMeshManager->update();
 }
 
-// Loads textures associated to meshes
-void mtd::Scene::loadTextures
+// Allocate resources and loads all mesh data
+void mtd::Scene::loadMeshes
 (
 	const CommandHandler& commandHandler,
 	std::unordered_map<PipelineType, Pipeline>& pipelines
@@ -78,8 +72,8 @@ void mtd::Scene::loadTextures
 		descriptorSetHandler.defineDescriptorSetsAmount(pMeshManager->getMeshCount());
 		descriptorPool.allocateDescriptorSet(descriptorSetHandler);
 
-		pMeshManager->loadTextures(commandHandler, descriptorSetHandler);
+		pMeshManager->loadMeshes(commandHandler, descriptorSetHandler);
 	}
 
-	LOG_INFO("All textures loaded.\n");
+	LOG_INFO("Meshes loaded to the GPU.\n");
 }

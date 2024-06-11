@@ -3,8 +3,8 @@
 #include <memory>
 
 #include "SceneLoader.hpp"
-#include "../Vulkan/Mesh/Managers/DefaultMeshManager.hpp"
-#include "../Vulkan/Mesh/Managers/BillboardManager.hpp"
+#include "../Vulkan/Mesh/DefaultMesh/DefaultMeshManager.hpp"
+#include "../Vulkan/Mesh/Billboard/BillboardManager.hpp"
 #include "../Vulkan/Pipeline/Pipeline.hpp"
 
 namespace mtd
@@ -23,8 +23,8 @@ namespace mtd
 			const MeshManager* getMeshManager(PipelineType type) const
 				{ return meshManagers.at(type).get(); }
 			const DescriptorPool& getDescriptorPool() const { return descriptorPool; }
-			std::vector<Mesh>& getMeshes();
-			Mesh& getMesh(uint32_t index);
+			std::vector<DefaultMesh>& getMeshes();
+			DefaultMesh& getMesh(uint32_t index);
 			uint32_t getInstanceCount() const;
 
 			// Loads scene from file
@@ -45,8 +45,8 @@ namespace mtd
 			// Descriptor pool for the pipelines descriptor sets
 			DescriptorPool descriptorPool;
 
-			// Loads textures associated to meshes
-			void loadTextures
+			// Allocate resources and loads all mesh data
+			void loadMeshes
 			(
 				const CommandHandler& commandHandler,
 				std::unordered_map<PipelineType, Pipeline>& pipelines
