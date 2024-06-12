@@ -8,6 +8,7 @@
 
 namespace mtd
 {
+	// Handles data from all billboards
 	class BillboardManager : public MeshManager
 	{
 		public:
@@ -30,7 +31,7 @@ namespace mtd
 			) override;
 
 			// Updates instances data
-			virtual void update() const override;
+			virtual void update(double frameTime) override;
 
 			// Binds the vertex buffer for instances data
 			virtual void bindBuffers(const vk::CommandBuffer& commandBuffer) const override;

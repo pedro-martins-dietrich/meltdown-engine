@@ -23,9 +23,6 @@ namespace mtd
 			const MeshManager* getMeshManager(PipelineType type) const
 				{ return meshManagers.at(type).get(); }
 			const DescriptorPool& getDescriptorPool() const { return descriptorPool; }
-			std::vector<DefaultMesh>& getMeshes();
-			DefaultMesh& getMesh(uint32_t index);
-			uint32_t getInstanceCount() const;
 
 			// Loads scene from file
 			void loadScene
@@ -36,7 +33,7 @@ namespace mtd
 			);
 
 			// Updates scene data
-			void update() const;
+			void update(double frameTime) const;
 
 		private:
 			// Active mesh managers
@@ -44,6 +41,9 @@ namespace mtd
 
 			// Descriptor pool for the pipelines descriptor sets
 			DescriptorPool descriptorPool;
+
+			// Sums the texture count from all mesh managers
+			uint32_t getTotalTextureCount() const;
 
 			// Allocate resources and loads all mesh data
 			void loadMeshes

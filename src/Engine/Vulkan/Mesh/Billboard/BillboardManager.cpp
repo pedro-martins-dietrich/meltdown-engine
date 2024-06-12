@@ -47,7 +47,7 @@ void mtd::BillboardManager::loadMeshes
 }
 
 // Updates instances data
-void mtd::BillboardManager::update() const
+void mtd::BillboardManager::update(double frameTime)
 {
 	Memory::copyMemory
 	(

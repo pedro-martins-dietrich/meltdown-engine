@@ -8,29 +8,6 @@ mtd::Scene::Scene(const Device& device) : descriptorPool{device.getDevice()}
 	meshManagers.emplace(PipelineType::BILLBOARD, std::make_unique<BillboardManager>(device));
 }
 
-// TODO: Remove these getters
-uint32_t mtd::Scene::getInstanceCount() const
-{
-	return dynamic_cast<DefaultMeshManager*>
-	(
-		meshManagers.at(PipelineType::DEFAULT).get()
-	)->getTotalInstanceCount();
-}
-std::vector<mtd::DefaultMesh>& mtd::Scene::getMeshes()
-{
-	return dynamic_cast<DefaultMeshManager*>
-	(
-		meshManagers.at(PipelineType::DEFAULT).get()
-	)->getMeshes();
-}
-mtd::DefaultMesh& mtd::Scene::getMesh(uint32_t index)
-{
-	return dynamic_cast<DefaultMeshManager*>
-	(
-		meshManagers.at(PipelineType::DEFAULT).get()
-	)->getMeshes()[index];
-}
-
 // Loads scene from file
 void mtd::Scene::loadScene
 (
@@ -44,10 +21,20 @@ void mtd::Scene::loadScene
 }
 
 // Updates scene data
-void mtd::Scene::update() const
+void mtd::Scene::update(double frameTime) const
 {
 	for(auto& [type, pMeshManager]: meshManagers)
-		pMeshManager->update();
+		pMeshManager->update(frameTime);
+}
+
+// Sums the texture count from all mesh managers
+uint32_t mtd::Scene::getTotalTextureCount() const
+{
+	uint32_t count = 0;
+	for(auto& [type, pMeshManager]: meshManagers)
+		count += pMeshManager->getMeshCount();
+
+	return count;
 }
 
 // Allocate resources and loads all mesh data
@@ -62,7 +49,7 @@ void mtd::Scene::loadMeshes
 	poolSizesInfo[0].descriptorType = vk::DescriptorType::eStorageBuffer;
 	poolSizesInfo[1].descriptorCount = 1;
 	poolSizesInfo[1].descriptorType = vk::DescriptorType::eUniformBuffer;
-	poolSizesInfo[2].descriptorCount = static_cast<uint32_t>(getMeshes().size() + 1);
+	poolSizesInfo[2].descriptorCount = getTotalTextureCount();
 	poolSizesInfo[2].descriptorType = vk::DescriptorType::eCombinedImageSampler;
 	descriptorPool.createDescriptorPool(poolSizesInfo);
 

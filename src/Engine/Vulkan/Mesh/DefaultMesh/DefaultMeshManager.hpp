@@ -6,7 +6,7 @@
 
 namespace mtd
 {
-	// Handles the vertices of multiple default meshes
+	// Handles data from all default meshes
 	class DefaultMeshManager : public MeshManager
 	{
 		public:
@@ -30,7 +30,7 @@ namespace mtd
 			) override;
 
 			// Updates instances data
-			virtual void update() const override;
+			virtual void update(double frameTime) override;
 
 			// Binds vertex and index buffers
 			virtual void bindBuffers(const vk::CommandBuffer& commandBuffer) const override;

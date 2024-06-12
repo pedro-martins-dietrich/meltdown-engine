@@ -21,7 +21,7 @@ namespace mtd
 			) = 0;
 
 			// Updates mesh data
-			virtual void update() const = 0;
+			virtual void update(double frameTime) = 0;
 
 			// Binds vertex and index buffers, if used
 			virtual void bindBuffers(const vk::CommandBuffer& commandBuffer) const = 0;

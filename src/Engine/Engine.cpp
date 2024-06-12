@@ -1,7 +1,5 @@
 #include "Engine.hpp"
 
-#include <glm/gtc/matrix_transform.hpp>
-
 #include "Utils/Logger.hpp"
 
 mtd::Engine::Engine()
@@ -66,7 +64,7 @@ void mtd::Engine::start()
 		inputHandler.handleInputs(window);
 		camera.updateCamera(static_cast<float>(frameTime), window);
 
-		updateScene(frameTime);
+		scene.update(frameTime);
 
 		renderer.render(device, swapchain, imgui, pipelines, scene, drawInfo, shouldUpdateEngine);
 
@@ -140,43 +138,6 @@ void mtd::Engine::configureDescriptors()
 	camera.setWriteLocation(cameraWriteLocation);
 
 	globalDescriptorSetHandler->writeDescriptorSet(0);
-}
-
-// Changes the scene
-void mtd::Engine::updateScene(float frameTime)
-{
-	for(uint32_t i = 1; i < 5; i++)
-	{
-		Mesh& mesh = scene.getMesh(i);
-		mesh.updateTransformationMatrix
-		(
-			glm::rotate
-			(
-				mesh.getTransformationMatrix(0),
-				frameTime,
-				glm::vec3{0.0f, -1.0f, 0.0f}
-			),
-			0
-		);
-		mesh.updateTransformationMatrix
-		(
-			glm::rotate
-			(
-				mesh.getTransformationMatrix(1),
-				frameTime,
-				glm::vec3{0.0f, 1.0f, 0.0f}
-			),
-			1
-		);
-	}
-
-	Mesh& mesh = scene.getMesh(5);
-	glm::mat4 matrix = mesh.getTransformationMatrix(0);
-	matrix[3][0] -= frameTime * matrix[3][2];
-	matrix[3][2] += frameTime * matrix[3][0];
-	mesh.updateTransformationMatrix(matrix, 0);
-
-	scene.update();
 }
 
 // Recreates swapchain and pipeline to apply new settings
