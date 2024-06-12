@@ -54,8 +54,6 @@ namespace mtd
 			// Sets up the descriptor pools and sets
 			void configureDescriptors();
 
-			// Changes the scene
-			void updateScene(float frameTime);
 			// Recreates swapchain and pipeline to apply new settings
 			void updateEngine();
 	};

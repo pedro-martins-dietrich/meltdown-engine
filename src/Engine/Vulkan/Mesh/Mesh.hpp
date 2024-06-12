@@ -1,27 +1,30 @@
 #pragma once
 
-#include "../../Utils/EngineStructs.hpp"
+#include <vector>
+
+#include <glm/glm.hpp>
 
 namespace mtd
 {
-	// Stores a mesh
+	// Generic mesh data
 	class Mesh
 	{
 		public:
-			Mesh(const char* fileName, uint32_t id, glm::mat4 preTransform = glm::mat4{1.0f});
-			~Mesh() {}
+			Mesh(const glm::mat4& preTransform);
+			Mesh
+			(
+				std::vector<glm::mat4>&& transforms,
+				size_t instanceLumpOffset,
+				std::vector<glm::mat4>* pInstanceLump
+			);
+			virtual ~Mesh() = default;
 
 			Mesh(const Mesh&) = delete;
 			Mesh& operator=(const Mesh&) = delete;
 
-			Mesh(Mesh&& other) noexcept;
-
 			// Getters
-			uint32_t getMeshID() const { return id; }
-			const std::vector<Vertex>& getVertices() const { return vertices; }
-			const std::vector<uint32_t>& getIndices() const { return indices; }
-			const std::string& getTexturePath() const { return diffuseTexturePath; }
 			uint32_t getInstanceCount() const { return static_cast<uint32_t>(transforms.size()); }
+			uint32_t getInstanceOffset() const { return static_cast<uint32_t>(instanceLumpOffset); }
 			const std::vector<glm::mat4>& getTransformationMatrices() const
 				{ return transforms; }
 			glm::mat4 getTransformationMatrix(uint32_t instance) const
@@ -29,25 +32,14 @@ namespace mtd
 
 			// Sets a reference to the instance lump to update the instances data
 			void setInstancesLump(std::vector<glm::mat4>* instanceLumpPointer, size_t offset);
-
-			// Adds a new instance of the mesh
+			// Adds a new instance
 			void addInstance(glm::mat4 preTransform = glm::mat4{1.0f});
-
 			// Writes the transformation matrices in the GPU mapped memory
 			void updateTransformationMatrix(glm::mat4 newTransform, uint32_t instance);
 
-		private:
-			// Mesh ID
-			uint32_t id;
-
-			// Mesh data
-			std::vector<Vertex> vertices;
-			std::vector<uint32_t> indices;
+		protected:
 			// Transformation matrices for each instance
 			std::vector<glm::mat4> transforms;
-			
-			// Mesh texture file path
-			std::string diffuseTexturePath;
 
 			// Pointer to the instance lump vector and start index
 			size_t instanceLumpOffset;

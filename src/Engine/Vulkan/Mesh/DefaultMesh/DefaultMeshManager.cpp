@@ -1,5 +1,7 @@
 #include "DefaultMeshManager.hpp"
 
+#include <glm/gtc/matrix_transform.hpp>
+
 #include "../../../Utils/Logger.hpp"
 
 mtd::DefaultMeshManager::DefaultMeshManager(const Device& device)
@@ -21,39 +23,53 @@ mtd::DefaultMeshManager::~DefaultMeshManager()
 	vulkanDevice.freeMemory(indexBuffer.bufferMemory);
 }
 
-// Groups the meshes into a lump and pass to the GPU
-void mtd::DefaultMeshManager::loadMeshes(const CommandHandler& commandHandler)
-{
-	for(Mesh& mesh: meshes)
-		loadMeshToLump(mesh);
-	loadMeshesToGPU(commandHandler);
-}
-
-// Loads the textures of the meshes
-void mtd::DefaultMeshManager::loadTextures
+// Loads textures and groups the meshes into a lump, then passes the data to the GPU
+void mtd::DefaultMeshManager::loadMeshes
 (
 	const CommandHandler& commandHandler, DescriptorSetHandler& textureDescriptorSetHandler
 )
 {
-	diffuseTextures.resize(getMeshCount());
-	for(uint32_t i = 0; i < getMeshCount(); i++)
+	for(DefaultMesh& mesh: meshes)
 	{
-		diffuseTextures[i] = std::make_unique<Texture>
-		(
-			device,
-			meshes[i].getTexturePath().c_str(),
-			commandHandler,
-			textureDescriptorSetHandler,
-			i
-		);
+		loadMeshToLump(mesh);
+		mesh.loadTexture(device, commandHandler, textureDescriptorSetHandler);
 	}
-
-	LOG_VERBOSE("Default mesh textures loaded.");
+	loadMeshesToGPU(commandHandler);
 }
 
 // Updates instances data
-void mtd::DefaultMeshManager::update() const
+void mtd::DefaultMeshManager::update(double frameTime)
 {
+	for(uint32_t i = 1; i < 5; i++)
+	{
+		Mesh& mesh = meshes[i];
+		mesh.updateTransformationMatrix
+		(
+			glm::rotate
+			(
+				mesh.getTransformationMatrix(0),
+				static_cast<float>(frameTime),
+				glm::vec3{0.0f, -1.0f, 0.0f}
+			),
+			0
+		);
+		mesh.updateTransformationMatrix
+		(
+			glm::rotate
+			(
+				mesh.getTransformationMatrix(1),
+				static_cast<float>(frameTime),
+				glm::vec3{0.0f, 1.0f, 0.0f}
+			),
+			1
+		);
+	}
+
+	glm::mat4 matrix = meshes[5].getTransformationMatrix(0);
+	matrix[3][0] -= frameTime * matrix[3][2];
+	matrix[3][2] += frameTime * matrix[3][0];
+	meshes[5].updateTransformationMatrix(matrix, 0);
+
 	Memory::copyMemory
 	(
 		device.getDevice(),
@@ -81,30 +97,25 @@ void mtd::DefaultMeshManager::drawMesh
 	const vk::CommandBuffer& commandBuffer, uint32_t index
 ) const
 {
+	const DefaultMesh& mesh = meshes[index];
 	commandBuffer.drawIndexed
 	(
-		meshDrawInfos[index].indexCount,
-		meshDrawInfos[index].instanceCount,
-		meshDrawInfos[index].indexOffset,
+		static_cast<uint32_t>(mesh.getIndices().size()),
+		mesh.getInstanceCount(),
+		mesh.getIndexOffset(),
 		0,
-		meshDrawInfos[index].startIndex
+		mesh.getInstanceOffset()
 	);
 }
 
 // Stores a mesh in the lump of data
-void mtd::DefaultMeshManager::loadMeshToLump(Mesh& mesh)
+void mtd::DefaultMeshManager::loadMeshToLump(DefaultMesh& mesh)
 {
 	const std::vector<Vertex>& vertices = mesh.getVertices();
 	const std::vector<uint32_t>& indices = mesh.getIndices();
 	const std::vector<glm::mat4>& instancesData = mesh.getTransformationMatrices();
 
-	meshDrawInfos.emplace_back
-	(
-		static_cast<uint32_t>(indices.size()),
-		mesh.getInstanceCount(),
-		static_cast<uint32_t>(indexLump.size()),
-		totalInstanceCount
-	);
+	mesh.setIndexOffset(static_cast<uint32_t>(indexLump.size()));
 
 	vertexLump.insert(vertexLump.end(), vertices.begin(), vertices.end());
 
@@ -113,9 +124,7 @@ void mtd::DefaultMeshManager::loadMeshToLump(Mesh& mesh)
 
 	indexLump.reserve(indices.size());
 	for(uint32_t index: indices)
-	{
 		indexLump.push_back(index + currentIndexOffset);
-	}
 
 	totalInstanceCount += mesh.getInstanceCount();
 	currentIndexOffset += vertices.size();

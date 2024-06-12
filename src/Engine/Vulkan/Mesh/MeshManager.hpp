@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../Descriptors/DescriptorSetHandler.hpp"
+#include "../Descriptors/DescriptorSetHandler.hpp"
 
 namespace mtd
 {
@@ -13,15 +13,15 @@ namespace mtd
 			// Gets the number of different meshes handled by the manager
 			virtual uint32_t getMeshCount() const = 0;
 
-			// Loads the textures for the meshes, if used
-			virtual void loadTextures
+			// Loads mesh data to the GPU
+			virtual void loadMeshes
 			(
 				const CommandHandler& commandHandler,
 				DescriptorSetHandler& textureDescriptorSetHandler
 			) = 0;
 
 			// Updates mesh data
-			virtual void update() const = 0;
+			virtual void update(double frameTime) = 0;
 
 			// Binds vertex and index buffers, if used
 			virtual void bindBuffers(const vk::CommandBuffer& commandBuffer) const = 0;

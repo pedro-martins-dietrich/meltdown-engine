@@ -2,11 +2,13 @@
 
 #include <memory>
 
-#include "MeshManager.hpp"
+#include "Billboard.hpp"
+#include "../MeshManager.hpp"
 #include "../../Image/Texture.hpp"
 
 namespace mtd
 {
+	// Handles data from all billboards
 	class BillboardManager : public MeshManager
 	{
 		public:
@@ -16,18 +18,20 @@ namespace mtd
 			BillboardManager(const BillboardManager&) = delete;
 			BillboardManager& operator=(const BillboardManager&) = delete;
 
-			// Getter
-			virtual uint32_t getMeshCount() const override { return 1; }
+			// Getters
+			virtual uint32_t getMeshCount() const override
+				{ return static_cast<uint32_t>(billboards.size()); }
+			std::vector<Billboard>& getBillboards() { return billboards; }
 
-			// Loads the textures of the billboards
-			virtual void loadTextures
+			// Loads the billboards textures to the GPU
+			virtual void loadMeshes
 			(
 				const CommandHandler& commandHandler,
 				DescriptorSetHandler& textureDescriptorSetHandler
 			) override;
 
 			// Updates instances data
-			virtual void update() const override;
+			virtual void update(double frameTime) override;
 
 			// Binds the vertex buffer for instances data
 			virtual void bindBuffers(const vk::CommandBuffer& commandBuffer) const override;
@@ -41,7 +45,10 @@ namespace mtd
 			// Transformation matrices for each instance
 			Memory::Buffer instanceBuffer;
 
+			// List of billboards
+			std::vector<Billboard> billboards;
 			// Textures for each billboard
+			std::vector<std::string> texturePaths;
 			std::vector<std::unique_ptr<Texture>> textures;
 
 			// Instances transforms lump
