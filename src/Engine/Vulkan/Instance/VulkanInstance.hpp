@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include <vulkan/vulkan.hpp>
 
 #include "../../Window/Window.hpp"
@@ -23,15 +25,14 @@ namespace mtd
 		private:
 			// Vulkan instance
 			vk::Instance instance;
+
 			// Dispatch loader dynamic instance
-			vk::DispatchLoaderDynamic dispatchLoader;
+			std::unique_ptr<vk::DispatchLoaderDynamic> dispatchLoader;
+			// Vulkan debug messenger (it depends on the validation layer)
+			vk::DebugUtilsMessengerEXT debugMessenger;
+
 			// Vulkan surface for GLFW window
 			vk::SurfaceKHR surface;
-
-			// Vulkan debug messenger (it depends on the validation layer)
-			#ifdef MTD_DEBUG
-				vk::DebugUtilsMessengerEXT debugMessenger;
-			#endif
 
 			// Verifies if Vulkan version is compatible with the engine
 			uint32_t checkVulkanVersion() const;

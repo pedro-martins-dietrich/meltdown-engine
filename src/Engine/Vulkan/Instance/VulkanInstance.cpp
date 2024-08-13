@@ -40,19 +40,22 @@ mtd::VulkanInstance::VulkanInstance(const char* appName, uint32_t appVersion, co
 		throw std::runtime_error("Failed to create Vulkan instance.\n");
 	LOG_INFO("Vulkan instance created.");
 
-	dispatchLoader = vk::DispatchLoaderDynamic(instance, vkGetInstanceProcAddr);
+	dispatchLoader = std::make_unique<vk::DispatchLoaderDynamic>(instance, vkGetInstanceProcAddr);
 	#ifdef MTD_DEBUG
-		debugMessenger = DebugMessenger::createDebugMessenger(instance, dispatchLoader);
+		DebugMessenger::createDebugMessenger(instance, dispatchLoader.get(), &debugMessenger);
 	#endif
+
 	surface = window.createSurface(instance);
 }
 
 mtd::VulkanInstance::~VulkanInstance()
 {
 	instance.destroySurfaceKHR(surface);
+
 	#ifdef MTD_DEBUG
-		instance.destroyDebugUtilsMessengerEXT(debugMessenger, nullptr, dispatchLoader);
+		instance.destroyDebugUtilsMessengerEXT(debugMessenger, nullptr, *dispatchLoader);
 	#endif
+
 	instance.destroy();
 }
 
