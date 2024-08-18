@@ -25,6 +25,8 @@
 			case vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance:
 				message.append("[PERFORMANCE]\n\t");
 				break;
+			default:
+				message.append("[OTHER]\n\t");
 		}
 
 		message.append(pCallbackData->pMessage).append("\n");

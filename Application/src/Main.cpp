@@ -1,4 +1,4 @@
-#include "Application/Application.hpp"
+#include "Application.hpp"
 
 // Creates and starts the application
 int main()
