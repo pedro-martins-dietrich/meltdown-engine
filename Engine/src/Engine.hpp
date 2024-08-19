@@ -14,7 +14,7 @@ namespace mtd
 	class Engine
 	{
 		public:
-			Engine();
+			Engine(const EngineInfo& info);
 			~Engine();
 
 			Engine(const Engine&) = delete;

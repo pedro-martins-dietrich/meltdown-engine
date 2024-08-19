@@ -2,6 +2,8 @@
 
 #include <memory>
 
+#include <meltdown/structs.hpp>
+
 #ifndef MTD_SHARED
 	#define MELTDOWN_API
 #elif defined(_WIN32)
@@ -37,7 +39,7 @@ namespace mtd
 			/*
 			* @brief Initializes the application window, Vulkan and other engine dependencies.
 			*/
-			MeltdownEngine();
+			MeltdownEngine(const EngineInfo& applicationInfo);
 			~MeltdownEngine();
 
 			MeltdownEngine(const MeltdownEngine&) = delete;

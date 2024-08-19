@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include <meltdown/structs.hpp>
 #include <vulkan/vulkan.hpp>
 
 #include "../../Window/Window.hpp"
@@ -12,7 +13,7 @@ namespace mtd
 	class VulkanInstance
 	{
 		public:
-			VulkanInstance(const char* appName, uint32_t appVersion, const Window& window);
+			VulkanInstance(const EngineInfo& info, const Window& window);
 			~VulkanInstance();
 
 			VulkanInstance(const VulkanInstance&) = delete;

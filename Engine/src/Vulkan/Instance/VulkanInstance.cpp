@@ -3,13 +3,16 @@
 #include "DebugMessenger.hpp"
 #include "../../Utils/Logger.hpp"
 
-mtd::VulkanInstance::VulkanInstance(const char* appName, uint32_t appVersion, const Window& window)
+mtd::VulkanInstance::VulkanInstance(const EngineInfo& info, const Window& window)
 {
 	uint32_t version = checkVulkanVersion();
 
 	vk::ApplicationInfo appInfo{};
-	appInfo.pApplicationName = appName;
-	appInfo.applicationVersion = appVersion;
+	appInfo.pApplicationName = info.appName;
+	appInfo.applicationVersion = VK_MAKE_API_VERSION
+	(
+		0, info.appVersionMajor, info.appVersionMinor, info.appVersionPatch
+	);
 	appInfo.pEngineName = "Meltdown Engine";
 	appInfo.engineVersion = VK_MAKE_API_VERSION(0, 1, 0, 0);
 	appInfo.apiVersion = version;
@@ -38,7 +41,7 @@ mtd::VulkanInstance::VulkanInstance(const char* appName, uint32_t appVersion, co
 
 	if(vk::createInstance(&instanceCreateInfo, nullptr, &instance) != vk::Result::eSuccess)
 		throw std::runtime_error("Failed to create Vulkan instance.\n");
-	LOG_INFO("Vulkan instance created.");
+	LOG_INFO("Vulkan instance created.\n");
 
 	dispatchLoader = std::make_unique<vk::DispatchLoaderDynamic>(instance, vkGetInstanceProcAddr);
 	#ifdef MTD_DEBUG

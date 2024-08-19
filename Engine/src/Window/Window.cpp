@@ -4,8 +4,8 @@
 
 #include "../Utils/Logger.hpp"
 
-mtd::Window::Window(FrameDimensions initialDimensions)
-	: glfwWindow{nullptr}, dimensions{initialDimensions}, cursorHidden{false}
+mtd::Window::Window(FrameDimensions initialDimensions, const char* windowName)
+	: glfwWindow{nullptr}, name{windowName}, dimensions{initialDimensions}, cursorHidden{false}
 {
 	initializeGLFW();
 	createWindowInstance();
@@ -85,7 +85,10 @@ void mtd::Window::setInputCallbacks(InputHandler& inputHandler)
 		}
 
 		cursorHidden = !cursorHidden;
-		glfwSetInputMode(glfwWindow, GLFW_CURSOR, cursorHidden ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+		glfwSetInputMode
+		(
+			glfwWindow, GLFW_CURSOR, cursorHidden ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL
+		);
 
 		lastPressed = pressed;
 	});
@@ -110,10 +113,7 @@ void mtd::Window::createWindowInstance()
 
 	aspectRatio = static_cast<float>(dimensions.width) / static_cast<float>(dimensions.height);
 
-	glfwWindow = glfwCreateWindow
-	(
-		dimensions.width, dimensions.height, "Meltdown Engine", nullptr, nullptr
-	);
+	glfwWindow = glfwCreateWindow(dimensions.width, dimensions.height, name, nullptr, nullptr);
 
 	if(glfwWindow == nullptr)
 	{

@@ -2,7 +2,8 @@
 
 #include "Engine.hpp"
 
-mtd::MeltdownEngine::MeltdownEngine() : engine{std::make_unique<Engine>()}
+mtd::MeltdownEngine::MeltdownEngine(const EngineInfo& applicationInfo)
+	: engine{std::make_unique<Engine>(applicationInfo)}
 {
 }
 

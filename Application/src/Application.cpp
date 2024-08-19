@@ -1,6 +1,9 @@
 #include "Application.hpp"
 
-Application::Application() : meltdownEngine{}
+#include <meltdown/structs.hpp>
+
+Application::Application()
+	: meltdownEngine{mtd::EngineInfo{"Meltdown Application", 1, 0, 0}}
 {
 }
 
