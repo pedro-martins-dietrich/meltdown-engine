@@ -5,7 +5,7 @@
 	#include "../../Utils/Logger.hpp"
 
 	// Vulkan messenger callback
-	VKAPI_ATTR vk::Bool32 VKAPI_CALL mtd::DebugMessenger::debugCallback
+	static VKAPI_ATTR vk::Bool32 VKAPI_CALL debugCallback
 	(
 		vk::DebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 		vk::DebugUtilsMessageTypeFlagBitsEXT messageType,
@@ -25,6 +25,8 @@
 			case vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance:
 				message.append("[PERFORMANCE]\n\t");
 				break;
+			default:
+				message.append("[OTHER]\n\t");
 		}
 
 		message.append(pCallbackData->pMessage).append("\n");
@@ -32,27 +34,28 @@
 		switch(messageSeverity)
 		{
 			case vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose:
-				LOG_VERBOSE(message.c_str());
+				mtd::LOG_VERBOSE(message.c_str());
 				break;
 			case vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo:
-				LOG_INFO(message.c_str());
+				mtd::LOG_INFO(message.c_str());
 				break;
 			case vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning:
-				LOG_WARNING(message.c_str());
+				mtd::LOG_WARNING(message.c_str());
 				break;
 			case vk::DebugUtilsMessageSeverityFlagBitsEXT::eError:
-				LOG_ERROR(message.c_str());
+				mtd::LOG_ERROR(message.c_str());
 				break;
 		}
 
 		return vk::False;
 	}
 
-	// Confiugures Vulkan debug messenger
-	vk::DebugUtilsMessengerEXT mtd::DebugMessenger::createDebugMessenger
+	// Configures Vulkan debug messenger
+	void mtd::DebugMessenger::createDebugMessenger
 	(
 		const vk::Instance& instance,
-		const vk::DispatchLoaderDynamic& dispatchLoader
+		const vk::DispatchLoaderDynamic* pDispatchLoader,
+		vk::DebugUtilsMessengerEXT* pDebugMessenger
 	)
 	{
 		vk::DebugUtilsMessengerCreateInfoEXT debugMessengerInfo{};
@@ -64,6 +67,12 @@
 			vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance;
 		debugMessengerInfo.pfnUserCallback = (PFN_vkDebugUtilsMessengerCallbackEXT) debugCallback;
 
-		return instance.createDebugUtilsMessengerEXT(debugMessengerInfo, nullptr, dispatchLoader);
+		if(instance.createDebugUtilsMessengerEXT
+		(
+			&debugMessengerInfo, nullptr, pDebugMessenger, *pDispatchLoader
+		) != vk::Result::eSuccess)
+		{
+			LOG_ERROR("Failed to create Vulkan debug messenger.");
+		}
 	}
 #endif

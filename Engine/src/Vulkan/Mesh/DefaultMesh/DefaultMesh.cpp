@@ -3,7 +3,7 @@
 #include "../ObjMeshLoader.hpp"
 
 mtd::DefaultMesh::DefaultMesh(uint32_t id, const char* fileName, glm::mat4 preTransform)
-	: Mesh{preTransform}, id{id}
+	: Mesh{preTransform}, id{id}, indexOffset{0}
 {
 	ObjMeshLoader::load(fileName, vertices, indices, diffuseTexturePath);
 }
@@ -14,7 +14,8 @@ mtd::DefaultMesh::DefaultMesh(DefaultMesh&& other) noexcept
 	vertices{std::move(other.vertices)},
 	indices{std::move(other.indices)},
 	diffuseTexturePath{std::move(other.diffuseTexturePath)},
-	diffuseTexture{std::move(other.diffuseTexture)}
+	diffuseTexture{std::move(other.diffuseTexture)},
+	indexOffset{other.indexOffset}
 {
 	other.diffuseTexture = nullptr;
 	other.pInstanceLump = nullptr;

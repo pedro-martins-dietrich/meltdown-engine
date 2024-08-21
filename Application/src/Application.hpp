@@ -1,13 +1,13 @@
 #pragma once
 
-#include "../Engine/Engine.hpp"
+#include <Meltdown.hpp>
 
 // Main class responsible to interact with the engine
 class Application
 {
 	public:
 		Application();
-		~Application() {}
+		~Application() = default;
 
 		Application(const Application&) = delete;
 		Application& operator=(const Application&) = delete;
@@ -17,5 +17,5 @@ class Application
 
 	private:
 		// Instance of the Meltdown Engine
-		mtd::Engine meltdownEngine;
+		mtd::MeltdownEngine meltdownEngine;
 };

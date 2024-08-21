@@ -36,8 +36,12 @@ void mtd::Renderer::render
 	);
 	if(result != vk::Result::eSuccess)
 	{
-		if(result == vk::Result::eErrorOutOfDateKHR ||
-			result == vk::Result::eErrorIncompatibleDisplayKHR)
+		if
+		(
+			result == vk::Result::eErrorOutOfDateKHR ||
+			result == vk::Result::eErrorIncompatibleDisplayKHR ||
+			result == vk::Result::eSuboptimalKHR
+		)
 		{
 			currentFrameIndex = 0;
 			shouldUpdateEngine = true;

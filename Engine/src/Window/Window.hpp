@@ -12,7 +12,7 @@ namespace mtd
 	class Window
 	{
 		public:
-			Window(FrameDimensions initialDimensions);
+			Window(FrameDimensions initialDimensions, const char* windowName);
 			~Window();
 
 			Window(const Window&) = delete;
@@ -45,6 +45,9 @@ namespace mtd
 		private:
 			// GLFW window instance
 			GLFWwindow* glfwWindow;
+
+			// Window titlebar name
+			const char* name;
 
 			// Window dimensions
 			FrameDimensions dimensions;

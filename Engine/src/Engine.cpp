@@ -2,9 +2,9 @@
 
 #include "Utils/Logger.hpp"
 
-mtd::Engine::Engine()
-	: window{FrameDimensions{1280, 720}},
-	vulkanInstance{"Meltdown", VK_MAKE_API_VERSION(0, 1, 0, 0), window},
+mtd::Engine::Engine(const EngineInfo& info)
+	: window{FrameDimensions{1280, 720}, info.appName},
+	vulkanInstance{info, window},
 	device{vulkanInstance},
 	swapchain{device, window.getDimensions(), vulkanInstance.getSurface()},
 	commandHandler{device},
