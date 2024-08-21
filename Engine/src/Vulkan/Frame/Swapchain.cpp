@@ -204,6 +204,13 @@ void mtd::Swapchain::checkSurfaceFormat()
 // Ensures a valid amount of frames to be stored in the buffer
 void mtd::Swapchain::checkImageCount()
 {
+	if(supportedDetails.capabilities.maxImageCount == 0)
+	{
+		settings.frameCount =
+			std::max(settings.frameCount, supportedDetails.capabilities.minImageCount);
+		return;
+	}
+
 	settings.frameCount = std::clamp
 	(
 		settings.frameCount,
