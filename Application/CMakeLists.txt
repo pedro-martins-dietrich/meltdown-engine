@@ -15,7 +15,14 @@ find_package(meltdown)
 
 # Gathers source files (.cpp) to be compiled
 file(GLOB_RECURSE APP_SRC_FILES "src/**.cpp")
-add_executable(${MELTDOWN_APP} ${APP_SRC_FILES})
+
+# Creates a window only application (no terminal) for Windows on release builds
+if(WIN32 AND CMAKE_BUILD_TYPE MATCHES "^(Release|MinSizeRel)$")
+	add_executable(${MELTDOWN_APP} WIN32 ${APP_SRC_FILES})
+	add_compile_definitions(${MELTDOWN_APP} PRIVATE MTD_APP_WINDOW_ONLY)
+else()
+	add_executable(${MELTDOWN_APP} ${APP_SRC_FILES})
+endif()
 
 # Configures the Meltdown library
 target_link_libraries(${MELTDOWN_APP} PRIVATE meltdown)
