@@ -24,7 +24,10 @@ void mtd::Scene::loadScene
 void mtd::Scene::update(double frameTime) const
 {
 	for(auto& [type, pMeshManager]: meshManagers)
-		pMeshManager->update(frameTime);
+	{
+		if(pMeshManager->getMeshCount() > 0)
+			pMeshManager->update(frameTime);
+	}
 }
 
 // Sums the texture count from all mesh managers
@@ -55,11 +58,14 @@ void mtd::Scene::loadMeshes
 
 	for(auto& [type, pMeshManager]: meshManagers)
 	{
-		DescriptorSetHandler& descriptorSetHandler = pipelines.at(type).getDescriptorSetHandler(0);
-		descriptorSetHandler.defineDescriptorSetsAmount(pMeshManager->getMeshCount());
-		descriptorPool.allocateDescriptorSet(descriptorSetHandler);
+		if(pMeshManager->getMeshCount() > 0)
+		{
+			DescriptorSetHandler& descriptorSetHandler = pipelines.at(type).getDescriptorSetHandler(0);
+			descriptorSetHandler.defineDescriptorSetsAmount(pMeshManager->getMeshCount());
+			descriptorPool.allocateDescriptorSet(descriptorSetHandler);
 
-		pMeshManager->loadMeshes(commandHandler, descriptorSetHandler);
+			pMeshManager->loadMeshes(commandHandler, descriptorSetHandler);
+		}
 	}
 
 	LOG_INFO("Meshes loaded to the GPU.\n");
