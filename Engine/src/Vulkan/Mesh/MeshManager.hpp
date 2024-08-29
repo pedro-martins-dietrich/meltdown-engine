@@ -20,6 +20,9 @@ namespace mtd
 				DescriptorSetHandler& textureDescriptorSetHandler
 			) = 0;
 
+			// Clears mesh data
+			virtual void clearMeshes() = 0;
+
 			// Updates mesh data
 			virtual void update(double frameTime) = 0;
 

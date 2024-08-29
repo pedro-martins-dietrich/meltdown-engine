@@ -34,9 +34,14 @@ namespace mtd
 			// Allocates a descriptor set in the pool
 			void allocateDescriptorSet(DescriptorSetHandler& descriptorSetHandler) const;
 
+			// Clears the descriptor pool and its sets
+			void clear();
+
 		private:
 			// Pool to allocate descriptor sets
 			vk::DescriptorPool descriptorPool;
+			// Indicator for the descriptor pool contents
+			bool isClear;
 
 			// Vulkan device reference
 			const vk::Device& device;

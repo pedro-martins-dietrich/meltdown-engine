@@ -8,10 +8,7 @@ mtd::BillboardManager::BillboardManager(const Device& device) : device{device}
 
 mtd::BillboardManager::~BillboardManager()
 {
-	const vk::Device& vulkanDevice = device.getDevice();
-
-	vulkanDevice.destroyBuffer(instanceBuffer.buffer);
-	vulkanDevice.freeMemory(instanceBuffer.bufferMemory);
+	clearMeshes();
 }
 
 // Loads the billboards textures to the GPU
@@ -44,6 +41,22 @@ void mtd::BillboardManager::loadMeshes
 	);
 
 	LOG_VERBOSE("Billboards loaded.");
+}
+
+// Clears the list of billboards and the instance buffer
+void mtd::BillboardManager::clearMeshes()
+{
+	if(getMeshCount() == 0)
+		return;
+
+	const vk::Device& vulkanDevice = device.getDevice();
+	vulkanDevice.waitIdle();
+
+	instanceLump.clear();
+	billboards.clear();
+
+	vulkanDevice.destroyBuffer(instanceBuffer.buffer);
+	vulkanDevice.freeMemory(instanceBuffer.bufferMemory);
 }
 
 // Updates instances data

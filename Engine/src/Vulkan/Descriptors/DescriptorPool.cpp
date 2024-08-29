@@ -2,13 +2,14 @@
 
 #include "../../Utils/Logger.hpp"
 
-mtd::DescriptorPool::DescriptorPool(const vk::Device& device) : device{device}
+mtd::DescriptorPool::DescriptorPool(const vk::Device& device)
+	: device{device}, isClear{true}
 {
 }
 
 mtd::DescriptorPool::~DescriptorPool()
 {
-	device.destroyDescriptorPool(descriptorPool);
+	clear();
 }
 
 // Creates a descriptor pool
@@ -33,6 +34,7 @@ void mtd::DescriptorPool::createDescriptorPool
 	descriptorPoolCreateInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
 	descriptorPoolCreateInfo.pPoolSizes = poolSizes.data();
 
+	isClear = false;
 	vk::Result result =
 		device.createDescriptorPool(&descriptorPoolCreateInfo, nullptr, &descriptorPool);
 	if(result != vk::Result::eSuccess)
@@ -56,4 +58,13 @@ void mtd::DescriptorPool::allocateDescriptorSet(DescriptorSetHandler& descriptor
 		device.allocateDescriptorSets(&setAllocateInfo, descriptorSetHandler.getSets().data());
 	if(result != vk::Result::eSuccess)
 		LOG_ERROR("Failed to allocate descriptor set. Vulkan result: %d", result);
+}
+
+// Clears the descriptor pool and its sets
+void mtd::DescriptorPool::clear()
+{
+	if(isClear) return;
+
+	isClear = true;
+	device.destroyDescriptorPool(descriptorPool);
 }

@@ -16,6 +16,9 @@ void mtd::Scene::loadScene
 	std::unordered_map<PipelineType, Pipeline>& pipelines
 )
 {
+	for(auto& [type, pMeshManager]: meshManagers)
+		pMeshManager->clearMeshes();
+
 	SceneLoader::load(sceneFileName, meshManagers);
 	loadMeshes(commandHandler, pipelines);
 }
@@ -47,6 +50,8 @@ void mtd::Scene::loadMeshes
 	std::unordered_map<PipelineType, Pipeline>& pipelines
 )
 {
+	descriptorPool.clear();
+
 	std::vector<PoolSizeData> poolSizesInfo{3};
 	poolSizesInfo[0].descriptorCount = 1;
 	poolSizesInfo[0].descriptorType = vk::DescriptorType::eStorageBuffer;

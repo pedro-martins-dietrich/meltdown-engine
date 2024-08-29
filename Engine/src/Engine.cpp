@@ -127,6 +127,8 @@ void mtd::Engine::configurePipelines()
 // Sets up the descriptors
 void mtd::Engine::configureDescriptors()
 {
+	globalDescriptorSetHandler->clearResources();
+
 	globalDescriptorSetHandler->defineDescriptorSetsAmount(1);
 	scene.getDescriptorPool().allocateDescriptorSet(*globalDescriptorSetHandler);
 	globalDescriptorSetHandler->createDescriptorResources
