@@ -5,12 +5,13 @@
 #include "Logger.hpp"
 
 // Reads file data in the specified path
-void mtd::FileHandler::readFile(const char* filePath, std::vector<char>& fileData)
+bool mtd::FileHandler::readFile(const char* filePath, std::vector<char>& fileData)
 {
 	std::ifstream file{filePath, std::ios::binary};
 	if(!file)
 	{
 		LOG_ERROR("File \"%s\" was not found.", filePath);
+		return false;
 	}
 
 	file.seekg(0, std::ios::end);
@@ -19,13 +20,16 @@ void mtd::FileHandler::readFile(const char* filePath, std::vector<char>& fileDat
 
 	file.read(fileData.data(), fileData.size());
 	file.close();
+
+	return true;
 }
 
 // Reads a file and return its content as a JSON
 bool mtd::FileHandler::readJSON(const char* filePath, nlohmann::json& json)
 {
 	std::vector<char> fileData;
-	readFile(filePath, fileData);
+	if(!readFile(filePath, fileData))
+		return false;
 	fileData.push_back('\0');
 
 	try

@@ -11,7 +11,8 @@ mtd::ShaderModule::ShaderModule(const char* shaderFile, const vk::Device& device
 	shaderPath.append(shaderFile);
 
 	std::vector<char> shaderSourceCode;
-	FileHandler::readFile(shaderPath.c_str(), shaderSourceCode);
+	if(!FileHandler::readFile(shaderPath.c_str(), shaderSourceCode))
+		return;
 
 	vk::ShaderModuleCreateInfo shaderModuleCreateInfo{};
 	shaderModuleCreateInfo.flags = vk::ShaderModuleCreateFlags();
