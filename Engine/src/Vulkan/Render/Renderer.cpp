@@ -114,15 +114,17 @@ void mtd::Renderer::recordDrawCommand
 	uint32_t startInstance = 0;
 	for(const auto& [type, pipeline]: pipelines)
 	{
+		const MeshManager* pMeshManager = scene.getMeshManager(type);
+		if(pMeshManager->getMeshCount() == 0)
+			continue;
+
 		pipeline.bind(commandBuffer);
+		pMeshManager->bindBuffers(commandBuffer);
 
-		const MeshManager* meshManager = scene.getMeshManager(type);
-		meshManager->bindBuffers(commandBuffer);
-
-		for(uint32_t i = 0; i < meshManager->getMeshCount(); i++)
+		for(uint32_t i = 0; i < pMeshManager->getMeshCount(); i++)
 		{
 			pipeline.bindDescriptors(commandBuffer, i);
-			meshManager->drawMesh(commandBuffer, i);
+			pMeshManager->drawMesh(commandBuffer, i);
 		}
 	}
 

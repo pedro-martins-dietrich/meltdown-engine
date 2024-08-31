@@ -13,18 +13,7 @@ mtd::DescriptorSetHandler::DescriptorSetHandler
 
 mtd::DescriptorSetHandler::~DescriptorSetHandler()
 {
-	for(std::vector<DescriptorResources>& setResourcesList: resourcesList)
-	{
-		for(DescriptorResources& resources: setResourcesList)
-		{
-			if(resources.descriptorBuffer.bufferMemory)
-			{
-				device.unmapMemory(resources.descriptorBuffer.bufferMemory);
-				device.freeMemory(resources.descriptorBuffer.bufferMemory);
-				device.destroyBuffer(resources.descriptorBuffer.buffer);
-			}
-		}
-	}
+	clearResources();
 
 	device.destroyDescriptorSetLayout(descriptorSetLayout);
 }
@@ -117,6 +106,23 @@ void mtd::DescriptorSetHandler::writeDescriptorSet(uint32_t setIndex)
 	(
 		static_cast<uint32_t>(writeOps.size()), writeOps.data(), 0, nullptr
 	);
+}
+
+// Deletes all resources in GPU memory
+void mtd::DescriptorSetHandler::clearResources()
+{
+	for(std::vector<DescriptorResources>& setResourcesList: resourcesList)
+	{
+		for(DescriptorResources& resources: setResourcesList)
+		{
+			if(resources.descriptorBuffer.bufferMemory)
+			{
+				device.unmapMemory(resources.descriptorBuffer.bufferMemory);
+				device.freeMemory(resources.descriptorBuffer.bufferMemory);
+				device.destroyBuffer(resources.descriptorBuffer.buffer);
+			}
+		}
+	}
 }
 
 // Creates a descriptor set layout

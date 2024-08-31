@@ -11,16 +11,7 @@ mtd::DefaultMeshManager::DefaultMeshManager(const Device& device)
 
 mtd::DefaultMeshManager::~DefaultMeshManager()
 {
-	const vk::Device& vulkanDevice = device.getDevice();
-
-	vulkanDevice.destroyBuffer(instanceBuffer.buffer);
-	vulkanDevice.freeMemory(instanceBuffer.bufferMemory);
-
-	vulkanDevice.destroyBuffer(vertexBuffer.buffer);
-	vulkanDevice.freeMemory(vertexBuffer.bufferMemory);
-
-	vulkanDevice.destroyBuffer(indexBuffer.buffer);
-	vulkanDevice.freeMemory(indexBuffer.bufferMemory);
+	clearMeshes();
 }
 
 // Loads textures and groups the meshes into a lump, then passes the data to the GPU
@@ -35,6 +26,28 @@ void mtd::DefaultMeshManager::loadMeshes
 		mesh.loadTexture(device, commandHandler, textureDescriptorSetHandler);
 	}
 	loadMeshesToGPU(commandHandler);
+}
+
+// Clears the list of default meshes and related buffers
+void mtd::DefaultMeshManager::clearMeshes()
+{
+	if(getMeshCount() == 0) return;
+
+	const vk::Device& vulkanDevice = device.getDevice();
+	vulkanDevice.waitIdle();
+
+	totalInstanceCount = 0;
+	instanceLump.clear();
+	meshes.clear();
+
+	vulkanDevice.destroyBuffer(instanceBuffer.buffer);
+	vulkanDevice.freeMemory(instanceBuffer.bufferMemory);
+
+	vulkanDevice.destroyBuffer(vertexBuffer.buffer);
+	vulkanDevice.freeMemory(vertexBuffer.bufferMemory);
+
+	vulkanDevice.destroyBuffer(indexBuffer.buffer);
+	vulkanDevice.freeMemory(indexBuffer.bufferMemory);
 }
 
 // Updates instances data

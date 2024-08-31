@@ -38,6 +38,8 @@ namespace mtd
 		public:
 			/*
 			* @brief Initializes the application window, Vulkan and other engine dependencies.
+			* 
+			* @param applicationInfo Information about the application name and version.
 			*/
 			MeltdownEngine(const EngineInfo& applicationInfo);
 			~MeltdownEngine();
@@ -49,6 +51,15 @@ namespace mtd
 			* @brief Begins the engine main loop, transfering the application control to the engine.
 			*/
 			void run();
+
+			/*
+			* @brief Loads a new scene to be rendered by the engine. It needs to be called before
+			* starting the main engine loop.
+			* If a scene is already being rendered, it will be cleared before loading the new scene.
+			* 
+			* @param sceneFile Path to the file containing the new scene data.
+			*/
+			void loadScene(const char* sceneFile);
 
 		private:
 			std::unique_ptr<Engine> engine;

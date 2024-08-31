@@ -30,6 +30,9 @@ namespace mtd
 				DescriptorSetHandler& textureDescriptorSetHandler
 			) override;
 
+			// Clears the list of billboards and the instance buffer
+			virtual void clearMeshes() override;
+
 			// Updates instances data
 			virtual void update(double frameTime) override;
 

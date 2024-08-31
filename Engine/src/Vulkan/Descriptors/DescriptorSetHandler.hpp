@@ -63,6 +63,9 @@ namespace mtd
 			// Updates the descriptor set data
 			void writeDescriptorSet(uint32_t setIndex);
 
+			// Deletes all resources in GPU memory
+			void clearResources();
+
 		private:
 			// Layout for the descriptor set
 			vk::DescriptorSetLayout descriptorSetLayout;

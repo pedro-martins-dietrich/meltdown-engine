@@ -29,6 +29,9 @@ namespace mtd
 				DescriptorSetHandler& textureDescriptorSetHandler
 			) override;
 
+			// Clears the list of default meshes and related buffers
+			virtual void clearMeshes() override;
+
 			// Updates instances data
 			virtual void update(double frameTime) override;
 

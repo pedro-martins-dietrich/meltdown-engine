@@ -16,6 +16,9 @@ void mtd::Scene::loadScene
 	std::unordered_map<PipelineType, Pipeline>& pipelines
 )
 {
+	for(auto& [type, pMeshManager]: meshManagers)
+		pMeshManager->clearMeshes();
+
 	SceneLoader::load(sceneFileName, meshManagers);
 	loadMeshes(commandHandler, pipelines);
 }
@@ -24,7 +27,10 @@ void mtd::Scene::loadScene
 void mtd::Scene::update(double frameTime) const
 {
 	for(auto& [type, pMeshManager]: meshManagers)
-		pMeshManager->update(frameTime);
+	{
+		if(pMeshManager->getMeshCount() > 0)
+			pMeshManager->update(frameTime);
+	}
 }
 
 // Sums the texture count from all mesh managers
@@ -44,6 +50,8 @@ void mtd::Scene::loadMeshes
 	std::unordered_map<PipelineType, Pipeline>& pipelines
 )
 {
+	descriptorPool.clear();
+
 	std::vector<PoolSizeData> poolSizesInfo{3};
 	poolSizesInfo[0].descriptorCount = 1;
 	poolSizesInfo[0].descriptorType = vk::DescriptorType::eStorageBuffer;
@@ -55,11 +63,14 @@ void mtd::Scene::loadMeshes
 
 	for(auto& [type, pMeshManager]: meshManagers)
 	{
-		DescriptorSetHandler& descriptorSetHandler = pipelines.at(type).getDescriptorSetHandler(0);
-		descriptorSetHandler.defineDescriptorSetsAmount(pMeshManager->getMeshCount());
-		descriptorPool.allocateDescriptorSet(descriptorSetHandler);
+		if(pMeshManager->getMeshCount() > 0)
+		{
+			DescriptorSetHandler& descriptorSetHandler = pipelines.at(type).getDescriptorSetHandler(0);
+			descriptorSetHandler.defineDescriptorSetsAmount(pMeshManager->getMeshCount());
+			descriptorPool.allocateDescriptorSet(descriptorSetHandler);
 
-		pMeshManager->loadMeshes(commandHandler, descriptorSetHandler);
+			pMeshManager->loadMeshes(commandHandler, descriptorSetHandler);
+		}
 	}
 
 	LOG_INFO("Meshes loaded to the GPU.\n");
