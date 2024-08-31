@@ -11,5 +11,10 @@ mtd::MeltdownEngine::~MeltdownEngine() = default;
 
 void mtd::MeltdownEngine::run()
 {
-	engine->start();
+	engine->run();
+}
+
+void mtd::MeltdownEngine::loadScene(const char* sceneFile)
+{
+	engine->loadScene(sceneFile);
 }

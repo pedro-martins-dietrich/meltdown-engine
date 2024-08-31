@@ -32,10 +32,6 @@ mtd::Engine::Engine(const EngineInfo& info)
 	imgui.addGuiWindow(&settingsGui);
 
 	LOG_INFO("Engine ready.\n");
-
-	scene.loadScene("meltdown_demo.json", commandHandler, pipelines);
-
-	configureDescriptors();
 }
 
 mtd::Engine::~Engine()
@@ -46,7 +42,7 @@ mtd::Engine::~Engine()
 }
 
 // Begins the engine main loop
-void mtd::Engine::start()
+void mtd::Engine::run()
 {
 	double lastTime;
 	double currentTime = glfwGetTime();
@@ -75,6 +71,13 @@ void mtd::Engine::start()
 		currentTime = glfwGetTime();
 		frameTime = glm::min(currentTime - lastTime, 1.0);
 	}
+}
+
+// Loads a new scene, clearing the previous if necessary
+void mtd::Engine::loadScene(const char* sceneFile)
+{
+	scene.loadScene(sceneFile, commandHandler, pipelines);
+	configureDescriptors();
 }
 
 // Sets up descriptor set shared across pipelines

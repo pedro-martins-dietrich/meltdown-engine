@@ -21,7 +21,10 @@ namespace mtd
 			Engine& operator=(const Engine&) = delete;
 
 			// Begins the engine main loop
-			void start();
+			void run();
+
+			// Loads a new scene, clearing the previous if necessary
+			void loadScene(const char* sceneFile);
 
 		private:
 			// Engine's handler objects
