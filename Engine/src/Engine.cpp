@@ -55,6 +55,8 @@ void mtd::Engine::run()
 		globalDescriptorSetHandler->getSet(0)
 	};
 
+	scene.start();
+
 	while(window.keepOpen())
 	{
 		inputHandler.handleInputs(window);

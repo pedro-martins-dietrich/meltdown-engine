@@ -23,6 +23,8 @@ namespace mtd
 			// Clears mesh data
 			virtual void clearMeshes() = 0;
 
+			// Executes the start code for each mesh on scene loading
+			virtual void start() = 0;
 			// Updates mesh data
 			virtual void update(double frameTime) = 0;
 

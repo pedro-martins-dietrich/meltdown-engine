@@ -32,6 +32,8 @@ namespace mtd
 			// Clears the list of default meshes and related buffers
 			virtual void clearMeshes() override;
 
+			// Executes the start code for each model on scene loading
+			virtual void start() override;
 			// Updates instances data
 			virtual void update(double frameTime) override;
 
@@ -56,7 +58,7 @@ namespace mtd
 			// Lumps of data containing all vertices and indices from all meshes
 			std::vector<Vertex> vertexLump;
 			std::vector<uint32_t> indexLump;
-			std::vector<glm::mat4> instanceLump;
+			std::vector<Mat4x4> instanceLump;
 
 			// Total number of instances
 			uint32_t totalInstanceCount;

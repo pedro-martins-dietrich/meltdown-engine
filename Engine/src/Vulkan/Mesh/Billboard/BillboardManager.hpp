@@ -33,6 +33,8 @@ namespace mtd
 			// Clears the list of billboards and the instance buffer
 			virtual void clearMeshes() override;
 
+			// Executes the start code for each model on scene loading
+			virtual void start() override;
 			// Updates instances data
 			virtual void update(double frameTime) override;
 
@@ -55,7 +57,7 @@ namespace mtd
 			std::vector<std::unique_ptr<Texture>> textures;
 
 			// Instances transforms lump
-			std::vector<glm::mat4> instanceLump;
+			std::vector<Mat4x4> instanceLump;
 
 			// Device reference
 			const Device& device;

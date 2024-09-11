@@ -48,6 +48,21 @@ void mtd::DefaultMeshManager::clearMeshes()
 	vulkanDevice.freeMemory(indexBuffer.bufferMemory);
 }
 
+// Executes the start code for each model on scene loading
+void mtd::DefaultMeshManager::start()
+{
+	for(DefaultMesh& mesh: meshes)
+		mesh.start();
+
+	Memory::copyMemory
+	(
+		device.getDevice(),
+		instanceBuffer.bufferMemory,
+		instanceLump.size() * sizeof(Mat4x4),
+		instanceLump.data()
+	);
+}
+
 // Updates instances data
 void mtd::DefaultMeshManager::update(double frameTime)
 {
@@ -58,7 +73,7 @@ void mtd::DefaultMeshManager::update(double frameTime)
 	(
 		device.getDevice(),
 		instanceBuffer.bufferMemory,
-		instanceLump.size() * sizeof(glm::mat4),
+		instanceLump.size() * sizeof(Mat4x4),
 		instanceLump.data()
 	);
 }
@@ -125,7 +140,7 @@ void mtd::DefaultMeshManager::loadMeshesToGPU(const CommandHandler& commandHandl
 		device, indexBuffer, indexLump, vk::BufferUsageFlagBits::eIndexBuffer, commandHandler
 	);
 
-	vk::DeviceSize instanceLumpSize = instanceLump.size() * sizeof(glm::mat4);
+	vk::DeviceSize instanceLumpSize = instanceLump.size() * sizeof(Mat4x4);
 	Memory::createBuffer
 	(
 		device,

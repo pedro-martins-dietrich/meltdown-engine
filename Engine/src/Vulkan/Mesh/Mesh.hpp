@@ -3,8 +3,6 @@
 #include <string>
 #include <vector>
 
-#include <glm/glm.hpp>
-
 #include <meltdown/model.hpp>
 
 namespace mtd
@@ -37,7 +35,7 @@ namespace mtd
 			void update(double deltaTime);
 
 			// Sets a reference to the instance lump to update the instances data
-			void setInstancesLump(std::vector<glm::mat4>* instanceLumpPointer, size_t offset);
+			void setInstancesLump(std::vector<Mat4x4>* instanceLumpPointer, size_t offset);
 			// Adds a new instance
 			void addInstance(const Mat4x4& preTransform = Mat4x4{1.0f});
 

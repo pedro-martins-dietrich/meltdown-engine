@@ -60,9 +60,9 @@ void mtd::Mesh::update(double deltaTime)
 }
 
 // Sets a reference to the instance lump to update the instances data
-void mtd::Mesh::setInstancesLump(std::vector<glm::mat4>* instanceLumpPointer, size_t offset)
+void mtd::Mesh::setInstancesLump(std::vector<Mat4x4>* instanceLumpPointer, size_t offset)
 {
-	pInstanceLump = reinterpret_cast<std::vector<Mat4x4>*>(instanceLumpPointer);
+	pInstanceLump = instanceLumpPointer;
 	instanceLumpOffset = offset;
 
 	pInstanceLump->reserve(models.size());
