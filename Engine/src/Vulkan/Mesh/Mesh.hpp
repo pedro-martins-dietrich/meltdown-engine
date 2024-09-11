@@ -1,8 +1,11 @@
 #pragma once
 
+#include <string>
 #include <vector>
 
 #include <glm/glm.hpp>
+
+#include <meltdown/model.hpp>
 
 namespace mtd
 {
@@ -10,12 +13,14 @@ namespace mtd
 	class Mesh
 	{
 		public:
-			Mesh(const glm::mat4& preTransform);
+			Mesh(uint32_t index, const char* modelID, const Mat4x4& preTransform);
 			Mesh
 			(
-				std::vector<glm::mat4>&& transforms,
+				uint32_t index,
+				const std::string& modelID,
+				std::vector<std::unique_ptr<Model>>&& models,
 				size_t instanceLumpOffset,
-				std::vector<glm::mat4>* pInstanceLump
+				std::vector<Mat4x4>* pInstanceLump
 			);
 			virtual ~Mesh() = default;
 
@@ -23,26 +28,32 @@ namespace mtd
 			Mesh& operator=(const Mesh&) = delete;
 
 			// Getters
-			uint32_t getInstanceCount() const { return static_cast<uint32_t>(transforms.size()); }
+			uint32_t getInstanceCount() const { return static_cast<uint32_t>(models.size()); }
 			uint32_t getInstanceOffset() const { return static_cast<uint32_t>(instanceLumpOffset); }
-			const std::vector<glm::mat4>& getTransformationMatrices() const
-				{ return transforms; }
-			glm::mat4 getTransformationMatrix(uint32_t instance) const
-				{ return transforms[instance]; }
+
+			// Runs once at the beginning of the scene for all instances
+			void start();
+			// Updates all instances
+			void update(double deltaTime);
 
 			// Sets a reference to the instance lump to update the instances data
 			void setInstancesLump(std::vector<glm::mat4>* instanceLumpPointer, size_t offset);
 			// Adds a new instance
-			void addInstance(glm::mat4 preTransform = glm::mat4{1.0f});
-			// Writes the transformation matrices in the GPU mapped memory
-			void updateTransformationMatrix(glm::mat4 newTransform, uint32_t instance);
+			void addInstance(const Mat4x4& preTransform = Mat4x4{1.0f});
 
 		protected:
-			// Transformation matrices for each instance
-			std::vector<glm::mat4> transforms;
+			// Mesh index
+			uint32_t meshIndex;
+			// Model ID
+			std::string modelID;
+			// Model instance factory
+			ModelFactory modelFactory;
+
+			// Model data for each instance of the mesh
+			std::vector<std::unique_ptr<Model>> models;
 
 			// Pointer to the instance lump vector and start index
 			size_t instanceLumpOffset;
-			std::vector<glm::mat4>* pInstanceLump;
+			std::vector<Mat4x4>* pInstanceLump;
 	};
 }

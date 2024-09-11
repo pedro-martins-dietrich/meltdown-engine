@@ -1,7 +1,5 @@
 #include "DefaultMeshManager.hpp"
 
-#include <glm/gtc/matrix_transform.hpp>
-
 #include "../../../Utils/Logger.hpp"
 
 mtd::DefaultMeshManager::DefaultMeshManager(const Device& device)
@@ -53,35 +51,8 @@ void mtd::DefaultMeshManager::clearMeshes()
 // Updates instances data
 void mtd::DefaultMeshManager::update(double frameTime)
 {
-	for(uint32_t i = 1; i < 5; i++)
-	{
-		Mesh& mesh = meshes[i];
-		mesh.updateTransformationMatrix
-		(
-			glm::rotate
-			(
-				mesh.getTransformationMatrix(0),
-				static_cast<float>(frameTime),
-				glm::vec3{0.0f, -1.0f, 0.0f}
-			),
-			0
-		);
-		mesh.updateTransformationMatrix
-		(
-			glm::rotate
-			(
-				mesh.getTransformationMatrix(1),
-				static_cast<float>(frameTime),
-				glm::vec3{0.0f, 1.0f, 0.0f}
-			),
-			1
-		);
-	}
-
-	glm::mat4 matrix = meshes[5].getTransformationMatrix(0);
-	matrix[3][0] -= frameTime * matrix[3][2];
-	matrix[3][2] += frameTime * matrix[3][0];
-	meshes[5].updateTransformationMatrix(matrix, 0);
+	for(DefaultMesh& mesh: meshes)
+		mesh.update(frameTime);
 
 	Memory::copyMemory
 	(
@@ -126,14 +97,12 @@ void mtd::DefaultMeshManager::loadMeshToLump(DefaultMesh& mesh)
 {
 	const std::vector<Vertex>& vertices = mesh.getVertices();
 	const std::vector<uint32_t>& indices = mesh.getIndices();
-	const std::vector<glm::mat4>& instancesData = mesh.getTransformationMatrices();
 
 	mesh.setIndexOffset(static_cast<uint32_t>(indexLump.size()));
 
 	vertexLump.insert(vertexLump.end(), vertices.begin(), vertices.end());
 
 	mesh.setInstancesLump(&instanceLump, instanceLump.size());
-	instanceLump.insert(instanceLump.end(), instancesData.begin(), instancesData.end());
 
 	indexLump.reserve(indices.size());
 	for(uint32_t index: indices)

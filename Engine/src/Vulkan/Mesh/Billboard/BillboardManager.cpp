@@ -19,9 +19,7 @@ void mtd::BillboardManager::loadMeshes
 {
 	for(Billboard& billboard: billboards)
 	{
-		const std::vector<glm::mat4>& instancesData = billboard.getTransformationMatrices();
 		billboard.setInstancesLump(&instanceLump, instanceLump.size());
-		instanceLump.insert(instanceLump.end(), instancesData.begin(), instancesData.end());
 
 		billboard.loadTexture(device, commandHandler, textureDescriptorSetHandler);
 	}
@@ -62,6 +60,9 @@ void mtd::BillboardManager::clearMeshes()
 // Updates instances data
 void mtd::BillboardManager::update(double frameTime)
 {
+	for(Billboard& billboard: billboards)
+		billboard.update(frameTime);
+
 	Memory::copyMemory
 	(
 		device.getDevice(),
