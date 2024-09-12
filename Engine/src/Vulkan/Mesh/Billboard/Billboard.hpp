@@ -11,7 +11,13 @@ namespace mtd
 	class Billboard : public Mesh
 	{
 		public:
-			Billboard(uint32_t id, const char* texturePath, glm::mat4 preTransform = glm::mat4{1.0f});
+			Billboard
+			(
+				uint32_t index,
+				const char* id,
+				const char* texturePath,
+				const Mat4x4& preTransform = Mat4x4{1.0f}
+			);
 			~Billboard() = default;
 
 			Billboard(const Billboard&) = delete;
@@ -28,9 +34,6 @@ namespace mtd
 			);
 
 		private:
-			// Billboard ID
-			uint32_t id;
-
 			// Bilboard texture
 			std::string texturePath;
 			std::unique_ptr<Texture> texture;

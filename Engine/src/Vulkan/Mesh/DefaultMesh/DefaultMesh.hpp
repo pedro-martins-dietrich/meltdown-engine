@@ -1,7 +1,5 @@
 #pragma once
 
-#include <memory>
-
 #include "../Mesh.hpp"
 #include "../../Image/Texture.hpp"
 #include "../../../Utils/EngineStructs.hpp"
@@ -12,7 +10,13 @@ namespace mtd
 	class DefaultMesh : public Mesh
 	{
 		public:
-			DefaultMesh(uint32_t id, const char* fileName, glm::mat4 preTransform = glm::mat4{1.0f});
+			DefaultMesh
+			(
+				uint32_t index,
+				const char* id,
+				const char* fileName,
+				const Mat4x4& preTransform = Mat4x4{1.0f}
+			);
 			~DefaultMesh() = default;
 
 			DefaultMesh(const DefaultMesh&) = delete;
@@ -37,9 +41,6 @@ namespace mtd
 			);
 
 		private:
-			// Mesh ID
-			uint32_t id;
-
 			// Mesh data
 			std::vector<Vertex> vertices;
 			std::vector<uint32_t> indices;

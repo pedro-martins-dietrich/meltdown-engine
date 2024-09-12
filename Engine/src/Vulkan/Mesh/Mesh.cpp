@@ -1,35 +1,79 @@
 #include "Mesh.hpp"
 
-mtd::Mesh::Mesh(const glm::mat4& preTransform)
-	: transforms{preTransform}, instanceLumpOffset{0}, pInstanceLump{nullptr}
+#include <cstring>
+
+#include "../../Utils/Logger.hpp"
+
+mtd::Mesh::Mesh(uint32_t index, const char* modelID, const Mat4x4& preTransform)
+	: meshIndex{index},
+	modelID{modelID},
+	modelFactory{ModelHandler::getModelFactory(modelID)},
+	models{},
+	instanceLumpOffset{0},
+	pInstanceLump{nullptr}
 {
+	models.emplace_back(modelFactory(preTransform));
 }
 
 mtd::Mesh::Mesh
 (
-	std::vector<glm::mat4>&& transforms,
+	uint32_t index,
+	const std::string& modelID,
+	std::vector<std::unique_ptr<Model>>&& models,
 	size_t instanceLumpOffset,
-	std::vector<glm::mat4>* pInstanceLump
-) : transforms{transforms}, instanceLumpOffset{instanceLumpOffset}, pInstanceLump{pInstanceLump}
+	std::vector<Mat4x4>* pInstanceLump
+) : meshIndex{index},
+	modelID{modelID},
+	modelFactory{ModelHandler::getModelFactory(modelID)},
+	models{std::move(models)},
+	instanceLumpOffset{instanceLumpOffset},
+	pInstanceLump{pInstanceLump}
 {
+}
+
+// Runs once at the beginning of the scene for all instances
+void mtd::Mesh::start()
+{
+	for(uint32_t instanceIndex = 0; instanceIndex < models.size(); instanceIndex++)
+	{
+		models[instanceIndex]->start();
+		std::memcpy
+		(
+			&(*pInstanceLump)[instanceLumpOffset + instanceIndex],
+			models[instanceIndex]->getTransformPointer(),
+			sizeof(Mat4x4)
+		);
+	}
+}
+
+// Updates all instances
+void mtd::Mesh::update(double deltaTime)
+{
+	for(uint32_t instanceIndex = 0; instanceIndex < models.size(); instanceIndex++)
+	{
+		models[instanceIndex]->update(deltaTime);
+		std::memcpy
+		(
+			&(*pInstanceLump)[instanceLumpOffset + instanceIndex],
+			models[instanceIndex]->getTransformPointer(),
+			sizeof(Mat4x4)
+		);
+	}
 }
 
 // Sets a reference to the instance lump to update the instances data
-void mtd::Mesh::setInstancesLump(std::vector<glm::mat4>* instanceLumpPointer, size_t offset)
+void mtd::Mesh::setInstancesLump(std::vector<Mat4x4>* instanceLumpPointer, size_t offset)
 {
 	pInstanceLump = instanceLumpPointer;
 	instanceLumpOffset = offset;
+
+	pInstanceLump->reserve(models.size());
+	for(const std::unique_ptr<Model>& model: models)
+		pInstanceLump->push_back(*(model->getTransformPointer()));
 }
 
 // Adds a new instance
-void mtd::Mesh::addInstance(glm::mat4 preTransform)
+void mtd::Mesh::addInstance(const Mat4x4& preTransform)
 {
-	transforms.push_back(preTransform);
-}
-
-// Writes the transformation matrices in the GPU mapped memory
-void mtd::Mesh::updateTransformationMatrix(glm::mat4 newTransform, uint32_t instance)
-{
-	transforms[instance] = newTransform;
-	(*pInstanceLump)[instanceLumpOffset + instance] = newTransform;
+	models.emplace_back(modelFactory(preTransform));
 }

@@ -23,6 +23,16 @@ void mtd::Scene::loadScene
 	loadMeshes(commandHandler, pipelines);
 }
 
+// Executes starting code on scene
+void mtd::Scene::start() const
+{
+	for(auto& [type, pMeshManager]: meshManagers)
+	{
+		if(pMeshManager->getMeshCount() > 0)
+			pMeshManager->start();
+	}
+}
+
 // Updates scene data
 void mtd::Scene::update(double frameTime) const
 {

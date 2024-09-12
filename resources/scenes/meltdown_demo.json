@@ -1,5 +1,5 @@
 {
-	"scene-loader-version": "0.1.1",
+	"scene-loader-version": "0.1.2",
 	"default-meshes":
 	[
 		{
@@ -16,6 +16,7 @@
 		},
 		{
 			"file": "tetrahedron/tetrahedron.obj",
+			"model-id": "spinning",
 			"pre-transforms":
 			[
 				[
@@ -34,6 +35,7 @@
 		},
 		{
 			"file": "cube/cube.obj",
+			"model-id": "spinning",
 			"pre-transforms":
 			[
 				[
@@ -52,6 +54,7 @@
 		},
 		{
 			"file": "octahedron/octahedron.obj",
+			"model-id": "spinning",
 			"pre-transforms":
 			[
 				[
@@ -70,6 +73,7 @@
 		},
 		{
 			"file": "dodecahedron/dodecahedron.obj",
+			"model-id": "spinning",
 			"pre-transforms":
 			[
 				[
@@ -88,6 +92,7 @@
 		},
 		{
 			"file": "icosahedron/icosahedron.obj",
+			"model-id": "rotating",
 			"pre-transforms":
 			[
 				[

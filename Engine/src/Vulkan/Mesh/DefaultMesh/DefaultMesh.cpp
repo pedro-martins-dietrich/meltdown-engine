@@ -2,15 +2,23 @@
 
 #include "../ObjMeshLoader.hpp"
 
-mtd::DefaultMesh::DefaultMesh(uint32_t id, const char* fileName, glm::mat4 preTransform)
-	: Mesh{preTransform}, id{id}, indexOffset{0}
+mtd::DefaultMesh::DefaultMesh
+(
+	uint32_t index, const char* id, const char* fileName, const Mat4x4& preTransform
+) : Mesh{index, id, preTransform}, indexOffset{0}
 {
 	ObjMeshLoader::load(fileName, vertices, indices, diffuseTexturePath);
 }
 
 mtd::DefaultMesh::DefaultMesh(DefaultMesh&& other) noexcept
-	: Mesh{std::move(other.transforms), other.instanceLumpOffset, other.pInstanceLump},
-	id{other.id},
+	: Mesh
+	{
+		other.meshIndex,
+		other.modelID,
+		std::move(other.models),
+		other.instanceLumpOffset,
+		other.pInstanceLump
+	},
 	vertices{std::move(other.vertices)},
 	indices{std::move(other.indices)},
 	diffuseTexturePath{std::move(other.diffuseTexturePath)},
@@ -31,6 +39,6 @@ void mtd::DefaultMesh::loadTexture
 {
 	diffuseTexture = std::make_unique<Texture>
 	(
-		device, diffuseTexturePath.c_str(), commandHandler, descriptorSetHandler, id
+		device, diffuseTexturePath.c_str(), commandHandler, descriptorSetHandler, meshIndex
 	);
 }

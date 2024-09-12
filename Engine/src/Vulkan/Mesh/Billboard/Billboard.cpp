@@ -1,13 +1,21 @@
 #include "Billboard.hpp"
 
-mtd::Billboard::Billboard(uint32_t id, const char* texturePath, glm::mat4 preTransform)
-	: Mesh{preTransform}, id{id}, texturePath{texturePath}
+mtd::Billboard::Billboard
+(
+	uint32_t index, const char* id, const char* texturePath, const Mat4x4& preTransform
+) : Mesh{index, id, preTransform}, texturePath{texturePath}
 {
 }
 
 mtd::Billboard::Billboard(Billboard&& other) noexcept
-	: Mesh{std::move(other.transforms), other.instanceLumpOffset, other.pInstanceLump},
-	id{other.id},
+	: Mesh
+	{
+		other.meshIndex,
+		other.modelID,
+		std::move(other.models),
+		other.instanceLumpOffset,
+		other.pInstanceLump
+	},
 	texturePath{other.texturePath},
 	texture{std::move(other.texture)}
 {
@@ -25,6 +33,6 @@ void mtd::Billboard::loadTexture
 {
 	texture = std::make_unique<Texture>
 	(
-		device, texturePath.c_str(), commandHandler, descriptorSetHandler, id
+		device, texturePath.c_str(), commandHandler, descriptorSetHandler, meshIndex
 	);
 }

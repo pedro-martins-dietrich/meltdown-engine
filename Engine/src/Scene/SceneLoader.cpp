@@ -7,15 +7,15 @@
 #include "../Utils/FileHandler.hpp"
 #include "../Utils/Logger.hpp"
 
-#define SCENE_LOADER_VERSION "0.1.1"
+#define SCENE_LOADER_VERSION "0.1.2"
 
 static void getDefaultMesh
 (
-	const nlohmann::json& meshJson, uint32_t id, mtd::MeshManager* pMeshManager
+	const nlohmann::json& meshJson, uint32_t index, mtd::MeshManager* pMeshManager
 );
 static void getBillboard
 (
-	const nlohmann::json& billboardJson, uint32_t id, mtd::MeshManager* pMeshManager
+	const nlohmann::json& billboardJson, uint32_t index, mtd::MeshManager* pMeshManager
 );
 
 // Loads the meshes from a Meltdown scene file
@@ -44,30 +44,28 @@ void mtd::SceneLoader::load
 	}
 
 	for(uint32_t i = 0; i < sceneJson["default-meshes"].size(); i++)
-	{
 		getDefaultMesh(sceneJson["default-meshes"][i], i, meshManagers.at(PipelineType::DEFAULT).get());
-	}
 	for(uint32_t i = 0; i < sceneJson["billboards"].size(); i++)
-	{
 		getBillboard(sceneJson["billboards"][i], i, meshManagers.at(PipelineType::BILLBOARD).get());
-	}
 
 	LOG_INFO("Scene \"%s\" loaded.", fileName);
 }
 
 // Fetches default meshes from scene file
-void getDefaultMesh(const nlohmann::json& meshJson, uint32_t id, mtd::MeshManager* pMeshManager)
+void getDefaultMesh(const nlohmann::json& meshJson, uint32_t index, mtd::MeshManager* pMeshManager)
 {
 	std::string file = meshJson["file"];
+	std::string id = meshJson.value("model-id", "");
 	std::vector<std::array<float, 16>> preTransforms = meshJson["pre-transforms"];
 
 	std::vector<mtd::DefaultMesh>& meshes =
 		dynamic_cast<mtd::DefaultMeshManager*>(pMeshManager)->getMeshes();
 	meshes.emplace_back
 	(
-		id,
+		index,
+		id.c_str(),
 		file.c_str(),
-		glm::mat4
+		mtd::Mat4x4
 		{
 			preTransforms[0][0], preTransforms[0][1], preTransforms[0][2], preTransforms[0][3],
 			preTransforms[0][4], preTransforms[0][5], preTransforms[0][6], preTransforms[0][7],
@@ -78,7 +76,7 @@ void getDefaultMesh(const nlohmann::json& meshJson, uint32_t id, mtd::MeshManage
 
 	for(uint32_t i = 1; i < preTransforms.size(); i++)
 	{
-		meshes.back().addInstance(glm::mat4
+		meshes.back().addInstance(mtd::Mat4x4
 		{
 			preTransforms[i][0], preTransforms[i][1], preTransforms[i][2], preTransforms[i][3],
 			preTransforms[i][4], preTransforms[i][5], preTransforms[i][6], preTransforms[i][7],
@@ -89,18 +87,20 @@ void getDefaultMesh(const nlohmann::json& meshJson, uint32_t id, mtd::MeshManage
 }
 
 // Fetches billboards from scene file
-void getBillboard(const nlohmann::json& billboardJson, uint32_t id, mtd::MeshManager* pMeshManager)
+void getBillboard(const nlohmann::json& billboardJson, uint32_t index, mtd::MeshManager* pMeshManager)
 {
 	std::string texturePath = billboardJson["texture"];
+	std::string id = billboardJson.value("model-id", "");
 	std::vector<std::array<float, 16>> preTransforms = billboardJson["pre-transforms"];
 
 	std::vector<mtd::Billboard>& billboards =
 		dynamic_cast<mtd::BillboardManager*>(pMeshManager)->getBillboards();
 	billboards.emplace_back
 	(
-		id,
+		index,
+		id.c_str(),
 		texturePath.c_str(),
-		glm::mat4
+		mtd::Mat4x4
 		{
 			preTransforms[0][0], preTransforms[0][1], preTransforms[0][2], preTransforms[0][3],
 			preTransforms[0][4], preTransforms[0][5], preTransforms[0][6], preTransforms[0][7],
@@ -111,7 +111,7 @@ void getBillboard(const nlohmann::json& billboardJson, uint32_t id, mtd::MeshMan
 
 	for(uint32_t i = 1; i < preTransforms.size(); i++)
 	{
-		billboards.back().addInstance(glm::mat4
+		billboards.back().addInstance(mtd::Mat4x4
 		{
 			preTransforms[i][0], preTransforms[i][1], preTransforms[i][2], preTransforms[i][3],
 			preTransforms[i][4], preTransforms[i][5], preTransforms[i][6], preTransforms[i][7],

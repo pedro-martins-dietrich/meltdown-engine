@@ -19,14 +19,12 @@ void mtd::BillboardManager::loadMeshes
 {
 	for(Billboard& billboard: billboards)
 	{
-		const std::vector<glm::mat4>& instancesData = billboard.getTransformationMatrices();
 		billboard.setInstancesLump(&instanceLump, instanceLump.size());
-		instanceLump.insert(instanceLump.end(), instancesData.begin(), instancesData.end());
 
 		billboard.loadTexture(device, commandHandler, textureDescriptorSetHandler);
 	}
 
-	vk::DeviceSize instanceLumpSize = instanceLump.size() * sizeof(glm::mat4);
+	vk::DeviceSize instanceLumpSize = instanceLump.size() * sizeof(Mat4x4);
 	Memory::createBuffer
 	(
 		device,
@@ -59,14 +57,32 @@ void mtd::BillboardManager::clearMeshes()
 	vulkanDevice.freeMemory(instanceBuffer.bufferMemory);
 }
 
-// Updates instances data
-void mtd::BillboardManager::update(double frameTime)
+// Executes the start code for each model on scene loading
+void mtd::BillboardManager::start()
 {
+	for(Billboard& billboard: billboards)
+		billboard.start();
+
 	Memory::copyMemory
 	(
 		device.getDevice(),
 		instanceBuffer.bufferMemory,
-		instanceLump.size() * sizeof(glm::mat4),
+		instanceLump.size() * sizeof(Mat4x4),
+		instanceLump.data()
+	);
+}
+
+// Updates instances data
+void mtd::BillboardManager::update(double frameTime)
+{
+	for(Billboard& billboard: billboards)
+		billboard.update(frameTime);
+
+	Memory::copyMemory
+	(
+		device.getDevice(),
+		instanceBuffer.bufferMemory,
+		instanceLump.size() * sizeof(Mat4x4),
 		instanceLump.data()
 	);
 }

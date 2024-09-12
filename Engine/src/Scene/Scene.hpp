@@ -32,6 +32,8 @@ namespace mtd
 				std::unordered_map<PipelineType, Pipeline>& pipelines
 			);
 
+			// Executes starting code on scene
+			void start() const;
 			// Updates scene data
 			void update(double frameTime) const;
 
