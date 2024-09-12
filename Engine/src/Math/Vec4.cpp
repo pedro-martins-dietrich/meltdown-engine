@@ -28,10 +28,13 @@ float mtd::Vec4::operator[](int i) const
 	return (&x)[i];
 }
 
-std::ostream& mtd::operator<<(std::ostream& os, const Vec4& v4)
+namespace mtd
 {
-	os << '(';
-	for(uint32_t i = 0; i < 4; i++)
-		os << std::setw(8) << std::setprecision(3) << v4[i] << ((i % 4 == 3) ? ")" : ", ");
-	return os;
+	std::ostream& operator<<(std::ostream& os, const Vec4& v4)
+	{
+		os << '(';
+		for(uint32_t i = 0; i < 4; i++)
+			os << std::setw(8) << std::setprecision(3) << v4[i] << ((i % 4 == 3) ? ")" : ", ");
+		return os;
+	}
 }

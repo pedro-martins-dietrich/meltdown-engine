@@ -1,5 +1,7 @@
 #include "Mesh.hpp"
 
+#include <cstring>
+
 #include "../../Utils/Logger.hpp"
 
 mtd::Mesh::Mesh(uint32_t index, const char* modelID, const Mat4x4& preTransform)
@@ -35,7 +37,7 @@ void mtd::Mesh::start()
 	for(uint32_t instanceIndex = 0; instanceIndex < models.size(); instanceIndex++)
 	{
 		models[instanceIndex]->start();
-		memcpy
+		std::memcpy
 		(
 			&(*pInstanceLump)[instanceLumpOffset + instanceIndex],
 			models[instanceIndex]->getTransformPointer(),
@@ -50,7 +52,7 @@ void mtd::Mesh::update(double deltaTime)
 	for(uint32_t instanceIndex = 0; instanceIndex < models.size(); instanceIndex++)
 	{
 		models[instanceIndex]->update(deltaTime);
-		memcpy
+		std::memcpy
 		(
 			&(*pInstanceLump)[instanceLumpOffset + instanceIndex],
 			models[instanceIndex]->getTransformPointer(),

@@ -73,18 +73,21 @@ mtd::Mat4x4& mtd::Mat4x4::operator*=(const Mat4x4& other)
 	return *this = *((Mat4x4*)(&result));
 }
 
-std::ostream& mtd::operator<<(std::ostream& os, const Mat4x4& mat)
+namespace mtd
 {
-	for(uint32_t i = 0; i < 4; i++)
+	std::ostream& operator<<(std::ostream& os, const Mat4x4& mat)
 	{
-		os << "\n[ ";
-		for(uint32_t j = 0; j < 4; j++)
-			os << std::fixed << std::setw(8) << std::setprecision(3) << mat[i][j] << "  ";
-		os << ']';
-	}
-	os << '\n';
+		for(uint32_t i = 0; i < 4; i++)
+		{
+			os << "\n[ ";
+			for(uint32_t j = 0; j < 4; j++)
+				os << std::fixed << std::setw(8) << std::setprecision(3) << mat[i][j] << "  ";
+			os << ']';
+		}
+		os << '\n';
 
-	return os;
+		return os;
+	}
 }
 
 void mtd::Mat4x4::rotateIntrinsic(float angle, const Vec3& axis)

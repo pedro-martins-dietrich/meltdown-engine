@@ -16,10 +16,13 @@ float mtd::Vec3::operator[](int i) const
 	return (&x)[i];
 }
 
-std::ostream& mtd::operator<<(std::ostream& os, const Vec3& v3)
+namespace mtd
 {
-	os << '(';
-	for(uint32_t i = 0; i < 3; i++)
-		os << std::setw(8) << std::setprecision(3) << v3[i] << ((i % 3 == 2) ? ")" : ", ");
-	return os;
+	std::ostream& operator<<(std::ostream& os, const Vec3& v3)
+	{
+		os << '(';
+		for(uint32_t i = 0; i < 3; i++)
+			os << std::setw(8) << std::setprecision(3) << v3[i] << ((i % 3 == 2) ? ")" : ", ");
+		return os;
+	}
 }
