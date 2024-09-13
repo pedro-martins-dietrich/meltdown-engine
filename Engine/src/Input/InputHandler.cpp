@@ -1,3 +1,4 @@
+#include <pch.hpp>
 #include "InputHandler.hpp"
 
 #include "../Window/Window.hpp"

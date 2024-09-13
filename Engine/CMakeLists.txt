@@ -108,6 +108,10 @@ else()
     message(WARNING "[MELTDOWN] Unknown build type: \"${CMAKE_BUILD_TYPE}\"")
 endif()
 
+# Configures the pre-compiled headers
+set(MTD_PCH_DIR "pch")
+target_precompile_headers(${MELTDOWN_LIB} PRIVATE "${MTD_PCH_DIR}/pch.hpp")
+
 # Library interface include directory
 set(MTD_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include")
 set(MTD_INSTALL_INCLUDE_DIR "Engine/include")
@@ -115,7 +119,7 @@ set(MTD_INSTALL_INCLUDE_DIR "Engine/include")
 # Configures include directories and libraries
 target_include_directories(
     ${MELTDOWN_LIB}
-    PRIVATE ${MTD_INCLUDES}
+    PRIVATE ${MTD_INCLUDES} ${MTD_PCH_DIR}
     PUBLIC $<BUILD_INTERFACE:${MTD_INCLUDE_DIR}>
     PUBLIC $<INSTALL_INTERFACE:${MTD_INSTALL_INCLUDE_DIR}>
 )

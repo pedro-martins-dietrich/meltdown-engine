@@ -1,3 +1,4 @@
+#include <pch.hpp>
 #include "DefaultMesh.hpp"
 
 #include "../ObjMeshLoader.hpp"

@@ -1,3 +1,4 @@
+#include <pch.hpp>
 #include "StringParser.hpp"
 
 // Separates a line into substrings, using the specified delimiter

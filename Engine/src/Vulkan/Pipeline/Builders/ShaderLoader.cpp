@@ -1,3 +1,4 @@
+#include <pch.hpp>
 #include "ShaderLoader.hpp"
 
 #include "../../../Utils/Logger.hpp"

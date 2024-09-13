@@ -1,6 +1,5 @@
+#include <pch.hpp>
 #include "Camera.hpp"
-
-#include <glm/gtc/matrix_transform.hpp>
 
 #include "../Utils/Logger.hpp"
 #include "../Window/Window.hpp"

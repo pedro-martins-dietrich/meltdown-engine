@@ -1,3 +1,4 @@
+#include <pch.hpp>
 #include "ShaderModule.hpp"
 
 #include "../../Utils/FileHandler.hpp"

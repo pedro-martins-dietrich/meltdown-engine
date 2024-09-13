@@ -1,3 +1,4 @@
+#include <pch.hpp>
 #include "VertexInputBuilder.hpp"
 
 #include "../../../Utils/EngineStructs.hpp"
