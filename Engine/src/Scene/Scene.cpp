@@ -1,3 +1,4 @@
+#include <pch.hpp>
 #include "Scene.hpp"
 
 #include "../Utils/Logger.hpp"

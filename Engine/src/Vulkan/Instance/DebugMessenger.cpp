@@ -1,3 +1,4 @@
+#include <pch.hpp>
 #include "DebugMessenger.hpp"
 
 // The debug messenger is only compiled for debug builds

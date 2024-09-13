@@ -1,8 +1,5 @@
+#include <pch.hpp>
 #include <meltdown/math.hpp>
-
-#include <iomanip>
-
-#include <glm/glm.hpp>
 
 mtd::Mat4x4::Mat4x4
 (

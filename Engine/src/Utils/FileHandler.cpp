@@ -1,6 +1,5 @@
+#include <pch.hpp>
 #include "FileHandler.hpp"
-
-#include <fstream>
 
 #include "Logger.hpp"
 

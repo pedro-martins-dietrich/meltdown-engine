@@ -1,3 +1,4 @@
+#include <pch.hpp>
 #include "Device.hpp"
 
 #include "../../Utils/Logger.hpp"

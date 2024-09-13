@@ -1,3 +1,4 @@
+#include <pch.hpp>
 #include "ColorBlendBuilder.hpp"
 
 #include "../../../Utils/Logger.hpp"

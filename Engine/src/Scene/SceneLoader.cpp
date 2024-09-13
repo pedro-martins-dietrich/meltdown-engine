@@ -1,3 +1,4 @@
+#include <pch.hpp>
 #include "SceneLoader.hpp"
 
 #include <nlohmann/json.hpp>

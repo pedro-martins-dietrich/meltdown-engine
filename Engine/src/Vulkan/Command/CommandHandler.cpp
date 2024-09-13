@@ -1,3 +1,4 @@
+#include <pch.hpp>
 #include "CommandHandler.hpp"
 
 #include "../Gui/Gui.hpp"

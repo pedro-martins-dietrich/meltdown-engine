@@ -1,7 +1,7 @@
+#include <pch.hpp>
 #include "Logger.hpp"
 
 #include <cstdarg>
-#include <iostream>
 
 #define BUFFER_SIZE 1024
 

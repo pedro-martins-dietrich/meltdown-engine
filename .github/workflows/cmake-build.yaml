@@ -86,11 +86,11 @@ jobs:
         run: |
           $VULKAN_SDK_PATH = (Get-ChildItem -Path "C:\VulkanSDK" -Directory | Sort-Object -Property LastWriteTime -Descending | Select-Object -First 1).FullName
           $env:PATH += ";$VULKAN_SDK_PATH\Bin"
-          cmake --build ${{env.BUILD_PATH}} --config ${{env.BUILD_TYPE}}
+          cmake --build ${{env.BUILD_PATH}} --config ${{env.BUILD_TYPE}} -j 4
           cmake --install build/ --config Release
 
       - name: Build for Ubuntu
         if: matrix.os == 'ubuntu-latest'
         run: |
-          cmake --build ${{env.BUILD_PATH}} --config ${{env.BUILD_TYPE}}
+          cmake --build ${{env.BUILD_PATH}} --config ${{env.BUILD_TYPE}} -j 4
           cmake --install build/ --config Release

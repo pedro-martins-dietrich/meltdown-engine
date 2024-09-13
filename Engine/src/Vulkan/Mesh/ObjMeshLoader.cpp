@@ -1,9 +1,5 @@
+#include <pch.hpp>
 #include "ObjMeshLoader.hpp"
-
-#include <fstream>
-#include <unordered_map>
-
-#include <iostream>
 
 #include "../../Utils/FileHandler.hpp"
 #include "../../Utils/Logger.hpp"

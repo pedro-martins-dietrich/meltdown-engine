@@ -1,7 +1,7 @@
+#include <pch.hpp>
 #include <meltdown/math.hpp>
 
 #include <cmath>
-#include <iomanip>
 
 mtd::Vec4::Vec4(float x, float y, float z, float w) : x{x}, y{y}, z{z}, w{w}
 {

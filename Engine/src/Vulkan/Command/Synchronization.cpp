@@ -1,3 +1,4 @@
+#include <pch.hpp>
 #include "Synchronization.hpp"
 
 #include "../../Utils/Logger.hpp"
