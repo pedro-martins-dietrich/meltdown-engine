@@ -1,6 +1,8 @@
 #include <pch.hpp>
 #include "Engine.hpp"
 
+#include <meltdown/event.hpp>
+
 #include "Utils/Logger.hpp"
 
 mtd::Engine::Engine(const EngineInfo& info)
@@ -21,6 +23,12 @@ mtd::Engine::Engine(const EngineInfo& info)
 	configurePipelines();
 
 	window.setInputCallbacks(inputHandler);
+
+	EventManager::addCallback(EventType::ChangeScene, [this](const Event& e)
+	{
+		const ChangeSceneEvent* cse = dynamic_cast<const ChangeSceneEvent*>(&e);
+		loadScene(cse->getSceneName());
+	});
 
 	imgui.init
 	(
@@ -56,13 +64,12 @@ void mtd::Engine::run()
 		globalDescriptorSetHandler->getSet(0)
 	};
 
-	scene.start();
-
 	while(window.keepOpen())
 	{
 		inputHandler.handleInputs(window);
 		camera.updateCamera(static_cast<float>(frameTime), window);
 
+		EventManager::processEvents();
 		scene.update(frameTime);
 
 		renderer.render(device, swapchain, imgui, pipelines, scene, drawInfo, shouldUpdateEngine);
@@ -81,6 +88,8 @@ void mtd::Engine::loadScene(const char* sceneFile)
 {
 	scene.loadScene(sceneFile, commandHandler, pipelines);
 	configureDescriptors();
+
+	scene.start();
 }
 
 // Sets up descriptor set shared across pipelines
