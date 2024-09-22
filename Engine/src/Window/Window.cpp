@@ -13,6 +13,7 @@ mtd::Window::Window(FrameDimensions initialDimensions, const char* windowName)
 	initializeGLFW();
 	createWindowInstance();
 	setupWindowEventDispatching();
+	setInputCallbacks();
 }
 
 mtd::Window::~Window()
@@ -75,29 +76,6 @@ void mtd::Window::getMousePos(float* x, float* y, bool needsCursorHidden) const
 		glfwSetCursorPos(glfwWindow, halfWidth, halfHeight);
 }
 
-// Sets window input callbacks
-void mtd::Window::setInputCallbacks(InputHandler& inputHandler)
-{
-	inputHandler.setInputCallback("default", "toggle_cursor", [this](bool pressed)
-	{
-		static bool lastPressed = false;
-
-		if(!pressed || lastPressed)
-		{
-			lastPressed = pressed;
-			return;
-		}
-
-		cursorHidden = !cursorHidden;
-		glfwSetInputMode
-		(
-			glfwWindow, GLFW_CURSOR, cursorHidden ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL
-		);
-
-		lastPressed = pressed;
-	});
-}
-
 // Configures GLFW parameters
 void mtd::Window::initializeGLFW() const
 {
@@ -148,5 +126,22 @@ void mtd::Window::setupWindowEventDispatching() const
 				EventManager::dispatch(std::make_unique<KeyReleaseEvent>(keyCode));
 				break;
 		}
+	});
+}
+
+// Sets window input callbacks
+void mtd::Window::setInputCallbacks()
+{
+	EventManager::addCallback(EventType::KeyPress, [this](const Event& e)
+	{
+		const KeyPressEvent* keyPress = dynamic_cast<const KeyPressEvent*>(&e);
+		if(!keyPress || keyPress->getKeyCode() != KeyCode::Tab || keyPress->isRepeating())
+			return;
+
+		cursorHidden = !cursorHidden;
+		glfwSetInputMode
+		(
+			glfwWindow, GLFW_CURSOR, cursorHidden ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL
+		);
 	});
 }

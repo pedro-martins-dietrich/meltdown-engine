@@ -9,7 +9,7 @@ namespace mtd
 	class Gui
 	{
 		public:
-			Gui(const vk::Device& vulkanDevice, InputHandler& inputHandler);
+			Gui(const vk::Device& vulkanDevice);
 			~Gui();
 
 			Gui(const Gui&) = delete;
@@ -45,7 +45,7 @@ namespace mtd
 
 			// Creates the descriptor pool for ImGui
 			void createDescriptorPool();
-			// Configures the input logic for the GUI
-			void setInputCallbacks(InputHandler& inputHandler);
+			// Configures the input logic for toggling the GUI
+			void setInputCallbacks();
 	};
 }

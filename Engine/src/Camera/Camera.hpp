@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../Utils/EngineStructs.hpp"
-#include "../Input/InputHandler.hpp"
+#include "../Window/Window.hpp"
 
 namespace mtd
 {
@@ -9,14 +9,8 @@ namespace mtd
 	class Camera
 	{
 		public:
-			Camera
-			(
-				InputHandler& inputHandler,
-				glm::vec3 initialPosition,
-				float fovDegrees,
-				float aspectRatio
-			);
-			~Camera() {}
+			Camera(glm::vec3 initialPosition, float fovDegrees, float aspectRatio);
+			~Camera() = default;
 
 			Camera(const Camera&) = delete;
 			Camera& operator=(const Camera&) = delete;
@@ -35,7 +29,8 @@ namespace mtd
 		private:
 			// Current camera location
 			glm::vec3 position;
-			glm::vec3 velocity;
+			// Input velocity vector
+			glm::vec3 inputVelocity;
 			// View direction angles
 			float yaw;
 			float pitch;
@@ -44,14 +39,11 @@ namespace mtd
 			glm::vec3 forwardDirection;
 			glm::vec3 rightDirection;
 			glm::vec3 upDirection;
-
 			// Up vector for reference
 			const glm::vec3 up;
-			// Maximum camera speed
-			const float maxSpeed;
 
-			// Frame time
-			float frameTime;
+			// Maximum camera speed
+			float maxSpeed;
 
 			// Transformation matrices
 			CameraMatrices matrices;
@@ -61,6 +53,6 @@ namespace mtd
 			void calculateDirectionVectors();
 
 			// Sets camera input logic
-			void setInputCallbacks(InputHandler& inputHandler);
+			void setInputCallbacks();
 	};
 }

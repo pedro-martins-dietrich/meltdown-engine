@@ -39,9 +39,6 @@ namespace mtd
 			// Returns the mouse coordinates relative to the screen center
 			void getMousePos(float* x, float* y, bool needsCursorHidden) const;
 
-			// Sets window input callbacks
-			void setInputCallbacks(InputHandler& inputHandler);
-
 		private:
 			// GLFW window instance
 			GLFWwindow* glfwWindow;
@@ -61,7 +58,10 @@ namespace mtd
 			void initializeGLFW() const;
 			// Creates GLFW window instance
 			void createWindowInstance();
+
 			// Configures event dispatching on window callbacks
 			void setupWindowEventDispatching() const;
+			// Sets window input callbacks
+			void setInputCallbacks();
 	};
 }

@@ -1,20 +1,19 @@
 #include <pch.hpp>
 #include "Camera.hpp"
 
+#include <limits>
+
+#include <meltdown/event.hpp>
+
 #include "../Utils/Logger.hpp"
 #include "../Window/Window.hpp"
 
-mtd::Camera::Camera
-(
-	InputHandler& inputHandler,
-	glm::vec3 initialPosition,
-	float fovDegrees,
-	float aspectRatio
-) : position{initialPosition}, velocity{0.0f},
+mtd::Camera::Camera(glm::vec3 initialPosition, float fovDegrees, float aspectRatio)
+	: position{initialPosition},
+	inputVelocity{0.0f},
 	maxSpeed{1.0f},
 	yaw{0.0f}, pitch{0.0f},
 	up{0.0f, -1.0f, 0.0f},
-	frameTime{0.016f},
 	cameraMatricesWriteLocation{nullptr}
 {
 	matrices.view = glm::lookAt
@@ -25,18 +24,12 @@ mtd::Camera::Camera
 	);
 	updatePerspective(fovDegrees, aspectRatio);
 	calculateDirectionVectors();
-	setInputCallbacks(inputHandler);
+	setInputCallbacks();
 }
 
 // Updates camera position and direction
 void mtd::Camera::updateCamera(float deltaTime, const Window& window)
 {
-	frameTime = deltaTime;
-
-	if(glm::length(velocity) > 0.00001f)
-		velocity = glm::normalize(velocity) * maxSpeed;
-	position += velocity * frameTime;
-
 	float mouseX = 0.0f;
 	float mouseY = 0.0f;
 	window.getMousePos(&mouseX, &mouseY, true);
@@ -48,6 +41,16 @@ void mtd::Camera::updateCamera(float deltaTime, const Window& window)
 
 	calculateDirectionVectors();
 
+	glm::vec3 velocity{0.0f};
+	velocity += rightDirection * inputVelocity.x;
+	velocity += upDirection * inputVelocity.y;
+	velocity += forwardDirection * inputVelocity.z;
+
+	if(glm::length(velocity) > std::numeric_limits<float>::epsilon())
+		velocity = glm::normalize(velocity) * maxSpeed;
+
+	position += velocity * deltaTime;
+
 	matrices.view = glm::lookAt
 	(
 		position,
@@ -56,8 +59,6 @@ void mtd::Camera::updateCamera(float deltaTime, const Window& window)
 	);
 
 	matrices.projectionView = matrices.projection * matrices.view;
-
-	velocity = glm::vec3{0.0f};
 
 	memcpy(cameraMatricesWriteLocation, &matrices, sizeof(CameraMatrices));
 }
@@ -76,37 +77,68 @@ void mtd::Camera::updatePerspective(float fovDegrees, float aspectRatio)
 }
 
 // Sets camera input logic
-void mtd::Camera::setInputCallbacks(InputHandler& inputHandler)
+void mtd::Camera::setInputCallbacks()
 {
-	inputHandler.setInputCallback("default", "forward", [this](bool pressed)
+	EventManager::addCallback(EventType::KeyPress, [this](const Event& e)
 	{
-		if(!pressed) return;
-		velocity += forwardDirection;
+		const KeyPressEvent* keyPress = dynamic_cast<const KeyPressEvent*>(&e);
+		if(!keyPress || keyPress->isRepeating()) return;
+
+		switch(keyPress->getKeyCode())
+		{
+			case KeyCode::W:
+				inputVelocity.z += 1.0f;
+				break;
+			case KeyCode::A:
+				inputVelocity.x -= 1.0f;
+				break;
+			case KeyCode::S:
+				inputVelocity.z -= 1.0f;
+				break;
+			case KeyCode::D:
+				inputVelocity.x += 1.0f;
+				break;
+			case KeyCode::Space:
+				inputVelocity.y += 1.0f;
+				break;
+			case KeyCode::LeftControl:
+				inputVelocity.y -= 1.0f;
+				break;
+			case KeyCode::LeftShift:
+				maxSpeed = 2.0f;
+				break;
+		}
 	});
-	inputHandler.setInputCallback("default", "backward", [this](bool pressed)
+
+	EventManager::addCallback(EventType::KeyRelease, [this](const Event& e)
 	{
-		if(!pressed) return;
-		velocity -= forwardDirection;
-	});
-	inputHandler.setInputCallback("default", "right", [this](bool pressed)
-	{
-		if(!pressed) return;
-		velocity += rightDirection;
-	});
-	inputHandler.setInputCallback("default", "left", [this](bool pressed)
-	{
-		if(!pressed) return;
-		velocity -= rightDirection;
-	});
-	inputHandler.setInputCallback("default", "up", [this](bool pressed)
-	{
-		if(!pressed) return;
-		velocity += up;
-	});
-	inputHandler.setInputCallback("default", "down", [this](bool pressed)
-	{
-		if(!pressed) return;
-		velocity -= up;
+		const KeyReleaseEvent* keyRelease = dynamic_cast<const KeyReleaseEvent*>(&e);
+		if(!keyRelease) return;
+
+		switch(keyRelease->getKeyCode())
+		{
+			case KeyCode::W:
+				inputVelocity.z -= 1.0f;
+				break;
+			case KeyCode::A:
+				inputVelocity.x += 1.0f;
+				break;
+			case KeyCode::S:
+				inputVelocity.z += 1.0f;
+				break;
+			case KeyCode::D:
+				inputVelocity.x -= 1.0f;
+				break;
+			case KeyCode::Space:
+				inputVelocity.y -= 1.0f;
+				break;
+			case KeyCode::LeftControl:
+				inputVelocity.y += 1.0f;
+				break;
+			case KeyCode::LeftShift:
+				maxSpeed = 1.0f;
+				break;
+		}
 	});
 }
 

@@ -35,7 +35,6 @@ namespace mtd
 			std::unordered_map<PipelineType, Pipeline> pipelines;
 			std::unique_ptr<DescriptorSetHandler> globalDescriptorSetHandler;
 			CommandHandler commandHandler;
-			InputHandler inputHandler;
 			Camera camera;
 			Renderer renderer;
 

@@ -12,17 +12,14 @@ mtd::Engine::Engine(const EngineInfo& info)
 	swapchain{device, window.getDimensions(), vulkanInstance.getSurface()},
 	commandHandler{device},
 	scene{device},
-	inputHandler{},
-	imgui{device.getDevice(), inputHandler},
+	imgui{device.getDevice()},
 	settingsGui{swapchain.getSettings(), shouldUpdateEngine},
 	renderer{},
-	camera{inputHandler, glm::vec3{0.0f, -1.5f, -4.5f}, 70.0f, window.getAspectRatio()},
+	camera{glm::vec3{0.0f, -1.5f, -4.5f}, 70.0f, window.getAspectRatio()},
 	shouldUpdateEngine{false}
 {
 	configureGlobalDescriptorSetHandler();
 	configurePipelines();
-
-	window.setInputCallbacks(inputHandler);
 
 	EventManager::addCallback(EventType::ChangeScene, [this](const Event& e)
 	{
@@ -66,7 +63,6 @@ void mtd::Engine::run()
 
 	while(window.keepOpen())
 	{
-		inputHandler.handleInputs(window);
 		camera.updateCamera(static_cast<float>(frameTime), window);
 
 		NewInputHandler::checkActionEvents();
