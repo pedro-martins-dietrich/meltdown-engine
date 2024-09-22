@@ -6,6 +6,7 @@
 #include <meltdown/event.hpp>
 
 #include "../Utils/Logger.hpp"
+#include "../Input/InputHandler.hpp"
 
 mtd::Window::Window(FrameDimensions initialDimensions, const char* windowName)
 	: glfwWindow{nullptr}, name{windowName}, dimensions{initialDimensions}, cursorHidden{false}
@@ -115,14 +116,14 @@ void mtd::Window::setupWindowEventDispatching() const
 		switch(action)
 		{
 			case GLFW_PRESS:
-				NewInputHandler::keyPressed(keyCode);
+				InputHandler::keyPressed(keyCode);
 				EventManager::dispatch(std::make_unique<KeyPressEvent>(keyCode, false));
 				break;
 			case GLFW_REPEAT:
 				EventManager::dispatch(std::make_unique<KeyPressEvent>(keyCode, true));
 				break;
 			case GLFW_RELEASE:
-				NewInputHandler::keyReleased(keyCode);
+				InputHandler::keyReleased(keyCode);
 				EventManager::dispatch(std::make_unique<KeyReleaseEvent>(keyCode));
 				break;
 		}

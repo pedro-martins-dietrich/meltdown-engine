@@ -107,6 +107,8 @@ void mtd::Camera::setInputCallbacks()
 			case KeyCode::LeftShift:
 				maxSpeed = 2.0f;
 				break;
+			default:
+				return;
 		}
 	});
 
@@ -138,6 +140,8 @@ void mtd::Camera::setInputCallbacks()
 			case KeyCode::LeftShift:
 				maxSpeed = 1.0f;
 				break;
+			default:
+				return;
 		}
 	});
 }

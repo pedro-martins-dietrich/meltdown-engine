@@ -4,7 +4,6 @@
 #include <GLFW/glfw3.h>
 
 #include "../Utils/EngineStructs.hpp"
-#include "../Input/InputHandler.hpp"
 
 namespace mtd
 {

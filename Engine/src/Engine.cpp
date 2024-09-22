@@ -4,6 +4,7 @@
 #include <meltdown/event.hpp>
 
 #include "Utils/Logger.hpp"
+#include "Input/InputHandler.hpp"
 
 mtd::Engine::Engine(const EngineInfo& info)
 	: window{FrameDimensions{1280, 720}, info.appName},
@@ -65,7 +66,7 @@ void mtd::Engine::run()
 	{
 		camera.updateCamera(static_cast<float>(frameTime), window);
 
-		NewInputHandler::checkActionEvents();
+		InputHandler::checkActionEvents();
 		EventManager::processEvents();
 		scene.update(frameTime);
 
