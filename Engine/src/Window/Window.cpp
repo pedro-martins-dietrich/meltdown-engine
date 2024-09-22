@@ -3,6 +3,8 @@
 
 #include <imgui_impl_glfw.h>
 
+#include <meltdown/event.hpp>
+
 #include "../Utils/Logger.hpp"
 
 mtd::Window::Window(FrameDimensions initialDimensions, const char* windowName)
@@ -10,6 +12,7 @@ mtd::Window::Window(FrameDimensions initialDimensions, const char* windowName)
 {
 	initializeGLFW();
 	createWindowInstance();
+	setupWindowEventDispatching();
 }
 
 mtd::Window::~Window()
@@ -123,4 +126,25 @@ void mtd::Window::createWindowInstance()
 	}
 
 	LOG_INFO("Created GLFW window with size %dx%d.", dimensions.width, dimensions.height);
+}
+
+// Configures event dispatching on window callbacks
+void mtd::Window::setupWindowEventDispatching() const
+{
+	glfwSetKeyCallback(glfwWindow, [](GLFWwindow* win, int key, int scancode, int action, int mods)
+	{
+		KeyCode keyCode = static_cast<KeyCode>(key);
+		switch(action)
+		{
+			case GLFW_PRESS:
+				EventManager::dispatch(std::make_unique<KeyPressEvent>(keyCode, false));
+				break;
+			case GLFW_REPEAT:
+				EventManager::dispatch(std::make_unique<KeyPressEvent>(keyCode, true));
+				break;
+			case GLFW_RELEASE:
+				EventManager::dispatch(std::make_unique<KeyReleaseEvent>(keyCode));
+				break;
+		}
+	});
 }

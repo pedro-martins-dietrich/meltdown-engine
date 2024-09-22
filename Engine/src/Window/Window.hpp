@@ -61,5 +61,7 @@ namespace mtd
 			void initializeGLFW() const;
 			// Creates GLFW window instance
 			void createWindowInstance();
+			// Configures event dispatching on window callbacks
+			void setupWindowEventDispatching() const;
 	};
 }

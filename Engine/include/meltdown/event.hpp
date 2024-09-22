@@ -3,18 +3,10 @@
 #include <functional>
 #include <memory>
 
+#include <meltdown/enums.hpp>
+
 namespace mtd
 {
-	/*
-	* @brief Enumerations of the types of events handled by the engine.
-	* New types of events should use the `Custom` variant.
-	*/
-	enum class EventType
-	{
-		ChangeScene,
-		Custom
-	};
-
 	/*
 	* @brief Base class for any event. An event object contains data about the event itself,
 	* and should be dispatched to the `EventManager`, allowing the callbacks listening to the
@@ -27,10 +19,124 @@ namespace mtd
 
 			/*
 			* @brief Getter for the event type, for identification.
-			* 
+			*
 			* @return Kind of event the event object contains.
 			*/
 			virtual EventType getType() const = 0;
+	};
+
+	/*
+	* @brief Event created every time a physical key is pressed or held down.
+	*/
+	class KeyPressEvent : public Event
+	{
+		public:
+			/*
+			* @brief Creates a key press event with the relevant data.
+			*
+			* @param keyCode Enumeration indicating which key has been pressed or held.
+			* @param repeatedPress Indicates if the the key has been just pressed (`false`),
+			* or if it is being held down (`true`).
+			*/
+			KeyPressEvent(KeyCode keyCode, bool repeatedPress);
+
+			virtual EventType getType() const override;
+
+			/*
+			* @brief Getter for the pressed key code.
+			*
+			* @return Enumeration indicating which key was pressed.
+			*/
+			KeyCode getKeyCode() const;
+			/*
+			* @brief Getter for checking if the key is being continuously pressed.
+			*
+			* @return Indicates if the the key has been just pressed (`false`),
+			* or if it is being held down (`true`).
+			*/
+			bool isRepeating() const;
+
+		private:
+			KeyCode keyCode;
+			bool repeatedPress;
+	};
+
+	/*
+	* @brief Event created every time a physical key is released.
+	*/
+	class KeyReleaseEvent : public Event
+	{
+		public:
+			/*
+			* @brief Creates a key release event with the relevant data.
+			*
+			* @param keyCode Enumeration indicating which key has been released.
+			*/
+			KeyReleaseEvent(KeyCode keyCode);
+
+			virtual EventType getType() const override;
+
+			/*
+			* @brief Getter for the released key code.
+			*
+			* @return Enumeration indicating which key was released.
+			*/
+			KeyCode getKeyCode() const;
+
+		private:
+			KeyCode keyCode;
+	};
+
+	/*
+	* @brief Event created when an action is started, by pressing all keys mapped to that action.
+	*/
+	class ActionStartEvent : public Event
+	{
+		public:
+			/*
+			* @brief Creates an event indicating that a certain action has started.
+			* 
+			* @param action Identifier of the action.
+			*/
+			ActionStartEvent(uint32_t action);
+
+			virtual EventType getType() const override;
+
+			/*
+			* @brief Getter for the action that has been started.
+			*
+			* @return Value corresponding to the enum or ID of the action.
+			*/
+			uint32_t getAction() const;
+
+		private:
+			uint32_t action;
+	};
+
+	/*
+	* @brief Event created when the action stops, once not all mapped keys are pressed.
+	*/
+	class ActionStopEvent : public Event
+	{
+		public:
+			/*
+			* @brief Creates an event indicating that a certain action has stopped.
+			*
+			* @param action Identifier of the action.
+			*/
+			ActionStopEvent(uint32_t action);
+
+			virtual EventType getType() const override;
+
+			/*
+			* @brief Getter for the action that has been stopped.
+			*
+			* @return Value corresponding to the enum or ID of the action.
+			*/
+			uint32_t getAction() const;
+
+		private:
+			uint32_t action;
 	};
 
 	/*
@@ -42,7 +148,7 @@ namespace mtd
 		public:
 			/*
 			* @brief Creates an event to change the scene.
-			* 
+			*
 			* @param sceneName Scene file name.
 			*/
 			ChangeSceneEvent(const char* sceneName);
@@ -51,7 +157,7 @@ namespace mtd
 
 			/*
 			* @brief Getter for the name of the new scene.
-			* 
+			*
 			* @return String with the scene file name.
 			*/
 			const char* getSceneName() const;
@@ -92,7 +198,7 @@ namespace mtd
 		*
 		* @param eventType Enum identifying the type of event to listen.
 		* @param callback Callback function to be called when the event is triggered.
-		* 
+		*
 		* @return Callback ID where the callback was saved. Required for removing the callback
 		* once it is no longer used.
 		*/
@@ -103,7 +209,7 @@ namespace mtd
 		*
 		* @param customEventID ID identifying the custom event to listen.
 		* @param callback Callback function to be called when the custom event is triggered.
-		* 
+		*
 		* @return Callback ID where the callback was saved. Required for removing the callback
 		* once it is no longer used.
 		*/
@@ -112,10 +218,10 @@ namespace mtd
 		/*
 		* @brief Removes an event callback from the handler, specified by the event type and
 		* the callback ID.
-		* 
+		*
 		* If the callback depends on an object that got deleted, the callback must be deleted
 		* from the `EventManager`.
-		* 
+		*
 		* @param eventType Enum identifying the type of event of the callback.
 		* @param callbackID Identification of the callback to be removed.
 		*/
