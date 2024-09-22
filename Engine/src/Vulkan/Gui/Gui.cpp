@@ -4,9 +4,11 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
 
+#include <meltdown/event.hpp>
+
 #include "../../Utils/Logger.hpp"
 
-mtd::Gui::Gui(const vk::Device& vulkanDevice, InputHandler& inputHandler)
+mtd::Gui::Gui(const vk::Device& vulkanDevice)
 	: guiDescriptorPool{vulkanDevice}, showGui{false}
 {
 	ImGui::CreateContext();
@@ -17,7 +19,7 @@ mtd::Gui::Gui(const vk::Device& vulkanDevice, InputHandler& inputHandler)
 
 	createDescriptorPool();
 
-	setInputCallbacks(inputHandler);
+	setInputCallbacks();
 }
 
 mtd::Gui::~Gui()
@@ -99,15 +101,13 @@ void mtd::Gui::createDescriptorPool()
 }
 
 // Configures the input logic for the GUI
-void mtd::Gui::setInputCallbacks(InputHandler& inputHandler)
+void mtd::Gui::setInputCallbacks()
 {
-	inputHandler.setInputCallback("default", "toggle_gui", [this](bool pressed)
+	EventManager::addCallback(EventType::KeyPress, [this](const Event& e)
 	{
-		static bool alreadyPressed = false;
+		const KeyPressEvent* keyPress = dynamic_cast<const KeyPressEvent*>(&e);
+		if(!keyPress || keyPress->getKeyCode() != KeyCode::G) return;
 
-		if(pressed && !alreadyPressed)
-			showGui = !showGui;
-
-		alreadyPressed = pressed;
+		showGui = !showGui;
 	});
 }

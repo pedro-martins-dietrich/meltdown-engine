@@ -1,7 +1,10 @@
 #include <pch.hpp>
 #include "Engine.hpp"
 
+#include <meltdown/event.hpp>
+
 #include "Utils/Logger.hpp"
+#include "Input/InputHandler.hpp"
 
 mtd::Engine::Engine(const EngineInfo& info)
 	: window{FrameDimensions{1280, 720}, info.appName},
@@ -10,17 +13,20 @@ mtd::Engine::Engine(const EngineInfo& info)
 	swapchain{device, window.getDimensions(), vulkanInstance.getSurface()},
 	commandHandler{device},
 	scene{device},
-	inputHandler{},
-	imgui{device.getDevice(), inputHandler},
+	imgui{device.getDevice()},
 	settingsGui{swapchain.getSettings(), shouldUpdateEngine},
 	renderer{},
-	camera{inputHandler, glm::vec3{0.0f, -1.5f, -4.5f}, 70.0f, window.getAspectRatio()},
+	camera{glm::vec3{0.0f, -1.5f, -4.5f}, 70.0f, window.getAspectRatio()},
 	shouldUpdateEngine{false}
 {
 	configureGlobalDescriptorSetHandler();
 	configurePipelines();
 
-	window.setInputCallbacks(inputHandler);
+	EventManager::addCallback(EventType::ChangeScene, [this](const Event& e)
+	{
+		const ChangeSceneEvent* cse = dynamic_cast<const ChangeSceneEvent*>(&e);
+		loadScene(cse->getSceneName());
+	});
 
 	imgui.init
 	(
@@ -56,13 +62,12 @@ void mtd::Engine::run()
 		globalDescriptorSetHandler->getSet(0)
 	};
 
-	scene.start();
-
 	while(window.keepOpen())
 	{
-		inputHandler.handleInputs(window);
 		camera.updateCamera(static_cast<float>(frameTime), window);
 
+		InputHandler::checkActionEvents();
+		EventManager::processEvents();
 		scene.update(frameTime);
 
 		renderer.render(device, swapchain, imgui, pipelines, scene, drawInfo, shouldUpdateEngine);
@@ -81,6 +86,8 @@ void mtd::Engine::loadScene(const char* sceneFile)
 {
 	scene.loadScene(sceneFile, commandHandler, pipelines);
 	configureDescriptors();
+
+	scene.start();
 }
 
 // Sets up descriptor set shared across pipelines

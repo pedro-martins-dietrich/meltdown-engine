@@ -18,4 +18,7 @@ class Application
 	private:
 		// Instance of the Meltdown Engine
 		mtd::MeltdownEngine meltdownEngine;
+
+		// Creates a mapping for all actions used by the app
+		void mapActions();
 };
