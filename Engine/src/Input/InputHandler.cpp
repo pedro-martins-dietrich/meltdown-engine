@@ -1,7 +1,65 @@
 #include <pch.hpp>
 #include "InputHandler.hpp"
 
+#include <meltdown/event.hpp>
+
 #include "../Window/Window.hpp"
+
+using ActionKeys = std::vector<mtd::KeyCode>;
+static std::unordered_map<uint32_t, ActionKeys> actionMappings;
+static std::unordered_map<mtd::KeyCode, bool> pressedKeys;
+static std::unordered_map<uint32_t, bool> actionStatuses;
+
+// Defines the keys that needs to be pressed to trigger an action
+void mtd::NewInputHandler::mapAction(uint32_t action, std::vector<KeyCode>&& keyCodes)
+{
+	actionMappings[action] = std::move(keyCodes);
+}
+
+// Removes the key mapping for the action
+void mtd::NewInputHandler::unmapAction(uint32_t action)
+{
+	actionMappings.erase(action);
+}
+
+// Adds key to the list of pressed keys
+void mtd::NewInputHandler::keyPressed(KeyCode keyCode)
+{
+	pressedKeys[keyCode] = true;
+}
+
+// Removes key from the list of pressed keys
+void mtd::NewInputHandler::keyReleased(KeyCode keyCode)
+{
+	pressedKeys[keyCode] = false;
+}
+
+// Dispatch start/stop action events based on the pressed keys
+void mtd::NewInputHandler::checkActionEvents()
+{
+	for(const auto& [action, keyList]: actionMappings)
+	{
+		bool allKeysPressed = true;
+		for(KeyCode key: keyList)
+		{
+			if(!pressedKeys[key])
+			{
+				allKeysPressed = false;
+				break;
+			}
+		}
+		if(allKeysPressed && !actionStatuses[action])
+		{
+			EventManager::dispatch(std::make_unique<ActionStartEvent>(action));
+			actionStatuses[action] = true;
+		}
+		else if(!allKeysPressed && actionStatuses[action])
+		{
+			EventManager::dispatch(std::make_unique<ActionStopEvent>(action));
+			actionStatuses[action] = false;
+		}
+	}
+}
 
 mtd::InputHandler::InputHandler() : context{"default"}
 {

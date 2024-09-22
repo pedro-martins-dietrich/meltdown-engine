@@ -69,6 +69,7 @@ void mtd::Engine::run()
 		inputHandler.handleInputs(window);
 		camera.updateCamera(static_cast<float>(frameTime), window);
 
+		NewInputHandler::checkActionEvents();
 		EventManager::processEvents();
 		scene.update(frameTime);
 

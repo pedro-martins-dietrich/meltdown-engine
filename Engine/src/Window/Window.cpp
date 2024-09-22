@@ -137,12 +137,14 @@ void mtd::Window::setupWindowEventDispatching() const
 		switch(action)
 		{
 			case GLFW_PRESS:
+				NewInputHandler::keyPressed(keyCode);
 				EventManager::dispatch(std::make_unique<KeyPressEvent>(keyCode, false));
 				break;
 			case GLFW_REPEAT:
 				EventManager::dispatch(std::make_unique<KeyPressEvent>(keyCode, true));
 				break;
 			case GLFW_RELEASE:
+				NewInputHandler::keyReleased(keyCode);
 				EventManager::dispatch(std::make_unique<KeyReleaseEvent>(keyCode));
 				break;
 		}
