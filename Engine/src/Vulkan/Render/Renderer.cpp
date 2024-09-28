@@ -13,7 +13,7 @@ void mtd::Renderer::render
 (
 	const Device& mtdDevice,
 	const Swapchain& swapchain,
-	const Gui& gui,
+	const ImGuiHandler& guiHandler,
 	const std::unordered_map<PipelineType, Pipeline>& pipelines,
 	const Scene& scene,
 	DrawInfo& drawInfo,
@@ -58,7 +58,7 @@ void mtd::Renderer::render
 	const CommandHandler& commandHandler =
 		swapchain.getFrame(currentFrameIndex).getCommandHandler();
 
-	recordDrawCommand(pipelines, scene, commandHandler, drawInfo, gui);
+	recordDrawCommand(pipelines, scene, commandHandler, drawInfo, guiHandler);
 	commandHandler.submitDrawCommandBuffer(*(drawInfo.syncBundle));
 	presentFrame
 	(
@@ -78,7 +78,7 @@ void mtd::Renderer::recordDrawCommand
 	const Scene& scene,
 	const CommandHandler& commandHandler,
 	const DrawInfo& drawInfo,
-	const Gui& gui
+	const ImGuiHandler& guiHandler
 ) const
 {
 	commandHandler.beginCommand();
@@ -129,7 +129,7 @@ void mtd::Renderer::recordDrawCommand
 		}
 	}
 
-	gui.renderGui(commandBuffer);
+	guiHandler.renderGui(commandBuffer);
 
 	commandBuffer.endRenderPass();
 	commandHandler.endCommand();

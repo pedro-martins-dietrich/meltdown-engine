@@ -3,7 +3,7 @@
 
 #include <imgui.h>
 
-#include "../../Utils/Logger.hpp"
+#include "../Utils/Logger.hpp"
 
 mtd::SettingsGui::SettingsGui(SwapchainSettings& swapchainSettings, bool& shouldUpdateEngine)
 	: swapchainSettings{swapchainSettings},

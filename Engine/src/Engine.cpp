@@ -13,7 +13,7 @@ mtd::Engine::Engine(const EngineInfo& info)
 	swapchain{device, window.getDimensions(), vulkanInstance.getSurface()},
 	commandHandler{device},
 	scene{device},
-	imgui{device.getDevice()},
+	imGuiHandler{device.getDevice()},
 	settingsGui{swapchain.getSettings(), shouldUpdateEngine},
 	renderer{},
 	camera{glm::vec3{0.0f, -1.5f, -4.5f}, 70.0f, window.getAspectRatio()},
@@ -28,7 +28,7 @@ mtd::Engine::Engine(const EngineInfo& info)
 		loadScene(cse->getSceneName());
 	});
 
-	imgui.init
+	imGuiHandler.init
 	(
 		window,
 		vulkanInstance.getInstance(),
@@ -36,7 +36,7 @@ mtd::Engine::Engine(const EngineInfo& info)
 		swapchain.getRenderPass(),
 		swapchain.getSettings().frameCount
 	);
-	imgui.addGuiWindow(&settingsGui);
+	imGuiHandler.addGuiWindow(&settingsGui);
 
 	LOG_INFO("Engine ready.\n");
 }
@@ -70,7 +70,7 @@ void mtd::Engine::run()
 		EventManager::processEvents();
 		scene.update(frameTime);
 
-		renderer.render(device, swapchain, imgui, pipelines, scene, drawInfo, shouldUpdateEngine);
+		renderer.render(device, swapchain, imGuiHandler, pipelines, scene, drawInfo, shouldUpdateEngine);
 
 		if(shouldUpdateEngine)
 			updateEngine();

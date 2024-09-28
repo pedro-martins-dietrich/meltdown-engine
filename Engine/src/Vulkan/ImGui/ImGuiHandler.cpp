@@ -1,5 +1,5 @@
 #include <pch.hpp>
-#include "Gui.hpp"
+#include "ImGuiHandler.hpp"
 
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
@@ -8,7 +8,7 @@
 
 #include "../../Utils/Logger.hpp"
 
-mtd::Gui::Gui(const vk::Device& vulkanDevice)
+mtd::ImGuiHandler::ImGuiHandler(const vk::Device& vulkanDevice)
 	: guiDescriptorPool{vulkanDevice}, showGui{false}
 {
 	ImGui::CreateContext();
@@ -22,7 +22,7 @@ mtd::Gui::Gui(const vk::Device& vulkanDevice)
 	setInputCallbacks();
 }
 
-mtd::Gui::~Gui()
+mtd::ImGuiHandler::~ImGuiHandler()
 {
 	ImGui_ImplVulkan_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
@@ -30,7 +30,7 @@ mtd::Gui::~Gui()
 }
 
 // Initializes ImGui
-void mtd::Gui::init
+void mtd::ImGuiHandler::init
 (
 	const Window& window,
 	const vk::Instance& instance,
@@ -64,7 +64,7 @@ void mtd::Gui::init
 }
 
 // Renders the GUI in the current frame
-void mtd::Gui::renderGui(const vk::CommandBuffer& commandBuffer) const
+void mtd::ImGuiHandler::renderGui(const vk::CommandBuffer& commandBuffer) const
 {
 	if(!showGui) return;
 
@@ -80,14 +80,14 @@ void mtd::Gui::renderGui(const vk::CommandBuffer& commandBuffer) const
 }
 
 // Checks ImGui Vulkan results
-void mtd::Gui::checkVulkanResult(VkResult result)
+void mtd::ImGuiHandler::checkVulkanResult(VkResult result)
 {
 	if(result != VK_SUCCESS)
 		LOG_ERROR("[ImGui] Vulkan result: %d", result);
 }
 
 // Creates the descriptor pool for ImGui
-void mtd::Gui::createDescriptorPool()
+void mtd::ImGuiHandler::createDescriptorPool()
 {
 	std::vector<PoolSizeData> poolSizesInfo;
 	poolSizesInfo.resize(1);
@@ -101,7 +101,7 @@ void mtd::Gui::createDescriptorPool()
 }
 
 // Configures the input logic for the GUI
-void mtd::Gui::setInputCallbacks()
+void mtd::ImGuiHandler::setInputCallbacks()
 {
 	EventManager::addCallback(EventType::KeyPress, [this](const Event& e)
 	{

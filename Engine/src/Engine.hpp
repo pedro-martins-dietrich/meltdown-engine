@@ -1,9 +1,9 @@
 #pragma once
 
 #include "Vulkan/Descriptors/DescriptorPool.hpp"
-#include "Vulkan/Gui/Gui.hpp"
-#include "Vulkan/Gui/SettingsGui.hpp"
+#include "Vulkan/ImGui/ImGuiHandler.hpp"
 #include "Vulkan/Render/Renderer.hpp"
+#include "GUIs/SettingsGui.hpp"
 #include "Camera/Camera.hpp"
 #include "Scene/Scene.hpp"
 
@@ -37,9 +37,8 @@ namespace mtd
 			CommandHandler commandHandler;
 			Camera camera;
 			Renderer renderer;
+			ImGuiHandler imGuiHandler;
 
-			// Engine's user interface
-			Gui imgui;
 			// Engine's settings GUI
 			SettingsGui settingsGui;
 

@@ -6,6 +6,7 @@
 #include "../Vulkan/Mesh/DefaultMesh/DefaultMeshManager.hpp"
 #include "../Vulkan/Mesh/Billboard/BillboardManager.hpp"
 #include "../Vulkan/Pipeline/Pipeline.hpp"
+#include "../Vulkan/Descriptors/DescriptorPool.hpp"
 
 namespace mtd
 {

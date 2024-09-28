@@ -1,7 +1,6 @@
 #include <pch.hpp>
 #include "CommandHandler.hpp"
 
-#include "../Gui/Gui.hpp"
 #include "../../Utils/Logger.hpp"
 
 mtd::CommandHandler::CommandHandler(const Device& device) : device{device}
