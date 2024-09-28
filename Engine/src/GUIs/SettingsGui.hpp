@@ -28,8 +28,6 @@ namespace mtd
 			std::vector<PipelineSettings*> pipelineSettings;
 			bool& shouldUpdateEngine;
 
-			// Exhibit GUI
-			bool showGui;
 			// Current pipeline type index
 			int pipelineTypeID;
 

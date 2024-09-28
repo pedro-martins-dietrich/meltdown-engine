@@ -1,14 +1,10 @@
 #include <pch.hpp>
 #include "SettingsGui.hpp"
 
-#include <imgui.h>
-
-#include "../Utils/Logger.hpp"
-
 mtd::SettingsGui::SettingsGui(SwapchainSettings& swapchainSettings, bool& shouldUpdateEngine)
-	: swapchainSettings{swapchainSettings},
+	: GuiWindow{ImVec2{450.0f, 300.0f}, ImVec2{20.0f, 120.0f}},
+	swapchainSettings{swapchainSettings},
 	shouldUpdateEngine{shouldUpdateEngine},
-	showGui{true},
 	pipelineTypeID{0}
 {
 	setNames();
@@ -25,9 +21,9 @@ void mtd::SettingsGui::setPipelinesSettings(std::unordered_map<PipelineType, Pip
 // Exhibits the GUI window
 void mtd::SettingsGui::renderGui()
 {
-	ImGui::SetNextWindowSize(ImVec2{450.0f, 300.0f});
-	ImGui::SetNextWindowPos(ImVec2{20.0f, 120.0f});
-	ImGui::Begin("Engine Settings", &showGui);
+	ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
+	ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);
+	ImGui::Begin("Engine Settings", &showWindow);
 
 	swapchainSettingsGui();
 	pipelineSettingsGui();
