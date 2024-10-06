@@ -4,6 +4,7 @@
 #include <meltdown/event.hpp>
 
 #include "Utils/Logger.hpp"
+#include "Utils/Profiler.hpp"
 #include "Input/InputHandler.hpp"
 
 mtd::Engine::Engine(const EngineInfo& info)
@@ -15,6 +16,7 @@ mtd::Engine::Engine(const EngineInfo& info)
 	scene{device},
 	imGuiHandler{device.getDevice()},
 	settingsGui{swapchain.getSettings(), shouldUpdateEngine},
+	profilerGui{},
 	renderer{},
 	camera{glm::vec3{0.0f, -1.5f, -4.5f}, 70.0f, window.getAspectRatio()},
 	shouldUpdateEngine{false}
@@ -37,6 +39,9 @@ mtd::Engine::Engine(const EngineInfo& info)
 		swapchain.getSettings().frameCount
 	);
 	imGuiHandler.addGuiWindow(&settingsGui);
+	#ifdef MTD_DEBUG
+		imGuiHandler.addGuiWindow(&profilerGui);
+	#endif
 
 	LOG_INFO("Engine ready.\n");
 }
@@ -64,10 +69,13 @@ void mtd::Engine::run()
 
 	while(window.keepOpen())
 	{
+		PROFILER_START_FRAME("Events");
 		camera.updateCamera(static_cast<float>(frameTime), window);
 
 		InputHandler::checkActionEvents();
 		EventManager::processEvents();
+
+		PROFILER_NEXT_STAGE("Scene update");
 		scene.update(frameTime);
 
 		renderer.render(device, swapchain, imGuiHandler, pipelines, scene, drawInfo, shouldUpdateEngine);
@@ -78,6 +86,7 @@ void mtd::Engine::run()
 		lastTime = currentTime;
 		currentTime = glfwGetTime();
 		frameTime = glm::min(currentTime - lastTime, 1.0);
+		PROFILER_END_FRAME();
 	}
 }
 

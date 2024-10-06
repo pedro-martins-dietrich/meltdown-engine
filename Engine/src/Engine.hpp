@@ -4,6 +4,7 @@
 #include "Vulkan/ImGui/ImGuiHandler.hpp"
 #include "Vulkan/Render/Renderer.hpp"
 #include "GUIs/SettingsGui.hpp"
+#include "GUIs/ProfilerGui.hpp"
 #include "Camera/Camera.hpp"
 #include "Scene/Scene.hpp"
 
@@ -27,7 +28,7 @@ namespace mtd
 			void loadScene(const char* sceneFile);
 
 		private:
-			// Engine's handler objects
+			// Engine handler objects
 			Window window;
 			VulkanInstance vulkanInstance;
 			Device device;
@@ -39,8 +40,9 @@ namespace mtd
 			Renderer renderer;
 			ImGuiHandler imGuiHandler;
 
-			// Engine's settings GUI
+			// GUIs
 			SettingsGui settingsGui;
+			ProfilerGui profilerGui;
 
 			// Scene being currently rendered
 			Scene scene;
