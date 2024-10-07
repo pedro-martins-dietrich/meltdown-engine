@@ -1,9 +1,9 @@
 #include <pch.hpp>
 #include "ProfilerGui.hpp"
 
-#include <format>
-
 #include "../Utils/Profiler.hpp"
+
+#define HOVER_INFO_SIZE 64
 
 mtd::ProfilerGui::ProfilerGui()
 	: GuiWindow{ImVec2{350.0f, 250.0f}, ImVec2{20.0f, 450.0f}}
@@ -52,8 +52,9 @@ void mtd::ProfilerGui::profilerGraphic()
 		drawList->AddRectFilled(rectStart, rectEnd, isRectHovered ? 0xFFFFFF44 : 0xFFFFAA00);
 		if(isRectHovered)
 		{
-			std::string hoverInfo{std::format("{}: {:.2f} ms", stageName, stageTime)};
-			drawList->AddText(ImVec2{canvasPos.x, canvasBottom}, 0xFF22CCFF, hoverInfo.c_str());
+			char hoverInfo[HOVER_INFO_SIZE];
+			if(std::snprintf(hoverInfo, HOVER_INFO_SIZE, "%s: %.2f ms", stageName, stageTime) > 0)
+				drawList->AddText(ImVec2{canvasPos.x, canvasBottom}, 0xFF22CCFF, hoverInfo);
 		}
 
 		offsetX += barWidth + padding;

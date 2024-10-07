@@ -3,8 +3,9 @@
 
 #include <chrono>
 
-using ChronoClock = std::chrono::high_resolution_clock;
-using ChronoTime = std::chrono::steady_clock::time_point;
+using ChronoClock = std::chrono::steady_clock;
+using ChronoTime = ChronoClock::time_point;
+using ChronoDuration = std::chrono::duration<float, std::milli>;
 
 static ChronoTime initialFrameTime;
 static ChronoTime lastStageTime;
@@ -30,8 +31,8 @@ void mtd::Profiler::startFrame(const char* initialStage)
 void mtd::Profiler::nextStage(const char* stage)
 {
 	ChronoTime currentTime = ChronoClock::now();
-	std::chrono::nanoseconds duration = currentTime - lastStageTime;
-	currentFrameData.stageTimes[lastStage] = 1.0e-6f * duration.count();
+	ChronoDuration duration = currentTime - lastStageTime;
+	currentFrameData.stageTimes[lastStage] = duration.count();
 
 	lastStage = stage;
 	lastStageTime = currentTime;
@@ -41,11 +42,11 @@ void mtd::Profiler::nextStage(const char* stage)
 void mtd::Profiler::endFrame()
 {
 	ChronoTime currentTime = ChronoClock::now();
-	std::chrono::nanoseconds duration = currentTime - lastStageTime;
-	currentFrameData.stageTimes[lastStage] = 1.0e-6f * duration.count();
+	ChronoDuration duration = currentTime - lastStageTime;
+	currentFrameData.stageTimes[lastStage] = duration.count();
 
-	std::chrono::nanoseconds frameDuration = currentTime - initialFrameTime;
-	currentFrameData.totalFrameTime = 1.0e-6f * frameDuration.count();
+	ChronoDuration frameDuration = currentTime - initialFrameTime;
+	currentFrameData.totalFrameTime = frameDuration.count();
 
 	profiledData = currentFrameData;
 	lastStage = nullptr;
