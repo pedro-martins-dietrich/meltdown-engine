@@ -2,6 +2,7 @@
 
 #include "../Pipeline/Pipeline.hpp"
 #include "../../Scene/Scene.hpp"
+#include "../ImGui/ImGuiHandler.hpp"
 
 namespace mtd
 {
@@ -10,7 +11,7 @@ namespace mtd
 	{
 		public:
 			Renderer();
-			~Renderer() {}
+			~Renderer() = default;
 
 			Renderer(const Renderer&) = delete;
 			Renderer& operator=(const Renderer&) = delete;
@@ -20,7 +21,7 @@ namespace mtd
 			(
 				const Device& device,
 				const Swapchain& swapchain,
-				const Gui& gui,
+				const ImGuiHandler& guiHandler,
 				const std::unordered_map<PipelineType, Pipeline>& pipelines,
 				const Scene& scene,
 				DrawInfo& drawInfo,
@@ -38,7 +39,7 @@ namespace mtd
 				const Scene& scene,
 				const CommandHandler& commandHandler,
 				const DrawInfo& drawInfo,
-				const Gui& gui
+				const ImGuiHandler& guiHandler
 			) const;
 
 			// Presents frame to screen when ready

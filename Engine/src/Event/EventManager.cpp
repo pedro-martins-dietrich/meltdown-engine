@@ -1,8 +1,6 @@
 #include <pch.hpp>
 #include <meltdown/event.hpp>
 
-#include <queue>
-
 using EventCallbackMap = std::unordered_map<uint64_t, mtd::EventCallback>;
 
 static std::unordered_map<mtd::EventType, EventCallbackMap> callbackMaps;

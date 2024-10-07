@@ -1,19 +1,19 @@
 #pragma once
 
 #include "../Descriptors/DescriptorPool.hpp"
-#include "GuiWindow.hpp"
+#include "../../GUIs/GuiWindow.hpp"
 
 namespace mtd
 {
-	// Renders a Graphical User Interface (GUI)
-	class Gui
+	// Renders a Graphical User Interface (GUI) using ImGui
+	class ImGuiHandler
 	{
 		public:
-			Gui(const vk::Device& vulkanDevice);
-			~Gui();
+			ImGuiHandler(const vk::Device& vulkanDevice);
+			~ImGuiHandler();
 
-			Gui(const Gui&) = delete;
-			Gui& operator=(const Gui&) = delete;
+			ImGuiHandler(const ImGuiHandler&) = delete;
+			ImGuiHandler& operator=(const ImGuiHandler&) = delete;
 
 			// Initializes ImGui
 			void init
@@ -37,7 +37,7 @@ namespace mtd
 
 			// Exhibit GUI
 			bool showGui;
-
+			// List of windows to be rendered
 			std::vector<GuiWindow*> guiWindows;
 
 			// Checks ImGui Vulkan results

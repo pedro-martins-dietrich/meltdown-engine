@@ -2,6 +2,19 @@
 #include "Renderer.hpp"
 
 #include "../../Utils/Logger.hpp"
+#include "../../Utils/Profiler.hpp"
+
+#ifdef MTD_DEBUG
+	const std::unordered_map<mtd::PipelineType, const char*> pipelineProfileNames =
+	{
+		{mtd::PipelineType::DEFAULT, "Render - Default Pipeline"},
+		{mtd::PipelineType::BILLBOARD, "Render - Billboard Pipeline"}
+	};
+
+	#define PIPELINE_PROFILING_NAME(pipelineType) pipelineProfileNames.at(pipelineType)
+#else
+	#define PIPELINE_PROFILING_NAME(pipelineType)
+#endif
 
 mtd::Renderer::Renderer()
 	: currentFrameIndex{0}
@@ -13,13 +26,15 @@ void mtd::Renderer::render
 (
 	const Device& mtdDevice,
 	const Swapchain& swapchain,
-	const Gui& gui,
+	const ImGuiHandler& guiHandler,
 	const std::unordered_map<PipelineType, Pipeline>& pipelines,
 	const Scene& scene,
 	DrawInfo& drawInfo,
 	bool& shouldUpdateEngine
 )
 {
+	PROFILER_NEXT_STAGE("Render - Aquire frame");
+
 	const vk::Device& device = mtdDevice.getDevice();
 	const Frame& frame = swapchain.getFrame(currentFrameIndex);
 	const vk::Fence& inFlightFence = frame.getInFlightFence();
@@ -58,8 +73,10 @@ void mtd::Renderer::render
 	const CommandHandler& commandHandler =
 		swapchain.getFrame(currentFrameIndex).getCommandHandler();
 
-	recordDrawCommand(pipelines, scene, commandHandler, drawInfo, gui);
+	recordDrawCommand(pipelines, scene, commandHandler, drawInfo, guiHandler);
 	commandHandler.submitDrawCommandBuffer(*(drawInfo.syncBundle));
+
+	PROFILER_NEXT_STAGE("Present frame");
 	presentFrame
 	(
 		swapchain.getSwapchain(),
@@ -78,7 +95,7 @@ void mtd::Renderer::recordDrawCommand
 	const Scene& scene,
 	const CommandHandler& commandHandler,
 	const DrawInfo& drawInfo,
-	const Gui& gui
+	const ImGuiHandler& guiHandler
 ) const
 {
 	commandHandler.beginCommand();
@@ -115,6 +132,7 @@ void mtd::Renderer::recordDrawCommand
 	uint32_t startInstance = 0;
 	for(const auto& [type, pipeline]: pipelines)
 	{
+		PROFILER_NEXT_STAGE(PIPELINE_PROFILING_NAME(type));
 		const MeshManager* pMeshManager = scene.getMeshManager(type);
 		if(pMeshManager->getMeshCount() == 0)
 			continue;
@@ -129,7 +147,8 @@ void mtd::Renderer::recordDrawCommand
 		}
 	}
 
-	gui.renderGui(commandBuffer);
+	PROFILER_NEXT_STAGE("Render - ImGUI");
+	guiHandler.renderGui(commandBuffer);
 
 	commandBuffer.endRenderPass();
 	commandHandler.endCommand();

@@ -1,8 +1,8 @@
 #pragma once
 
 #include "GuiWindow.hpp"
-#include "../../Utils/EngineEnums.hpp"
-#include "../Pipeline/Pipeline.hpp"
+#include "../Utils/EngineEnums.hpp"
+#include "../Vulkan/Pipeline/Pipeline.hpp"
 
 namespace mtd
 {
@@ -11,7 +11,7 @@ namespace mtd
 	{
 		public:
 			SettingsGui(SwapchainSettings& swapchainSettings, bool& shouldUpdateEngine);
-			~SettingsGui() {}
+			~SettingsGui() = default;
 
 			SettingsGui(const SettingsGui&) = delete;
 			SettingsGui& operator=(const SettingsGui&) = delete;
@@ -28,8 +28,6 @@ namespace mtd
 			std::vector<PipelineSettings*> pipelineSettings;
 			bool& shouldUpdateEngine;
 
-			// Exhibit GUI
-			bool showGui;
 			// Current pipeline type index
 			int pipelineTypeID;
 

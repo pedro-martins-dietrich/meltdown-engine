@@ -4,7 +4,6 @@
 
 #include "../../Utils/EngineStructs.hpp"
 #include "../Command/CommandHandler.hpp"
-#include "../Gui/Gui.hpp"
 
 namespace mtd
 {
