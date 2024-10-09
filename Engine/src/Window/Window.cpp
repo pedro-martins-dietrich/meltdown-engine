@@ -8,8 +8,12 @@
 #include "../Utils/Logger.hpp"
 #include "../Input/InputHandler.hpp"
 
-mtd::Window::Window(FrameDimensions initialDimensions, const char* windowName)
-	: glfwWindow{nullptr}, name{windowName}, dimensions{initialDimensions}, cursorHidden{false}
+mtd::Window::Window(const WindowInfo& initialInfo, const char* windowName)
+	: glfwWindow{nullptr}, monitor{nullptr},
+	name{windowName},
+	info{initialInfo}, aspectRatio{0.0f},
+	cursorHidden{false}, fullscreenMode{false},
+	savedWindowedInfo{initialInfo}
 {
 	initializeGLFW();
 	createWindowInstance();
@@ -20,6 +24,11 @@ mtd::Window::Window(FrameDimensions initialDimensions, const char* windowName)
 mtd::Window::~Window()
 {
 	glfwTerminate();
+}
+
+mtd::FrameDimensions mtd::Window::getDimensions() const
+{
+	return FrameDimensions{static_cast<uint32_t>(info.width), static_cast<uint32_t>(info.height)};
 }
 
 // Poll events and checks if window should be kept open
@@ -48,16 +57,15 @@ void mtd::Window::initImGuiForGLFW() const
 // Waits until the window dimensions are valid
 void mtd::Window::waitForValidWindowSize()
 {
-	int width = 0;
-	int height = 0;
-	while(width == 0 || height == 0)
+	info.width = 0;
+	info.height = 0;
+	while(info.width == 0 || info.height == 0)
 	{
-		glfwGetFramebufferSize(glfwWindow, &width, &height);
+		glfwGetFramebufferSize(glfwWindow, &info.width, &info.height);
 		glfwWaitEvents();
 	}
-	dimensions = {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
-	aspectRatio = static_cast<float>(width) / static_cast<float>(height);
-	LOG_VERBOSE("New window size: (%dx%d)", dimensions.width, dimensions.height);
+	aspectRatio = static_cast<float>(info.width) / static_cast<float>(info.height);
+	LOG_VERBOSE("New window size: (%dx%d)", info.width, info.height);
 }
 
 // Returns the mouse coordinates relative to the screen center
@@ -67,11 +75,11 @@ void mtd::Window::getMousePos(float* x, float* y, bool needsCursorHidden) const
 
 	double mouseX, mouseY;
 	glfwGetCursorPos(glfwWindow, &mouseX, &mouseY);
-	double halfWidth = 0.5f * dimensions.width;
-	double halfHeight = 0.5f * dimensions.height;
+	double halfWidth = 0.5f * info.width;
+	double halfHeight = 0.5f * info.height;
 
-	*x = static_cast<float>((mouseX - halfWidth) / dimensions.height);
-	*y = static_cast<float>((mouseY - halfHeight) / dimensions.height);
+	*x = static_cast<float>((mouseX - halfWidth) / info.height);
+	*y = static_cast<float>((mouseY - halfHeight) / info.height);
 
 	if(cursorHidden)
 		glfwSetCursorPos(glfwWindow, halfWidth, halfHeight);
@@ -89,22 +97,25 @@ void mtd::Window::initializeGLFW() const
 // Creates GLFW window instance
 void mtd::Window::createWindowInstance()
 {
-	if(dimensions.width <= 0)
-		dimensions.width = 800;
-	if(dimensions.height <= 0)
-		dimensions.height = 600;
+	if(info.width <= 0)
+		info.width = 800;
+	if(info.height <= 0)
+		info.height = 600;
 
-	aspectRatio = static_cast<float>(dimensions.width) / static_cast<float>(dimensions.height);
+	aspectRatio = static_cast<float>(info.width) / static_cast<float>(info.height);
 
-	glfwWindow = glfwCreateWindow(dimensions.width, dimensions.height, name, nullptr, nullptr);
+	glfwWindow = glfwCreateWindow(info.width, info.height, name, nullptr, nullptr);
 
-	if(glfwWindow == nullptr)
+	if(!glfwWindow)
 	{
-		LOG_ERROR("Failed to create GLFW window (%d, %d).", dimensions.width, dimensions.height);
+		LOG_ERROR("Failed to create GLFW window (%d, %d).", info.width, info.height);
 		return;
 	}
 
-	LOG_INFO("Created GLFW window with size %dx%d.", dimensions.width, dimensions.height);
+	monitor = glfwGetPrimaryMonitor();
+	glfwGetWindowPos(glfwWindow, &info.posX, &info.posY);
+
+	LOG_INFO("Created GLFW window with size %dx%d.", info.width, info.height);
 }
 
 // Configures event dispatching on window callbacks
@@ -145,4 +156,39 @@ void mtd::Window::setInputCallbacks()
 			glfwWindow, GLFW_CURSOR, cursorHidden ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL
 		);
 	});
+
+	EventManager::addCallback(EventType::KeyPress, [this](const Event& e)
+	{
+		const KeyPressEvent* keyPress = dynamic_cast<const KeyPressEvent*>(&e);
+		if(!keyPress || keyPress->getKeyCode() != KeyCode::F11 || keyPress->isRepeating())
+			return;
+
+		toggleFullscreen();
+	});
+}
+
+// Toggles between fullscreen and windowed mode
+void mtd::Window::toggleFullscreen()
+{
+	fullscreenMode = !fullscreenMode;
+	if(fullscreenMode)
+	{
+		const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+		glfwGetWindowPos(glfwWindow, &info.posX, &info.posY);
+		savedWindowedInfo = info;
+
+		glfwSetWindowMonitor
+		(
+			glfwWindow, monitor, 0, 0, mode->width, mode->height, mode->refreshRate
+		);
+	}
+	else
+	{
+		glfwSetWindowMonitor
+		(
+			glfwWindow, nullptr,
+			savedWindowedInfo.posX, savedWindowedInfo.posY,
+			savedWindowedInfo.width, savedWindowedInfo.height, 0
+		);
+	}
 }

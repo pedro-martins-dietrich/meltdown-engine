@@ -8,7 +8,7 @@
 #include "Input/InputHandler.hpp"
 
 mtd::Engine::Engine(const EngineInfo& info)
-	: window{FrameDimensions{1280, 720}, info.appName},
+	: window{WindowInfo{1280, 720, 640, 360}, info.appName},
 	vulkanInstance{info, window},
 	device{vulkanInstance},
 	swapchain{device, window.getDimensions(), vulkanInstance.getSurface()},
