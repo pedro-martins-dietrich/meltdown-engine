@@ -69,6 +69,8 @@ namespace mtd
 			void setupWindowEventDispatching() const;
 			// Sets window input callbacks
 			void setInputCallbacks();
+			// Sets window event callbacks
+			void setWindowEventCallbacks();
 
 			// Toggles between fullscreen and windowed mode
 			void toggleFullscreen();

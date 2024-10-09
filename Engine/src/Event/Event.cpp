@@ -67,6 +67,26 @@ uint32_t mtd::ActionStopEvent::getAction() const
 	return action;
 }
 
+// Window position event
+mtd::WindowPositionEvent::WindowPositionEvent(int posX, int posY) : posX{posX}, posY{posY}
+{
+}
+
+mtd::EventType mtd::WindowPositionEvent::getType() const
+{
+	return EventType::WindowPosition;
+}
+
+int mtd::WindowPositionEvent::getPosX() const
+{
+	return posX;
+}
+
+int mtd::WindowPositionEvent::getPosY() const
+{
+	return posY;
+}
+
 // Change scene event
 mtd::ChangeSceneEvent::ChangeSceneEvent(const char* sceneName) : sceneName{sceneName}
 {

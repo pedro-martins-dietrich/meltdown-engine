@@ -19,6 +19,7 @@ mtd::Window::Window(const WindowInfo& initialInfo, const char* windowName)
 	createWindowInstance();
 	setupWindowEventDispatching();
 	setInputCallbacks();
+	setWindowEventCallbacks();
 }
 
 mtd::Window::~Window()
@@ -139,6 +140,11 @@ void mtd::Window::setupWindowEventDispatching() const
 				break;
 		}
 	});
+
+	glfwSetWindowPosCallback(glfwWindow, [](GLFWwindow* win, int posX, int posY)
+	{
+		EventManager::dispatch(std::make_unique<WindowPositionEvent>(posX, posY));
+	});
 }
 
 // Sets window input callbacks
@@ -164,6 +170,19 @@ void mtd::Window::setInputCallbacks()
 			return;
 
 		toggleFullscreen();
+	});
+}
+
+// Sets window event callbacks
+void mtd::Window::setWindowEventCallbacks()
+{
+	EventManager::addCallback(EventType::WindowPosition, [this](const Event& e)
+	{
+		const WindowPositionEvent* winPos = dynamic_cast<const WindowPositionEvent*>(&e);
+		if(!winPos) return;
+
+		info.posX = winPos->getPosX();
+		info.posY = winPos->getPosY();
 	});
 }
 
