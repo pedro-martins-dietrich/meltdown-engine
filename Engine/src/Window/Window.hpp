@@ -11,14 +11,14 @@ namespace mtd
 	class Window
 	{
 		public:
-			Window(FrameDimensions initialDimensions, const char* windowName);
+			Window(const WindowInfo& initialInfo, const char* windowName);
 			~Window();
 
 			Window(const Window&) = delete;
 			Window& operator=(const Window&) = delete;
 
 			// Getters
-			const FrameDimensions& getDimensions() const { return dimensions; }
+			FrameDimensions getDimensions() const;
 			float getAspectRatio() const { return aspectRatio; }
 
 			// Polls events and checks if window should be kept open
@@ -41,17 +41,24 @@ namespace mtd
 		private:
 			// GLFW window instance
 			GLFWwindow* glfwWindow;
+			// GLFW monitor instance
+			GLFWmonitor* monitor;
 
 			// Window titlebar name
 			const char* name;
 
-			// Window dimensions
-			FrameDimensions dimensions;
+			// Window dimensions and position
+			WindowInfo info;
 			// Window aspect ratio
 			float aspectRatio;
 
 			// True if cursor is not visible
 			bool cursorHidden;
+			// True if window is in fullscreen mode
+			bool fullscreenMode;
+
+			// Last windowed mode settings before going fullscreen mode
+			WindowInfo savedWindowedInfo;
 
 			// Configures GLFW parameters
 			void initializeGLFW() const;
@@ -62,5 +69,10 @@ namespace mtd
 			void setupWindowEventDispatching() const;
 			// Sets window input callbacks
 			void setInputCallbacks();
+			// Sets window event callbacks
+			void setWindowEventCallbacks();
+
+			// Toggles between fullscreen and windowed mode
+			void toggleFullscreen();
 	};
 }

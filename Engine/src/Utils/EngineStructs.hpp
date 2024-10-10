@@ -9,7 +9,16 @@
 
 namespace mtd
 {
-	// Width and height of the window/frame
+	// Information about the size and position of a window
+	struct WindowInfo
+	{
+		int width;
+		int height;
+		int posX;
+		int posY;
+	};
+
+	// Width and height of the frame
 	struct FrameDimensions
 	{
 		uint32_t width;

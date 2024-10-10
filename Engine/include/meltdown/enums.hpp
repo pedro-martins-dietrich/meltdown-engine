@@ -14,6 +14,7 @@ namespace mtd
 		KeyRelease,
 		ActionStart,
 		ActionStop,
+		WindowPosition,
 		ChangeScene,
 		Custom
 	};

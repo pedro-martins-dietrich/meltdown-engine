@@ -140,6 +140,42 @@ namespace mtd
 	};
 
 	/*
+	* @brief Event created when the window position has changed.
+	*/
+	class WindowPositionEvent : public Event
+	{
+		public:
+			/*
+			* @brief Creates an event announcing the window has moved.
+			*
+			* @param posX Coordinate X of the window position.
+			* @param posX Coordinate X of the window position.
+			*/
+			WindowPositionEvent(int posX, int posY);
+
+			virtual EventType getType() const override;
+
+			/*
+			* @brief Getter for the X coordinate of the window top left corner.
+			*
+			* @return Value of the X coordinate of the window position, in pixels.
+			* The coordinates origin is located at the top left corner.
+			*/
+			int getPosX() const;
+			/*
+			* @brief Getter for the Y coordinate of the window top left corner.
+			*
+			* @return Value of the Y coordinate of the window position, in pixels.
+			* The coordinates origin is located at the top left corner.
+			*/
+			int getPosY() const;
+
+		private:
+			int posX;
+			int posY;
+	};
+
+	/*
 	* @brief Event class for changing the current scene. Dispatching it will load the scene with
 	* the specified scene name.
 	*/
