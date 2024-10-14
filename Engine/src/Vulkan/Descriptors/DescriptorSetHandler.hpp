@@ -35,16 +35,14 @@ namespace mtd
 			vk::DescriptorSet& getSet(uint32_t index) { return descriptorSets[index]; }
 			const vk::DescriptorSet& getSet(uint32_t index) const { return descriptorSets[index]; }
 			std::vector<vk::DescriptorSet>& getSets() { return descriptorSets; }
-			void* getBufferWriteLocation(uint32_t setIndex, uint32_t descriptorIndex) const
-				{ return resourcesList[setIndex][descriptorIndex].descriptorBufferWriteLocation; }
 			vk::DescriptorType getDescriptorType(uint32_t descriptorIndex) const
 				{ return descriptorTypes[descriptorIndex]; }
 
 			// Defines how many descriptor sets can be associated with the descriptor set layout
 			void defineDescriptorSetsAmount(uint32_t setsAmount);
 
-			// Creates a descriptor and assings it to a descriptor set
-			void createDescriptorResources
+			// Creates a descriptor, assigning it to a set and returning the buffer write location
+			void* createDescriptorResources
 			(
 				const Device& mtdDevice,
 				vk::DeviceSize resourceSize,

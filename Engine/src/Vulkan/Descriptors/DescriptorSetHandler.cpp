@@ -41,8 +41,8 @@ void mtd::DescriptorSetHandler::defineDescriptorSetsAmount(uint32_t setsAmount)
 		setResourcesList.resize(descriptorTypes.size());
 }
 
-// Creates a descriptor and assings it to a descriptor set
-void mtd::DescriptorSetHandler::createDescriptorResources
+// Creates a descriptor, assigning it to a set and returning the buffer write location
+void* mtd::DescriptorSetHandler::createDescriptorResources
 (
 	const Device& mtdDevice,
 	vk::DeviceSize resourceSize,
@@ -67,6 +67,8 @@ void mtd::DescriptorSetHandler::createDescriptorResources
 	resources.descriptorBufferInfo.buffer = resources.descriptorBuffer.buffer;
 	resources.descriptorBufferInfo.offset = 0UL;
 	resources.descriptorBufferInfo.range = resourceSize;
+
+	return resources.descriptorBufferWriteLocation;
 }
 
 // Creates the resources for an image descriptor
@@ -134,9 +136,7 @@ void mtd::DescriptorSetHandler::createDescriptorSetLayout
 {
 	descriptorTypes.resize(bindings.size());
 	for(uint32_t i = 0; i < bindings.size(); i++)
-	{
 		descriptorTypes[i] = bindings[i].descriptorType;
-	}
 
 	vk::DescriptorSetLayoutCreateInfo layoutCreateInfo{};
 	layoutCreateInfo.flags = vk::DescriptorSetLayoutCreateFlags();

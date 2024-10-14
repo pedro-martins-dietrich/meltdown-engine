@@ -153,12 +153,11 @@ void mtd::Engine::configureDescriptors()
 
 	globalDescriptorSetHandler->defineDescriptorSetsAmount(1);
 	scene.getDescriptorPool().allocateDescriptorSet(*globalDescriptorSetHandler);
-	globalDescriptorSetHandler->createDescriptorResources
+	void* cameraWriteLocation = globalDescriptorSetHandler->createDescriptorResources
 	(
 		device, sizeof(CameraMatrices), vk::BufferUsageFlagBits::eUniformBuffer, 0, 0
 	);
 
-	void* cameraWriteLocation = globalDescriptorSetHandler->getBufferWriteLocation(0, 0);
 	camera.setWriteLocation(cameraWriteLocation);
 
 	globalDescriptorSetHandler->writeDescriptorSet(0);
