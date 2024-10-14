@@ -46,11 +46,16 @@ set(
 # Sets resources directory
 set(RESOURCES_DIR "${CMAKE_SOURCE_DIR}/resources")
 # Sets shaders directories
-set(SOURCE_SHADERS_DIR "Shaders")
+set(SOURCE_SHADERS_DIR "src/Shaders")
 set(COMPILED_SHADERS_DIR "${RESOURCES_DIR}/shaders")
 
 # Searches shaders source code files and compiles them
-file(GLOB_RECURSE SHADER_SRC_FILES "${SOURCE_SHADERS_DIR}/**.vert" "${SOURCE_SHADERS_DIR}/**.frag")
+file(
+    GLOB_RECURSE SHADER_SRC_FILES
+    "${SOURCE_SHADERS_DIR}/**.vert"
+    "${SOURCE_SHADERS_DIR}/**.frag"
+    "${SOURCE_SHADERS_DIR}/**.comp"
+)
 foreach(SHADER_SRC_FILE ${SHADER_SRC_FILES})
     get_filename_component(SHADER_NAME ${SHADER_SRC_FILE} NAME)
     set(SHADER_OUTPUT "${COMPILED_SHADERS_DIR}/${SHADER_NAME}.spv")
@@ -62,7 +67,6 @@ foreach(SHADER_SRC_FILE ${SHADER_SRC_FILES})
         DEPENDS ${SHADER_SRC_FILE}
         COMMENT "[MELTDOWN] Compiled shader: ${SHADER_NAME}"
     )
-
     list(APPEND SHADER_OUTPUTS ${SHADER_OUTPUT})
 endforeach()
 add_custom_target(SHADERS DEPENDS ${SHADER_OUTPUTS})
