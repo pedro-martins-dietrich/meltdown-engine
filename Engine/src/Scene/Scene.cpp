@@ -63,13 +63,11 @@ void mtd::Scene::loadMeshes
 {
 	descriptorPool.clear();
 
-	std::vector<PoolSizeData> poolSizesInfo{3};
+	std::vector<PoolSizeData> poolSizesInfo{2};
 	poolSizesInfo[0].descriptorCount = 1;
-	poolSizesInfo[0].descriptorType = vk::DescriptorType::eStorageBuffer;
-	poolSizesInfo[1].descriptorCount = 1;
-	poolSizesInfo[1].descriptorType = vk::DescriptorType::eUniformBuffer;
-	poolSizesInfo[2].descriptorCount = getTotalTextureCount();
-	poolSizesInfo[2].descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	poolSizesInfo[0].descriptorType = vk::DescriptorType::eUniformBuffer;
+	poolSizesInfo[1].descriptorCount = getTotalTextureCount();
+	poolSizesInfo[1].descriptorType = vk::DescriptorType::eCombinedImageSampler;
 	descriptorPool.createDescriptorPool(poolSizesInfo);
 
 	for(auto& [type, pMeshManager]: meshManagers)
