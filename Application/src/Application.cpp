@@ -15,6 +15,8 @@ Application::Application()
 	mtd::ModelHandler::registerModel<RotatingModel>("rotating");
 
 	meltdownEngine.loadScene("meltdown_demo.json");
+
+	meltdownEngine.setClearColor(mtd::Vec4{0.3f, 0.6f, 1.0f, 1.0f});
 }
 
 // Begins the engine main loop

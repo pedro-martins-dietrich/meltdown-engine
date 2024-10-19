@@ -53,6 +53,12 @@ mtd::Engine::~Engine()
 	LOG_INFO("Engine shut down.");
 }
 
+// Configures the clear color for the framebuffer
+void mtd::Engine::setClearColor(const Vec4& color)
+{
+	renderer.setClearColor(color);
+}
+
 // Begins the engine main loop
 void mtd::Engine::run()
 {

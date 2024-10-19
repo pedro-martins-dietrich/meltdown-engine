@@ -21,6 +21,9 @@ namespace mtd
 			Engine(const Engine&) = delete;
 			Engine& operator=(const Engine&) = delete;
 
+			// Configures the clear color for the framebuffer
+			void setClearColor(const Vec4& color);
+
 			// Begins the engine main loop
 			void run();
 

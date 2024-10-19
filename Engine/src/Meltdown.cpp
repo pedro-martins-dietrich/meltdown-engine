@@ -10,6 +10,11 @@ mtd::MeltdownEngine::MeltdownEngine(const EngineInfo& applicationInfo)
 
 mtd::MeltdownEngine::~MeltdownEngine() = default;
 
+void mtd::MeltdownEngine::setClearColor(const Vec4& color)
+{
+	engine->setClearColor(color);
+}
+
 void mtd::MeltdownEngine::run()
 {
 	engine->run();
