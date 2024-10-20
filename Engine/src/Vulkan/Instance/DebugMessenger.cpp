@@ -14,7 +14,7 @@
 		void* pUserData
 	)
 	{
-		std::string message = "[VULKAN VALIDATION LAYER] ";
+		std::string message = "\x1b[94m" "[VULKAN VALIDATION LAYER]" "\x1b[0m ";
 		switch(messageType)
 		{
 			case vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral:
