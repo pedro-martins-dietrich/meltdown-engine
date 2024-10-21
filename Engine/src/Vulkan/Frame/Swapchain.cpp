@@ -38,6 +38,38 @@ void mtd::Swapchain::recreate
 	createRenderPass();
 }
 
+// Enables or disables V-Sync
+bool mtd::Swapchain::setVSync(bool enableVSync)
+{
+	if(!enableVSync)
+	{
+		if(settings.presentMode == vk::PresentModeKHR::eFifo) return false;
+
+		settings.presentMode = vk::PresentModeKHR::eFifo;
+		return true;
+	}
+
+	if
+	(
+		settings.presentMode == vk::PresentModeKHR::eMailbox ||
+		settings.presentMode == vk::PresentModeKHR::eImmediate
+	) return false;
+
+	if(isPresentModeAvailable(vk::PresentModeKHR::eMailbox))
+	{
+		settings.presentMode = vk::PresentModeKHR::eMailbox;
+		return true;
+	}
+	else if(isPresentModeAvailable(vk::PresentModeKHR::eImmediate))
+	{
+		settings.presentMode = vk::PresentModeKHR::eImmediate;
+		return true;
+	}
+
+	LOG_WARNING("V-Sync is not supported on this device.");
+	return false;
+}
+
 // Sets up default swapchain settings
 void mtd::Swapchain::configureDefaultSettings()
 {
@@ -45,7 +77,7 @@ void mtd::Swapchain::configureDefaultSettings()
 	settings.colorFormat = vk::Format::eB8G8R8A8Unorm;
 	settings.colorSpace = vk::ColorSpaceKHR::eSrgbNonlinear;
 	settings.compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque;
-	settings.presentMode = vk::PresentModeKHR::eMailbox;
+	settings.presentMode = vk::PresentModeKHR::eFifo;
 }
 
 // Retrieves swapchain features supported by the physical device
@@ -96,7 +128,8 @@ void mtd::Swapchain::createSwapchain
 	swapchainCreateInfo.clipped = vk::True;
 	swapchainCreateInfo.oldSwapchain = nullptr;
 
-	vk::Result result = device.getDevice().createSwapchainKHR(&swapchainCreateInfo, nullptr, &swapchain);
+	vk::Result result =
+		device.getDevice().createSwapchainKHR(&swapchainCreateInfo, nullptr, &swapchain);
 	if(result != vk::Result::eSuccess)
 	{
 		LOG_ERROR("Failed to create swapchain.");
@@ -246,13 +279,10 @@ void mtd::Swapchain::selectExtent(const FrameDimensions& frameDimensions)
 // Ensures the present mode to be used is valid
 void mtd::Swapchain::checkPresentMode()
 {
-	for(vk::PresentModeKHR supportedPresentMode: supportedDetails.presentModes)
+	if(isPresentModeAvailable(settings.presentMode))
 	{
-		if(settings.presentMode == supportedPresentMode)
-		{
-			LOG_VERBOSE("Swapchain present mode %d selected.", supportedPresentMode);
-			return;
-		}
+		LOG_VERBOSE("Swapchain present mode %d selected.", settings.presentMode);
+		return;
 	}
 
 	LOG_WARNING
@@ -262,6 +292,14 @@ void mtd::Swapchain::checkPresentMode()
 		vk::PresentModeKHR::eFifo
 	);
 	settings.presentMode = vk::PresentModeKHR::eFifo;
+}
+
+// Verifies if the hardware supports the present mode
+bool mtd::Swapchain::isPresentModeAvailable(vk::PresentModeKHR presentMode) const
+{
+	for(vk::PresentModeKHR supportedPresentMode: supportedDetails.presentModes)
+		if(presentMode == supportedPresentMode) return true;
+	return false;
 }
 
 // Creates all the swapchain frames
@@ -275,9 +313,7 @@ void mtd::Swapchain::setSwapchainFrames
 	frames.reserve(settings.frameCount);
 	LOG_INFO("Reserved %d frames.", settings.frameCount);
 	for(uint32_t i = 0; i < images.size(); i++)
-	{
 		frames.emplace_back(device, frameDimensions, images[i], settings.colorFormat, i);
-	}
 }
 
 // Destroys the swapchain

@@ -5,7 +5,7 @@
 #include "../../Utils/Profiler.hpp"
 
 #ifdef MTD_DEBUG
-	const std::unordered_map<mtd::PipelineType, const char*> pipelineProfileNames =
+	static const std::unordered_map<mtd::PipelineType, const char*> pipelineProfileNames =
 	{
 		{mtd::PipelineType::DEFAULT, "Render - Default Pipeline"},
 		{mtd::PipelineType::BILLBOARD, "Render - Billboard Pipeline"}
@@ -17,8 +17,13 @@
 #endif
 
 mtd::Renderer::Renderer()
-	: currentFrameIndex{0}
+	: currentFrameIndex{0}, clearColor{0.1f, 0.1f, 0.1f, 1.0f}
 {
+}
+
+void mtd::Renderer::setClearColor(const Vec4& color)
+{
+	clearColor = vk::ClearColorValue{color.r, color.g, color.b, color.a};
 }
 
 // Renders frame to screen
@@ -105,7 +110,7 @@ void mtd::Renderer::recordDrawCommand
 	renderArea.extent = drawInfo.extent;
 
 	std::vector<vk::ClearValue> clearValues;
-	clearValues.push_back(vk::ClearColorValue{0.3f, 0.6f, 1.0f, 1.0f});
+	clearValues.push_back(clearColor);
 	clearValues.push_back(vk::ClearDepthStencilValue{1.0f, 0});
 
 	vk::RenderPassBeginInfo renderPassBeginInfo{};

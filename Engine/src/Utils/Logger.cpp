@@ -3,36 +3,45 @@
 
 #include <cstdarg>
 
-#define BUFFER_SIZE 1024
+static constexpr int bufferSize = 2048;
+
+static constexpr const char* defaultColor = "\x1b[0m";
+static constexpr const char* redColor = "\x1b[31m";
+static constexpr const char* yellowColor = "\x1b[33m";
+static constexpr const char* brightBlackColor = "\x1b[90m";
+static constexpr const char* brightRedColor = "\x1b[91m";
+static constexpr const char* brightGreenColor = "\x1b[92m";
+static constexpr const char* brightCyanColor = "\x1b[96m";
 
 void mtd::Logger::log(Level level, const char* message, ...)
 {
-	char buffer[BUFFER_SIZE];
+	char buffer[bufferSize];
 
 	va_list args;
 	va_start(args, message);
-	if(vsnprintf(buffer, BUFFER_SIZE, message, args) < 0)
+	if(vsnprintf(buffer, bufferSize, message, args) < 0)
 	{
-		std::cerr << "[LOG ERROR] Failed to parse log message: \"" << message << '\"' << std::endl;
+		std::cerr << redColor << "[LOG ERROR] " << defaultColor <<
+			"Failed to parse log message: \"" << message << '\"' << std::endl;
 		return;
 	}
 	va_end(args);
 
 	switch(level)
 	{
-		case Level::VERBOSE:
-			std::cout << "[VERBOSE] " << buffer << '\n';
+		case Level::Verbose:
+			std::cout << brightBlackColor << "[VERBOSE] " << defaultColor << buffer << '\n';
 			break;
-		case Level::INFO:
-			std::cout << "[INFO] " << buffer << '\n';
+		case Level::Info:
+			std::cout << brightGreenColor << "[INFO] " << defaultColor << buffer << '\n';
 			break;
-		case Level::WARNING:
-			std::cerr << "[WARNING] " << buffer << '\n';
+		case Level::Warning:
+			std::cerr << yellowColor << "[WARNING] " << defaultColor << buffer << '\n';
 			break;
-		case Level::ERROR:
-			std::cerr << "[ERROR] " << buffer << std::endl;
+		case Level::Error:
+			std::cerr << brightRedColor << "[ERROR] " << defaultColor << buffer << std::endl;
 			break;
 		default:
-			std::cout << "[LOG] " << buffer << '\n';
+			std::cout << brightCyanColor << "[LOG] " << defaultColor << buffer << '\n';
 	}
 }

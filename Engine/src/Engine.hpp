@@ -21,6 +21,11 @@ namespace mtd
 			Engine(const Engine&) = delete;
 			Engine& operator=(const Engine&) = delete;
 
+			// Configures the clear color for the framebuffer
+			void setClearColor(const Vec4& color);
+			// Configures V-Sync
+			void setVSync(bool enableVSync);
+
 			// Begins the engine main loop
 			void run();
 

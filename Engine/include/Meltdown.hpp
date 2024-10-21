@@ -5,6 +5,7 @@
 
 #include <meltdown/enums.hpp>
 #include <meltdown/structs.hpp>
+#include <meltdown/math.hpp>
 
 #ifndef MTD_SHARED
 	#define MELTDOWN_API
@@ -33,7 +34,7 @@ namespace mtd
 
 	/*
 	* @brief Meltdown Engine main class.
-	* Call run() to start the engine.
+	* Load a scene with `loadScene()` and then call `run()` to start the engine.
 	*/
 	class MELTDOWN_API MeltdownEngine
 	{
@@ -48,6 +49,21 @@ namespace mtd
 
 			MeltdownEngine(const MeltdownEngine&) = delete;
 			MeltdownEngine& operator=(const MeltdownEngine&) = delete;
+
+			/*
+			* @brief Sets a new value for the clear color of the framebuffer.
+			*
+			* @param color The RGBA value for the clear color
+			* (each channel should be between 0.0f and 1.0f).
+			*/
+			void setClearColor(const Vec4& color);
+			/*
+			* @brief Enables or disables the Vertical Synchronization (V-Sync).
+			* By default, the engine starts with V-Sync enabled.
+			*
+			* @param enableVSync Value to which the V-Sync will be set.
+			*/
+			void setVSync(bool enableVSync);
 
 			/*
 			* @brief Begins the engine main loop, transfering the application control to the engine.

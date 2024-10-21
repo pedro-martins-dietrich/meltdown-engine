@@ -16,6 +16,9 @@ namespace mtd
 			Renderer(const Renderer&) = delete;
 			Renderer& operator=(const Renderer&) = delete;
 
+			// Setter
+			void setClearColor(const Vec4& color);
+
 			// Renders frame to screen
 			void render
 			(
@@ -31,6 +34,8 @@ namespace mtd
 		private:
 			// Index of the frame being rendered
 			uint32_t currentFrameIndex;
+			// Framebuffer clear color
+			vk::ClearColorValue clearColor;
 
 			// Records draw command to the command buffer
 			void recordDrawCommand
