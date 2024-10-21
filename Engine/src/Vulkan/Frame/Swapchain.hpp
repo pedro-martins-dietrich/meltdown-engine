@@ -36,6 +36,9 @@ namespace mtd
 				const vk::SurfaceKHR& surface
 			);
 
+			// Enables or disables V-Sync
+			bool setVSync(bool enableVSync);
+
 		private:
 			// Vulkan swapchain
 			vk::SwapchainKHR swapchain;
@@ -84,6 +87,9 @@ namespace mtd
 			void selectExtent(const FrameDimensions& frameDimensions);
 			// Ensures the present mode to be used is valid
 			void checkPresentMode();
+
+			// Verifies if the hardware supports the present mode
+			bool isPresentModeAvailable(vk::PresentModeKHR presentMode) const;
 
 			// Creates all the swapchain frames
 			void setSwapchainFrames(const Device& device, const FrameDimensions& frameDimensions);

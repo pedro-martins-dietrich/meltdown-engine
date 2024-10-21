@@ -23,6 +23,8 @@ namespace mtd
 
 			// Configures the clear color for the framebuffer
 			void setClearColor(const Vec4& color);
+			// Configures V-Sync
+			void setVSync(bool enableVSync);
 
 			// Begins the engine main loop
 			void run();

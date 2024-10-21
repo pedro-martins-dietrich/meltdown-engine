@@ -57,6 +57,13 @@ namespace mtd
 			* (each channel should be between 0.0f and 1.0f).
 			*/
 			void setClearColor(const Vec4& color);
+			/*
+			* @brief Enables or disables the Vertical Synchronization (V-Sync).
+			* By default, the engine starts with V-Sync enabled.
+			*
+			* @param enableVSync Value to which the V-Sync will be set.
+			*/
+			void setVSync(bool enableVSync);
 
 			/*
 			* @brief Begins the engine main loop, transfering the application control to the engine.

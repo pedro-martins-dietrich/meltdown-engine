@@ -59,6 +59,12 @@ void mtd::Engine::setClearColor(const Vec4& color)
 	renderer.setClearColor(color);
 }
 
+// Configures V-Sync
+void mtd::Engine::setVSync(bool enableVSync)
+{
+	shouldUpdateEngine = swapchain.setVSync(enableVSync);
+}
+
 // Begins the engine main loop
 void mtd::Engine::run()
 {

@@ -15,6 +15,11 @@ void mtd::MeltdownEngine::setClearColor(const Vec4& color)
 	engine->setClearColor(color);
 }
 
+void mtd::MeltdownEngine::setVSync(bool enableVSync)
+{
+	engine->setVSync(enableVSync);
+}
+
 void mtd::MeltdownEngine::run()
 {
 	engine->run();
