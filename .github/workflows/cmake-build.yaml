@@ -56,10 +56,17 @@ jobs:
           sudo apt update
           sudo apt install -y build-essential libxinerama-dev libxcursor-dev xorg-dev libglu1-mesa-dev pkg-config
 
-      - name: Install vcpkg dependencies
+      - name: Install vcpkg dependencies for Windows
+        if: matrix.os == 'windows-latest'
         run: |
           vcpkg --version
-          vcpkg install glfw3 glm vulkan nlohmann-json imgui[core,glfw-binding,vulkan-binding] stb
+          vcpkg install glfw3 glm vulkan nlohmann-json stb imgui[docking-experimental,glfw-binding,vulkan-binding] --triplet=x64-windows-static
+
+      - name: Install vcpkg dependencies for Ubuntu
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+            vcpkg --version
+            vcpkg install glfw3 glm vulkan nlohmann-json stb imgui[docking-experimental,glfw-binding,vulkan-binding]
 
       - name: Configure CMake for Windows
         if: matrix.os == 'windows-latest'
@@ -67,9 +74,10 @@ jobs:
           cmake -S ${{github.workspace}}
           -B ${{env.BUILD_PATH}}
           -G "Visual Studio 17 2022"
-          -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
-          -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
-          -DCMAKE_INSTALL_PREFIX="./install"
+          -D CMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+          -D CMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
+          -D CMAKE_INSTALL_PREFIX="./install"
+          -D VCPKG_TARGET_TRIPLET=x64-windows-static
 
       - name: Configure CMake for Ubuntu
         if: matrix.os == 'ubuntu-latest'
@@ -77,8 +85,8 @@ jobs:
           cmake -S ${{github.workspace}}
           -B ${{env.BUILD_PATH}}
           -G "Ninja Multi-Config"
-          -DCMAKE_TOOLCHAIN_FILE=/usr/local/share/vcpkg/scripts/buildsystems/vcpkg.cmake
-          -DCMAKE_INSTALL_PREFIX="./install"
+          -D CMAKE_TOOLCHAIN_FILE=/usr/local/share/vcpkg/scripts/buildsystems/vcpkg.cmake
+          -D CMAKE_INSTALL_PREFIX="./install"
 
       - name: Build for Windows
         if: matrix.os == 'windows-latest'

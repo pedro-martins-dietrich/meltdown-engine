@@ -15,6 +15,7 @@ mtd::ImGuiHandler::ImGuiHandler(const vk::Device& vulkanDevice)
 	ImGui::StyleColorsDark();
 
 	ImGuiIO& io = ImGui::GetIO();
+	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 	io.IniFilename = NULL;
 
 	createDescriptorPool();
