@@ -5,10 +5,14 @@ cmake_minimum_required(VERSION 3.26)
 project(Meltdown)
 
 # Meltdown Engine library name
-set(MELTDOWN_LIB meltdown)
+set(MELTDOWN_LIB "meltdown")
 # Library targets and configuration files
 set(MTD_TARGETS "meltdownTargets")
 set(MTD_CONFIG "meltdownConfig.cmake")
+
+# Colored tag for Meltdown logging
+string(ASCII 27 ESCAPE_CHAR)
+set(MTD_TAG "${ESCAPE_CHAR}[94m[MELTDOWN]${ESCAPE_CHAR}[0m")
 
 # Sets compilation with C++20
 set(CMAKE_CXX_STANDARD 20)
@@ -17,7 +21,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Defines build type if undefined
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Debug")
-    message(STATUS "[MELTDOWN] No build type specified. Using \"Debug\".")
+    message(STATUS "${MTD_TAG} No build type specified. Using \"Debug\".")
+endif()
+
+# Verifies if the packages will be linked statically on Windows
+if(WIN32 AND NOT VCPKG_TARGET_TRIPLET MATCHES "-windows-static$")
+    message(WARNING "${MTD_TAG} It is recommended to use the static triplet on Windows")
 endif()
 
 # Searches for required packages
@@ -74,22 +83,22 @@ add_custom_target(SHADERS DEPENDS ${SHADER_OUTPUTS})
 # Gathers source files (.cpp) to be compiled
 file(GLOB_RECURSE SRC_FILES "src/**.cpp")
 
-# Makes the engine a shared library if MTD_SHARED_LIBRARY is defined, otherwise, makes it a static library
+# Makes the engine a shared library if MTD_SHARED_LIBRARY is defined, or a static library otherwise
 if(MTD_SHARED_LIB)
     if(WIN32)
         set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
-        message(STATUS "[MELTDOWN] Exporting all DLL symbols for Windows.")
+        message(STATUS "${MTD_TAG} Exporting all DLL symbols for Windows.")
     endif()
 
     add_library(${MELTDOWN_LIB} SHARED ${SRC_FILES})
 
     add_compile_definitions(${MELTDOWN_LIB} PUBLIC MTD_SHARED)
     add_compile_definitions(${MELTDOWN_LIB} PRIVATE MTD_EXPORTS)
-    message(STATUS "[MELTDOWN] Creating Meltdown Engine as a shared library...")
+    message(STATUS "${MTD_TAG} Creating Meltdown Engine as a shared library...")
 else()
     add_library(${MELTDOWN_LIB} STATIC ${SRC_FILES})
 
-    message(STATUS "[MELTDOWN] Creating Meltdown Engine as a static library...")
+    message(STATUS "${MTD_TAG} Creating Meltdown Engine as a static library...")
 endif()
 
 # The library depends on the shaders compilation
@@ -100,16 +109,16 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_compile_definitions(${MELTDOWN_LIB} PRIVATE MTD_DEBUG=2)
     add_compile_definitions(${MELTDOWN_LIB} PRIVATE MTD_RESOURCES_PATH="${RESOURCES_DIR}/")
 
-    message(STATUS "[MELTDOWN] Building for debug...")
+    message(STATUS "${MTD_TAG} Building for debug...")
 elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
     add_compile_definitions(${MELTDOWN_LIB} PRIVATE MTD_DEBUG=1)
     add_compile_definitions(${MELTDOWN_LIB} PRIVATE MTD_RESOURCES_PATH="${RESOURCES_DIR}/")
 
-    message(STATUS "[MELTDOWN] Building for release with debug info...")
+    message(STATUS "${MTD_TAG} Building for release with debug info...")
 elseif(CMAKE_BUILD_TYPE MATCHES "^(Release|MinSizeRel)$")
-    message(STATUS "[MELTDOWN] Building for release...")
+    message(STATUS "${MTD_TAG} Building for release...")
 else()
-    message(WARNING "[MELTDOWN] Unknown build type: \"${CMAKE_BUILD_TYPE}\"")
+    message(WARNING "${MTD_TAG} Unknown build type: \"${CMAKE_BUILD_TYPE}\"")
 endif()
 
 # Configures the pre-compiled headers
@@ -151,7 +160,6 @@ install(
 )
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${MTD_CONFIG}" DESTINATION "lib/cmake/meltdown")
 install(DIRECTORY ${RESOURCES_DIR} DESTINATION .)
-install(FILES $<TARGET_FILE:glfw> DESTINATION .)
 if(MTD_SHARED_LIB)
     install(FILES $<TARGET_FILE:${MELTDOWN_LIB}> DESTINATION .)
 endif()

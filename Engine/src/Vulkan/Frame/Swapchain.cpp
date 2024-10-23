@@ -41,7 +41,7 @@ void mtd::Swapchain::recreate
 // Enables or disables V-Sync
 bool mtd::Swapchain::setVSync(bool enableVSync)
 {
-	if(!enableVSync)
+	if(enableVSync)
 	{
 		if(settings.presentMode == vk::PresentModeKHR::eFifo) return false;
 

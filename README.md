@@ -13,16 +13,18 @@ Intended features for this project include:
 - Manipulate lightning;
 
 
-
 ## Install Guide
 
 Required tools to install and execute the **Meltdown Engine** in a development environment:
-- [CMake](https://cmake.org) (version 3.26 or higher), as well as a [generator](https://cmake.org/cmake/help/latest/manual/cmake-generators.7.html), to compile the code;
+- [CMake](https://cmake.org) (version 3.26 or higher), as well as a
+	[generator](https://cmake.org/cmake/help/latest/manual/cmake-generators.7.html), to compile the code;
 - [vcpkg](https://vcpkg.io) to download required libraries (optionally, the dependencies can be installed manually);
 - [Vulkan SDK](https://vulkan.lunarg.com) to use Vulkan features required by the engine;
 
-After downloading and installing the required tools, find the file `/scripts/buildsystems/vcpkg.cmake` at the **vcpkg** install location, and set the environment variable `CMAKE_TOOLCHAIN_FILE` to this file full path.
+After downloading and installing the required tools, find the file `/scripts/buildsystems/vcpkg.cmake`
+at the **vcpkg** install location, and set the environment variable `CMAKE_TOOLCHAIN_FILE` to this file full path.
 
+---
 
 Make sure **CMake**, **vcpkg** and the **Vulkan SDK** executables are accessible through the command line:
 
@@ -34,20 +36,39 @@ vcpkg --version
 glslc --version
 ```
 
-If not, add the executables to the PATH.
+If they are not accessible, try adding the executables to the **PATH**.
 
+---
 
 The required libraries can be installed by running the following command:
 
 ```bash
-vcpkg install glfw3 glm vulkan nlohmann-json imgui[core,glfw-binding,vulkan-binding]
+vcpkg install glfw3 glm vulkan nlohmann-json stb imgui[docking-experimental,glfw-binding,vulkan-binding]
 ```
 
+If on Windows, it is recommended to link the packages statically, to avoid missing DLL problems
+when running an application that uses the Meltdown Engine.
+This can be done by appending `--triplet=x64-windows-static` to the command above.
+
+---
 
 To build the project, run the command:
 
 ```bash
-cmake -S . -B build/ -G <generator_of_your_choice>
+cmake -S . -B build/ -G <Generator of your choice> -D CMAKE_BUILD_TYPE=<Build type>
 ```
 
-Use the chosen generator to compile the code and create the executable. This step will be different, depending on the generator used.
+Use the chosen generator to compile the code and create the executable.
+This step will be different, depending on the generator used.
+
+The build type can be `Debug`, `Release`, `RelWithDebInfo` or `MinSizeRel`. If not defined, the
+build type will be set to `Debug`.
+
+On Windows, if the `x64-windows-static` triplet has been used, it is also necessary to append
+`-D VCPKG_TARGET_TRIPLET=x64-windows-static` to the **cmake** command.
+
+
+## Recommendations
+
+Create scripts such as `build.sh`, `run.sh` and `clear.sh` (or `.cmd`/`.ps1` if on Windows) to
+build and run the Engine more easily.

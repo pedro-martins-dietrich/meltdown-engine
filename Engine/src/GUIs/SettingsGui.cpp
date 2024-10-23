@@ -21,6 +21,8 @@ void mtd::SettingsGui::setPipelinesSettings(std::unordered_map<PipelineType, Pip
 // Exhibits the GUI window
 void mtd::SettingsGui::renderGui()
 {
+	if(!showWindow) return;
+
 	ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
 	ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);
 	ImGui::Begin("Engine Settings", &showWindow);

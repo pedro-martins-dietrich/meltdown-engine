@@ -12,6 +12,8 @@ mtd::ProfilerGui::ProfilerGui()
 
 void mtd::ProfilerGui::renderGui()
 {
+	if(!showWindow) return;
+
 	ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
 	ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);
 	ImGui::Begin("Frame Profiler", &showWindow);
