@@ -13,6 +13,7 @@ namespace mtd
 		public:
 			Billboard
 			(
+				const Device& device,
 				uint32_t index,
 				const char* id,
 				const char* texturePath,
@@ -28,9 +29,7 @@ namespace mtd
 			// Loads the billboard texture
 			void loadTexture
 			(
-				const Device& device,
-				const CommandHandler& commandHandler,
-				DescriptorSetHandler& descriptorSetHandler
+				const CommandHandler& commandHandler, DescriptorSetHandler& descriptorSetHandler
 			);
 
 		private:

@@ -28,6 +28,7 @@ namespace mtd
 			// Loads scene from file
 			void loadScene
 			(
+				const Device& device,
 				const char* sceneFileName,
 				const CommandHandler& commandHandler,
 				std::unordered_map<PipelineType, Pipeline>& pipelines

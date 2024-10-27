@@ -2,7 +2,6 @@
 
 #include "DefaultMesh.hpp"
 #include "../MeshManager.hpp"
-#include "../../Device/Memory.hpp"
 
 namespace mtd
 {
@@ -42,15 +41,13 @@ namespace mtd
 			// Draws the mesh specified by the index
 			virtual void drawMesh
 			(
-				const vk::CommandBuffer& commandBuffer, uint32_t index
+				const vk::CommandBuffer& commandBuffer, uint32_t meshIndex
 			) const override;
 
 		private:
 			// Vertex and index data of all meshes in the VRAM
 			Memory::Buffer vertexBuffer;
 			Memory::Buffer indexBuffer;
-			// Transformation matrices for each instance
-			Memory::Buffer instanceBuffer;
 
 			// Default meshes
 			std::vector<DefaultMesh> meshes;
@@ -58,7 +55,6 @@ namespace mtd
 			// Lumps of data containing all vertices and indices from all meshes
 			std::vector<Vertex> vertexLump;
 			std::vector<uint32_t> indexLump;
-			std::vector<Mat4x4> instanceLump;
 
 			// Total number of instances
 			uint32_t totalInstanceCount;

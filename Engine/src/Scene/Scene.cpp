@@ -12,6 +12,7 @@ mtd::Scene::Scene(const Device& device) : descriptorPool{device.getDevice()}
 // Loads scene from file
 void mtd::Scene::loadScene
 (
+	const Device& device,
 	const char* sceneFileName,
 	const CommandHandler& commandHandler,
 	std::unordered_map<PipelineType, Pipeline>& pipelines
@@ -20,7 +21,7 @@ void mtd::Scene::loadScene
 	for(auto& [type, pMeshManager]: meshManagers)
 		pMeshManager->clearMeshes();
 
-	SceneLoader::load(sceneFileName, meshManagers);
+	SceneLoader::load(device, sceneFileName, meshManagers);
 	loadMeshes(commandHandler, pipelines);
 }
 

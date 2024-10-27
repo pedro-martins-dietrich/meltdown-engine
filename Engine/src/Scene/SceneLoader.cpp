@@ -12,16 +12,23 @@
 
 static void getDefaultMesh
 (
-	const nlohmann::json& meshJson, uint32_t index, mtd::MeshManager* pMeshManager
+	const mtd::Device& device,
+	const nlohmann::json& meshJson,
+	uint32_t index,
+	mtd::MeshManager* pMeshManager
 );
 static void getBillboard
 (
-	const nlohmann::json& billboardJson, uint32_t index, mtd::MeshManager* pMeshManager
+	const mtd::Device& device,
+	const nlohmann::json& billboardJson,
+	uint32_t index,
+	mtd::MeshManager* pMeshManager
 );
 
 // Loads the meshes from a Meltdown scene file
 void mtd::SceneLoader::load
 (
+	const Device& device,
 	const char* fileName,
 	std::unordered_map<PipelineType, std::unique_ptr<MeshManager>>& meshManagers
 )
@@ -45,15 +52,21 @@ void mtd::SceneLoader::load
 	}
 
 	for(uint32_t i = 0; i < sceneJson["default-meshes"].size(); i++)
-		getDefaultMesh(sceneJson["default-meshes"][i], i, meshManagers.at(PipelineType::DEFAULT).get());
+		getDefaultMesh(device, sceneJson["default-meshes"][i], i, meshManagers.at(PipelineType::DEFAULT).get());
 	for(uint32_t i = 0; i < sceneJson["billboards"].size(); i++)
-		getBillboard(sceneJson["billboards"][i], i, meshManagers.at(PipelineType::BILLBOARD).get());
+		getBillboard(device, sceneJson["billboards"][i], i, meshManagers.at(PipelineType::BILLBOARD).get());
 
 	LOG_INFO("Scene \"%s\" loaded.", fileName);
 }
 
 // Fetches default meshes from scene file
-void getDefaultMesh(const nlohmann::json& meshJson, uint32_t index, mtd::MeshManager* pMeshManager)
+void getDefaultMesh
+(
+	const mtd::Device& device,
+	const nlohmann::json& meshJson,
+	uint32_t index,
+	mtd::MeshManager* pMeshManager
+)
 {
 	std::string file = meshJson["file"];
 	std::string id = meshJson.value("model-id", "");
@@ -63,6 +76,7 @@ void getDefaultMesh(const nlohmann::json& meshJson, uint32_t index, mtd::MeshMan
 		dynamic_cast<mtd::DefaultMeshManager*>(pMeshManager)->getMeshes();
 	meshes.emplace_back
 	(
+		device,
 		index,
 		id.c_str(),
 		file.c_str(),
@@ -88,7 +102,13 @@ void getDefaultMesh(const nlohmann::json& meshJson, uint32_t index, mtd::MeshMan
 }
 
 // Fetches billboards from scene file
-void getBillboard(const nlohmann::json& billboardJson, uint32_t index, mtd::MeshManager* pMeshManager)
+void getBillboard
+(
+	const mtd::Device& device,
+	const nlohmann::json& billboardJson,
+	uint32_t index,
+	mtd::MeshManager* pMeshManager
+)
 {
 	std::string texturePath = billboardJson["texture"];
 	std::string id = billboardJson.value("model-id", "");
@@ -98,6 +118,7 @@ void getBillboard(const nlohmann::json& billboardJson, uint32_t index, mtd::Mesh
 		dynamic_cast<mtd::BillboardManager*>(pMeshManager)->getBillboards();
 	billboards.emplace_back
 	(
+		device,
 		index,
 		id.c_str(),
 		texturePath.c_str(),

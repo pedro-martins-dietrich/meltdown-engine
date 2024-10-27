@@ -105,7 +105,7 @@ void mtd::Engine::run()
 // Loads a new scene, clearing the previous if necessary
 void mtd::Engine::loadScene(const char* sceneFile)
 {
-	scene.loadScene(sceneFile, commandHandler, pipelines);
+	scene.loadScene(device, sceneFile, commandHandler, pipelines);
 	configureDescriptors();
 
 	scene.start();

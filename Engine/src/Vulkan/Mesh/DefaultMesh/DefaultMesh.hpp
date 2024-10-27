@@ -12,6 +12,7 @@ namespace mtd
 		public:
 			DefaultMesh
 			(
+				const Device& device,
 				uint32_t index,
 				const char* id,
 				const char* fileName,

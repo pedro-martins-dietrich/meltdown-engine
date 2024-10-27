@@ -5,21 +5,18 @@
 
 mtd::DefaultMesh::DefaultMesh
 (
-	uint32_t index, const char* id, const char* fileName, const Mat4x4& preTransform
-) : Mesh{index, id, preTransform}, indexOffset{0}
+	const Device& device,
+	uint32_t index,
+	const char* id,
+	const char* fileName,
+	const Mat4x4& preTransform
+) : Mesh{device, index, id, preTransform, 1}, indexOffset{0}
 {
 	ObjMeshLoader::load(fileName, vertices, indices, diffuseTexturePath);
 }
 
 mtd::DefaultMesh::DefaultMesh(DefaultMesh&& other) noexcept
-	: Mesh
-	{
-		other.meshIndex,
-		other.modelID,
-		std::move(other.models),
-		other.instanceLumpOffset,
-		other.pInstanceLump
-	},
+	: Mesh{std::move(other)},
 	vertices{std::move(other.vertices)},
 	indices{std::move(other.indices)},
 	diffuseTexturePath{std::move(other.diffuseTexturePath)},
@@ -27,7 +24,6 @@ mtd::DefaultMesh::DefaultMesh(DefaultMesh&& other) noexcept
 	indexOffset{other.indexOffset}
 {
 	other.diffuseTexture = nullptr;
-	other.pInstanceLump = nullptr;
 }
 
 // Loads mesh texture

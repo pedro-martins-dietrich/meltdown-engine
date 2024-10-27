@@ -38,26 +38,20 @@ namespace mtd
 			// Updates instances data
 			virtual void update(double frameTime) override;
 
-			// Binds the vertex buffer for instances data
+			// There is no buffer common to all billboards to be binded
 			virtual void bindBuffers(const vk::CommandBuffer& commandBuffer) const override;
 			// Draws the mesh specified by the index
 			virtual void drawMesh
 			(
-				const vk::CommandBuffer& commandBuffer, uint32_t index
+				const vk::CommandBuffer& commandBuffer, uint32_t meshIndex
 			) const override;
 
 		private:
-			// Transformation matrices for each instance
-			Memory::Buffer instanceBuffer;
-
 			// List of billboards
 			std::vector<Billboard> billboards;
 			// Textures for each billboard
 			std::vector<std::string> texturePaths;
 			std::vector<std::unique_ptr<Texture>> textures;
-
-			// Instances transforms lump
-			std::vector<Mat4x4> instanceLump;
 
 			// Device reference
 			const Device& device;
