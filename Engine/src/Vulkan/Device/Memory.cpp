@@ -4,19 +4,12 @@
 #include "../../Utils/Logger.hpp"
 
 // Creates and allocates a buffer
-void mtd::Memory::createBuffer
-(
-	const Device& device,
-	Buffer& buffer,
-	vk::DeviceSize bufferSize,
-	vk::BufferUsageFlags bufferUsage,
-	vk::MemoryPropertyFlags memoryProperties
-)
+void mtd::Memory::createBuffer(const Device& device, Buffer& buffer)
 {
 	vk::BufferCreateInfo bufferCreateInfo{};
 	bufferCreateInfo.flags = vk::BufferCreateFlags();
-	bufferCreateInfo.size = bufferSize;
-	bufferCreateInfo.usage = bufferUsage;
+	bufferCreateInfo.size = buffer.size;
+	bufferCreateInfo.usage = buffer.usage;
 	bufferCreateInfo.sharingMode = vk::SharingMode::eExclusive;
 	bufferCreateInfo.queueFamilyIndexCount = 0;
 	bufferCreateInfo.pQueueFamilyIndices = nullptr;
@@ -29,16 +22,11 @@ void mtd::Memory::createBuffer
 		return;
 	}
 
-	allocateBufferMemory(device, buffer, memoryProperties);
+	allocateBufferMemory(device, buffer);
 }
 
 // Allocates memory for the buffer
-void mtd::Memory::allocateBufferMemory
-(
-	const Device& device,
-	Buffer& buffer,
-	vk::MemoryPropertyFlags memoryProperties
-)
+void mtd::Memory::allocateBufferMemory(const Device& device, Buffer& buffer)
 {
 	const vk::Device& vulkanDevice = device.getDevice();
 	vk::MemoryRequirements memoryRequirements =
@@ -48,7 +36,7 @@ void mtd::Memory::allocateBufferMemory
 	memoryAllocateInfo.allocationSize = memoryRequirements.size;
 	memoryAllocateInfo.memoryTypeIndex = findMemoryTypeIndex
 	(
-		device.getPhysicalDevice(), memoryRequirements.memoryTypeBits, memoryProperties
+		device.getPhysicalDevice(), memoryRequirements.memoryTypeBits, buffer.memoryProperties
 	);
 
 	vk::Result result =
@@ -77,20 +65,16 @@ void mtd::Memory::copyMemory
 }
 
 // Copies one buffer to another
-void mtd::Memory::copyBuffer
-(
-	Buffer& srcBuffer,
-	Buffer& dstBuffer,
-	vk::DeviceSize size,
-	const CommandHandler& commandHandler
-)
+void mtd::Memory::copyBuffer(Buffer& srcBuffer, Buffer& dstBuffer, const CommandHandler& commandHandler)
 {
+	vk::DeviceSize copySize = (dstBuffer.size > srcBuffer.size) ? srcBuffer.size : dstBuffer.size;
+
 	vk::CommandBuffer commandBuffer = commandHandler.beginSingleTimeCommand();
 
 	vk::BufferCopy bufferCopy{};
 	bufferCopy.srcOffset = 0;
 	bufferCopy.dstOffset = 0;
-	bufferCopy.size = size;
+	bufferCopy.size = copySize;
 
 	commandBuffer.copyBuffer(srcBuffer.buffer, dstBuffer.buffer, 1, &bufferCopy);
 

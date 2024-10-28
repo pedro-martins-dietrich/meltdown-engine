@@ -52,14 +52,12 @@ void* mtd::DescriptorSetHandler::createDescriptorResources
 )
 {
 	DescriptorResources& resources = resourcesList[setIndex][resourceIndex];
-	Memory::createBuffer
-	(
-		mtdDevice,
-		resources.descriptorBuffer,
-		resourceSize,
-		usageFlags,
-		vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
-	);
+	resources.descriptorBuffer.size = resourceSize;
+	resources.descriptorBuffer.usage = usageFlags;
+	resources.descriptorBuffer.memoryProperties =
+		vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent;
+
+	Memory::createBuffer(mtdDevice, resources.descriptorBuffer);
 	resources.descriptorBufferWriteLocation = device.mapMemory
 	(
 		resources.descriptorBuffer.bufferMemory, 0UL, resourceSize

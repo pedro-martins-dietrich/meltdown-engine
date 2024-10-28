@@ -99,18 +99,15 @@ void mtd::Mesh::addInstance(const Mat4x4& preTransform)
 // Creates a GPU buffer for the transformation matrices
 void mtd::Mesh::createInstanceBuffer()
 {
-	vk::DeviceSize instanceLumpSize = instanceLump.size() * sizeof(Mat4x4);
-	Memory::createBuffer
-	(
-		device,
-		instanceBuffer,
-		instanceLumpSize,
-		vk::BufferUsageFlagBits::eVertexBuffer,
-		vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
-	);
+	instanceBuffer.size = instanceLump.size() * sizeof(Mat4x4);
+	instanceBuffer.usage = vk::BufferUsageFlagBits::eVertexBuffer;
+	instanceBuffer.memoryProperties =
+		vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent;
+
+	Memory::createBuffer(device, instanceBuffer);
 	Memory::copyMemory
 	(
-		device.getDevice(), instanceBuffer.bufferMemory, instanceLumpSize, instanceLump.data()
+		device.getDevice(), instanceBuffer.bufferMemory, instanceBuffer.size, instanceLump.data()
 	);
 }
 

@@ -109,15 +109,11 @@ void mtd::DefaultMeshManager::loadMeshToLump(DefaultMesh& mesh)
 // Loads the lumps into the VRAM and clears them
 void mtd::DefaultMeshManager::loadMeshesToGPU(const CommandHandler& commandHandler)
 {
-	Memory::createDeviceLocalBuffer<Vertex>
-	(
-		device, vertexBuffer, vertexLump, vk::BufferUsageFlagBits::eVertexBuffer, commandHandler
-	);
+	vertexBuffer.usage = vk::BufferUsageFlagBits::eVertexBuffer;
+	indexBuffer.usage = vk::BufferUsageFlagBits::eIndexBuffer;
 
-	Memory::createDeviceLocalBuffer<uint32_t>
-	(
-		device, indexBuffer, indexLump, vk::BufferUsageFlagBits::eIndexBuffer, commandHandler
-	);
+	Memory::createDeviceLocalBuffer<Vertex>(device, vertexBuffer, vertexLump, commandHandler);
+	Memory::createDeviceLocalBuffer<uint32_t>(device, indexBuffer, indexLump, commandHandler);
 
 	for(DefaultMesh& defaultMesh: meshes)
 		defaultMesh.createInstanceBuffer();
