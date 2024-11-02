@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <memory>
+#include <string>
 
 #include <meltdown/enums.hpp>
 
@@ -200,6 +201,41 @@ namespace mtd
 
 		private:
 			const char* sceneName;
+	};
+
+	/*
+	* @brief Event class for adding or removing instances of a specific mesh on dispatch.
+	*/
+	class ChangeInstanceCountEvent : public Event
+	{
+		public:
+			/*
+			* @brief Creates an event to add or remove instances for a certain mesh.
+			*
+			* @param modelID String identifying the target model.
+			* @param instanceCountVariation Quantity of instances to be added (positive value),
+			* or removed (negative value).
+			*/
+			ChangeInstanceCountEvent(const char* modelID, int32_t instanceCountVariation);
+
+			virtual EventType getType() const override;
+
+			/*
+			* @brief Getter for the target model ID.
+			*
+			* @return Identifier for the model which will have the mesh instance count altered.
+			*/
+			const std::string& getModelID() const;
+			/*
+			* @brief Getter for the variation of instance count.
+			*
+			* @return Amount of instances to be added or removed.
+			*/
+			int32_t getInstanceCountVariation() const;
+
+		private:
+			std::string modelID;
+			int32_t instanceCountVariation;
 	};
 
 	/*
