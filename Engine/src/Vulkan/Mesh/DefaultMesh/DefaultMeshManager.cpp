@@ -1,11 +1,29 @@
 #include <pch.hpp>
 #include "DefaultMeshManager.hpp"
 
+#include <meltdown/event.hpp>
+
 #include "../../../Utils/Logger.hpp"
 
 mtd::DefaultMeshManager::DefaultMeshManager(const Device& device)
 	: device{device}, currentIndexOffset{0}, totalInstanceCount{0}
 {
+	EventManager::addCallback(EventType::ChangeInstanceCount, [this](const Event& e)
+	{
+		const ChangeInstanceCountEvent* pEvent = dynamic_cast<const ChangeInstanceCountEvent*>(&e);
+		if(meshIndexMap.find(pEvent->getModelID()) == meshIndexMap.end()) return;
+
+		DefaultMesh& mesh = meshes[meshIndexMap.at(pEvent->getModelID())];
+		int32_t instanceVariation = pEvent->getInstanceCountVariation();
+
+		if(instanceVariation < 0)
+			mesh.removeLastInstances(static_cast<uint32_t>(-instanceVariation));
+		else
+		{
+			mesh.addInstances(instanceVariation);
+			mesh.startLastAddedInstances(instanceVariation);
+		}
+	});
 }
 
 mtd::DefaultMeshManager::~DefaultMeshManager()
@@ -16,13 +34,15 @@ mtd::DefaultMeshManager::~DefaultMeshManager()
 // Loads textures and groups the meshes into a lump, then passes the data to the GPU
 void mtd::DefaultMeshManager::loadMeshes
 (
-	const CommandHandler& commandHandler, DescriptorSetHandler& textureDescriptorSetHandler
+	const CommandHandler& commandHandler,
+	DescriptorSetHandler& textureDescriptorSetHandler
 )
 {
-	for(DefaultMesh& mesh: meshes)
+	for(uint32_t i = 0; i < meshes.size(); i++)
 	{
-		loadMeshToLump(mesh);
-		mesh.loadTexture(device, commandHandler, textureDescriptorSetHandler);
+		loadMeshToLump(meshes[i]);
+		meshes[i].loadTexture(device, commandHandler, textureDescriptorSetHandler);
+		meshIndexMap[meshes[i].getModelID()] = i;
 	}
 	loadMeshesToGPU(commandHandler);
 }

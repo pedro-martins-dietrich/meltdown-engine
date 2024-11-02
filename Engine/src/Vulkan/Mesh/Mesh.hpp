@@ -30,14 +30,22 @@ namespace mtd
 
 			// Getters
 			uint32_t getInstanceCount() const { return static_cast<uint32_t>(models.size()); }
+			const char* getModelID() const { return modelID.c_str(); }
 
 			// Runs once at the beginning of the scene for all instances
 			void start();
 			// Updates all instances
 			void update(double deltaTime);
 
-			// Adds a new instance
+			// Starts the last instances added
+			void startLastAddedInstances(uint32_t instanceCount);
+
+			// Adds a new mesh instance with a pre-transform matrix
 			void addInstance(const Mat4x4& preTransform = Mat4x4{1.0f});
+			// Adds multiple new mesh instances with the identity pre-transform matrix
+			void addInstances(uint32_t instanceCount);
+			// Removes the last mesh instances
+			void removeLastInstances(uint32_t instanceCount);
 
 			// Creates a GPU buffer for the transformation matrices
 			void createInstanceBuffer();

@@ -33,6 +33,9 @@ namespace mtd::Memory
 	// Copies one buffer to another
 	void copyBuffer(Buffer& srcBuffer, Buffer& dstBuffer, const CommandHandler& commandHandler);
 
+	// Changes the buffer size by reallocating it
+	void resizeBuffer(const Device& device, Buffer& buffer, vk::DeviceSize newSize);
+
 	// Finds the memory type index that fits the requirements
 	uint32_t findMemoryTypeIndex
 	(

@@ -49,6 +49,9 @@ namespace mtd
 		private:
 			// List of billboards
 			std::vector<Billboard> billboards;
+			// Map to translate a model ID to a mesh index
+			std::unordered_map<std::string, uint32_t> billboardIndexMap;
+
 			// Textures for each billboard
 			std::vector<std::string> texturePaths;
 			std::vector<std::unique_ptr<Texture>> textures;

@@ -1,10 +1,29 @@
 #include <pch.hpp>
 #include "BillboardManager.hpp"
 
+#include <meltdown/event.hpp>
+
 #include "../../../Utils/Logger.hpp"
 
 mtd::BillboardManager::BillboardManager(const Device& device) : device{device}
 {
+	EventManager::addCallback(EventType::ChangeInstanceCount, [this](const Event& e)
+	{
+		const ChangeInstanceCountEvent* pEvent = dynamic_cast<const ChangeInstanceCountEvent*>(&e);
+
+		if(billboardIndexMap.find(pEvent->getModelID()) == billboardIndexMap.end()) return;
+
+		Billboard& billboard = billboards[billboardIndexMap.at(pEvent->getModelID())];
+		int32_t instanceVariation = pEvent->getInstanceCountVariation();
+
+		if(instanceVariation < 0)
+			billboard.removeLastInstances(static_cast<uint32_t>(-instanceVariation));
+		else
+		{
+			billboard.addInstances(instanceVariation);
+			billboard.startLastAddedInstances(instanceVariation);
+		}
+	});
 }
 
 mtd::BillboardManager::~BillboardManager()
@@ -18,10 +37,11 @@ void mtd::BillboardManager::loadMeshes
 	const CommandHandler& commandHandler, DescriptorSetHandler& textureDescriptorSetHandler
 )
 {
-	for(Billboard& billboard: billboards)
+	for(uint32_t i = 0; i < billboards.size(); i++)
 	{
-		billboard.loadTexture(commandHandler, textureDescriptorSetHandler);
-		billboard.createInstanceBuffer();
+		billboards[i].loadTexture(commandHandler, textureDescriptorSetHandler);
+		billboards[i].createInstanceBuffer();
+		billboardIndexMap[billboards[i].getModelID()] = i;
 	}
 
 	LOG_VERBOSE("Billboards loaded.");
@@ -30,8 +50,7 @@ void mtd::BillboardManager::loadMeshes
 // Clears the list of billboards and the instance buffer
 void mtd::BillboardManager::clearMeshes()
 {
-	if(getMeshCount() == 0)
-		return;
+	if(getMeshCount() == 0) return;
 
 	const vk::Device& vulkanDevice = device.getDevice();
 	vulkanDevice.waitIdle();

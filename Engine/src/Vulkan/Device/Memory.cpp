@@ -14,8 +14,7 @@ void mtd::Memory::createBuffer(const Device& device, Buffer& buffer)
 	bufferCreateInfo.queueFamilyIndexCount = 0;
 	bufferCreateInfo.pQueueFamilyIndices = nullptr;
 
-	vk::Result result =
-		device.getDevice().createBuffer(&bufferCreateInfo, nullptr, &(buffer.buffer));
+	vk::Result result = device.getDevice().createBuffer(&bufferCreateInfo, nullptr, &(buffer.buffer));
 	if(result != vk::Result::eSuccess)
 	{
 		LOG_ERROR("Failed to create buffer. Vulkan result: %d", result);
@@ -29,8 +28,7 @@ void mtd::Memory::createBuffer(const Device& device, Buffer& buffer)
 void mtd::Memory::allocateBufferMemory(const Device& device, Buffer& buffer)
 {
 	const vk::Device& vulkanDevice = device.getDevice();
-	vk::MemoryRequirements memoryRequirements =
-		vulkanDevice.getBufferMemoryRequirements(buffer.buffer);
+	vk::MemoryRequirements memoryRequirements = vulkanDevice.getBufferMemoryRequirements(buffer.buffer);
 
 	vk::MemoryAllocateInfo memoryAllocateInfo{};
 	memoryAllocateInfo.allocationSize = memoryRequirements.size;
@@ -39,8 +37,7 @@ void mtd::Memory::allocateBufferMemory(const Device& device, Buffer& buffer)
 		device.getPhysicalDevice(), memoryRequirements.memoryTypeBits, buffer.memoryProperties
 	);
 
-	vk::Result result =
-		vulkanDevice.allocateMemory(&memoryAllocateInfo, nullptr, &(buffer.bufferMemory));
+	vk::Result result = vulkanDevice.allocateMemory(&memoryAllocateInfo, nullptr, &(buffer.bufferMemory));
 	if(result != vk::Result::eSuccess)
 	{
 		LOG_ERROR("Failed to allocate memory for buffer. Vulkan result: %d", result);
@@ -81,6 +78,26 @@ void mtd::Memory::copyBuffer(Buffer& srcBuffer, Buffer& dstBuffer, const Command
 	commandHandler.endSingleTimeCommand(commandBuffer);
 }
 
+// Changes the buffer size by reallocating it
+void mtd::Memory::resizeBuffer(const Device& device, Buffer& buffer, vk::DeviceSize newSize)
+{
+	Buffer newBuffer;
+	newBuffer.size = newSize;
+	newBuffer.usage = buffer.usage | vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst;
+	newBuffer.memoryProperties = buffer.memoryProperties;
+
+	createBuffer(device, newBuffer);
+	CommandHandler commandHandler{device};
+	copyBuffer(buffer, newBuffer, commandHandler);
+
+	device.getDevice().destroyBuffer(buffer.buffer);
+	device.getDevice().freeMemory(buffer.bufferMemory);
+
+	buffer.buffer = newBuffer.buffer;
+	buffer.bufferMemory = newBuffer.bufferMemory;
+	buffer.size = newSize;
+}
+
 // Finds the memory type index that fits the requirements
 uint32_t mtd::Memory::findMemoryTypeIndex
 (
@@ -94,8 +111,8 @@ uint32_t mtd::Memory::findMemoryTypeIndex
 	for(uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++)
 	{
 		bool supported = static_cast<bool>(supportedMemoryIndex & (1U << i));
-		bool sufficient = (memoryProperties.memoryTypes[i].propertyFlags & requestedProperties) ==
-			requestedProperties;
+		bool sufficient =
+			(memoryProperties.memoryTypes[i].propertyFlags & requestedProperties) == requestedProperties;
 
 		if(supported && sufficient) return i;
 	}

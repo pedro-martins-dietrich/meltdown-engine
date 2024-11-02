@@ -3,8 +3,6 @@
 
 #include <cstring>
 
-#include "../../Utils/Logger.hpp"
-
 mtd::Mesh::Mesh
 (
 	const Device& device,
@@ -69,6 +67,8 @@ void mtd::Mesh::start()
 // Updates all instances
 void mtd::Mesh::update(double deltaTime)
 {
+	if(models.size() <= 0) return;
+
 	for(uint32_t instanceIndex = 0; instanceIndex < models.size(); instanceIndex++)
 	{
 		models[instanceIndex]->update(deltaTime);
@@ -89,18 +89,74 @@ void mtd::Mesh::update(double deltaTime)
 	);
 }
 
-// Adds a new instance
+// Starts last instance added
+void mtd::Mesh::startLastAddedInstances(uint32_t instanceCount)
+{
+	for(uint32_t i = models.size() - instanceCount; i < models.size(); i++)
+	{
+		models[i]->start();
+		std::memcpy(&(instanceLump[i]), models[i]->getTransformPointer(), sizeof(Mat4x4));
+	}
+}
+
+// Adds a new mesh instance with a pre-transform matrix
 void mtd::Mesh::addInstance(const Mat4x4& preTransform)
 {
+	if((models.size() + 1) * sizeof(Mat4x4) > instanceBuffer.size)
+		Memory::resizeBuffer(device, instanceBuffer, 2 * instanceBuffer.size);
+
 	models.emplace_back(modelFactory(preTransform));
 	instanceLump.emplace_back(preTransform);
+}
+
+// Adds multiple new mesh instances with the identity pre-transform matrix
+void mtd::Mesh::addInstances(uint32_t instanceCount)
+{
+	uint32_t minimumBufferSize = (models.size() + instanceCount) * sizeof(Mat4x4);
+	if(minimumBufferSize > instanceBuffer.size)
+	{
+		uint32_t newSize = 2 * instanceBuffer.size;
+		while(newSize < minimumBufferSize)
+			newSize += newSize;
+
+		Memory::resizeBuffer(device, instanceBuffer, newSize);
+	}
+
+	for(uint32_t i = 0; i < instanceCount; i++)
+	{
+		models.emplace_back(modelFactory(Mat4x4{1.0f}));
+		instanceLump.emplace_back(Mat4x4{1.0f});
+	}
+}
+
+// Removes the last mesh instances
+void mtd::Mesh::removeLastInstances(uint32_t instanceCount)
+{
+	if(models.size() <= 0) return;
+	if(models.size() < instanceCount)
+		instanceCount = models.size();
+
+	models.erase(models.cend() - instanceCount, models.cend());
+	instanceLump.erase(instanceLump.cend() - instanceCount, instanceLump.cend());
+
+	if(models.size() <= 0) return;
+
+	uint32_t newBufferSizeMaxLimit = 2 * models.size() * sizeof(Mat4x4);
+	if(newBufferSizeMaxLimit <= instanceBuffer.size)
+	{
+		uint32_t newSize = instanceBuffer.size / 2;
+		while(newBufferSizeMaxLimit <= newSize)
+			newSize >>= 1;
+
+		Memory::resizeBuffer(device, instanceBuffer, newSize);
+	}
 }
 
 // Creates a GPU buffer for the transformation matrices
 void mtd::Mesh::createInstanceBuffer()
 {
 	instanceBuffer.size = instanceLump.size() * sizeof(Mat4x4);
-	instanceBuffer.usage = vk::BufferUsageFlagBits::eVertexBuffer;
+	instanceBuffer.usage = vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferSrc;
 	instanceBuffer.memoryProperties =
 		vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent;
 

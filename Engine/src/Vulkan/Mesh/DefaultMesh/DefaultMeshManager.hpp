@@ -51,6 +51,8 @@ namespace mtd
 
 			// Default meshes
 			std::vector<DefaultMesh> meshes;
+			// Map to translate a model ID to a mesh index
+			std::unordered_map<std::string, uint32_t> meshIndexMap;
 
 			// Lumps of data containing all vertices and indices from all meshes
 			std::vector<Vertex> vertexLump;
