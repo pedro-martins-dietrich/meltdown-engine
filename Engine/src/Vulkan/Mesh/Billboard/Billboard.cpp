@@ -7,8 +7,8 @@ mtd::Billboard::Billboard
 	uint32_t index,
 	const char* id,
 	const char* texturePath,
-	const Mat4x4& preTransform
-) : Mesh{device, index, id, preTransform, 0}, texturePath{texturePath}
+	const std::vector<Mat4x4>& preTransforms
+) : Mesh{device, index, id, preTransforms, 0}, texturePath{texturePath}
 {
 }
 

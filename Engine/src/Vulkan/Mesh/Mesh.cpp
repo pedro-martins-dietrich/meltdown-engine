@@ -8,17 +8,19 @@ mtd::Mesh::Mesh
 	const Device& device,
 	uint32_t index,
 	const char* modelID,
-	const Mat4x4& preTransform,
+	const std::vector<Mat4x4>& preTransforms,
 	uint32_t instanceBufferBindIndex
 ) : device{device},
 	meshIndex{index},
 	modelID{modelID},
 	modelFactory{ModelHandler::getModelFactory(modelID)},
 	models{},
+	instanceLump{preTransforms},
 	instanceBufferBindIndex{instanceBufferBindIndex}
 {
-	models.emplace_back(modelFactory(preTransform));
-	instanceLump.emplace_back(preTransform);
+
+	for(const Mat4x4& preTransform: preTransforms)
+		models.emplace_back(modelFactory(preTransform));
 }
 
 mtd::Mesh::~Mesh()
@@ -97,16 +99,6 @@ void mtd::Mesh::startLastAddedInstances(uint32_t instanceCount)
 		models[i]->start();
 		std::memcpy(&(instanceLump[i]), models[i]->getTransformPointer(), sizeof(Mat4x4));
 	}
-}
-
-// Adds a new mesh instance with a pre-transform matrix
-void mtd::Mesh::addInstance(const Mat4x4& preTransform)
-{
-	if((models.size() + 1) * sizeof(Mat4x4) > instanceBuffer.size)
-		Memory::resizeBuffer(device, instanceBuffer, 2 * instanceBuffer.size);
-
-	models.emplace_back(modelFactory(preTransform));
-	instanceLump.emplace_back(preTransform);
 }
 
 // Adds multiple new mesh instances with the identity pre-transform matrix

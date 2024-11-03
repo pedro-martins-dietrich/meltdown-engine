@@ -17,7 +17,7 @@ namespace mtd
 				uint32_t index,
 				const char* id,
 				const char* texturePath,
-				const Mat4x4& preTransform = Mat4x4{1.0f}
+				const std::vector<Mat4x4>& preTransforms
 			);
 			~Billboard() = default;
 

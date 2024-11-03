@@ -18,7 +18,7 @@ namespace mtd
 				const Device& device,
 				uint32_t index,
 				const char* modelID,
-				const Mat4x4& preTransform,
+				const std::vector<Mat4x4>& preTransforms,
 				uint32_t instanceBufferBindIndex = 0
 			);
 			virtual ~Mesh();
@@ -40,8 +40,6 @@ namespace mtd
 			// Starts the last instances added
 			void startLastAddedInstances(uint32_t instanceCount);
 
-			// Adds a new mesh instance with a pre-transform matrix
-			void addInstance(const Mat4x4& preTransform = Mat4x4{1.0f});
 			// Adds multiple new mesh instances with the identity pre-transform matrix
 			void addInstances(uint32_t instanceCount);
 			// Removes the last mesh instances

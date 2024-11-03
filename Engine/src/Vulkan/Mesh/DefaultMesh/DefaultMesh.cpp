@@ -9,8 +9,8 @@ mtd::DefaultMesh::DefaultMesh
 	uint32_t index,
 	const char* id,
 	const char* fileName,
-	const Mat4x4& preTransform
-) : Mesh{device, index, id, preTransform, 1}, indexOffset{0}
+	const std::vector<Mat4x4>& preTransforms
+) : Mesh{device, index, id, preTransforms, 1}, indexOffset{0}
 {
 	ObjMeshLoader::load(fileName, vertices, indices, diffuseTexturePath);
 }
