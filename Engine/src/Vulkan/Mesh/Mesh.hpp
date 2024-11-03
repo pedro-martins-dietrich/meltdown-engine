@@ -41,9 +41,9 @@ namespace mtd
 			void startLastAddedInstances(uint32_t instanceCount);
 
 			// Adds multiple new mesh instances with the identity pre-transform matrix
-			void addInstances(uint32_t instanceCount);
+			void addInstances(const CommandHandler& commandHandler, uint32_t instanceCount);
 			// Removes the last mesh instances
-			void removeLastInstances(uint32_t instanceCount);
+			void removeLastInstances(const CommandHandler& commandHandler, uint32_t instanceCount);
 
 			// Creates a GPU buffer for the transformation matrices
 			void createInstanceBuffer();

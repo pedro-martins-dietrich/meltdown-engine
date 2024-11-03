@@ -14,11 +14,7 @@ mtd::DefaultMeshManager::~DefaultMeshManager()
 }
 
 // Loads textures and groups the meshes into a lump, then passes the data to the GPU
-void mtd::DefaultMeshManager::loadMeshes
-(
-	const CommandHandler& commandHandler,
-	DescriptorSetHandler& textureDescriptorSetHandler
-)
+void mtd::DefaultMeshManager::loadMeshes(DescriptorSetHandler& textureDescriptorSetHandler)
 {
 	for(uint32_t i = 0; i < meshes.size(); i++)
 	{
@@ -59,10 +55,7 @@ void mtd::DefaultMeshManager::bindBuffers
 }
 
 // Draws the mesh specified by the index
-void mtd::DefaultMeshManager::drawMesh
-(
-	const vk::CommandBuffer& commandBuffer, uint32_t meshIndex
-) const
+void mtd::DefaultMeshManager::drawMesh(const vk::CommandBuffer& commandBuffer, uint32_t meshIndex) const
 {
 	const DefaultMesh& mesh = meshes[meshIndex];
 	mesh.bindInstanceBuffer(commandBuffer);

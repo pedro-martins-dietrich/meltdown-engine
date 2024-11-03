@@ -21,11 +21,7 @@ namespace mtd
 			virtual uint32_t getMeshCount() const = 0;
 
 			// Loads mesh data to the GPU
-			virtual void loadMeshes
-			(
-				const CommandHandler& commandHandler,
-				DescriptorSetHandler& textureDescriptorSetHandler
-			) = 0;
+			virtual void loadMeshes(DescriptorSetHandler& textureDescriptorSetHandler) = 0;
 
 			// Clears mesh data
 			virtual void clearMeshes() = 0;
@@ -38,13 +34,12 @@ namespace mtd
 			// Binds vertex and index buffers, if used
 			virtual void bindBuffers(const vk::CommandBuffer& commandBuffer) const = 0;
 			// Draws the mesh specified by the index
-			virtual void drawMesh
-			(
-				const vk::CommandBuffer& commandBuffer, uint32_t meshIndex
-			) const = 0;
+			virtual void drawMesh(const vk::CommandBuffer& commandBuffer, uint32_t meshIndex) const = 0;
 
 		protected:
 			// Device reference
 			const Device& device;
+			// Mesh manager command handler
+			CommandHandler commandHandler;
 	};
 }

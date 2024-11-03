@@ -28,10 +28,7 @@ namespace mtd
 			// Loads scene from file
 			void loadScene
 			(
-				const Device& device,
-				const char* sceneFileName,
-				const CommandHandler& commandHandler,
-				std::unordered_map<PipelineType, Pipeline>& pipelines
+				const Device& device, const char* sceneFileName, std::unordered_map<PipelineType, Pipeline>& pipelines
 			);
 
 			// Executes starting code on scene
@@ -50,10 +47,6 @@ namespace mtd
 			uint32_t getTotalTextureCount() const;
 
 			// Allocate resources and loads all mesh data
-			void loadMeshes
-			(
-				const CommandHandler& commandHandler,
-				std::unordered_map<PipelineType, Pipeline>& pipelines
-			);
+			void loadMeshes(std::unordered_map<PipelineType, Pipeline>& pipelines);
 	};
 }

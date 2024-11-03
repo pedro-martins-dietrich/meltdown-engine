@@ -24,10 +24,10 @@ namespace mtd
 					int32_t instanceVariation = pEvent->getInstanceCountVariation();
 
 					if(instanceVariation < 0)
-						mesh.removeLastInstances(static_cast<uint32_t>(-instanceVariation));
+						mesh.removeLastInstances(commandHandler, static_cast<uint32_t>(-instanceVariation));
 					else
 					{
-						mesh.addInstances(instanceVariation);
+						mesh.addInstances(commandHandler, instanceVariation);
 						mesh.startLastAddedInstances(instanceVariation);
 					}
 				});

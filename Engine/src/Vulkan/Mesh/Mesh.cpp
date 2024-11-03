@@ -102,7 +102,7 @@ void mtd::Mesh::startLastAddedInstances(uint32_t instanceCount)
 }
 
 // Adds multiple new mesh instances with the identity pre-transform matrix
-void mtd::Mesh::addInstances(uint32_t instanceCount)
+void mtd::Mesh::addInstances(const CommandHandler& commandHandler, uint32_t instanceCount)
 {
 	uint32_t minimumBufferSize = (models.size() + instanceCount) * sizeof(Mat4x4);
 	if(minimumBufferSize > instanceBuffer.size)
@@ -111,7 +111,7 @@ void mtd::Mesh::addInstances(uint32_t instanceCount)
 		while(newSize < minimumBufferSize)
 			newSize += newSize;
 
-		Memory::resizeBuffer(device, instanceBuffer, newSize);
+		Memory::resizeBuffer(device, commandHandler, instanceBuffer, newSize);
 	}
 
 	for(uint32_t i = 0; i < instanceCount; i++)
@@ -122,7 +122,7 @@ void mtd::Mesh::addInstances(uint32_t instanceCount)
 }
 
 // Removes the last mesh instances
-void mtd::Mesh::removeLastInstances(uint32_t instanceCount)
+void mtd::Mesh::removeLastInstances(const CommandHandler& commandHandler, uint32_t instanceCount)
 {
 	if(models.size() <= 0) return;
 	if(models.size() < instanceCount)
@@ -140,7 +140,7 @@ void mtd::Mesh::removeLastInstances(uint32_t instanceCount)
 		while(newBufferSizeMaxLimit <= newSize)
 			newSize >>= 1;
 
-		Memory::resizeBuffer(device, instanceBuffer, newSize);
+		Memory::resizeBuffer(device, commandHandler, instanceBuffer, newSize);
 	}
 }
 

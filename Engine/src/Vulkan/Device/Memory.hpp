@@ -24,17 +24,17 @@ namespace mtd::Memory
 	// Copies data to buffer mapped memory
 	void copyMemory
 	(
-		const vk::Device& device,
-		const vk::DeviceMemory& bufferMemory,
-		vk::DeviceSize size,
-		const void* srcData
+		const vk::Device& device, const vk::DeviceMemory& bufferMemory, vk::DeviceSize size, const void* srcData
 	);
 
 	// Copies one buffer to another
 	void copyBuffer(Buffer& srcBuffer, Buffer& dstBuffer, const CommandHandler& commandHandler);
 
 	// Changes the buffer size by reallocating it
-	void resizeBuffer(const Device& device, Buffer& buffer, vk::DeviceSize newSize);
+	void resizeBuffer
+	(
+		const Device& device, const CommandHandler& commandHandler, Buffer& buffer, vk::DeviceSize newSize
+	);
 
 	// Finds the memory type index that fits the requirements
 	uint32_t findMemoryTypeIndex
@@ -48,10 +48,7 @@ namespace mtd::Memory
 	template<typename T>
 	void createDeviceLocalBuffer
 	(
-		const Device& device,
-		Buffer& buffer,
-		const std::vector<T>& data,
-		const CommandHandler& commandHandler
+		const Device& device, Buffer& buffer, const std::vector<T>& data, const CommandHandler& commandHandler
 	)
 	{
 		Buffer stagingBuffer;

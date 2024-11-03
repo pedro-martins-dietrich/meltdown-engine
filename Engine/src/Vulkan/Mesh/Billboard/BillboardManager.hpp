@@ -16,11 +16,7 @@ namespace mtd
 			~BillboardManager();
 
 			// Loads the billboards textures to the GPU
-			virtual void loadMeshes
-			(
-				const CommandHandler& commandHandler,
-				DescriptorSetHandler& textureDescriptorSetHandler
-			) override;
+			virtual void loadMeshes(DescriptorSetHandler& textureDescriptorSetHandler) override;
 
 			// Clears the list of billboards and the instance buffer
 			virtual void clearMeshes() override;
@@ -28,10 +24,7 @@ namespace mtd
 			// There is no buffer common to all billboards to be binded
 			virtual void bindBuffers(const vk::CommandBuffer& commandBuffer) const override;
 			// Draws the mesh specified by the index
-			virtual void drawMesh
-			(
-				const vk::CommandBuffer& commandBuffer, uint32_t meshIndex
-			) const override;
+			virtual void drawMesh(const vk::CommandBuffer& commandBuffer, uint32_t meshIndex) const override;
 
 		private:
 			// Textures for each billboard

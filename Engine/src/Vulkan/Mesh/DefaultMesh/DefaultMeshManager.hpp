@@ -16,11 +16,7 @@ namespace mtd
 			uint32_t getTotalInstanceCount() const { return totalInstanceCount; }
 
 			// Loads textures and groups the meshes into a lump, then passes the data to the GPU
-			virtual void loadMeshes
-			(
-				const CommandHandler& commandHandler,
-				DescriptorSetHandler& textureDescriptorSetHandler
-			) override;
+			virtual void loadMeshes(DescriptorSetHandler& textureDescriptorSetHandler) override;
 
 			// Clears the list of default meshes and related buffers
 			virtual void clearMeshes() override;
@@ -28,10 +24,7 @@ namespace mtd
 			// Binds vertex and index buffers
 			virtual void bindBuffers(const vk::CommandBuffer& commandBuffer) const override;
 			// Draws the mesh specified by the index
-			virtual void drawMesh
-			(
-				const vk::CommandBuffer& commandBuffer, uint32_t meshIndex
-			) const override;
+			virtual void drawMesh(const vk::CommandBuffer& commandBuffer, uint32_t meshIndex) const override;
 
 		private:
 			// Vertex and index data of all meshes in the VRAM

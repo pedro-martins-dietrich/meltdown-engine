@@ -50,10 +50,7 @@ void mtd::Memory::allocateBufferMemory(const Device& device, Buffer& buffer)
 // Copies data to buffer mapped memory
 void mtd::Memory::copyMemory
 (
-	const vk::Device& device,
-	const vk::DeviceMemory& bufferMemory,
-	vk::DeviceSize size,
-	const void* srcData
+	const vk::Device& device, const vk::DeviceMemory& bufferMemory, vk::DeviceSize size, const void* srcData
 )
 {
 	void* memoryLocation = device.mapMemory(bufferMemory, 0, size);
@@ -79,7 +76,10 @@ void mtd::Memory::copyBuffer(Buffer& srcBuffer, Buffer& dstBuffer, const Command
 }
 
 // Changes the buffer size by reallocating it
-void mtd::Memory::resizeBuffer(const Device& device, Buffer& buffer, vk::DeviceSize newSize)
+void mtd::Memory::resizeBuffer
+(
+	const Device& device, const CommandHandler& commandHandler, Buffer& buffer, vk::DeviceSize newSize
+)
 {
 	Buffer newBuffer;
 	newBuffer.size = newSize;
@@ -87,7 +87,6 @@ void mtd::Memory::resizeBuffer(const Device& device, Buffer& buffer, vk::DeviceS
 	newBuffer.memoryProperties = buffer.memoryProperties;
 
 	createBuffer(device, newBuffer);
-	CommandHandler commandHandler{device};
 	copyBuffer(buffer, newBuffer, commandHandler);
 
 	device.getDevice().destroyBuffer(buffer.buffer);

@@ -13,10 +13,7 @@ mtd::BillboardManager::~BillboardManager()
 }
 
 // Loads the billboards textures to the GPU
-void mtd::BillboardManager::loadMeshes
-(
-	const CommandHandler& commandHandler, DescriptorSetHandler& textureDescriptorSetHandler
-)
+void mtd::BillboardManager::loadMeshes(DescriptorSetHandler& textureDescriptorSetHandler)
 {
 	for(uint32_t i = 0; i < meshes.size(); i++)
 	{
@@ -45,10 +42,7 @@ void mtd::BillboardManager::bindBuffers(const vk::CommandBuffer& commandBuffer) 
 }
 
 // Draws the mesh specified by the index
-void mtd::BillboardManager::drawMesh
-(
-	const vk::CommandBuffer& commandBuffer, uint32_t meshIndex
-) const
+void mtd::BillboardManager::drawMesh(const vk::CommandBuffer& commandBuffer, uint32_t meshIndex) const
 {
 	const Billboard& billboard = meshes[meshIndex];
 	billboard.bindInstanceBuffer(commandBuffer);
