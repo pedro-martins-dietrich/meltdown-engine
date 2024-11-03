@@ -114,8 +114,7 @@ void getBillboard
 	std::string id = billboardJson.value("model-id", "");
 	std::vector<std::array<float, 16>> preTransforms = billboardJson["pre-transforms"];
 
-	std::vector<mtd::Billboard>& billboards =
-		dynamic_cast<mtd::BillboardManager*>(pMeshManager)->getBillboards();
+	std::vector<mtd::Billboard>& billboards = dynamic_cast<mtd::BillboardManager*>(pMeshManager)->getMeshes();
 	billboards.emplace_back
 	(
 		device,

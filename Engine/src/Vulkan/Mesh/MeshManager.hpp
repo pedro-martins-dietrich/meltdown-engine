@@ -1,14 +1,21 @@
 #pragma once
 
+#include <type_traits>
+
+#include "Mesh.hpp"
 #include "../Descriptors/DescriptorSetHandler.hpp"
 
 namespace mtd
 {
-	// Interface for different mesh managers
+	// Interface for the mesh managers
 	class MeshManager
 	{
 		public:
+			MeshManager(const Device& device);
 			virtual ~MeshManager() = default;
+
+			MeshManager(const MeshManager&) = delete;
+			MeshManager& operator=(const MeshManager&) = delete;
 
 			// Gets the number of different meshes handled by the manager
 			virtual uint32_t getMeshCount() const = 0;
@@ -33,7 +40,11 @@ namespace mtd
 			// Draws the mesh specified by the index
 			virtual void drawMesh
 			(
-				const vk::CommandBuffer& commandBuffer, uint32_t index
+				const vk::CommandBuffer& commandBuffer, uint32_t meshIndex
 			) const = 0;
+
+		protected:
+			// Device reference
+			const Device& device;
 	};
 }

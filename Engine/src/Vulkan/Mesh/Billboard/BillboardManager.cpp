@@ -1,29 +1,10 @@
 #include <pch.hpp>
 #include "BillboardManager.hpp"
 
-#include <meltdown/event.hpp>
-
 #include "../../../Utils/Logger.hpp"
 
-mtd::BillboardManager::BillboardManager(const Device& device) : device{device}
+mtd::BillboardManager::BillboardManager(const Device& device) : BaseMeshManager{device}
 {
-	EventManager::addCallback(EventType::ChangeInstanceCount, [this](const Event& e)
-	{
-		const ChangeInstanceCountEvent* pEvent = dynamic_cast<const ChangeInstanceCountEvent*>(&e);
-
-		if(billboardIndexMap.find(pEvent->getModelID()) == billboardIndexMap.end()) return;
-
-		Billboard& billboard = billboards[billboardIndexMap.at(pEvent->getModelID())];
-		int32_t instanceVariation = pEvent->getInstanceCountVariation();
-
-		if(instanceVariation < 0)
-			billboard.removeLastInstances(static_cast<uint32_t>(-instanceVariation));
-		else
-		{
-			billboard.addInstances(instanceVariation);
-			billboard.startLastAddedInstances(instanceVariation);
-		}
-	});
 }
 
 mtd::BillboardManager::~BillboardManager()
@@ -37,11 +18,11 @@ void mtd::BillboardManager::loadMeshes
 	const CommandHandler& commandHandler, DescriptorSetHandler& textureDescriptorSetHandler
 )
 {
-	for(uint32_t i = 0; i < billboards.size(); i++)
+	for(uint32_t i = 0; i < meshes.size(); i++)
 	{
-		billboards[i].loadTexture(commandHandler, textureDescriptorSetHandler);
-		billboards[i].createInstanceBuffer();
-		billboardIndexMap[billboards[i].getModelID()] = i;
+		meshes[i].loadTexture(commandHandler, textureDescriptorSetHandler);
+		meshes[i].createInstanceBuffer();
+		meshIndexMap[meshes[i].getModelID()] = i;
 	}
 
 	LOG_VERBOSE("Billboards loaded.");
@@ -55,21 +36,7 @@ void mtd::BillboardManager::clearMeshes()
 	const vk::Device& vulkanDevice = device.getDevice();
 	vulkanDevice.waitIdle();
 
-	billboards.clear();
-}
-
-// Executes the start code for each model on scene loading
-void mtd::BillboardManager::start()
-{
-	for(Billboard& billboard: billboards)
-		billboard.start();
-}
-
-// Updates instances data
-void mtd::BillboardManager::update(double frameTime)
-{
-	for(Billboard& billboard: billboards)
-		billboard.update(frameTime);
+	meshes.clear();
 }
 
 // There is no buffer common to all billboards to be binded
@@ -83,7 +50,7 @@ void mtd::BillboardManager::drawMesh
 	const vk::CommandBuffer& commandBuffer, uint32_t meshIndex
 ) const
 {
-	const Billboard& billboard = billboards[meshIndex];
+	const Billboard& billboard = meshes[meshIndex];
 	billboard.bindInstanceBuffer(commandBuffer);
 	commandBuffer.drawIndexed(6, billboard.getInstanceCount(), 0, 0, 0);
 }

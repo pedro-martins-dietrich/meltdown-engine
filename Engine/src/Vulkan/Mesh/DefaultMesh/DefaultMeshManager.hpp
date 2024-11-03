@@ -1,25 +1,19 @@
 #pragma once
 
 #include "DefaultMesh.hpp"
-#include "../MeshManager.hpp"
+#include "../BaseMeshManager.hpp"
 
 namespace mtd
 {
 	// Handles data from all default meshes
-	class DefaultMeshManager : public MeshManager
+	class DefaultMeshManager : public BaseMeshManager<DefaultMesh>
 	{
 		public:
 			DefaultMeshManager(const Device& device);
 			~DefaultMeshManager();
 
-			DefaultMeshManager(const DefaultMeshManager&) = delete;
-			DefaultMeshManager& operator=(const DefaultMeshManager&) = delete;
-
 			// Getters
-			virtual uint32_t getMeshCount() const override
-				{ return static_cast<uint32_t>(meshes.size()); }
 			uint32_t getTotalInstanceCount() const { return totalInstanceCount; }
-			std::vector<DefaultMesh>& getMeshes() { return meshes; }
 
 			// Loads textures and groups the meshes into a lump, then passes the data to the GPU
 			virtual void loadMeshes
@@ -30,11 +24,6 @@ namespace mtd
 
 			// Clears the list of default meshes and related buffers
 			virtual void clearMeshes() override;
-
-			// Executes the start code for each model on scene loading
-			virtual void start() override;
-			// Updates instances data
-			virtual void update(double frameTime) override;
 
 			// Binds vertex and index buffers
 			virtual void bindBuffers(const vk::CommandBuffer& commandBuffer) const override;
@@ -49,11 +38,6 @@ namespace mtd
 			Memory::Buffer vertexBuffer;
 			Memory::Buffer indexBuffer;
 
-			// Default meshes
-			std::vector<DefaultMesh> meshes;
-			// Map to translate a model ID to a mesh index
-			std::unordered_map<std::string, uint32_t> meshIndexMap;
-
 			// Lumps of data containing all vertices and indices from all meshes
 			std::vector<Vertex> vertexLump;
 			std::vector<uint32_t> indexLump;
@@ -62,9 +46,6 @@ namespace mtd
 			uint32_t totalInstanceCount;
 			// Index offset counter
 			uint32_t currentIndexOffset;
-
-			// Device reference
-			const Device& device;
 
 			// Stores a mesh in the lump of data
 			void loadMeshToLump(DefaultMesh& mesh);

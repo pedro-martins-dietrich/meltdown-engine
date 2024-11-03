@@ -1,29 +1,11 @@
 #include <pch.hpp>
 #include "DefaultMeshManager.hpp"
 
-#include <meltdown/event.hpp>
-
 #include "../../../Utils/Logger.hpp"
 
 mtd::DefaultMeshManager::DefaultMeshManager(const Device& device)
-	: device{device}, currentIndexOffset{0}, totalInstanceCount{0}
+	: BaseMeshManager{device}, currentIndexOffset{0}, totalInstanceCount{0}
 {
-	EventManager::addCallback(EventType::ChangeInstanceCount, [this](const Event& e)
-	{
-		const ChangeInstanceCountEvent* pEvent = dynamic_cast<const ChangeInstanceCountEvent*>(&e);
-		if(meshIndexMap.find(pEvent->getModelID()) == meshIndexMap.end()) return;
-
-		DefaultMesh& mesh = meshes[meshIndexMap.at(pEvent->getModelID())];
-		int32_t instanceVariation = pEvent->getInstanceCountVariation();
-
-		if(instanceVariation < 0)
-			mesh.removeLastInstances(static_cast<uint32_t>(-instanceVariation));
-		else
-		{
-			mesh.addInstances(instanceVariation);
-			mesh.startLastAddedInstances(instanceVariation);
-		}
-	});
 }
 
 mtd::DefaultMeshManager::~DefaultMeshManager()
@@ -63,20 +45,6 @@ void mtd::DefaultMeshManager::clearMeshes()
 
 	vulkanDevice.destroyBuffer(indexBuffer.buffer);
 	vulkanDevice.freeMemory(indexBuffer.bufferMemory);
-}
-
-// Executes the start code for each model on scene loading
-void mtd::DefaultMeshManager::start()
-{
-	for(DefaultMesh& mesh: meshes)
-		mesh.start();
-}
-
-// Updates instances data
-void mtd::DefaultMeshManager::update(double frameTime)
-{
-	for(DefaultMesh& mesh: meshes)
-		mesh.update(frameTime);
 }
 
 // Binds vertex and index buffers
