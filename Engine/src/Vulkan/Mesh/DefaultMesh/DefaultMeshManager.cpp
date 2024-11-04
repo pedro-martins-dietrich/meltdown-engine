@@ -4,7 +4,7 @@
 #include "../../../Utils/Logger.hpp"
 
 mtd::DefaultMeshManager::DefaultMeshManager(const Device& device)
-	: device{device}, currentIndexOffset{0}, totalInstanceCount{0}
+	: BaseMeshManager{device}, currentIndexOffset{0}, totalInstanceCount{0}
 {
 }
 
@@ -14,15 +14,13 @@ mtd::DefaultMeshManager::~DefaultMeshManager()
 }
 
 // Loads textures and groups the meshes into a lump, then passes the data to the GPU
-void mtd::DefaultMeshManager::loadMeshes
-(
-	const CommandHandler& commandHandler, DescriptorSetHandler& textureDescriptorSetHandler
-)
+void mtd::DefaultMeshManager::loadMeshes(DescriptorSetHandler& textureDescriptorSetHandler)
 {
-	for(DefaultMesh& mesh: meshes)
+	for(uint32_t i = 0; i < meshes.size(); i++)
 	{
-		loadMeshToLump(mesh);
-		mesh.loadTexture(device, commandHandler, textureDescriptorSetHandler);
+		loadMeshToLump(meshes[i]);
+		meshes[i].loadTexture(device, commandHandler, textureDescriptorSetHandler);
+		meshIndexMap[meshes[i].getModelID()] = i;
 	}
 	loadMeshesToGPU(commandHandler);
 }
@@ -36,11 +34,7 @@ void mtd::DefaultMeshManager::clearMeshes()
 	vulkanDevice.waitIdle();
 
 	totalInstanceCount = 0;
-	instanceLump.clear();
 	meshes.clear();
-
-	vulkanDevice.destroyBuffer(instanceBuffer.buffer);
-	vulkanDevice.freeMemory(instanceBuffer.bufferMemory);
 
 	vulkanDevice.destroyBuffer(vertexBuffer.buffer);
 	vulkanDevice.freeMemory(vertexBuffer.bufferMemory);
@@ -49,62 +43,29 @@ void mtd::DefaultMeshManager::clearMeshes()
 	vulkanDevice.freeMemory(indexBuffer.bufferMemory);
 }
 
-// Executes the start code for each model on scene loading
-void mtd::DefaultMeshManager::start()
-{
-	for(DefaultMesh& mesh: meshes)
-		mesh.start();
-
-	Memory::copyMemory
-	(
-		device.getDevice(),
-		instanceBuffer.bufferMemory,
-		instanceLump.size() * sizeof(Mat4x4),
-		instanceLump.data()
-	);
-}
-
-// Updates instances data
-void mtd::DefaultMeshManager::update(double frameTime)
-{
-	for(DefaultMesh& mesh: meshes)
-		mesh.update(frameTime);
-
-	Memory::copyMemory
-	(
-		device.getDevice(),
-		instanceBuffer.bufferMemory,
-		instanceLump.size() * sizeof(Mat4x4),
-		instanceLump.data()
-	);
-}
-
 // Binds vertex and index buffers
 void mtd::DefaultMeshManager::bindBuffers
 (
 	const vk::CommandBuffer& commandBuffer
 ) const
 {
-	std::array<vk::Buffer, 2> vertexBuffers{vertexBuffer.buffer, instanceBuffer.buffer};
-	std::array<vk::DeviceSize, 2> offsets{0, 0};
-	commandBuffer.bindVertexBuffers(0, vertexBuffers.size(), vertexBuffers.data(), offsets.data());
+	vk::DeviceSize offset{0};
+	commandBuffer.bindVertexBuffers(0, 1, &(vertexBuffer.buffer), &offset);
 	commandBuffer.bindIndexBuffer(indexBuffer.buffer, 0, vk::IndexType::eUint32);
 }
 
 // Draws the mesh specified by the index
-void mtd::DefaultMeshManager::drawMesh
-(
-	const vk::CommandBuffer& commandBuffer, uint32_t index
-) const
+void mtd::DefaultMeshManager::drawMesh(const vk::CommandBuffer& commandBuffer, uint32_t meshIndex) const
 {
-	const DefaultMesh& mesh = meshes[index];
+	const DefaultMesh& mesh = meshes[meshIndex];
+	mesh.bindInstanceBuffer(commandBuffer);
 	commandBuffer.drawIndexed
 	(
 		static_cast<uint32_t>(mesh.getIndices().size()),
 		mesh.getInstanceCount(),
 		mesh.getIndexOffset(),
 		0,
-		mesh.getInstanceOffset()
+		0
 	);
 }
 
@@ -118,8 +79,6 @@ void mtd::DefaultMeshManager::loadMeshToLump(DefaultMesh& mesh)
 
 	vertexLump.insert(vertexLump.end(), vertices.begin(), vertices.end());
 
-	mesh.setInstancesLump(&instanceLump, instanceLump.size());
-
 	indexLump.reserve(indices.size());
 	for(uint32_t index: indices)
 		indexLump.push_back(index + currentIndexOffset);
@@ -131,29 +90,14 @@ void mtd::DefaultMeshManager::loadMeshToLump(DefaultMesh& mesh)
 // Loads the lumps into the VRAM and clears them
 void mtd::DefaultMeshManager::loadMeshesToGPU(const CommandHandler& commandHandler)
 {
-	Memory::createDeviceLocalBuffer<Vertex>
-	(
-		device, vertexBuffer, vertexLump, vk::BufferUsageFlagBits::eVertexBuffer, commandHandler
-	);
+	vertexBuffer.usage = vk::BufferUsageFlagBits::eVertexBuffer;
+	indexBuffer.usage = vk::BufferUsageFlagBits::eIndexBuffer;
 
-	Memory::createDeviceLocalBuffer<uint32_t>
-	(
-		device, indexBuffer, indexLump, vk::BufferUsageFlagBits::eIndexBuffer, commandHandler
-	);
+	Memory::createDeviceLocalBuffer<Vertex>(device, vertexBuffer, vertexLump, commandHandler);
+	Memory::createDeviceLocalBuffer<uint32_t>(device, indexBuffer, indexLump, commandHandler);
 
-	vk::DeviceSize instanceLumpSize = instanceLump.size() * sizeof(Mat4x4);
-	Memory::createBuffer
-	(
-		device,
-		instanceBuffer,
-		instanceLumpSize,
-		vk::BufferUsageFlagBits::eVertexBuffer,
-		vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
-	);
-	Memory::copyMemory
-	(
-		device.getDevice(), instanceBuffer.bufferMemory, instanceLumpSize, instanceLump.data()
-	);
+	for(DefaultMesh& defaultMesh: meshes)
+		defaultMesh.createInstanceBuffer();
 
 	vertexLump.clear();
 	indexLump.clear();

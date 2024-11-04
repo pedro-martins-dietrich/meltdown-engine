@@ -10,42 +10,30 @@ namespace mtd::Memory
 	{
 		vk::Buffer buffer;
 		vk::DeviceMemory bufferMemory;
+		vk::DeviceSize size;
+		vk::BufferUsageFlags usage;
+		vk::MemoryPropertyFlags memoryProperties;
 	};
 
 	// Creates and allocates a buffer
-	void createBuffer
-	(
-		const Device& device,
-		Buffer& buffer,
-		vk::DeviceSize bufferSize,
-		vk::BufferUsageFlags bufferUsage,
-		vk::MemoryPropertyFlags memoryProperties
-	);
+	void createBuffer(const Device& device, Buffer& buffer);
 
 	// Allocates memory for the buffer
-	void allocateBufferMemory
-	(
-		const Device& device,
-		Buffer& buffer,
-		vk::MemoryPropertyFlags memoryProperties
-	);
+	void allocateBufferMemory(const Device& device, Buffer& buffer);
 
 	// Copies data to buffer mapped memory
 	void copyMemory
 	(
-		const vk::Device& device,
-		const vk::DeviceMemory& bufferMemory,
-		vk::DeviceSize size,
-		const void* srcData
+		const vk::Device& device, const vk::DeviceMemory& bufferMemory, vk::DeviceSize size, const void* srcData
 	);
 
 	// Copies one buffer to another
-	void copyBuffer
+	void copyBuffer(Buffer& srcBuffer, Buffer& dstBuffer, const CommandHandler& commandHandler);
+
+	// Changes the buffer size by reallocating it
+	void resizeBuffer
 	(
-		Buffer& srcBuffer,
-		Buffer& dstBuffer,
-		vk::DeviceSize size,
-		const CommandHandler& commandHandler
+		const Device& device, const CommandHandler& commandHandler, Buffer& buffer, vk::DeviceSize newSize
 	);
 
 	// Finds the memory type index that fits the requirements
@@ -60,35 +48,24 @@ namespace mtd::Memory
 	template<typename T>
 	void createDeviceLocalBuffer
 	(
-		const Device& device,
-		Buffer& buffer,
-		const std::vector<T>& data,
-		vk::BufferUsageFlags bufferUsage,
-		const CommandHandler& commandHandler
+		const Device& device, Buffer& buffer, const std::vector<T>& data, const CommandHandler& commandHandler
 	)
 	{
 		Buffer stagingBuffer;
+		stagingBuffer.size = data.size() * sizeof(T);
+		stagingBuffer.usage = vk::BufferUsageFlagBits::eTransferSrc;
+		stagingBuffer.memoryProperties =
+			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent;
 
-		vk::DeviceSize dataSize = data.size() * sizeof(T);
-		createBuffer
-		(
-			device,
-			stagingBuffer,
-			dataSize,
-			vk::BufferUsageFlagBits::eTransferSrc,
-			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
-		);
-		copyMemory(device.getDevice(), stagingBuffer.bufferMemory, dataSize, data.data());
+		buffer.size = stagingBuffer.size;
+		buffer.usage |= vk::BufferUsageFlagBits::eTransferDst;
+		buffer.memoryProperties = vk::MemoryPropertyFlagBits::eDeviceLocal;
 
-		createBuffer
-		(
-			device,
-			buffer,
-			dataSize,
-			vk::BufferUsageFlagBits::eTransferDst | bufferUsage,
-			vk::MemoryPropertyFlagBits::eDeviceLocal
-		);
-		copyBuffer(stagingBuffer, buffer, dataSize, commandHandler);
+		createBuffer(device, stagingBuffer);
+		copyMemory(device.getDevice(), stagingBuffer.bufferMemory, stagingBuffer.size, data.data());
+
+		createBuffer(device, buffer);
+		copyBuffer(stagingBuffer, buffer, commandHandler);
 
 		device.getDevice().destroyBuffer(stagingBuffer.buffer);
 		device.getDevice().freeMemory(stagingBuffer.bufferMemory);

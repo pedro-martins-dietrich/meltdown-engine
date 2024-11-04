@@ -79,16 +79,13 @@ void mtd::Texture::loadFromFile
 void mtd::Texture::loadToGpu(const Device& mtdDevice, const CommandHandler& commandHandler) const
 {
 	Memory::Buffer stagingBuffer;
-	vk::DeviceSize imageSize = width * height * 4;
-	Memory::createBuffer
-	(
-		mtdDevice,
-		stagingBuffer,
-		imageSize,
-		vk::BufferUsageFlagBits::eTransferSrc,
-		vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible
-	);
-	Memory::copyMemory(device, stagingBuffer.bufferMemory, imageSize, pixels);
+	stagingBuffer.size = static_cast<vk::DeviceSize>(width * height * 4);
+	stagingBuffer.usage = vk::BufferUsageFlagBits::eTransferSrc;
+	stagingBuffer.memoryProperties =
+		vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible;
+	Memory::createBuffer(mtdDevice, stagingBuffer);
+
+	Memory::copyMemory(device, stagingBuffer.bufferMemory, stagingBuffer.size, pixels);
 	Image::transitionImageLayout
 	(
 		image, commandHandler, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal

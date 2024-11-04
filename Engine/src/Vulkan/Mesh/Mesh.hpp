@@ -5,39 +5,51 @@
 
 #include <meltdown/model.hpp>
 
+#include "../Device/Memory.hpp"
+
 namespace mtd
 {
-	// Generic mesh data
+	// Base class for handling meshes in Vulkan
 	class Mesh
 	{
 		public:
-			Mesh(uint32_t index, const char* modelID, const Mat4x4& preTransform);
 			Mesh
 			(
+				const Device& device,
 				uint32_t index,
-				const std::string& modelID,
-				std::vector<std::unique_ptr<Model>>&& models,
-				size_t instanceLumpOffset,
-				std::vector<Mat4x4>* pInstanceLump
+				const char* modelID,
+				const std::vector<Mat4x4>& preTransforms,
+				uint32_t instanceBufferBindIndex = 0
 			);
-			virtual ~Mesh() = default;
+			virtual ~Mesh();
 
 			Mesh(const Mesh&) = delete;
 			Mesh& operator=(const Mesh&) = delete;
 
+			Mesh(Mesh&& other) noexcept;
+
 			// Getters
 			uint32_t getInstanceCount() const { return static_cast<uint32_t>(models.size()); }
-			uint32_t getInstanceOffset() const { return static_cast<uint32_t>(instanceLumpOffset); }
+			const char* getModelID() const { return modelID.c_str(); }
 
 			// Runs once at the beginning of the scene for all instances
 			void start();
 			// Updates all instances
 			void update(double deltaTime);
 
-			// Sets a reference to the instance lump to update the instances data
-			void setInstancesLump(std::vector<Mat4x4>* instanceLumpPointer, size_t offset);
-			// Adds a new instance
-			void addInstance(const Mat4x4& preTransform = Mat4x4{1.0f});
+			// Starts the last instances added
+			void startLastAddedInstances(uint32_t instanceCount);
+
+			// Adds multiple new mesh instances with the identity pre-transform matrix
+			void addInstances(const CommandHandler& commandHandler, uint32_t instanceCount);
+			// Removes the last mesh instances
+			void removeLastInstances(const CommandHandler& commandHandler, uint32_t instanceCount);
+
+			// Creates a GPU buffer for the transformation matrices
+			void createInstanceBuffer();
+
+			// Binds the instance buffer for this mesh
+			void bindInstanceBuffer(const vk::CommandBuffer& commandBuffer) const;
 
 		protected:
 			// Mesh index
@@ -50,8 +62,14 @@ namespace mtd
 			// Model data for each instance of the mesh
 			std::vector<std::unique_ptr<Model>> models;
 
-			// Pointer to the instance lump vector and start index
-			size_t instanceLumpOffset;
-			std::vector<Mat4x4>* pInstanceLump;
+			// Transformation matrices for each mesh instance
+			std::vector<Mat4x4> instanceLump;
+			// GPU buffer for the transformation matrices
+			Memory::Buffer instanceBuffer;
+			// Binding index for the instance buffer
+			uint32_t instanceBufferBindIndex;
+
+			// Device reference
+			const Device& device;
 	};
 }

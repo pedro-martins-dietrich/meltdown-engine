@@ -102,6 +102,29 @@ const char* mtd::ChangeSceneEvent::getSceneName() const
 	return sceneName;
 }
 
+// Change instance count event
+mtd::ChangeInstanceCountEvent::ChangeInstanceCountEvent
+(
+	const char* modelID, int32_t instanceCountVariation
+) : modelID{modelID}, instanceCountVariation{instanceCountVariation}
+{
+}
+
+mtd::EventType mtd::ChangeInstanceCountEvent::getType() const
+{
+	return EventType::ChangeInstanceCount;
+}
+
+const std::string& mtd::ChangeInstanceCountEvent::getModelID() const
+{
+	return modelID;
+}
+
+int32_t mtd::ChangeInstanceCountEvent::getInstanceCountVariation() const
+{
+	return instanceCountVariation;
+}
+
 // Custom event
 mtd::EventType mtd::CustomEvent::getType() const
 {

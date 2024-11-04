@@ -12,10 +12,11 @@ namespace mtd
 		public:
 			DefaultMesh
 			(
+				const Device& device,
 				uint32_t index,
 				const char* id,
 				const char* fileName,
-				const Mat4x4& preTransform = Mat4x4{1.0f}
+				const std::vector<Mat4x4>& preTransforms
 			);
 			~DefaultMesh() = default;
 

@@ -12,16 +12,14 @@ mtd::Scene::Scene(const Device& device) : descriptorPool{device.getDevice()}
 // Loads scene from file
 void mtd::Scene::loadScene
 (
-	const char* sceneFileName,
-	const CommandHandler& commandHandler,
-	std::unordered_map<PipelineType, Pipeline>& pipelines
+	const Device& device, const char* sceneFileName, std::unordered_map<PipelineType, Pipeline>& pipelines
 )
 {
 	for(auto& [type, pMeshManager]: meshManagers)
 		pMeshManager->clearMeshes();
 
-	SceneLoader::load(sceneFileName, meshManagers);
-	loadMeshes(commandHandler, pipelines);
+	SceneLoader::load(device, sceneFileName, meshManagers);
+	loadMeshes(pipelines);
 }
 
 // Executes starting code on scene
@@ -55,11 +53,7 @@ uint32_t mtd::Scene::getTotalTextureCount() const
 }
 
 // Allocate resources and loads all mesh data
-void mtd::Scene::loadMeshes
-(
-	const CommandHandler& commandHandler,
-	std::unordered_map<PipelineType, Pipeline>& pipelines
-)
+void mtd::Scene::loadMeshes(std::unordered_map<PipelineType, Pipeline>& pipelines)
 {
 	descriptorPool.clear();
 
@@ -78,7 +72,7 @@ void mtd::Scene::loadMeshes
 			descriptorSetHandler.defineDescriptorSetsAmount(pMeshManager->getMeshCount());
 			descriptorPool.allocateDescriptorSet(descriptorSetHandler);
 
-			pMeshManager->loadMeshes(commandHandler, descriptorSetHandler);
+			pMeshManager->loadMeshes(descriptorSetHandler);
 		}
 	}
 

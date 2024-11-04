@@ -13,10 +13,11 @@ namespace mtd
 		public:
 			Billboard
 			(
+				const Device& device,
 				uint32_t index,
 				const char* id,
 				const char* texturePath,
-				const Mat4x4& preTransform = Mat4x4{1.0f}
+				const std::vector<Mat4x4>& preTransforms
 			);
 			~Billboard() = default;
 
@@ -28,9 +29,7 @@ namespace mtd
 			// Loads the billboard texture
 			void loadTexture
 			(
-				const Device& device,
-				const CommandHandler& commandHandler,
-				DescriptorSetHandler& descriptorSetHandler
+				const CommandHandler& commandHandler, DescriptorSetHandler& descriptorSetHandler
 			);
 
 		private:

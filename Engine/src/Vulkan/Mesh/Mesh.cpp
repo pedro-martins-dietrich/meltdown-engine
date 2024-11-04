@@ -3,33 +3,44 @@
 
 #include <cstring>
 
-#include "../../Utils/Logger.hpp"
-
-mtd::Mesh::Mesh(uint32_t index, const char* modelID, const Mat4x4& preTransform)
-	: meshIndex{index},
+mtd::Mesh::Mesh
+(
+	const Device& device,
+	uint32_t index,
+	const char* modelID,
+	const std::vector<Mat4x4>& preTransforms,
+	uint32_t instanceBufferBindIndex
+) : device{device},
+	meshIndex{index},
 	modelID{modelID},
 	modelFactory{ModelHandler::getModelFactory(modelID)},
 	models{},
-	instanceLumpOffset{0},
-	pInstanceLump{nullptr}
+	instanceLump{preTransforms},
+	instanceBufferBindIndex{instanceBufferBindIndex}
 {
-	models.emplace_back(modelFactory(preTransform));
+
+	for(const Mat4x4& preTransform: preTransforms)
+		models.emplace_back(modelFactory(preTransform));
 }
 
-mtd::Mesh::Mesh
-(
-	uint32_t index,
-	const std::string& modelID,
-	std::vector<std::unique_ptr<Model>>&& models,
-	size_t instanceLumpOffset,
-	std::vector<Mat4x4>* pInstanceLump
-) : meshIndex{index},
-	modelID{modelID},
-	modelFactory{ModelHandler::getModelFactory(modelID)},
-	models{std::move(models)},
-	instanceLumpOffset{instanceLumpOffset},
-	pInstanceLump{pInstanceLump}
+mtd::Mesh::~Mesh()
 {
+	device.getDevice().destroyBuffer(instanceBuffer.buffer);
+	device.getDevice().freeMemory(instanceBuffer.bufferMemory);
+}
+
+mtd::Mesh::Mesh(Mesh&& other) noexcept
+	: device{other.device},
+	meshIndex{other.meshIndex},
+	modelID{std::move(other.modelID)},
+	modelFactory{std::move(other.modelFactory)},
+	models{std::move(other.models)},
+	instanceLump{std::move(other.instanceLump)},
+	instanceBuffer{std::move(other.instanceBuffer)},
+	instanceBufferBindIndex{other.instanceBufferBindIndex}
+{
+	other.instanceBuffer.buffer = nullptr;
+	other.instanceBuffer.bufferMemory = nullptr;
 }
 
 // Runs once at the beginning of the scene for all instances
@@ -40,41 +51,117 @@ void mtd::Mesh::start()
 		models[instanceIndex]->start();
 		std::memcpy
 		(
-			&(*pInstanceLump)[instanceLumpOffset + instanceIndex],
+			&(instanceLump[instanceIndex]),
 			models[instanceIndex]->getTransformPointer(),
 			sizeof(Mat4x4)
 		);
 	}
+
+	Memory::copyMemory
+	(
+		device.getDevice(),
+		instanceBuffer.bufferMemory,
+		instanceLump.size() * sizeof(Mat4x4),
+		instanceLump.data()
+	);
 }
 
 // Updates all instances
 void mtd::Mesh::update(double deltaTime)
 {
+	if(models.size() <= 0) return;
+
 	for(uint32_t instanceIndex = 0; instanceIndex < models.size(); instanceIndex++)
 	{
 		models[instanceIndex]->update(deltaTime);
 		std::memcpy
 		(
-			&(*pInstanceLump)[instanceLumpOffset + instanceIndex],
+			&(instanceLump[instanceIndex]),
 			models[instanceIndex]->getTransformPointer(),
 			sizeof(Mat4x4)
 		);
 	}
+
+	Memory::copyMemory
+	(
+		device.getDevice(),
+		instanceBuffer.bufferMemory,
+		instanceLump.size() * sizeof(Mat4x4),
+		instanceLump.data()
+	);
 }
 
-// Sets a reference to the instance lump to update the instances data
-void mtd::Mesh::setInstancesLump(std::vector<Mat4x4>* instanceLumpPointer, size_t offset)
+// Starts last instance added
+void mtd::Mesh::startLastAddedInstances(uint32_t instanceCount)
 {
-	pInstanceLump = instanceLumpPointer;
-	instanceLumpOffset = offset;
-
-	pInstanceLump->reserve(models.size());
-	for(const std::unique_ptr<Model>& model: models)
-		pInstanceLump->push_back(*(model->getTransformPointer()));
+	for(uint32_t i = models.size() - instanceCount; i < models.size(); i++)
+	{
+		models[i]->start();
+		std::memcpy(&(instanceLump[i]), models[i]->getTransformPointer(), sizeof(Mat4x4));
+	}
 }
 
-// Adds a new instance
-void mtd::Mesh::addInstance(const Mat4x4& preTransform)
+// Adds multiple new mesh instances with the identity pre-transform matrix
+void mtd::Mesh::addInstances(const CommandHandler& commandHandler, uint32_t instanceCount)
 {
-	models.emplace_back(modelFactory(preTransform));
+	uint32_t minimumBufferSize = (models.size() + instanceCount) * sizeof(Mat4x4);
+	if(minimumBufferSize > instanceBuffer.size)
+	{
+		uint32_t newSize = 2 * instanceBuffer.size;
+		while(newSize < minimumBufferSize)
+			newSize += newSize;
+
+		Memory::resizeBuffer(device, commandHandler, instanceBuffer, newSize);
+	}
+
+	for(uint32_t i = 0; i < instanceCount; i++)
+	{
+		models.emplace_back(modelFactory(Mat4x4{1.0f}));
+		instanceLump.emplace_back(Mat4x4{1.0f});
+	}
+}
+
+// Removes the last mesh instances
+void mtd::Mesh::removeLastInstances(const CommandHandler& commandHandler, uint32_t instanceCount)
+{
+	if(models.size() <= 0) return;
+	if(models.size() < instanceCount)
+		instanceCount = models.size();
+
+	models.erase(models.cend() - instanceCount, models.cend());
+	instanceLump.erase(instanceLump.cend() - instanceCount, instanceLump.cend());
+
+	if(models.size() <= 0) return;
+
+	uint32_t newBufferSizeMaxLimit = 2 * models.size() * sizeof(Mat4x4);
+	if(newBufferSizeMaxLimit <= instanceBuffer.size)
+	{
+		uint32_t newSize = instanceBuffer.size / 2;
+		while(newBufferSizeMaxLimit <= newSize)
+			newSize >>= 1;
+
+		Memory::resizeBuffer(device, commandHandler, instanceBuffer, newSize);
+	}
+}
+
+// Creates a GPU buffer for the transformation matrices
+void mtd::Mesh::createInstanceBuffer()
+{
+	instanceBuffer.size = instanceLump.size() * sizeof(Mat4x4);
+	instanceBuffer.usage = vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferSrc;
+	instanceBuffer.memoryProperties =
+		vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent;
+
+	Memory::createBuffer(device, instanceBuffer);
+	Memory::copyMemory
+	(
+		device.getDevice(), instanceBuffer.bufferMemory, instanceBuffer.size, instanceLump.data()
+	);
+}
+
+// Binds the instance buffer for this mesh
+void mtd::Mesh::bindInstanceBuffer(const vk::CommandBuffer& commandBuffer) const
+{
+	vk::DeviceSize offset{0};
+	commandBuffer.bindVertexBuffers(instanceBufferBindIndex, 1, &(instanceBuffer.buffer), &offset);
 }
