@@ -5,6 +5,7 @@
 #include <string>
 #include <type_traits>
 #include <unordered_map>
+#include <vector>
 
 #include <meltdown/math.hpp>
 
@@ -18,16 +19,35 @@ namespace mtd
 		public:
 			/*
 			* @brief Creates a model instance, setting its pre transform matrix.
+			*
+			* @param modelID String uniquely identifying the model type.
+			* @param preTransform Matrix with the starting transformation of the model instance.
 			*/
-			Model(const Mat4x4& preTransform) : transform{preTransform} {}
-
+			Model(const char* modelID, const Mat4x4& preTransform);
 			Model() = delete;
-			virtual ~Model() = default;
+			virtual ~Model();
+
+			Model(const Model&) = delete;
+			Model& operator=(const Model&) = delete;
 
 			/*
 			* @brief Gets the pointer to the 4x4 transformation matrix of the model.
+			*
+			* @return Pointer to the model transformation matrix.
 			*/
-			Mat4x4* getTransformPointer() { return &transform; }
+			Mat4x4* getTransformPointer();
+			/*
+			* @brief Gets a reference to the 4x4 transformation matrix of the model.
+			*
+			* @return Constant reference to the model transfomation matrix.
+			*/
+			const Mat4x4& getTransform() const;
+			/*
+			* @brief Gets the instance ID for this model instance.
+			*
+			* @return Numeric ID uniquely identifying every instance in the scene.
+			*/
+			uint64_t getInstanceID() const;
 
 			/*
 			* @brief Runs once at the beginning of the scene.
@@ -35,7 +55,7 @@ namespace mtd
 			virtual void start() = 0;
 			/*
 			* @brief Runs on every frame update.
-			* 
+			*
 			* @param deltaTime Time, in seconds, between the last frame and the current one.
 			*/
 			virtual void update(double deltaTime) = 0;
@@ -45,6 +65,12 @@ namespace mtd
 			* @brief Transformation matrix for the mesh related to the model.
 			*/
 			Mat4x4 transform;
+
+		private:
+			/*
+			* @brief Unique ID for every instance in the current scene.
+			*/
+			uint64_t instanceID;
 	};
 
 	using ModelFactory = std::function<std::unique_ptr<Model>(const Mat4x4&)>;
@@ -61,8 +87,33 @@ namespace mtd
 			ModelHandler& operator=(const ModelHandler&) = delete;
 
 			/*
+			* @brief Returns a model factory for a model, if registered.
+			*
+			* @param modelID String identifying a specific registered model.
+			*
+			* @return A function used for instancing a model.
+			*/
+			static ModelFactory getModelFactory(const std::string& modelID);
+
+			/*
+			* @brief Returns a pointer to the model instance associated to an ID.
+			*
+			* @param instanceID Unique number identifying all instances present in the current scene.
+			*
+			* @return Pointer to the requested model instance, or a `nullptr` if there is no corresponding instance.
+			*/
+			static Model* getModelInstanceByID(uint64_t instanceID);
+
+			/*
+			* @brief Returns the unordered map containing all model instances in the scene.
+			*
+			* @return Reference to the model instances unordered map.
+			*/
+			static const std::unordered_map<uint64_t, Model*>& getModelInstancesMap();
+
+			/*
 			* @brief Stores a new model, which will be linked based on the model ID.
-			* 
+			*
 			* @param modelID String identifying the model to be registered.
 			*/
 			template<typename ModelT>
@@ -74,20 +125,11 @@ namespace mtd
 					"ModelT must be a derived class of Model in registerModel<ModelT>()."
 				);
 
-				modelFactoryRegistry[modelID] = [](const Mat4x4& preTransform)
+				modelFactoryRegistry[modelID] = [&modelID](const Mat4x4& preTransform)
 				{
-					return std::make_unique<ModelT>(preTransform);
+					return std::make_unique<ModelT>(modelID, preTransform);
 				};
 			}
-
-			/*
-			* @brief Returns a model factory for a model, if registered.
-			*
-			* @param modelID String identifying a specific registered model.
-			*
-			* @return A function used for instancing a model.
-			*/
-			static ModelFactory getModelFactory(const std::string& modelID);
 
 		private:
 			/*
