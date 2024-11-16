@@ -204,38 +204,63 @@ namespace mtd
 	};
 
 	/*
-	* @brief Event class for adding or removing instances of a specific mesh on dispatch.
+	* @brief Event class for adding instances of a specific mesh.
 	*/
-	class ChangeInstanceCountEvent : public Event
+	class CreateInstancesEvent : public Event
 	{
 		public:
 			/*
-			* @brief Creates an event to add or remove instances for a certain mesh.
+			* @brief Creates an event to add instances for a certain model.
 			*
 			* @param modelID String identifying the target model.
-			* @param instanceCountVariation Quantity of instances to be added (positive value),
-			* or removed (negative value).
+			* @param instanceCount Quantity of instances to be added.
 			*/
-			ChangeInstanceCountEvent(const char* modelID, int32_t instanceCountVariation);
+			CreateInstancesEvent(const char* modelID, uint32_t instanceCount);
 
 			virtual EventType getType() const override;
 
 			/*
 			* @brief Getter for the target model ID.
 			*
-			* @return Identifier for the model which will have the mesh instance count altered.
+			* @return Identifier for the model which will have the mesh instance count increased.
 			*/
 			const std::string& getModelID() const;
 			/*
-			* @brief Getter for the variation of instance count.
+			* @brief Getter for the instance creation count.
 			*
-			* @return Amount of instances to be added or removed.
+			* @return Amount of instances to be added.
 			*/
-			int32_t getInstanceCountVariation() const;
+			uint32_t getInstanceCount() const;
 
 		private:
 			std::string modelID;
-			int32_t instanceCountVariation;
+			uint32_t instanceCount;
+	};
+
+	/*
+	* @brief Event class for remove a model instance from the current scene.
+	*/
+	class RemoveInstanceEvent : public Event
+	{
+		public:
+			/*
+			* @brief Creates an event to delete an instance from the scene.
+			*
+			* @param instanceID Identifier for the target model instance to be removed.
+			*/
+			RemoveInstanceEvent(uint64_t instanceID);
+
+			virtual EventType getType() const override;
+
+			/*
+			* @brief Getter for the target instance ID.
+			*
+			* @return Identifier for the model instance which will deleted from the current scene.
+			*/
+			uint64_t getInstanceID() const;
+
+		private:
+			uint64_t instanceID;
 	};
 
 	/*

@@ -16,7 +16,8 @@ namespace mtd
 		ActionStop,
 		WindowPosition,
 		ChangeScene,
-		ChangeInstanceCount,
+		CreateInstances,
+		RemoveInstance,
 		Custom
 	};
 

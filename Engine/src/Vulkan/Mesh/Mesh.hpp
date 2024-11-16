@@ -37,13 +37,10 @@ namespace mtd
 			// Updates all instances
 			void update(double deltaTime);
 
-			// Starts the last instances added
-			void startLastAddedInstances(uint32_t instanceCount);
-
 			// Adds multiple new mesh instances with the identity pre-transform matrix
 			void addInstances(const CommandHandler& commandHandler, uint32_t instanceCount);
-			// Removes the last mesh instances
-			void removeLastInstances(const CommandHandler& commandHandler, uint32_t instanceCount);
+			// Removes the mesh instance associated with the provided instance ID
+			void removeInstanceByID(const CommandHandler& commandHandler, uint64_t instanceID);
 
 			// Creates a GPU buffer for the transformation matrices
 			void createInstanceBuffer();
@@ -60,7 +57,7 @@ namespace mtd
 			ModelFactory modelFactory;
 
 			// Model data for each instance of the mesh
-			std::vector<std::unique_ptr<Model>> models;
+			std::unordered_map<uint64_t, std::unique_ptr<Model>> models;
 
 			// Transformation matrices for each mesh instance
 			std::vector<Mat4x4> instanceLump;
