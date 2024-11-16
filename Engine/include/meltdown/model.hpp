@@ -31,17 +31,17 @@ namespace mtd
 			Model& operator=(const Model&) = delete;
 
 			/*
-			* @brief Gets the pointer to the 4x4 transformation matrix of the model.
-			*
-			* @return Pointer to the model transformation matrix.
-			*/
-			Mat4x4* getTransformPointer();
-			/*
-			* @brief Gets a reference to the 4x4 transformation matrix of the model.
+			* @brief Gets a constant reference to the 4x4 transformation matrix of the model.
 			*
 			* @return Constant reference to the model transfomation matrix.
 			*/
 			const Mat4x4& getTransform() const;
+			/*
+			* @brief Gets a reference to the 4x4 transformation matrix of the model.
+			*
+			* @return Reference to the model transfomation matrix.
+			*/
+			Mat4x4& getTransform();
 			/*
 			* @brief Gets the instance ID for this model instance.
 			*

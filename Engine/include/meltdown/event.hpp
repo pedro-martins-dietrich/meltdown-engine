@@ -342,11 +342,5 @@ namespace mtd
 		* `EventManager`.
 		*/
 		void dispatch(std::unique_ptr<Event> pEvent);
-
-		/*
-		* @brief Executes all callbacks related to the queued (dispatched) events.
-		* Used internaly by the engine.
-		*/
-		void processEvents();
 	};
 }

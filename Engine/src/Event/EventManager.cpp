@@ -1,5 +1,6 @@
 #include <pch.hpp>
 #include <meltdown/event.hpp>
+#include "EventManager.hpp"
 
 using EventCallbackMap = std::unordered_map<uint64_t, mtd::EventCallback>;
 

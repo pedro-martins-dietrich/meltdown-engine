@@ -53,7 +53,7 @@ void mtd::Mesh::start()
 	for(const auto& [instanceID, pModel]: models)
 	{
 		pModel->start();
-		std::memcpy(&(instanceLump[i]), pModel->getTransformPointer(), sizeof(Mat4x4));
+		std::memcpy(&(instanceLump[i]), &(pModel->getTransform()), sizeof(Mat4x4));
 		i++;
 	}
 
@@ -75,7 +75,7 @@ void mtd::Mesh::update(double deltaTime)
 	for(const auto& [instanceID, pModel]: models)
 	{
 		pModel->update(deltaTime);
-		std::memcpy(&(instanceLump[i]), pModel->getTransformPointer(), sizeof(Mat4x4));
+		std::memcpy(&(instanceLump[i]), &(pModel->getTransform()), sizeof(Mat4x4));
 		i++;
 	}
 
@@ -107,7 +107,7 @@ void mtd::Mesh::addInstances(const CommandHandler& commandHandler, uint32_t inst
 		std::unique_ptr<Model> pModel = modelFactory(instanceLump.back());
 
 		pModel->start();
-		std::memcpy(&(instanceLump[i]), pModel->getTransformPointer(), sizeof(Mat4x4));
+		std::memcpy(&(instanceLump[i]), &(pModel->getTransform()), sizeof(Mat4x4));
 
 		models[pModel->getInstanceID()] = std::move(pModel);
 	}
