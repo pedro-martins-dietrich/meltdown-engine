@@ -22,12 +22,12 @@ mtd::Model::~Model()
 	modelInstanceRegistry.erase(instanceID);
 }
 
-mtd::Mat4x4* mtd::Model::getTransformPointer()
+const mtd::Mat4x4& mtd::Model::getTransform() const
 {
-	return &transform;
+	return transform;
 }
 
-const mtd::Mat4x4& mtd::Model::getTransform() const
+mtd::Mat4x4& mtd::Model::getTransform()
 {
 	return transform;
 }

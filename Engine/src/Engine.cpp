@@ -6,6 +6,7 @@
 #include "Utils/Logger.hpp"
 #include "Utils/Profiler.hpp"
 #include "Input/InputHandler.hpp"
+#include "Event/EventManager.hpp"
 
 mtd::Engine::Engine(const EngineInfo& info)
 	: window{WindowInfo{1280, 720, 640, 360}, info.appName},

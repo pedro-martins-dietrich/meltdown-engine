@@ -20,7 +20,10 @@ mtd::Mesh::Mesh
 {
 
 	for(const Mat4x4& preTransform: preTransforms)
-		models.emplace_back(modelFactory(preTransform));
+	{
+		std::unique_ptr<Model> pModel = modelFactory(preTransform);
+		models[pModel->getInstanceID()] = std::move(pModel);
+	}
 }
 
 mtd::Mesh::~Mesh()
@@ -46,15 +49,12 @@ mtd::Mesh::Mesh(Mesh&& other) noexcept
 // Runs once at the beginning of the scene for all instances
 void mtd::Mesh::start()
 {
-	for(uint32_t instanceIndex = 0; instanceIndex < models.size(); instanceIndex++)
+	uint32_t i = 0;
+	for(const auto& [instanceID, pModel]: models)
 	{
-		models[instanceIndex]->start();
-		std::memcpy
-		(
-			&(instanceLump[instanceIndex]),
-			models[instanceIndex]->getTransformPointer(),
-			sizeof(Mat4x4)
-		);
+		pModel->start();
+		std::memcpy(&(instanceLump[i]), &(pModel->getTransform()), sizeof(Mat4x4));
+		i++;
 	}
 
 	Memory::copyMemory
@@ -71,15 +71,12 @@ void mtd::Mesh::update(double deltaTime)
 {
 	if(models.size() <= 0) return;
 
-	for(uint32_t instanceIndex = 0; instanceIndex < models.size(); instanceIndex++)
+	uint32_t i = 0;
+	for(const auto& [instanceID, pModel]: models)
 	{
-		models[instanceIndex]->update(deltaTime);
-		std::memcpy
-		(
-			&(instanceLump[instanceIndex]),
-			models[instanceIndex]->getTransformPointer(),
-			sizeof(Mat4x4)
-		);
+		pModel->update(deltaTime);
+		std::memcpy(&(instanceLump[i]), &(pModel->getTransform()), sizeof(Mat4x4));
+		i++;
 	}
 
 	Memory::copyMemory
@@ -89,16 +86,6 @@ void mtd::Mesh::update(double deltaTime)
 		instanceLump.size() * sizeof(Mat4x4),
 		instanceLump.data()
 	);
-}
-
-// Starts last instance added
-void mtd::Mesh::startLastAddedInstances(uint32_t instanceCount)
-{
-	for(uint32_t i = models.size() - instanceCount; i < models.size(); i++)
-	{
-		models[i]->start();
-		std::memcpy(&(instanceLump[i]), models[i]->getTransformPointer(), sizeof(Mat4x4));
-	}
 }
 
 // Adds multiple new mesh instances with the identity pre-transform matrix
@@ -116,32 +103,30 @@ void mtd::Mesh::addInstances(const CommandHandler& commandHandler, uint32_t inst
 
 	for(uint32_t i = 0; i < instanceCount; i++)
 	{
-		models.emplace_back(modelFactory(Mat4x4{1.0f}));
 		instanceLump.emplace_back(Mat4x4{1.0f});
+		std::unique_ptr<Model> pModel = modelFactory(instanceLump.back());
+
+		pModel->start();
+		std::memcpy(&(instanceLump[i]), &(pModel->getTransform()), sizeof(Mat4x4));
+
+		models[pModel->getInstanceID()] = std::move(pModel);
 	}
 }
 
-// Removes the last mesh instances
-void mtd::Mesh::removeLastInstances(const CommandHandler& commandHandler, uint32_t instanceCount)
+// Removes the mesh instance associated with the provided instance ID
+void mtd::Mesh::removeInstanceByID(const CommandHandler& commandHandler, uint64_t instanceID)
 {
-	if(models.size() <= 0) return;
-	if(models.size() < instanceCount)
-		instanceCount = models.size();
+	if(models.find(instanceID) == models.cend()) return;
 
-	models.erase(models.cend() - instanceCount, models.cend());
-	instanceLump.erase(instanceLump.cend() - instanceCount, instanceLump.cend());
+	models.erase(instanceID);
+	instanceLump.pop_back();
 
 	if(models.size() <= 0) return;
 
-	uint32_t newBufferSizeMaxLimit = 2 * models.size() * sizeof(Mat4x4);
-	if(newBufferSizeMaxLimit <= instanceBuffer.size)
-	{
-		uint32_t newSize = instanceBuffer.size / 2;
-		while(newBufferSizeMaxLimit <= newSize)
-			newSize >>= 1;
+	vk::DeviceSize expectedBufferSize = models.size() * sizeof(Mat4x4);
 
-		Memory::resizeBuffer(device, commandHandler, instanceBuffer, newSize);
-	}
+	if(2 * expectedBufferSize <= instanceBuffer.size)
+		Memory::resizeBuffer(device, commandHandler, instanceBuffer, expectedBufferSize);
 }
 
 // Creates a GPU buffer for the transformation matrices

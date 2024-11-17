@@ -102,27 +102,40 @@ const char* mtd::ChangeSceneEvent::getSceneName() const
 	return sceneName;
 }
 
-// Change instance count event
-mtd::ChangeInstanceCountEvent::ChangeInstanceCountEvent
-(
-	const char* modelID, int32_t instanceCountVariation
-) : modelID{modelID}, instanceCountVariation{instanceCountVariation}
+// Create instances event
+mtd::CreateInstancesEvent::CreateInstancesEvent(const char* modelID, uint32_t instanceCount)
+	: modelID{modelID}, instanceCount{instanceCount}
 {
 }
 
-mtd::EventType mtd::ChangeInstanceCountEvent::getType() const
+mtd::EventType mtd::CreateInstancesEvent::getType() const
 {
-	return EventType::ChangeInstanceCount;
+	return EventType::CreateInstances;
 }
 
-const std::string& mtd::ChangeInstanceCountEvent::getModelID() const
+const std::string& mtd::CreateInstancesEvent::getModelID() const
 {
 	return modelID;
 }
 
-int32_t mtd::ChangeInstanceCountEvent::getInstanceCountVariation() const
+uint32_t mtd::CreateInstancesEvent::getInstanceCount() const
 {
-	return instanceCountVariation;
+	return instanceCount;
+}
+
+// Remove instance event
+mtd::RemoveInstanceEvent::RemoveInstanceEvent(uint64_t instanceID) : instanceID{instanceID}
+{
+}
+
+mtd::EventType mtd::RemoveInstanceEvent::getType() const
+{
+	return EventType::RemoveInstance;
+}
+
+uint64_t mtd::RemoveInstanceEvent::getInstanceID() const
+{
+	return instanceID;
 }
 
 // Custom event
