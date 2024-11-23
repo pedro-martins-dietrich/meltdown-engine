@@ -1,5 +1,9 @@
 #pragma once
 
+#include <string>
+
+#include <meltdown/enums.hpp>
+
 namespace mtd
 {
 	/*
@@ -18,5 +22,27 @@ namespace mtd
 		unsigned int appVersionMajor = 1;
 		unsigned int appVersionMinor = 0;
 		unsigned int appVersionPatch = 0;
+	};
+
+	/*
+	* @brief Parameters used to create a pipeline with custom shaders.
+	*
+	* @param pipelineName Exhibition name for the pipeline.
+	* @param vertexShaderPath File path to the vertex shader from the shaders folder.
+	* @param fragmentShaderPath File path to the fragment shader from the shaders folder.
+	* @param associatedMeshType Mesh type the pipeline will render.
+	* @param primitiveTopology Assembly method for the primitive mesh topology.
+	* @param faceCulling Orientation for the pipeline face culling.
+	* @param useTransparency Enables or disables alpha blending for the pipeline.
+	*/
+	struct PipelineInfo
+	{
+		std::string pipelineName;
+		std::string vertexShaderPath;
+		std::string fragmentShaderPath;
+		MeshType associatedMeshType;
+		ShaderPrimitiveTopology primitiveTopology = ShaderPrimitiveTopology::TriangleList;
+		ShaderFaceCulling faceCulling = ShaderFaceCulling::None;
+		bool useTransparency = false;
 	};
 }

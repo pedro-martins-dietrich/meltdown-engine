@@ -1,8 +1,6 @@
 #include <pch.hpp>
 #include "ColorBlendBuilder.hpp"
 
-#include "../../../Utils/Logger.hpp"
-
 // Color blending builders for each pipeline type
 static void opaqueColorBlending
 (
@@ -18,25 +16,16 @@ static void transparentColorBlending
 // Configures the color blending create info based on the pipeline type
 void mtd::ColorBlendBuilder::setColorBlending
 (
-	mtd::PipelineType type,
+	bool useTransparency,
 	vk::PipelineColorBlendStateCreateInfo& colorBlendInfo,
 	vk::PipelineColorBlendAttachmentState& colorBlendAttachment
 )
 {
-	switch(type)
-	{
-		case PipelineType::DEFAULT:
-			opaqueColorBlending(colorBlendInfo, colorBlendAttachment);
-			break;
+	if(useTransparency)
+		transparentColorBlending(colorBlendInfo, colorBlendAttachment);
+	else
+		opaqueColorBlending(colorBlendInfo, colorBlendAttachment);
 
-		case PipelineType::BILLBOARD:
-			transparentColorBlending(colorBlendInfo, colorBlendAttachment);
-			break;
-
-		default:
-			LOG_WARNING("No color blending builder set for pipeline type %d.", type);
-			opaqueColorBlending(colorBlendInfo, colorBlendAttachment);
-	}
 }
 
 // Does not use color blending (opaque objects)
@@ -53,9 +42,9 @@ void opaqueColorBlending
 	colorBlendAttachment.srcAlphaBlendFactor = vk::BlendFactor::eZero;
 	colorBlendAttachment.dstAlphaBlendFactor = vk::BlendFactor::eZero;
 	colorBlendAttachment.alphaBlendOp = vk::BlendOp::eAdd;
-	colorBlendAttachment.colorWriteMask = vk::ColorComponentFlagBits::eR |
-		vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB |
-		vk::ColorComponentFlagBits::eA;
+	colorBlendAttachment.colorWriteMask =
+		vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
+		vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA;
 
 	colorBlendInfo.flags = vk::PipelineColorBlendStateCreateFlags();
 	colorBlendInfo.logicOpEnable = vk::False;
@@ -79,9 +68,9 @@ void transparentColorBlending
 	colorBlendAttachment.srcAlphaBlendFactor = vk::BlendFactor::eOne;
 	colorBlendAttachment.dstAlphaBlendFactor = vk::BlendFactor::eZero;
 	colorBlendAttachment.alphaBlendOp = vk::BlendOp::eAdd;
-	colorBlendAttachment.colorWriteMask = vk::ColorComponentFlagBits::eR |
-		vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB |
-		vk::ColorComponentFlagBits::eA;
+	colorBlendAttachment.colorWriteMask =
+		vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
+		vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA;
 
 	colorBlendInfo.flags = vk::PipelineColorBlendStateCreateFlags();
 	colorBlendInfo.logicOpEnable = vk::False;

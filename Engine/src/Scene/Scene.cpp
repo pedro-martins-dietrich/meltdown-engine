@@ -5,15 +5,12 @@
 
 mtd::Scene::Scene(const Device& device) : descriptorPool{device.getDevice()}
 {
-	meshManagers.emplace(PipelineType::DEFAULT, std::make_unique<DefaultMeshManager>(device));
-	meshManagers.emplace(PipelineType::BILLBOARD, std::make_unique<BillboardManager>(device));
+	meshManagers.emplace(MeshType::Default3D, std::make_unique<DefaultMeshManager>(device));
+	meshManagers.emplace(MeshType::Billboard, std::make_unique<BillboardManager>(device));
 }
 
 // Loads scene from file
-void mtd::Scene::loadScene
-(
-	const Device& device, const char* sceneFileName, std::unordered_map<PipelineType, Pipeline>& pipelines
-)
+void mtd::Scene::loadScene(const Device& device, const char* sceneFileName, std::vector<Pipeline>& pipelines)
 {
 	for(auto& [type, pMeshManager]: meshManagers)
 		pMeshManager->clearMeshes();
@@ -53,7 +50,7 @@ uint32_t mtd::Scene::getTotalTextureCount() const
 }
 
 // Allocate resources and loads all mesh data
-void mtd::Scene::loadMeshes(std::unordered_map<PipelineType, Pipeline>& pipelines)
+void mtd::Scene::loadMeshes(std::vector<Pipeline>& pipelines)
 {
 	descriptorPool.clear();
 
@@ -64,16 +61,16 @@ void mtd::Scene::loadMeshes(std::unordered_map<PipelineType, Pipeline>& pipeline
 	poolSizesInfo[1].descriptorType = vk::DescriptorType::eCombinedImageSampler;
 	descriptorPool.createDescriptorPool(poolSizesInfo);
 
-	for(auto& [type, pMeshManager]: meshManagers)
+	for(Pipeline& pipeline: pipelines)
 	{
-		if(pMeshManager->getMeshCount() > 0)
-		{
-			DescriptorSetHandler& descriptorSetHandler = pipelines.at(type).getDescriptorSetHandler(0);
-			descriptorSetHandler.defineDescriptorSetsAmount(pMeshManager->getMeshCount());
-			descriptorPool.allocateDescriptorSet(descriptorSetHandler);
+		const std::unique_ptr<MeshManager>& pMeshManager = meshManagers.at(pipeline.getAssociatedMeshType());
+		if(pMeshManager->getMeshCount() == 0) continue;
 
-			pMeshManager->loadMeshes(descriptorSetHandler);
-		}
+		DescriptorSetHandler& descriptorSetHandler = pipeline.getDescriptorSetHandler(0);
+		descriptorSetHandler.defineDescriptorSetsAmount(pMeshManager->getMeshCount());
+		descriptorPool.allocateDescriptorSet(descriptorSetHandler);
+
+		pMeshManager->loadMeshes(descriptorSetHandler);
 	}
 
 	LOG_INFO("Meshes loaded to the GPU.\n");

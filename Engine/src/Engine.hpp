@@ -38,7 +38,7 @@ namespace mtd
 			VulkanInstance vulkanInstance;
 			Device device;
 			Swapchain swapchain;
-			std::unordered_map<PipelineType, Pipeline> pipelines;
+			std::vector<Pipeline> pipelines;
 			std::unique_ptr<DescriptorSetHandler> globalDescriptorSetHandler;
 			CommandHandler commandHandler;
 			Camera camera;

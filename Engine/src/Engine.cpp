@@ -123,40 +123,35 @@ void mtd::Engine::configureGlobalDescriptorSetHandler()
 	bindings[0].stageFlags = vk::ShaderStageFlagBits::eVertex;
 	bindings[0].pImmutableSamplers = nullptr;
 
-	globalDescriptorSetHandler =
-		std::make_unique<DescriptorSetHandler>(device.getDevice(), bindings);
+	globalDescriptorSetHandler = std::make_unique<DescriptorSetHandler>(device.getDevice(), bindings);
 }
 
 // Sets up the pipelines to be used
 void mtd::Engine::configurePipelines()
 {
 	pipelines.reserve(2);
-	pipelines.emplace
-	(
-		std::piecewise_construct,
-		std::forward_as_tuple(PipelineType::DEFAULT),
-		std::forward_as_tuple
-		(
-			device.getDevice(),
-			PipelineType::DEFAULT,
-			swapchain,
-			globalDescriptorSetHandler.get()
-		)
-	);
-	pipelines.emplace
-	(
-		std::piecewise_construct,
-		std::forward_as_tuple(PipelineType::BILLBOARD),
-		std::forward_as_tuple
-		(
-			device.getDevice(),
-			PipelineType::BILLBOARD,
-			swapchain,
-			globalDescriptorSetHandler.get()
-		)
-	);
-
-	settingsGui.setPipelinesSettings(pipelines);
+	PipelineInfo defaultPipelineInfo
+	{
+		"Default Pipeline",
+		"default.vert.spv",
+		"default.frag.spv",
+		MeshType::Default3D,
+		ShaderPrimitiveTopology::TriangleList,
+		ShaderFaceCulling::Counterclockwise,
+		false
+	};
+	pipelines.emplace_back(device.getDevice(), swapchain, globalDescriptorSetHandler.get(), defaultPipelineInfo);
+	PipelineInfo billboardPipelineInfo
+	{
+		"Billboard Pipeline",
+		"billboard.vert.spv",
+		"billboard.frag.spv",
+		MeshType::Billboard,
+		ShaderPrimitiveTopology::TriangleList,
+		ShaderFaceCulling::None,
+		true
+	};
+	pipelines.emplace_back(device.getDevice(), swapchain, globalDescriptorSetHandler.get(), billboardPipelineInfo);
 }
 
 // Sets up the descriptors
@@ -184,7 +179,7 @@ void mtd::Engine::updateEngine()
 
 	swapchain.recreate(device, window.getDimensions(), vulkanInstance.getSurface());
 
-	for(auto& [type, pipeline]: pipelines)
+	for(Pipeline& pipeline: pipelines)
 		pipeline.recreate(swapchain, globalDescriptorSetHandler.get());
 
 	camera.updatePerspective(70.0f, window.getAspectRatio());

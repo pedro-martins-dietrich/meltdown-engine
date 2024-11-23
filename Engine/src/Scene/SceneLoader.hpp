@@ -12,6 +12,6 @@ namespace mtd::SceneLoader
 	(
 		const Device& device,
 		const char* fileName,
-		std::unordered_map<PipelineType, std::unique_ptr<MeshManager>>& meshManagers
+		std::unordered_map<MeshType, std::unique_ptr<MeshManager>>& meshManagers
 	);
 }

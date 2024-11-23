@@ -30,7 +30,7 @@ void mtd::SceneLoader::load
 (
 	const Device& device,
 	const char* fileName,
-	std::unordered_map<PipelineType, std::unique_ptr<MeshManager>>& meshManagers
+	std::unordered_map<MeshType, std::unique_ptr<MeshManager>>& meshManagers
 )
 {
 	std::string scenePath{MTD_RESOURCES_PATH};
@@ -52,9 +52,9 @@ void mtd::SceneLoader::load
 	}
 
 	for(uint32_t i = 0; i < sceneJson["default-meshes"].size(); i++)
-		getDefaultMesh(device, sceneJson["default-meshes"][i], i, meshManagers.at(PipelineType::DEFAULT).get());
+		getDefaultMesh(device, sceneJson["default-meshes"][i], i, meshManagers.at(MeshType::Default3D).get());
 	for(uint32_t i = 0; i < sceneJson["billboards"].size(); i++)
-		getBillboard(device, sceneJson["billboards"][i], i, meshManagers.at(PipelineType::BILLBOARD).get());
+		getBillboard(device, sceneJson["billboards"][i], i, meshManagers.at(MeshType::Billboard).get());
 
 	LOG_INFO("Scene \"%s\" loaded.", fileName);
 }

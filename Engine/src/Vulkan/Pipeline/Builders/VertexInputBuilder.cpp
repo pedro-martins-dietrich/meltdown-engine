@@ -8,20 +8,16 @@
 static void defaultVertexInput(vk::PipelineVertexInputStateCreateInfo& vertexInputInfo);
 static void noVertexInput(vk::PipelineVertexInputStateCreateInfo& vertexInputInfo);
 
-// Creates a vertex input create info based on the pipeline type
-void mtd::VertexInputBuilder::setVertexInput
-(
-	PipelineType type,
-	vk::PipelineVertexInputStateCreateInfo& vertexInputInfo
-)
+// Configures a vertex input create info based on the mesh type
+void mtd::VertexInputBuilder::setVertexInput(MeshType type, vk::PipelineVertexInputStateCreateInfo& vertexInputInfo)
 {
 	switch(type)
 	{
-		case PipelineType::DEFAULT:
+		case MeshType::Default3D:
 			defaultVertexInput(vertexInputInfo);
 			break;
 
-		case PipelineType::BILLBOARD:
+		case MeshType::Billboard:
 			noVertexInput(vertexInputInfo);
 			break;
 

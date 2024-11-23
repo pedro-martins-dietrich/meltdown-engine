@@ -4,18 +4,6 @@
 #include "../../Utils/Logger.hpp"
 #include "../../Utils/Profiler.hpp"
 
-#ifdef MTD_DEBUG
-	static const std::unordered_map<mtd::PipelineType, const char*> pipelineProfileNames =
-	{
-		{mtd::PipelineType::DEFAULT, "Render - Default Pipeline"},
-		{mtd::PipelineType::BILLBOARD, "Render - Billboard Pipeline"}
-	};
-
-	#define PIPELINE_PROFILING_NAME(pipelineType) pipelineProfileNames.at(pipelineType)
-#else
-	#define PIPELINE_PROFILING_NAME(pipelineType)
-#endif
-
 mtd::Renderer::Renderer()
 	: currentFrameIndex{0}, clearColor{0.1f, 0.1f, 0.1f, 1.0f}
 {
@@ -32,7 +20,7 @@ void mtd::Renderer::render
 	const Device& mtdDevice,
 	const Swapchain& swapchain,
 	const ImGuiHandler& guiHandler,
-	const std::unordered_map<PipelineType, Pipeline>& pipelines,
+	const std::vector<Pipeline>& pipelines,
 	const Scene& scene,
 	DrawInfo& drawInfo,
 	bool& shouldUpdateEngine
@@ -96,7 +84,7 @@ void mtd::Renderer::render
 // Records draw command to the command buffer
 void mtd::Renderer::recordDrawCommand
 (
-	const std::unordered_map<PipelineType, Pipeline>& pipelines,
+	const std::vector<Pipeline>& pipelines,
 	const Scene& scene,
 	const CommandHandler& commandHandler,
 	const DrawInfo& drawInfo,
@@ -128,17 +116,17 @@ void mtd::Renderer::recordDrawCommand
 	commandBuffer.bindDescriptorSets
 	(
 		vk::PipelineBindPoint::eGraphics,
-		pipelines.at(PipelineType::DEFAULT).getLayout(),
+		pipelines[0].getLayout(),
 		0,
 		1, &(drawInfo.globalDescriptorSet),
 		0, nullptr
 	);
 
 	uint32_t startInstance = 0;
-	for(const auto& [type, pipeline]: pipelines)
+	for(const Pipeline& pipeline: pipelines)
 	{
-		PROFILER_NEXT_STAGE(PIPELINE_PROFILING_NAME(type));
-		const MeshManager* pMeshManager = scene.getMeshManager(type);
+		PROFILER_NEXT_STAGE(pipeline.getName().c_str());
+		const MeshManager* pMeshManager = scene.getMeshManager(pipeline.getAssociatedMeshType());
 		if(pMeshManager->getMeshCount() == 0)
 			continue;
 
@@ -162,9 +150,7 @@ void mtd::Renderer::recordDrawCommand
 // Presents frame to screen when ready
 void mtd::Renderer::presentFrame
 (
-	const vk::SwapchainKHR& swapchain,
-	const vk::Queue& presentQueue,
-	const vk::Semaphore& renderFinished
+	const vk::SwapchainKHR& swapchain, const vk::Queue& presentQueue, const vk::Semaphore& renderFinished
 ) const
 {
 	vk::PresentInfoKHR presentInfo{};

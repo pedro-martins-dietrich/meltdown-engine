@@ -2,21 +2,20 @@
 #include "Pipeline.hpp"
 
 #include "../../Utils/Logger.hpp"
-#include "Builders/ShaderLoader.hpp"
+#include "Builders/PipelineMapping.hpp"
 #include "Builders/VertexInputBuilder.hpp"
 #include "Builders/ColorBlendBuilder.hpp"
 
 mtd::Pipeline::Pipeline
 (
 	const vk::Device& device,
-	PipelineType type,
 	Swapchain& swapchain,
-	DescriptorSetHandler* globalDescriptorSet
-) : device{device}, type{type}
+	DescriptorSetHandler* globalDescriptorSet,
+	const PipelineInfo& info
+) : device{device}, info{info}
 {
-	configureDefaultSettings();
 	createDescriptorSetLayouts();
-	ShaderLoader::loadShaders(type, device, shaders);
+	loadShaderModules(info.vertexShaderPath.c_str(), info.fragmentShaderPath.c_str());
 	createPipeline(swapchain, globalDescriptorSet);
 }
 
@@ -25,12 +24,20 @@ mtd::Pipeline::~Pipeline()
 	destroy();
 }
 
+mtd::Pipeline::Pipeline(Pipeline&& other) noexcept
+	: device{other.device},
+	info{std::move(other.info)},
+	pipeline{std::move(other.pipeline)},
+	pipelineLayout{std::move(other.pipelineLayout)},
+	shaders{std::move(other.shaders)},
+	descriptorSetHandlers{std::move(other.descriptorSetHandlers)}
+{
+	other.pipeline = nullptr;
+	other.pipelineLayout = nullptr;
+}
+
 // Recreates the pipeline
-void mtd::Pipeline::recreate
-(
-	Swapchain& swapchain,
-	DescriptorSetHandler* globalDescriptorSet
-)
+void mtd::Pipeline::recreate(Swapchain& swapchain, DescriptorSetHandler* globalDescriptorSet)
 {
 	destroy();
 	createPipeline(swapchain, globalDescriptorSet);
@@ -55,21 +62,16 @@ void mtd::Pipeline::bindDescriptors(const vk::CommandBuffer& commandBuffer, uint
 	);
 }
 
-// Sets up default pipeline settings
-void mtd::Pipeline::configureDefaultSettings()
+// Loads the pipeline shader modules
+void mtd::Pipeline::loadShaderModules(const char* vertexShaderPath, const char* fragmentShaderPath)
 {
-	settings.inputAssemblyPrimitiveTopology = vk::PrimitiveTopology::eTriangleList;
-	settings.rasterizationPolygonMode = vk::PolygonMode::eFill;
-	settings.rasterizationCullMode = vk::CullModeFlagBits::eNone;
-	settings.rasterizationFrontFace = vk::FrontFace::eCounterClockwise;
+	shaders.reserve(2);
+	shaders.emplace_back(vertexShaderPath, device);
+	shaders.emplace_back(fragmentShaderPath, device);
 }
 
 // Creates the graphics pipeline
-void mtd::Pipeline::createPipeline
-(
-	Swapchain& swapchain,
-	DescriptorSetHandler* globalDescriptorSet
-)
+void mtd::Pipeline::createPipeline(Swapchain& swapchain, DescriptorSetHandler* globalDescriptorSet)
 {
 	std::vector<vk::PipelineShaderStageCreateInfo> shaderStagesCreateInfos;
 	vk::Viewport viewport{};
@@ -84,7 +86,7 @@ void mtd::Pipeline::createPipeline
 	vk::PipelineDepthStencilStateCreateInfo depthStencilCreateInfo{};
 	vk::PipelineColorBlendStateCreateInfo colorBlendCreateInfo{};
 
-	VertexInputBuilder::setVertexInput(type, vertexInputCreateInfo);
+	VertexInputBuilder::setVertexInput(info.associatedMeshType, vertexInputCreateInfo);
 	setInputAssembly(inputAssemblyCreateInfo);
 	setVertexShader(shaderStagesCreateInfos, shaders[0]);
 	setViewport(viewportCreateInfo, viewport, scissor, swapchain);
@@ -92,7 +94,7 @@ void mtd::Pipeline::createPipeline
 	setFragmentShader(shaderStagesCreateInfos, shaders[1]);
 	setMultisampling(multisampleCreateInfo);
 	setDepthStencil(depthStencilCreateInfo);
-	ColorBlendBuilder::setColorBlending(type, colorBlendCreateInfo, colorBlendAttachment);
+	ColorBlendBuilder::setColorBlending(info.useTransparency, colorBlendCreateInfo, colorBlendAttachment);
 
 	createPipelineLayout(globalDescriptorSet);
 
@@ -115,10 +117,7 @@ void mtd::Pipeline::createPipeline
 	graphicsPipelineCreateInfo.basePipelineHandle = nullptr;
 	graphicsPipelineCreateInfo.basePipelineIndex = 0;
 
-	vk::Result result = device.createGraphicsPipelines
-	(
-		nullptr, 1, &graphicsPipelineCreateInfo, nullptr, &pipeline
-	);
+	vk::Result result = device.createGraphicsPipelines(nullptr, 1, &graphicsPipelineCreateInfo, nullptr, &pipeline);
 	if(result != vk::Result::eSuccess)
 	{
 		LOG_ERROR("Failed to create graphics pipeline. Vulkan result: %d", result);
@@ -145,13 +144,10 @@ void mtd::Pipeline::createDescriptorSetLayouts()
 }
 
 // Sets create info for the input assembly
-void mtd::Pipeline::setInputAssembly
-(
-	vk::PipelineInputAssemblyStateCreateInfo& inputAssemblyInfo
-) const
+void mtd::Pipeline::setInputAssembly(vk::PipelineInputAssemblyStateCreateInfo& inputAssemblyInfo) const
 {
 	inputAssemblyInfo.flags = vk::PipelineInputAssemblyStateCreateFlags();
-	inputAssemblyInfo.topology = settings.inputAssemblyPrimitiveTopology;
+	inputAssemblyInfo.topology = PipelineMapping::mapPrimitiveTopology(info.primitiveTopology);
 	inputAssemblyInfo.primitiveRestartEnable = vk::False;
 }
 
@@ -200,17 +196,14 @@ void mtd::Pipeline::setViewport
 }
 
 // Sets create info for the rasterization
-void mtd::Pipeline::setRasterizer
-(
-	vk::PipelineRasterizationStateCreateInfo& rasterizationInfo
-) const
+void mtd::Pipeline::setRasterizer(vk::PipelineRasterizationStateCreateInfo& rasterizationInfo) const
 {
 	rasterizationInfo.flags = vk::PipelineRasterizationStateCreateFlags();
 	rasterizationInfo.depthClampEnable = vk::False;
 	rasterizationInfo.rasterizerDiscardEnable = vk::False;
-	rasterizationInfo.polygonMode = settings.rasterizationPolygonMode;
-	rasterizationInfo.cullMode = settings.rasterizationCullMode;
-	rasterizationInfo.frontFace = settings.rasterizationFrontFace;
+	rasterizationInfo.polygonMode = PipelineMapping::mapPolygonMode(info.primitiveTopology);
+	rasterizationInfo.cullMode = PipelineMapping::mapCullModeFlags(info.faceCulling);
+	rasterizationInfo.frontFace = PipelineMapping::mapFrontFace(info.faceCulling);
 	rasterizationInfo.depthBiasEnable = vk::False;
 	rasterizationInfo.depthBiasConstantFactor = 0.0f;
 	rasterizationInfo.depthBiasClamp = 0.0f;
@@ -248,10 +241,7 @@ void mtd::Pipeline::setMultisampling(vk::PipelineMultisampleStateCreateInfo& mul
 }
 
 // Sets create info for the depth stencil
-void mtd::Pipeline::setDepthStencil
-(
-	vk::PipelineDepthStencilStateCreateInfo& depthStencilInfo
-) const
+void mtd::Pipeline::setDepthStencil(vk::PipelineDepthStencilStateCreateInfo& depthStencilInfo) const
 {
 	depthStencilInfo.flags = vk::PipelineDepthStencilStateCreateFlags();
 	depthStencilInfo.depthTestEnable = vk::True;
@@ -279,8 +269,7 @@ void mtd::Pipeline::createPipelineLayout(DescriptorSetHandler* globalDescriptorS
 	pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
 	pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
 
-	vk::Result result =
-		device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &pipelineLayout);
+	vk::Result result = device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &pipelineLayout);
 	if(result != vk::Result::eSuccess)
 	{
 		LOG_ERROR("Failed to create pipeline layout. Vulkan result: %d", result);

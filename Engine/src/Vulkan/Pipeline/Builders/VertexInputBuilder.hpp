@@ -2,15 +2,11 @@
 
 #include <vulkan/vulkan.hpp>
 
-#include "../../../Utils/EngineEnums.hpp"
+#include <meltdown/enums.hpp>
 
 // Builder for the vertex input create info
 namespace mtd::VertexInputBuilder
 {
-	// Configures a vertex input create info based on the pipeline type
-	void setVertexInput
-	(
-		PipelineType type,
-		vk::PipelineVertexInputStateCreateInfo& vertexInputInfo
-	);
+	// Configures a vertex input create info based on the mesh type
+	void setVertexInput(MeshType type, vk::PipelineVertexInputStateCreateInfo& vertexInputInfo);
 }
