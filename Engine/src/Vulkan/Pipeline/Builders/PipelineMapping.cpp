@@ -89,3 +89,16 @@ vk::FrontFace mtd::PipelineMapping::mapFrontFace(ShaderFaceCulling faceCulling)
 	}
 	return vk::FrontFace::eCounterClockwise;
 }
+
+// Gets the Vulkan buffer usage from the descriptor type
+vk::BufferUsageFlags mtd::PipelineMapping::mapBufferUsageFlags(DescriptorType descriptorType)
+{
+	switch(descriptorType)
+	{
+		case DescriptorType::UniformBuffer:
+			return vk::BufferUsageFlagBits::eUniformBuffer;
+		default:
+			LOG_ERROR("Failed to map buffer usage flags. Used descriptor type: %d", descriptorType);
+	}
+	return vk::BufferUsageFlagBits::eUniformBuffer;
+}

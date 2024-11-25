@@ -4,7 +4,7 @@
 
 #include "ShaderModule.hpp"
 #include "../Frame/Swapchain.hpp"
-#include "../Descriptors/DescriptorSetHandler.hpp"
+#include "../Descriptors/DescriptorPool.hpp"
 
 namespace mtd
 {
@@ -29,12 +29,19 @@ namespace mtd
 			// Getters
 			const vk::Pipeline& getPipeline() const { return pipeline; }
 			const vk::PipelineLayout& getLayout() const { return pipelineLayout; }
-			DescriptorSetHandler& getDescriptorSetHandler(uint32_t index) { return descriptorSetHandlers[index]; }
 			const std::string& getName() const { return info.pipelineName; }
 			MeshType getAssociatedMeshType() const { return info.associatedMeshType; }
+			DescriptorSetHandler& getDescriptorSetHandler(uint32_t set) { return descriptorSetHandlers[set]; }
+			const std::unordered_map<vk::DescriptorType, uint32_t>& getDescriptorTypeCount() const
+				{ return descriptorTypeCount; }
 
 			// Recreates the pipeline
 			void recreate(Swapchain& swapchain, DescriptorSetHandler* globalDescriptorSet);
+
+			// Allocates user descriptor set data in the descriptor pool
+			void configureUserDescriptorData(const Device& mtdDevice, const DescriptorPool& pool);
+			// Updates the user descriptor data for the specified binding
+			void updateDescriptorData(uint32_t binding, void* data);
 
 			// Binds the pipeline to the command buffer
 			void bind(const vk::CommandBuffer& commandBuffer) const;
@@ -54,6 +61,8 @@ namespace mtd
 			std::vector<ShaderModule> shaders;
 			// Descriptor sets and their layouts
 			std::vector<DescriptorSetHandler> descriptorSetHandlers;
+			// Required descriptor count for each descriptor type of the current pipeline
+			std::unordered_map<vk::DescriptorType, uint32_t> descriptorTypeCount;
 
 			// Vulkan device reference
 			const vk::Device& device;

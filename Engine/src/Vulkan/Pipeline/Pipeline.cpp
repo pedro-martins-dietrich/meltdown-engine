@@ -5,6 +5,7 @@
 #include "Builders/PipelineMapping.hpp"
 #include "Builders/VertexInputBuilder.hpp"
 #include "Builders/ColorBlendBuilder.hpp"
+#include "Builders/DescriptorSetBuilder.hpp"
 
 mtd::Pipeline::Pipeline
 (
@@ -43,6 +44,42 @@ void mtd::Pipeline::recreate(Swapchain& swapchain, DescriptorSetHandler* globalD
 	createPipeline(swapchain, globalDescriptorSet);
 }
 
+// Allocates user descriptor set data in the descriptor pool
+void mtd::Pipeline::configureUserDescriptorData(const Device& mtdDevice, const DescriptorPool& pool)
+{
+	if(descriptorSetHandlers.size() < 2) return;
+
+	DescriptorSetHandler& descriptorSetHandler = descriptorSetHandlers[1];
+	descriptorSetHandler.defineDescriptorSetsAmount(1);
+	pool.allocateDescriptorSet(descriptorSetHandler);
+
+	for(uint32_t binding = 0; binding < info.descriptorSetInfo.size(); binding++)
+	{
+		const DescriptorInfo& bindingInfo = info.descriptorSetInfo[binding];
+		descriptorSetHandler.createDescriptorResources
+		(
+			mtdDevice,
+			bindingInfo.totalDescriptorSize,
+			PipelineMapping::mapBufferUsageFlags(bindingInfo.descriptorType),
+			0, binding
+		);
+	}
+	descriptorSetHandler.writeDescriptorSet(0);
+}
+
+// Updates the user descriptor data for the specified binding
+void mtd::Pipeline::updateDescriptorData(uint32_t binding, void* data)
+{
+	if(descriptorSetHandlers.size() < 2 || descriptorSetHandlers[1].getSetCount() <= binding) return;
+
+	memcpy
+	(
+		descriptorSetHandlers[1].getWriteLocation(0, binding),
+		data,
+		info.descriptorSetInfo[binding].totalDescriptorSize
+	);
+}
+
 // Binds the pipeline to the command buffer
 void mtd::Pipeline::bind(const vk::CommandBuffer& commandBuffer) const
 {
@@ -58,6 +95,18 @@ void mtd::Pipeline::bindDescriptors(const vk::CommandBuffer& commandBuffer, uint
 		pipelineLayout,
 		1,
 		1, &(descriptorSetHandlers[0].getSet(index)),
+		0, nullptr
+	);
+
+	if(descriptorSetHandlers.size() == 1 || descriptorSetHandlers[1].getSetCount() == 0) return;
+
+	// Currently, there are no swappable descriptor sets, despite having the layout...
+	commandBuffer.bindDescriptorSets
+	(
+		vk::PipelineBindPoint::eGraphics,
+		pipelineLayout,
+		2,
+		1, &(descriptorSetHandlers[1].getSet(0)),
 		0, nullptr
 	);
 }
@@ -129,10 +178,9 @@ void mtd::Pipeline::createPipeline(Swapchain& swapchain, DescriptorSetHandler* g
 // Configures the descriptor set handlers to be used
 void mtd::Pipeline::createDescriptorSetLayouts()
 {
-	descriptorSetHandlers.reserve(1);
+	descriptorSetHandlers.reserve(info.descriptorSetInfo.size() == 0 ? 1 : 2);
 
 	std::vector<vk::DescriptorSetLayoutBinding> bindings(1);
-
 	// Mesh diffuse texture
 	bindings[0].binding = 0;
 	bindings[0].descriptorType = vk::DescriptorType::eCombinedImageSampler;
@@ -140,6 +188,12 @@ void mtd::Pipeline::createDescriptorSetLayouts()
 	bindings[0].stageFlags = vk::ShaderStageFlagBits::eFragment;
 	bindings[0].pImmutableSamplers = nullptr;
 
+	descriptorSetHandlers.emplace_back(device, bindings);
+
+	if(info.descriptorSetInfo.size() == 0) return;
+	bindings.clear();
+
+	DescriptorSetBuilder::buildDescriptorSetLayout(bindings, info.descriptorSetInfo, descriptorTypeCount);
 	descriptorSetHandlers.emplace_back(device, bindings);
 }
 

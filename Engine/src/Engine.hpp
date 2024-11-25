@@ -32,6 +32,9 @@ namespace mtd
 			// Loads a new scene, clearing the previous if necessary
 			void loadScene(const char* sceneFile);
 
+			// Updates the descriptor data for the specified pipeline custom descriptor
+			void updateDescriptorData(uint32_t pipelineIndex, uint32_t binding, void* data);
+
 		private:
 			// Engine handler objects
 			Window window;

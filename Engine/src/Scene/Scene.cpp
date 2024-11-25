@@ -54,11 +54,25 @@ void mtd::Scene::loadMeshes(std::vector<Pipeline>& pipelines)
 {
 	descriptorPool.clear();
 
-	std::vector<PoolSizeData> poolSizesInfo{2};
-	poolSizesInfo[0].descriptorCount = 1;
-	poolSizesInfo[0].descriptorType = vk::DescriptorType::eUniformBuffer;
-	poolSizesInfo[1].descriptorCount = getTotalTextureCount();
-	poolSizesInfo[1].descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	std::unordered_map<vk::DescriptorType, uint32_t> totalDescriptorTypeCount;
+	totalDescriptorTypeCount[vk::DescriptorType::eUniformBuffer] = 1;
+	totalDescriptorTypeCount[vk::DescriptorType::eCombinedImageSampler] = getTotalTextureCount();
+
+	for(const Pipeline& pipeline: pipelines)
+	{
+		for(const auto& [type, count]: pipeline.getDescriptorTypeCount())
+			totalDescriptorTypeCount[type] += count;
+	}
+
+	std::vector<PoolSizeData> poolSizesInfo{totalDescriptorTypeCount.size()};
+	uint32_t i = 0;
+	for(const auto& [type, count]: totalDescriptorTypeCount)
+	{
+		poolSizesInfo[i].descriptorCount = count;
+		poolSizesInfo[i].descriptorType = type;
+		i++;
+	}
+
 	descriptorPool.createDescriptorPool(poolSizesInfo);
 
 	for(Pipeline& pipeline: pipelines)

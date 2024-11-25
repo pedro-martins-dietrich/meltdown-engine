@@ -112,6 +112,12 @@ void mtd::Engine::loadScene(const char* sceneFile)
 	scene.start();
 }
 
+// Updates the descriptor data for the specified pipeline custom descriptor
+void mtd::Engine::updateDescriptorData(uint32_t pipelineIndex, uint32_t binding, void* data)
+{
+	pipelines[pipelineIndex].updateDescriptorData(binding, data);
+}
+
 // Sets up descriptor set shared across pipelines
 void mtd::Engine::configureGlobalDescriptorSetHandler()
 {
@@ -136,6 +142,7 @@ void mtd::Engine::configurePipelines()
 		"default.vert.spv",
 		"default.frag.spv",
 		MeshType::Default3D,
+		{},
 		ShaderPrimitiveTopology::TriangleList,
 		ShaderFaceCulling::Counterclockwise,
 		false
@@ -147,6 +154,7 @@ void mtd::Engine::configurePipelines()
 		"billboard.vert.spv",
 		"billboard.frag.spv",
 		MeshType::Billboard,
+		{},
 		ShaderPrimitiveTopology::TriangleList,
 		ShaderFaceCulling::None,
 		true
@@ -169,6 +177,9 @@ void mtd::Engine::configureDescriptors()
 	camera.setWriteLocation(cameraWriteLocation);
 
 	globalDescriptorSetHandler->writeDescriptorSet(0);
+
+	for(Pipeline& pipeline: pipelines)
+		pipeline.configureUserDescriptorData(device, scene.getDescriptorPool());
 }
 
 // Recreates swapchain and pipeline to apply new settings
