@@ -45,8 +45,10 @@ namespace mtd
 
 			// Binds the pipeline to the command buffer
 			void bind(const vk::CommandBuffer& commandBuffer) const;
+			// Binds per pipeline descriptors
+			void bindPipelineDescriptors(const vk::CommandBuffer& commandBuffer) const;
 			// Binds per mesh descriptors
-			void bindDescriptors(const vk::CommandBuffer& commandBuffer, uint32_t index) const;
+			void bindMeshDescriptors(const vk::CommandBuffer& commandBuffer, uint32_t index) const;
 
 		private:
 			// Vulkan graphics pipeline

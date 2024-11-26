@@ -44,10 +44,7 @@ void mtd::DefaultMeshManager::clearMeshes()
 }
 
 // Binds vertex and index buffers
-void mtd::DefaultMeshManager::bindBuffers
-(
-	const vk::CommandBuffer& commandBuffer
-) const
+void mtd::DefaultMeshManager::bindBuffers(const vk::CommandBuffer& commandBuffer) const
 {
 	vk::DeviceSize offset{0};
 	commandBuffer.bindVertexBuffers(0, 1, &(vertexBuffer.buffer), &offset);

@@ -86,8 +86,23 @@ void mtd::Pipeline::bind(const vk::CommandBuffer& commandBuffer) const
 	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
 }
 
+// Binds per pipeline descriptors
+void mtd::Pipeline::bindPipelineDescriptors(const vk::CommandBuffer& commandBuffer) const
+{
+	if(descriptorSetHandlers.size() == 1 || descriptorSetHandlers[1].getSetCount() == 0) return;
+
+	commandBuffer.bindDescriptorSets
+	(
+		vk::PipelineBindPoint::eGraphics,
+		pipelineLayout,
+		2,
+		1, &(descriptorSetHandlers[1].getSet(0)),
+		0, nullptr
+	);
+}
+
 // Binds per mesh descriptors
-void mtd::Pipeline::bindDescriptors(const vk::CommandBuffer& commandBuffer, uint32_t index) const
+void mtd::Pipeline::bindMeshDescriptors(const vk::CommandBuffer& commandBuffer, uint32_t index) const
 {
 	commandBuffer.bindDescriptorSets
 	(
@@ -95,18 +110,6 @@ void mtd::Pipeline::bindDescriptors(const vk::CommandBuffer& commandBuffer, uint
 		pipelineLayout,
 		1,
 		1, &(descriptorSetHandlers[0].getSet(index)),
-		0, nullptr
-	);
-
-	if(descriptorSetHandlers.size() == 1 || descriptorSetHandlers[1].getSetCount() == 0) return;
-
-	// Currently, there are no swappable descriptor sets, despite having the layout...
-	commandBuffer.bindDescriptorSets
-	(
-		vk::PipelineBindPoint::eGraphics,
-		pipelineLayout,
-		2,
-		1, &(descriptorSetHandlers[1].getSet(0)),
 		0, nullptr
 	);
 }

@@ -131,11 +131,12 @@ void mtd::Renderer::recordDrawCommand
 			continue;
 
 		pipeline.bind(commandBuffer);
+		pipeline.bindPipelineDescriptors(commandBuffer);
 		pMeshManager->bindBuffers(commandBuffer);
 
 		for(uint32_t i = 0; i < pMeshManager->getMeshCount(); i++)
 		{
-			pipeline.bindDescriptors(commandBuffer, i);
+			pipeline.bindMeshDescriptors(commandBuffer, i);
 			pMeshManager->drawMesh(commandBuffer, i);
 		}
 	}

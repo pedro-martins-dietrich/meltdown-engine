@@ -1,5 +1,7 @@
 #pragma once
 
+#include <type_traits>
+
 #include <meltdown/event.hpp>
 
 #include "MeshManager.hpp"
@@ -15,23 +17,31 @@ namespace mtd
 		public:
 			BaseMeshManager(const Device& device) : MeshManager{device}
 			{
-				createInstanceEventCallbackID = EventManager::addCallback(EventType::CreateInstances, [this](const Event& e)
-				{
-					const CreateInstancesEvent* pEvent = dynamic_cast<const CreateInstancesEvent*>(&e);
-					if(meshIndexMap.find(pEvent->getModelID()) == meshIndexMap.end()) return;
+				createInstanceEventCallbackID = EventManager::addCallback
+				(
+					EventType::CreateInstances,
+					[this](const Event& e)
+					{
+						const CreateInstancesEvent* pEvent = dynamic_cast<const CreateInstancesEvent*>(&e);
+						if(meshIndexMap.find(pEvent->getModelID()) == meshIndexMap.end()) return;
 
-					MeshType& mesh = meshes[meshIndexMap.at(pEvent->getModelID())];
-					uint32_t instanceVariation = pEvent->getInstanceCount();
+						MeshType& mesh = meshes[meshIndexMap.at(pEvent->getModelID())];
+						uint32_t instanceVariation = pEvent->getInstanceCount();
 
-					mesh.addInstances(commandHandler, instanceVariation);
-				});
-				removeInstanceEventCallbackID = EventManager::addCallback(EventType::RemoveInstance, [this](const Event& e)
-				{
-					const RemoveInstanceEvent* pEvent = dynamic_cast<const RemoveInstanceEvent*>(&e);
+						mesh.addInstances(commandHandler, instanceVariation);
+					}
+				);
+				removeInstanceEventCallbackID = EventManager::addCallback
+				(
+					EventType::RemoveInstance,
+					[this](const Event& e)
+					{
+						const RemoveInstanceEvent* pEvent = dynamic_cast<const RemoveInstanceEvent*>(&e);
 
-					for(MeshType& mesh: meshes)
-						mesh.removeInstanceByID(commandHandler, pEvent->getInstanceID());
-				});
+						for(MeshType& mesh: meshes)
+							mesh.removeInstanceByID(commandHandler, pEvent->getInstanceID());
+					}
+				);
 			}
 
 			~BaseMeshManager()
@@ -41,8 +51,7 @@ namespace mtd
 			}
 
 			// Getters
-			virtual uint32_t getMeshCount() const override
-				{ return static_cast<uint32_t>(meshes.size()); }
+			virtual uint32_t getMeshCount() const override { return static_cast<uint32_t>(meshes.size()); }
 			std::vector<MeshType>& getMeshes() { return meshes; }
 
 			// Executes the start code for each mesh on scene loading
@@ -67,6 +76,7 @@ namespace mtd
 			std::unordered_map<std::string, uint32_t> meshIndexMap;
 
 		private:
+			// Event callback IDs
 			uint64_t createInstanceEventCallbackID;
 			uint64_t removeInstanceEventCallbackID;
 	};
