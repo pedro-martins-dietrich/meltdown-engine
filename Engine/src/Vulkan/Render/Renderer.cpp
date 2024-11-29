@@ -123,21 +123,21 @@ void mtd::Renderer::recordDrawCommand
 	);
 
 	uint32_t startInstance = 0;
-	for(const Pipeline& pipeline: pipelines)
+	for(uint32_t i = 0; i < pipelines.size(); i++)
 	{
-		PROFILER_NEXT_STAGE(pipeline.getName().c_str());
-		const MeshManager* pMeshManager = scene.getMeshManager(pipeline.getAssociatedMeshType());
+		PROFILER_NEXT_STAGE(pipelines[i].getName().c_str());
+		const MeshManager* pMeshManager = scene.getMeshManager(i);
 		if(pMeshManager->getMeshCount() == 0)
 			continue;
 
-		pipeline.bind(commandBuffer);
-		pipeline.bindPipelineDescriptors(commandBuffer);
+		pipelines[i].bind(commandBuffer);
+		pipelines[i].bindPipelineDescriptors(commandBuffer);
 		pMeshManager->bindBuffers(commandBuffer);
 
-		for(uint32_t i = 0; i < pMeshManager->getMeshCount(); i++)
+		for(uint32_t meshIndex = 0; meshIndex < pMeshManager->getMeshCount(); meshIndex++)
 		{
-			pipeline.bindMeshDescriptors(commandBuffer, i);
-			pMeshManager->drawMesh(commandBuffer, i);
+			pipelines[i].bindMeshDescriptors(commandBuffer, meshIndex);
+			pMeshManager->drawMesh(commandBuffer, meshIndex);
 		}
 	}
 

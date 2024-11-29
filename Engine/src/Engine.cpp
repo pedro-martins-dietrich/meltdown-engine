@@ -23,7 +23,6 @@ mtd::Engine::Engine(const EngineInfo& info)
 	shouldUpdateEngine{false}
 {
 	configureGlobalDescriptorSetHandler();
-	configurePipelines();
 
 	EventManager::addCallback(EventType::ChangeScene, [this](const Event& e)
 	{
@@ -106,7 +105,12 @@ void mtd::Engine::run()
 // Loads a new scene, clearing the previous if necessary
 void mtd::Engine::loadScene(const char* sceneFile)
 {
-	scene.loadScene(device, sceneFile, pipelines);
+	pipelines.clear();
+	std::vector<PipelineInfo> pipelineInfos;
+
+	scene.loadScene(device, sceneFile, pipelineInfos);
+	createPipelines(pipelineInfos);
+	scene.loadMeshes(pipelines);
 	configureDescriptors();
 
 	scene.start();
@@ -132,34 +136,12 @@ void mtd::Engine::configureGlobalDescriptorSetHandler()
 	globalDescriptorSetHandler = std::make_unique<DescriptorSetHandler>(device.getDevice(), bindings);
 }
 
-// Sets up the pipelines to be used
-void mtd::Engine::configurePipelines()
+// Creates the pipelines to be used in the scene
+void mtd::Engine::createPipelines(const std::vector<PipelineInfo>& pipelineInfos)
 {
-	pipelines.reserve(2);
-	PipelineInfo defaultPipelineInfo
-	{
-		"Default Pipeline",
-		"default.vert.spv",
-		"default.frag.spv",
-		MeshType::Default3D,
-		{},
-		ShaderPrimitiveTopology::TriangleList,
-		ShaderFaceCulling::Counterclockwise,
-		false
-	};
-	pipelines.emplace_back(device.getDevice(), swapchain, globalDescriptorSetHandler.get(), defaultPipelineInfo);
-	PipelineInfo billboardPipelineInfo
-	{
-		"Billboard Pipeline",
-		"billboard.vert.spv",
-		"billboard.frag.spv",
-		MeshType::Billboard,
-		{},
-		ShaderPrimitiveTopology::TriangleList,
-		ShaderFaceCulling::None,
-		true
-	};
-	pipelines.emplace_back(device.getDevice(), swapchain, globalDescriptorSetHandler.get(), billboardPipelineInfo);
+	pipelines.reserve(pipelineInfos.size());
+	for(const PipelineInfo& pipelineInfo: pipelineInfos)
+		pipelines.emplace_back(device.getDevice(), swapchain, globalDescriptorSetHandler.get(), pipelineInfo);
 }
 
 // Sets up the descriptors

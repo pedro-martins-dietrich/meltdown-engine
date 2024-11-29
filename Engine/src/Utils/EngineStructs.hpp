@@ -5,8 +5,6 @@
 #include <glm/glm.hpp>
 #include <vulkan/vulkan.hpp>
 
-#include "EngineEnums.hpp"
-
 namespace mtd
 {
 	// Information about the size and position of a window

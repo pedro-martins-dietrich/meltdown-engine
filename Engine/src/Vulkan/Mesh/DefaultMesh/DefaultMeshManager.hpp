@@ -12,9 +12,6 @@ namespace mtd
 			DefaultMeshManager(const Device& device);
 			~DefaultMeshManager();
 
-			// Getters
-			uint32_t getTotalInstanceCount() const { return totalInstanceCount; }
-
 			// Loads textures and groups the meshes into a lump, then passes the data to the GPU
 			virtual void loadMeshes(DescriptorSetHandler& textureDescriptorSetHandler) override;
 

@@ -60,8 +60,8 @@ namespace mtd
 
 			// Sets up descriptor set shared across pipelines
 			void configureGlobalDescriptorSetHandler();
-			// Sets up the pipelines to be used
-			void configurePipelines();
+			// Creates the pipelines to be used in the scene
+			void createPipelines(const std::vector<PipelineInfo>& pipelineInfos);
 			// Sets up the descriptor pools and sets
 			void configureDescriptors();
 

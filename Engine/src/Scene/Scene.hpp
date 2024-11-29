@@ -3,9 +3,8 @@
 #include <memory>
 
 #include "SceneLoader.hpp"
+#include "../Vulkan/Mesh/MeshManager.hpp"
 #include "../Vulkan/Pipeline/Pipeline.hpp"
-#include "../Vulkan/Mesh/DefaultMesh/DefaultMeshManager.hpp"
-#include "../Vulkan/Mesh/Billboard/BillboardManager.hpp"
 #include "../Vulkan/Descriptors/DescriptorPool.hpp"
 
 namespace mtd
@@ -21,11 +20,15 @@ namespace mtd
 			Scene& operator=(const Scene&) = delete;
 
 			// Getters
-			const MeshManager* getMeshManager(MeshType type) const { return meshManagers.at(type).get(); }
+			const MeshManager* getMeshManager(uint32_t pipelineIndex) const
+				{ return meshManagers[pipelineIndex].get(); }
 			const DescriptorPool& getDescriptorPool() const { return descriptorPool; }
 
 			// Loads scene from file
-			void loadScene(const Device& device, const char* sceneFileName, std::vector<Pipeline>& pipelines);
+			void loadScene(const Device& device, const char* sceneFileName, std::vector<PipelineInfo>& pipelineInfos);
+
+			// Allocate resources and loads all mesh data
+			void loadMeshes(std::vector<Pipeline>& pipelines);
 
 			// Executes starting code on scene
 			void start() const;
@@ -34,15 +37,12 @@ namespace mtd
 
 		private:
 			// Active mesh managers
-			std::unordered_map<MeshType, std::unique_ptr<MeshManager>> meshManagers;
+			std::vector<std::unique_ptr<MeshManager>> meshManagers;
 
 			// Descriptor pool for the pipelines descriptor sets
 			DescriptorPool descriptorPool;
 
 			// Sums the texture count from all mesh managers
 			uint32_t getTotalTextureCount() const;
-
-			// Allocate resources and loads all mesh data
-			void loadMeshes(std::vector<Pipeline>& pipelines);
 	};
 }
