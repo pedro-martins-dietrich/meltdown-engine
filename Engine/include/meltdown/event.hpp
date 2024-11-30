@@ -264,6 +264,50 @@ namespace mtd
 	};
 
 	/*
+	* @brief Event for updating the descriptor content at the specified location.
+	*/
+	class UpdateDescriptorDataEvent : public Event
+	{
+		public:
+			/*
+			* @brief Creates an event to update a descriptor data.
+			*
+			* @param pipelineIndex Index, in the current scene, for the target pipeline.
+			* @param binding Descriptor binding index for the target descriptor resource.
+			* @param data Pointer to the updated descriptor data.
+			*/
+			UpdateDescriptorDataEvent(uint32_t pipelineIndex, uint32_t binding, const void* data);
+
+			virtual EventType getType() const override;
+
+			/*
+			* @brief Getter for the target pipeline index.
+			*
+			* @return Index for the pipeline in the current scene.
+			*/
+			uint32_t getPipelineIndex() const;
+
+			/*
+			* @brief Getter for the target descriptor binding index.
+			*
+			* @return Index for the descriptor binding.
+			*/
+			uint32_t getBinding() const;
+
+			/*
+			* @brief Getter for the new descriptor data.
+			*
+			* @return Pointer to the data that will be copied to the descriptor.
+			*/
+			const void* getData() const;
+
+		private:
+			uint32_t pipelineIndex;
+			uint32_t binding;
+			const void* data;
+	};
+
+	/*
 	* @brief Base class for custom events. Each custom event must have an unique ID.
 	*/
 	class CustomEvent : public Event

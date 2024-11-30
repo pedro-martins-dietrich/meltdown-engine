@@ -32,9 +32,6 @@ namespace mtd
 			// Loads a new scene, clearing the previous if necessary
 			void loadScene(const char* sceneFile);
 
-			// Updates the descriptor data for the specified pipeline custom descriptor
-			void updateDescriptorData(uint32_t pipelineIndex, uint32_t binding, void* data);
-
 		private:
 			// Engine handler objects
 			Window window;
@@ -55,9 +52,15 @@ namespace mtd
 			// Scene being currently rendered
 			Scene scene;
 
+			// Callback IDs
+			uint64_t changeSceneCallbackID;
+			uint64_t updateDescriptorDataCallbackID;
+
 			// Flag for updating the engine
 			bool shouldUpdateEngine;
 
+			// Sets up event callback functions
+			void configureEventCallbacks();
 			// Sets up descriptor set shared across pipelines
 			void configureGlobalDescriptorSetHandler();
 			// Creates the pipelines to be used in the scene

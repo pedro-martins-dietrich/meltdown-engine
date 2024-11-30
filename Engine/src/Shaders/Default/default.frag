@@ -8,10 +8,15 @@ layout(location = 0) out vec4 outColor;
 
 layout(set = 1, binding = 0) uniform sampler2D diffuse;
 
+layout(set = 2, binding = 0) uniform LightData
+{
+	vec3 lightDirection;
+	float ambientLightIntensity;
+} lightData;
+
 void main()
 {
-	vec3 lightDirection = normalize(vec3(-0.6f, -0.8f, -1.0f));
-	float lightIntensity = 0.8f * (dot(fragNormal, lightDirection) + 0.25f);
+	float lightIntensity = 0.8f * (dot(fragNormal, -lightData.lightDirection) + 0.25f);
 
-	outColor = max(0.2f, lightIntensity) * texture(diffuse, fragTextureCoordinates);
+	outColor = max(lightData.ambientLightIntensity, lightIntensity) * texture(diffuse, fragTextureCoordinates);
 }

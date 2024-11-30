@@ -7,7 +7,15 @@
 			"vertex-shader": "default.vert.spv",
 			"fragment-shader": "default.frag.spv",
 			"mesh-type": 0,
-			"descriptor-set-info": [],
+			"descriptor-set-info":
+			[
+				{
+					"descriptor-type": 0,
+					"shader-stage": 1,
+					"total-descriptor-size": 16,
+					"descriptor-count": 1
+				}
+			],
 			"shader-primitive-topology": 5,
 			"shader-face-culling": 1,
 			"transparency": false

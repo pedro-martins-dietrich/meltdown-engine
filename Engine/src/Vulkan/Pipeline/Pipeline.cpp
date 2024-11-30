@@ -68,7 +68,7 @@ void mtd::Pipeline::configureUserDescriptorData(const Device& mtdDevice, const D
 }
 
 // Updates the user descriptor data for the specified binding
-void mtd::Pipeline::updateDescriptorData(uint32_t binding, void* data)
+void mtd::Pipeline::updateDescriptorData(uint32_t binding, const void* data)
 {
 	if(descriptorSetHandlers.size() < 2 || descriptorSetHandlers[1].getSetCount() <= binding) return;
 

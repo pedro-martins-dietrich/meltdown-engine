@@ -16,6 +16,7 @@ namespace mtd
 		ChangeScene,
 		CreateInstances,
 		RemoveInstance,
+		UpdateDescriptorData,
 		Custom
 	};
 

@@ -22,13 +22,8 @@ mtd::Engine::Engine(const EngineInfo& info)
 	camera{glm::vec3{0.0f, -1.5f, -4.5f}, 70.0f, window.getAspectRatio()},
 	shouldUpdateEngine{false}
 {
+	configureEventCallbacks();
 	configureGlobalDescriptorSetHandler();
-
-	EventManager::addCallback(EventType::ChangeScene, [this](const Event& e)
-	{
-		const ChangeSceneEvent* cse = dynamic_cast<const ChangeSceneEvent*>(&e);
-		loadScene(cse->getSceneName());
-	});
 
 	imGuiHandler.init
 	(
@@ -49,6 +44,9 @@ mtd::Engine::Engine(const EngineInfo& info)
 mtd::Engine::~Engine()
 {
 	device.getDevice().waitIdle();
+
+	EventManager::removeCallback(EventType::ChangeScene, changeSceneCallbackID);
+	EventManager::removeCallback(EventType::UpdateDescriptorData, updateDescriptorDataCallbackID);
 
 	LOG_INFO("Engine shut down.");
 }
@@ -116,10 +114,19 @@ void mtd::Engine::loadScene(const char* sceneFile)
 	scene.start();
 }
 
-// Updates the descriptor data for the specified pipeline custom descriptor
-void mtd::Engine::updateDescriptorData(uint32_t pipelineIndex, uint32_t binding, void* data)
+// Sets up event callback functions
+void mtd::Engine::configureEventCallbacks()
 {
-	pipelines[pipelineIndex].updateDescriptorData(binding, data);
+	changeSceneCallbackID = EventManager::addCallback(EventType::ChangeScene, [this](const Event& e)
+	{
+		const ChangeSceneEvent* cse = dynamic_cast<const ChangeSceneEvent*>(&e);
+		loadScene(cse->getSceneName());
+	});
+	updateDescriptorDataCallbackID = EventManager::addCallback(EventType::UpdateDescriptorData, [this](const Event& e)
+	{
+		const UpdateDescriptorDataEvent* udde = dynamic_cast<const UpdateDescriptorDataEvent*>(&e);
+		pipelines[udde->getPipelineIndex()].updateDescriptorData(udde->getBinding(), udde->getData());
+	});
 }
 
 // Sets up descriptor set shared across pipelines
