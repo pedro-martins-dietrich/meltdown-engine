@@ -25,7 +25,7 @@ namespace mtd
 				const Device& device,
 				const Swapchain& swapchain,
 				const ImGuiHandler& guiHandler,
-				const std::unordered_map<PipelineType, Pipeline>& pipelines,
+				const std::vector<Pipeline>& pipelines,
 				const Scene& scene,
 				DrawInfo& drawInfo,
 				bool& shouldUpdateEngine
@@ -40,7 +40,7 @@ namespace mtd
 			// Records draw command to the command buffer
 			void recordDrawCommand
 			(
-				const std::unordered_map<PipelineType, Pipeline>& pipelines,
+				const std::vector<Pipeline>& pipelines,
 				const Scene& scene,
 				const CommandHandler& commandHandler,
 				const DrawInfo& drawInfo,

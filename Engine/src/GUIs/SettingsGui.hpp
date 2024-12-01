@@ -1,8 +1,7 @@
 #pragma once
 
 #include "GuiWindow.hpp"
-#include "../Utils/EngineEnums.hpp"
-#include "../Vulkan/Pipeline/Pipeline.hpp"
+#include "../Vulkan/Frame/Swapchain.hpp"
 
 namespace mtd
 {
@@ -16,32 +15,15 @@ namespace mtd
 			SettingsGui(const SettingsGui&) = delete;
 			SettingsGui& operator=(const SettingsGui&) = delete;
 
-			// Sets the pipeline settings vector
-			void setPipelinesSettings(std::unordered_map<PipelineType, Pipeline>& pipelines);
-
 			// Exhibits the GUI window
 			virtual void renderGui() override;
 
 		private:
 			// References to relevant objects
 			SwapchainSettings& swapchainSettings;
-			std::vector<PipelineSettings*> pipelineSettings;
 			bool& shouldUpdateEngine;
 
-			// Current pipeline type index
-			int pipelineTypeID;
-
-			// List of names for the selections
-			std::vector<const char*> presentModeNames;
-			std::vector<const char*> primitiveTopologyNames;
-			std::vector<const char*> polygonModeNames;
-			std::vector<const char*> cullModeNames;
-
-			// Settings subsections
+			// Settings subsection
 			void swapchainSettingsGui();
-			void pipelineSettingsGui();
-
-			// Configures strings to show in the GUI
-			void setNames();
 	};
 }

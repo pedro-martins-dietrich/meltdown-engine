@@ -32,11 +32,12 @@ namespace mtd
 			// Getters
 			const vk::DescriptorSetLayout& getLayout() const { return descriptorSetLayout; }
 			uint32_t getSetCount() const { return static_cast<uint32_t>(descriptorSets.size()); }
-			vk::DescriptorSet& getSet(uint32_t index) { return descriptorSets[index]; }
-			const vk::DescriptorSet& getSet(uint32_t index) const { return descriptorSets[index]; }
+			vk::DescriptorSet& getSet(uint32_t swappableSet) { return descriptorSets[swappableSet]; }
+			const vk::DescriptorSet& getSet(uint32_t swappableSet) const { return descriptorSets[swappableSet]; }
 			std::vector<vk::DescriptorSet>& getSets() { return descriptorSets; }
-			vk::DescriptorType getDescriptorType(uint32_t descriptorIndex) const
-				{ return descriptorTypes[descriptorIndex]; }
+			vk::DescriptorType getDescriptorType(uint32_t binding) const { return descriptorTypes[binding]; }
+			void* getWriteLocation(uint32_t swappableSet, uint32_t binding) const
+				{ return resourcesList[swappableSet][binding].descriptorBufferWriteLocation; }
 
 			// Defines how many descriptor sets can be associated with the descriptor set layout
 			void defineDescriptorSetsAmount(uint32_t setsAmount);
@@ -82,9 +83,6 @@ namespace mtd
 			const vk::Device& device;
 
 			// Creates a descriptor set layout
-			void createDescriptorSetLayout
-			(
-				const std::vector<vk::DescriptorSetLayoutBinding>& bindings
-			);
+			void createDescriptorSetLayout(const std::vector<vk::DescriptorSetLayoutBinding>& bindings);
 	};
 }

@@ -1,7 +1,5 @@
 #pragma once
 
-#include <typeinfo>
-
 namespace mtd
 {
 	/*
@@ -18,7 +16,64 @@ namespace mtd
 		ChangeScene,
 		CreateInstances,
 		RemoveInstance,
+		UpdateDescriptorData,
 		Custom
+	};
+
+	/*
+	* @brief Identifier for the pipeline shader stage.
+	*/
+	enum class ShaderStage
+	{
+		Vertex,
+		Fragment,
+		VertexAndFragment
+	};
+
+	/*
+	* @brief Types of descriptors supported by the engine.
+	*/
+	enum class DescriptorType
+	{
+		UniformBuffer
+	};
+
+	/*
+	* @brief Types of mesh supported by the engine. Each mesh type has a specific set of
+	* properties that can be accessed in the shaders.
+	*/
+	enum class MeshType
+	{
+		Default3D,
+		Billboard
+	};
+
+	/*
+	* @brief Enumeration describing how vertices will be assembled to create points, lines or triangles.
+	*/
+	enum class ShaderPrimitiveTopology
+	{
+		PointList,
+		LineList,
+		LineStrip,
+		LineListAdjacent,
+		LineStripAdjacent,
+		TriangleList,
+		TriangleStrip,
+		TriangleFan,
+		TriangleListAdjacent,
+		TriangleStripAdjacent
+	};
+
+	/*
+	* @brief Method used for face culling during rasterization.
+	* The orientation defines the front face of the triangles, while the backface will be culled.
+	*/
+	enum class ShaderFaceCulling
+	{
+		Clockwise,
+		Counterclockwise,
+		None
 	};
 
 	/*

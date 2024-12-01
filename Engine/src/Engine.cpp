@@ -22,14 +22,8 @@ mtd::Engine::Engine(const EngineInfo& info)
 	camera{glm::vec3{0.0f, -1.5f, -4.5f}, 70.0f, window.getAspectRatio()},
 	shouldUpdateEngine{false}
 {
+	configureEventCallbacks();
 	configureGlobalDescriptorSetHandler();
-	configurePipelines();
-
-	EventManager::addCallback(EventType::ChangeScene, [this](const Event& e)
-	{
-		const ChangeSceneEvent* cse = dynamic_cast<const ChangeSceneEvent*>(&e);
-		loadScene(cse->getSceneName());
-	});
 
 	imGuiHandler.init
 	(
@@ -50,6 +44,9 @@ mtd::Engine::Engine(const EngineInfo& info)
 mtd::Engine::~Engine()
 {
 	device.getDevice().waitIdle();
+
+	EventManager::removeCallback(EventType::ChangeScene, changeSceneCallbackID);
+	EventManager::removeCallback(EventType::UpdateDescriptorData, updateDescriptorDataCallbackID);
 
 	LOG_INFO("Engine shut down.");
 }
@@ -106,10 +103,30 @@ void mtd::Engine::run()
 // Loads a new scene, clearing the previous if necessary
 void mtd::Engine::loadScene(const char* sceneFile)
 {
-	scene.loadScene(device, sceneFile, pipelines);
+	pipelines.clear();
+	std::vector<PipelineInfo> pipelineInfos;
+
+	scene.loadScene(device, sceneFile, pipelineInfos);
+	createPipelines(pipelineInfos);
+	scene.loadMeshes(pipelines);
 	configureDescriptors();
 
 	scene.start();
+}
+
+// Sets up event callback functions
+void mtd::Engine::configureEventCallbacks()
+{
+	changeSceneCallbackID = EventManager::addCallback(EventType::ChangeScene, [this](const Event& e)
+	{
+		const ChangeSceneEvent* cse = dynamic_cast<const ChangeSceneEvent*>(&e);
+		loadScene(cse->getSceneName());
+	});
+	updateDescriptorDataCallbackID = EventManager::addCallback(EventType::UpdateDescriptorData, [this](const Event& e)
+	{
+		const UpdateDescriptorDataEvent* udde = dynamic_cast<const UpdateDescriptorDataEvent*>(&e);
+		pipelines[udde->getPipelineIndex()].updateDescriptorData(udde->getBinding(), udde->getData());
+	});
 }
 
 // Sets up descriptor set shared across pipelines
@@ -123,40 +140,15 @@ void mtd::Engine::configureGlobalDescriptorSetHandler()
 	bindings[0].stageFlags = vk::ShaderStageFlagBits::eVertex;
 	bindings[0].pImmutableSamplers = nullptr;
 
-	globalDescriptorSetHandler =
-		std::make_unique<DescriptorSetHandler>(device.getDevice(), bindings);
+	globalDescriptorSetHandler = std::make_unique<DescriptorSetHandler>(device.getDevice(), bindings);
 }
 
-// Sets up the pipelines to be used
-void mtd::Engine::configurePipelines()
+// Creates the pipelines to be used in the scene
+void mtd::Engine::createPipelines(const std::vector<PipelineInfo>& pipelineInfos)
 {
-	pipelines.reserve(2);
-	pipelines.emplace
-	(
-		std::piecewise_construct,
-		std::forward_as_tuple(PipelineType::DEFAULT),
-		std::forward_as_tuple
-		(
-			device.getDevice(),
-			PipelineType::DEFAULT,
-			swapchain,
-			globalDescriptorSetHandler.get()
-		)
-	);
-	pipelines.emplace
-	(
-		std::piecewise_construct,
-		std::forward_as_tuple(PipelineType::BILLBOARD),
-		std::forward_as_tuple
-		(
-			device.getDevice(),
-			PipelineType::BILLBOARD,
-			swapchain,
-			globalDescriptorSetHandler.get()
-		)
-	);
-
-	settingsGui.setPipelinesSettings(pipelines);
+	pipelines.reserve(pipelineInfos.size());
+	for(const PipelineInfo& pipelineInfo: pipelineInfos)
+		pipelines.emplace_back(device.getDevice(), swapchain, globalDescriptorSetHandler.get(), pipelineInfo);
 }
 
 // Sets up the descriptors
@@ -174,6 +166,9 @@ void mtd::Engine::configureDescriptors()
 	camera.setWriteLocation(cameraWriteLocation);
 
 	globalDescriptorSetHandler->writeDescriptorSet(0);
+
+	for(Pipeline& pipeline: pipelines)
+		pipeline.configureUserDescriptorData(device, scene.getDescriptorPool());
 }
 
 // Recreates swapchain and pipeline to apply new settings
@@ -184,7 +179,7 @@ void mtd::Engine::updateEngine()
 
 	swapchain.recreate(device, window.getDimensions(), vulkanInstance.getSurface());
 
-	for(auto& [type, pipeline]: pipelines)
+	for(Pipeline& pipeline: pipelines)
 		pipeline.recreate(swapchain, globalDescriptorSetHandler.get());
 
 	camera.updatePerspective(70.0f, window.getAspectRatio());

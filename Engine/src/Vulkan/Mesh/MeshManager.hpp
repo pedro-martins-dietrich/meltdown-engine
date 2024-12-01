@@ -1,7 +1,5 @@
 #pragma once
 
-#include <type_traits>
-
 #include "Mesh.hpp"
 #include "../Descriptors/DescriptorSetHandler.hpp"
 

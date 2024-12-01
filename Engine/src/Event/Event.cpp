@@ -138,6 +138,32 @@ uint64_t mtd::RemoveInstanceEvent::getInstanceID() const
 	return instanceID;
 }
 
+// Update descriptor data event
+mtd::UpdateDescriptorDataEvent::UpdateDescriptorDataEvent(uint32_t pipelineIndex, uint32_t binding, const void* data)
+	: pipelineIndex{pipelineIndex}, binding{binding}, data{data}
+{
+}
+
+mtd::EventType mtd::UpdateDescriptorDataEvent::getType() const
+{
+	return EventType::UpdateDescriptorData;
+}
+
+uint32_t mtd::UpdateDescriptorDataEvent::getPipelineIndex() const
+{
+	return pipelineIndex;
+}
+
+uint32_t mtd::UpdateDescriptorDataEvent::getBinding() const
+{
+	return binding;
+}
+
+const void* mtd::UpdateDescriptorDataEvent::getData() const
+{
+	return data;
+}
+
 // Custom event
 mtd::EventType mtd::CustomEvent::getType() const
 {

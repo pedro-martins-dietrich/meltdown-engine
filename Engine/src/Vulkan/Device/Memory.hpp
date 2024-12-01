@@ -10,7 +10,7 @@ namespace mtd::Memory
 	{
 		vk::Buffer buffer;
 		vk::DeviceMemory bufferMemory;
-		vk::DeviceSize size;
+		vk::DeviceSize size{};
 		vk::BufferUsageFlags usage;
 		vk::MemoryPropertyFlags memoryProperties;
 	};

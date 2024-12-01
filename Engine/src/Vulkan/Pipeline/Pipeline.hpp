@@ -1,8 +1,10 @@
 #pragma once
 
-#include "../Frame/Swapchain.hpp"
-#include "../Descriptors/DescriptorSetHandler.hpp"
+#include <meltdown/structs.hpp>
+
 #include "ShaderModule.hpp"
+#include "../Frame/Swapchain.hpp"
+#include "../Descriptors/DescriptorPool.hpp"
 
 namespace mtd
 {
@@ -13,72 +15,71 @@ namespace mtd
 			Pipeline
 			(
 				const vk::Device& device,
-				PipelineType type,
 				Swapchain& swapchain,
-				DescriptorSetHandler* globalDescriptorSet
+				DescriptorSetHandler* globalDescriptorSet,
+				const PipelineInfo& info
 			);
 			~Pipeline();
 
 			Pipeline(const Pipeline&) = delete;
 			Pipeline& operator=(const Pipeline&) = delete;
 
+			Pipeline(Pipeline&& other) noexcept;
+
 			// Getters
 			const vk::Pipeline& getPipeline() const { return pipeline; }
 			const vk::PipelineLayout& getLayout() const { return pipelineLayout; }
-			PipelineSettings& getSettings() { return settings; }
-			DescriptorSetHandler& getDescriptorSetHandler(uint32_t index)
-				{ return descriptorSetHandlers[index]; }
+			const std::string& getName() const { return info.pipelineName; }
+			MeshType getAssociatedMeshType() const { return info.associatedMeshType; }
+			DescriptorSetHandler& getDescriptorSetHandler(uint32_t set) { return descriptorSetHandlers[set]; }
+			const std::unordered_map<vk::DescriptorType, uint32_t>& getDescriptorTypeCount() const
+				{ return descriptorTypeCount; }
 
 			// Recreates the pipeline
-			void recreate
-			(
-				Swapchain& swapchain,
-				DescriptorSetHandler* globalDescriptorSet
-			);
+			void recreate(Swapchain& swapchain, DescriptorSetHandler* globalDescriptorSet);
+
+			// Allocates user descriptor set data in the descriptor pool
+			void configureUserDescriptorData(const Device& mtdDevice, const DescriptorPool& pool);
+			// Updates the user descriptor data for the specified binding
+			void updateDescriptorData(uint32_t binding, const void* data);
 
 			// Binds the pipeline to the command buffer
 			void bind(const vk::CommandBuffer& commandBuffer) const;
+			// Binds per pipeline descriptors
+			void bindPipelineDescriptors(const vk::CommandBuffer& commandBuffer) const;
 			// Binds per mesh descriptors
-			void bindDescriptors(const vk::CommandBuffer& commandBuffer, uint32_t index) const;
+			void bindMeshDescriptors(const vk::CommandBuffer& commandBuffer, uint32_t index) const;
 
 		private:
-			// Pipeline type
-			PipelineType type;
-
 			// Vulkan graphics pipeline
 			vk::Pipeline pipeline;
 			// Pipeline layout
 			vk::PipelineLayout pipelineLayout;
 
+			// Pipeline specific configurations
+			PipelineInfo info;
+
 			// Shader modules used in the pipeline
 			std::vector<ShaderModule> shaders;
 			// Descriptor sets and their layouts
 			std::vector<DescriptorSetHandler> descriptorSetHandlers;
-
-			// Customizable pipeline settings
-			PipelineSettings settings;
+			// Required descriptor count for each descriptor type of the current pipeline
+			std::unordered_map<vk::DescriptorType, uint32_t> descriptorTypeCount;
 
 			// Vulkan device reference
 			const vk::Device& device;
 
-			// Sets up default pipeline settings
-			void configureDefaultSettings();
+			// Loads the pipeline shader modules
+			void loadShaderModules(const char* vertexShaderPath, const char* fragmentShaderPath);
 
 			// Creates the graphics pipeline
-			void createPipeline
-			(
-				Swapchain& swapchain,
-				DescriptorSetHandler* globalDescriptorSet
-			);
+			void createPipeline(Swapchain& swapchain, DescriptorSetHandler* globalDescriptorSet);
 
 			// Configures the descriptor set handlers to be used
 			void createDescriptorSetLayouts();
 
 			// Sets create infos for pipeline creation
-			void setInputAssembly
-			(
-				vk::PipelineInputAssemblyStateCreateInfo& inputAssemblyInfo
-			) const;
+			void setInputAssembly(vk::PipelineInputAssemblyStateCreateInfo& inputAssemblyInfo) const;
 			void setVertexShader
 			(
 				std::vector<vk::PipelineShaderStageCreateInfo>& shaderStageInfos,

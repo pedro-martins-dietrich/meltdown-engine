@@ -3,8 +3,6 @@
 #include "../Actions.hpp"
 #include "../Events/InvertSpinEvent.hpp"
 
-#include <iostream>
-
 RotatingModel::~RotatingModel()
 {
 	mtd::EventManager::removeCallback(mtd::EventType::ActionStart, callbackID);
@@ -28,6 +26,11 @@ void RotatingModel::update(double deltaTime)
 {
 	transform.w.x -= deltaTime * transform.w.z;
 	transform.w.z += deltaTime * transform.w.x;
+
+	lightData.lightDirection.x -= 0.5f * deltaTime * lightData.lightDirection.z;
+	lightData.lightDirection.z += 0.5f * deltaTime * lightData.lightDirection.x;
+	lightData.ambientLightIntensity = 0.1f * lightData.lightDirection.z + 0.15f;
+	mtd::EventManager::dispatch(std::make_unique<mtd::UpdateDescriptorDataEvent>(0, 0, &lightData));
 
 	if(isJumping)
 		jumpAnimation(static_cast<float>(deltaTime));
