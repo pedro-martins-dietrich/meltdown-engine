@@ -52,18 +52,23 @@ void mtd::DefaultMeshManager::bindBuffers(const vk::CommandBuffer& commandBuffer
 }
 
 // Draws the mesh specified by the index
-void mtd::DefaultMeshManager::drawMesh(const vk::CommandBuffer& commandBuffer, uint32_t meshIndex) const
+void mtd::DefaultMeshManager::drawMesh(const vk::CommandBuffer& commandBuffer, const Pipeline& pipeline) const
 {
-	const DefaultMesh& mesh = meshes[meshIndex];
-	mesh.bindInstanceBuffer(commandBuffer);
-	commandBuffer.drawIndexed
-	(
-		static_cast<uint32_t>(mesh.getIndices().size()),
-		mesh.getInstanceCount(),
-		mesh.getIndexOffset(),
-		0,
-		0
-	);
+	for(uint32_t meshIndex = 0; meshIndex < meshes.size(); meshIndex++)
+	{
+		pipeline.bindMeshDescriptors(commandBuffer, meshIndex);
+
+		const DefaultMesh& mesh = meshes[meshIndex];
+		mesh.bindInstanceBuffer(commandBuffer);
+		commandBuffer.drawIndexed
+		(
+			static_cast<uint32_t>(mesh.getIndices().size()),
+			mesh.getInstanceCount(),
+			mesh.getIndexOffset(),
+			0,
+			0
+		);
+	}
 }
 
 // Stores a mesh in the lump of data

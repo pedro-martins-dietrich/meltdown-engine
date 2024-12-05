@@ -12,7 +12,7 @@ mtd::DefaultMesh::DefaultMesh
 	const std::vector<Mat4x4>& preTransforms
 ) : Mesh{device, index, id, preTransforms, 1}, indexOffset{0}
 {
-	ObjMeshLoader::load(fileName, vertices, indices, diffuseTexturePath);
+	ObjMeshLoader::loadDefault3DMesh(fileName, vertices, indices, diffuseTexturePath);
 }
 
 mtd::DefaultMesh::DefaultMesh(DefaultMesh&& other) noexcept
@@ -34,8 +34,6 @@ void mtd::DefaultMesh::loadTexture
 	DescriptorSetHandler& descriptorSetHandler
 )
 {
-	diffuseTexture = std::make_unique<Texture>
-	(
-		device, diffuseTexturePath.c_str(), commandHandler, descriptorSetHandler, meshIndex
-	);
+	diffuseTexture =
+		std::make_unique<Texture>(device, diffuseTexturePath.c_str(), commandHandler, descriptorSetHandler, meshIndex);
 }

@@ -172,6 +172,6 @@ void loadBillboards
 
 		std::vector<mtd::Billboard>& billboards =
 			dynamic_cast<mtd::BillboardManager*>(meshManagers.back().get())->getMeshes();
-		billboards.emplace_back(device, i, id.c_str(), file.c_str(), *pPreTransforms);
+		billboards.emplace_back(device, i, id.c_str(), (MTD_RESOURCES_PATH + file).c_str(), *pPreTransforms);
 	}
 }

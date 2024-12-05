@@ -134,11 +134,7 @@ void mtd::Renderer::recordDrawCommand
 		pipelines[i].bindPipelineDescriptors(commandBuffer);
 		pMeshManager->bindBuffers(commandBuffer);
 
-		for(uint32_t meshIndex = 0; meshIndex < pMeshManager->getMeshCount(); meshIndex++)
-		{
-			pipelines[i].bindMeshDescriptors(commandBuffer, meshIndex);
-			pMeshManager->drawMesh(commandBuffer, meshIndex);
-		}
+		pMeshManager->drawMesh(commandBuffer, pipelines[i]);
 	}
 
 	PROFILER_NEXT_STAGE("Render - ImGUI");

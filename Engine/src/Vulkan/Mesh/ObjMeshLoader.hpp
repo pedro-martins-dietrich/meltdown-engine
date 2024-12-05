@@ -5,8 +5,8 @@
 // Responsible for loading Wavefront .obj files
 namespace mtd::ObjMeshLoader
 {
-	// Loads a mesh from an Wavefront .obj file
-	void load
+	// Loads a default 3D mesh from an Wavefront file
+	void loadDefault3DMesh
 	(
 		const char* fileName,
 		std::vector<Vertex>& vertices,

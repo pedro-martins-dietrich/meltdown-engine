@@ -42,9 +42,14 @@ void mtd::BillboardManager::bindBuffers(const vk::CommandBuffer& commandBuffer) 
 }
 
 // Draws the mesh specified by the index
-void mtd::BillboardManager::drawMesh(const vk::CommandBuffer& commandBuffer, uint32_t meshIndex) const
+void mtd::BillboardManager::drawMesh(const vk::CommandBuffer& commandBuffer, const Pipeline& pipeline) const
 {
-	const Billboard& billboard = meshes[meshIndex];
-	billboard.bindInstanceBuffer(commandBuffer);
-	commandBuffer.drawIndexed(6, billboard.getInstanceCount(), 0, 0, 0);
+	for(uint32_t i = 0; i < meshes.size(); i++)
+	{
+		pipeline.bindMeshDescriptors(commandBuffer, i);
+
+		const Billboard& billboard = meshes[i];
+		billboard.bindInstanceBuffer(commandBuffer);
+		commandBuffer.drawIndexed(6, billboard.getInstanceCount(), 0, 0, 0);
+	}
 }

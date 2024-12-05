@@ -6,7 +6,6 @@
 
 #include "Image.hpp"
 #include "../../Utils/Logger.hpp"
-#include "../../Utils/FileHandler.hpp"
 
 mtd::Texture::Texture
 (
@@ -14,11 +13,11 @@ mtd::Texture::Texture
 	const char* fileName,
 	const CommandHandler& commandHandler,
 	DescriptorSetHandler& descriptorSetHandler,
-	uint32_t setIndex
+	uint32_t swappableSetIndex
 ) : device{mtdDevice.getDevice()}, width{0}, height{0}, channels{0}
 {
 	loadFromFile(mtdDevice, commandHandler, fileName);
-	createDescriptorResource(descriptorSetHandler, setIndex);
+	createDescriptorResource(descriptorSetHandler, swappableSetIndex);
 }
 
 mtd::Texture::~Texture()
@@ -29,35 +28,37 @@ mtd::Texture::~Texture()
 	device.destroySampler(sampler);
 }
 
-// Loads texture from file
-void mtd::Texture::loadFromFile
-(
-	const Device& mtdDevice,
-	const CommandHandler& commandHandler,
-	const char* fileName
-)
+mtd::Texture::Texture(Texture&& other) noexcept
+	: device{other.device},
+	width{other.width}, height{other.height}, channels{other.channels},
+	pixels{other.pixels},
+	image{std::move(other.image)}, imageMemory{std::move(other.imageMemory)},
+	imageView{std::move(other.imageView)}, sampler{std::move(other.sampler)}
 {
-	std::string filePath{MTD_RESOURCES_PATH};
-	filePath += fileName;
+	other.pixels = nullptr;
+	other.image = nullptr;
+	other.imageMemory = nullptr;
+	other.imageView = nullptr;
+	other.sampler = nullptr;
+}
+
+// Loads texture from file
+void mtd::Texture::loadFromFile(const Device& mtdDevice, const CommandHandler& commandHandler, const char* fileName)
+{
 	stbi_set_flip_vertically_on_load(true);
-	pixels = stbi_load(filePath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+	pixels = stbi_load(fileName, &width, &height, &channels, STBI_rgb_alpha);
 	if(!pixels)
-		LOG_ERROR("Failed to load texture \"%s\".", filePath.c_str());
+		LOG_ERROR("Failed to load texture \"%s\".", fileName);
 
 	Image::CreateImageBundle createImageBundle{device};
 	createImageBundle.tiling = vk::ImageTiling::eOptimal;
-	createImageBundle.usage =
-		vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
+	createImageBundle.usage = vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
 	createImageBundle.format = vk::Format::eR8G8B8A8Unorm;
 	createImageBundle.imageFlags = vk::ImageCreateFlags();
-	createImageBundle.dimensions =
-		FrameDimensions{static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
+	createImageBundle.dimensions = FrameDimensions{static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
 
 	Image::createImage(createImageBundle, image);
-	Image::createImageMemory
-	(
-		mtdDevice, image, vk::MemoryPropertyFlagBits::eDeviceLocal, imageMemory
-	);
+	Image::createImageMemory(mtdDevice, image, vk::MemoryPropertyFlagBits::eDeviceLocal, imageMemory);
 
 	loadToGpu(mtdDevice, commandHandler);
 
@@ -138,7 +139,7 @@ void mtd::Texture::createSampler()
 // Configures the texture descriptor set
 void mtd::Texture::createDescriptorResource
 (
-	DescriptorSetHandler& descriptorSetHandler, uint32_t setIndex
+	DescriptorSetHandler& descriptorSetHandler, uint32_t swappableSetIndex
 ) const
 {
 	vk::DescriptorImageInfo descriptorImageInfo{};
@@ -146,6 +147,6 @@ void mtd::Texture::createDescriptorResource
 	descriptorImageInfo.imageView = imageView;
 	descriptorImageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 
-	descriptorSetHandler.createImageDescriptorResources(setIndex, 0, descriptorImageInfo);
-	descriptorSetHandler.writeDescriptorSet(setIndex);
+	descriptorSetHandler.createImageDescriptorResources(swappableSetIndex, 0, descriptorImageInfo);
+	descriptorSetHandler.writeDescriptorSet(swappableSetIndex);
 }

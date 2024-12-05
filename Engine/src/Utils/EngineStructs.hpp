@@ -75,7 +75,13 @@ namespace mtd
 		glm::vec3 position;
 		glm::vec2 textureCoordinates;
 		glm::vec3 normal;
-		glm::vec3 color;
+	};
+
+	// Information for submesh rendering
+	struct SubmeshData
+	{
+		uint32_t indexOffset;
+		uint32_t materialIndex;
 	};
 
 	// Information required for drawing a frame
