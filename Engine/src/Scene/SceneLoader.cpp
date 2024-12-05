@@ -4,6 +4,7 @@
 #include <nlohmann/json.hpp>
 
 #include "../Vulkan/Mesh/DefaultMesh/DefaultMeshManager.hpp"
+#include "../Vulkan/Mesh/MultiMaterial3D/MultiMaterial3DMeshManager.hpp"
 #include "../Vulkan/Mesh/Billboard/BillboardManager.hpp"
 #include "../Utils/FileHandler.hpp"
 #include "../Utils/Logger.hpp"
@@ -17,6 +18,12 @@ static void loadPipeline
 	std::vector<mtd::PipelineInfo>& pipelineInfos
 );
 static void loadDefaultMeshes
+(
+	const mtd::Device& device,
+	const nlohmann::json& meshListJson,
+	std::vector<std::unique_ptr<mtd::MeshManager>>& meshManagers
+);
+static void loadMultiMaterial3DMeshes
 (
 	const mtd::Device& device,
 	const nlohmann::json& meshListJson,
@@ -74,6 +81,9 @@ void mtd::SceneLoader::load
 		{
 			case MeshType::Default3D:
 				loadDefaultMeshes(device, sceneJson["meshes"][i], meshManagers);
+				break;
+			case MeshType::MultiMaterial3D:
+				loadMultiMaterial3DMeshes(device, sceneJson["meshes"][i], meshManagers);
 				break;
 			case MeshType::Billboard:
 				loadBillboards(device, sceneJson["meshes"][i], meshManagers);
@@ -148,6 +158,30 @@ void loadDefaultMeshes
 
 		std::vector<mtd::DefaultMesh>& meshes =
 			dynamic_cast<mtd::DefaultMeshManager*>(meshManagers.back().get())->getMeshes();
+		meshes.emplace_back(device, i, id.c_str(), file.c_str(), *pPreTransforms);
+	}
+}
+
+// Fetches default meshes from scene file
+void loadMultiMaterial3DMeshes
+(
+	const mtd::Device& device,
+	const nlohmann::json& meshListJson,
+	std::vector<std::unique_ptr<mtd::MeshManager>>& meshManagers
+)
+{
+	meshManagers.emplace_back(std::make_unique<mtd::MultiMaterial3DMeshManager>(device));
+	for(uint32_t i = 0; i < meshListJson.size(); i++)
+	{
+		const std::string& id = meshListJson[i].value("model-id", "");
+		const std::string& file = meshListJson[i]["file"];
+
+		const std::vector<std::array<float, 16>>& preTransforms = meshListJson[i]["pre-transforms"];
+		const std::vector<mtd::Mat4x4>* pPreTransforms =
+			reinterpret_cast<const std::vector<mtd::Mat4x4>*>(&preTransforms);
+
+		std::vector<mtd::MultiMaterial3DMesh>& meshes =
+			dynamic_cast<mtd::MultiMaterial3DMeshManager*>(meshManagers.back().get())->getMeshes();
 		meshes.emplace_back(device, i, id.c_str(), file.c_str(), *pPreTransforms);
 	}
 }

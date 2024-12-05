@@ -24,7 +24,7 @@
 			"name": "Billboard Pipeline",
 			"vertex-shader": "billboard.vert.spv",
 			"fragment-shader": "billboard.frag.spv",
-			"mesh-type": 1,
+			"mesh-type": 2,
 			"descriptor-set-info": [],
 			"shader-primitive-topology": 5,
 			"shader-face-culling": 2,

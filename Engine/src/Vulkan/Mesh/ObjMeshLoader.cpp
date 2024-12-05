@@ -74,6 +74,53 @@ void mtd::ObjMeshLoader::loadDefault3DMesh
 	LOG_VERBOSE("Mesh \"%s\" loaded.", fileName);
 }
 
+// Loads a mesh with multiple materials from an Wavefront file
+void mtd::ObjMeshLoader::loadMultiMaterial3DMesh
+(
+	const char* fileName,
+	std::vector<Vertex>& vertices,
+	std::vector<uint32_t>& indices,
+	std::vector<SubmeshData>& submeshInfos,
+	std::vector<std::string>& texturePaths
+)
+{
+	std::string objMeshPath{MTD_RESOURCES_PATH};
+	objMeshPath.append("meshes/");
+	objMeshPath.append(fileName);
+
+	std::unordered_map<std::string, MaterialData> materials;
+	loadMaterials(objMeshPath, materials);
+	texturePaths.resize(materials.size());
+	for(const auto& [materialName, material]: materials)
+		texturePaths[material.materialID] = material.diffuseTexture;
+
+	std::string line;
+	std::vector<std::string> words;
+
+	ObjData data{vertices, indices};
+
+	std::ifstream file;
+	file.open(objMeshPath);
+	while(std::getline(file, line))
+	{
+		StringParser::split(line, " ", words);
+
+		if(!words[0].compare("v"))
+			data.positions.emplace_back(std::stof(words[1]), std::stof(words[2]), std::stof(words[3]));
+		else if(!words[0].compare("vt"))
+			data.textureCoordinates.emplace_back(std::stof(words[1]), std::stof(words[2]));
+		else if(!words[0].compare("vn"))
+			data.normals.emplace_back(std::stof(words[1]), std::stof(words[2]), std::stof(words[3]));
+		else if(!words[0].compare("f"))
+			readFaceData(words, data);
+		else if(!words[0].compare("usemtl"))
+			submeshInfos.emplace_back(static_cast<uint32_t>(data.indices.size()), materials[words[1]].materialID);
+	}
+	file.close();
+
+	LOG_VERBOSE("Mesh \"%s\" loaded.", fileName);
+}
+
 // Loads the materials from a .mtl file
 void loadMaterials(std::string filePath, std::unordered_map<std::string, MaterialData>& materials)
 {
