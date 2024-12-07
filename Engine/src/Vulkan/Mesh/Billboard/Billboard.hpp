@@ -21,9 +21,6 @@ namespace mtd
 			);
 			~Billboard() = default;
 
-			Billboard(const Billboard&) = delete;
-			Billboard& operator=(const Billboard&) = delete;
-
 			Billboard(Billboard&& other) noexcept;
 
 			// Loads the billboard texture

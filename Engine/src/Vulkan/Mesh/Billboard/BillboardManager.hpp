@@ -28,10 +28,5 @@ namespace mtd
 			virtual void bindBuffers(const vk::CommandBuffer& commandBuffer) const override;
 			// Draws the mesh specified by the index
 			virtual void drawMesh(const vk::CommandBuffer& commandBuffer, const Pipeline& pipeline) const override;
-
-		private:
-			// Textures for each billboard
-			std::vector<std::string> texturePaths;
-			std::vector<std::unique_ptr<Texture>> textures;
 	};
 }
