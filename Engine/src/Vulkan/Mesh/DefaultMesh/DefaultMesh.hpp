@@ -20,9 +20,6 @@ namespace mtd
 			);
 			~DefaultMesh() = default;
 
-			DefaultMesh(const DefaultMesh&) = delete;
-			DefaultMesh& operator=(const DefaultMesh&) = delete;
-
 			DefaultMesh(DefaultMesh&& other) noexcept;
 
 			// Getters

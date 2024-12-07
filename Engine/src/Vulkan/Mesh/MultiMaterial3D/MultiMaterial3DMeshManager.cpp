@@ -1,32 +1,43 @@
 #include <pch.hpp>
-#include "DefaultMeshManager.hpp"
+#include "MultiMaterial3DMeshManager.hpp"
 
-#include "../../../Utils/Logger.hpp"
-
-mtd::DefaultMeshManager::DefaultMeshManager(const Device& device)
+mtd::MultiMaterial3DMeshManager::MultiMaterial3DMeshManager(const Device& device)
 	: BaseMeshManager{device}, currentIndexOffset{0}, totalInstanceCount{0}
 {
 }
 
-mtd::DefaultMeshManager::~DefaultMeshManager()
+mtd::MultiMaterial3DMeshManager::~MultiMaterial3DMeshManager()
 {
 	clearMeshes();
 }
 
-// Loads textures and groups the meshes into a lump, then passes the data to the GPU
-void mtd::DefaultMeshManager::loadMeshes(DescriptorSetHandler& textureDescriptorSetHandler)
+// Gets the total number of textures handled by the manager
+uint32_t mtd::MultiMaterial3DMeshManager::getTextureCount() const
 {
+	uint32_t totalTextureCount = 0;
+	for(const MultiMaterial3DMesh& mesh: meshes)
+		totalTextureCount += mesh.getTextureCount();
+	return totalTextureCount;
+}
+
+// Loads textures and groups the meshes into a lump, then passes the data to the GPU
+void mtd::MultiMaterial3DMeshManager::loadMeshes(DescriptorSetHandler& textureDescriptorSetHandler)
+{
+	uint32_t currentTextureCount = 0;
 	for(uint32_t i = 0; i < meshes.size(); i++)
 	{
 		loadMeshToLump(meshes[i]);
-		meshes[i].loadTexture(device, commandHandler, textureDescriptorSetHandler);
+
+		meshes[i].loadMaterials(device, commandHandler, textureDescriptorSetHandler, currentTextureCount);
+		currentTextureCount += meshes[i].getTextureCount();
+
 		meshIndexMap[meshes[i].getModelID()] = i;
 	}
 	loadMeshesToGPU(commandHandler);
 }
 
-// Clears the list of default meshes and related buffers
-void mtd::DefaultMeshManager::clearMeshes()
+// Clears the list of meshes and related buffers
+void mtd::MultiMaterial3DMeshManager::clearMeshes()
 {
 	if(getMeshCount() == 0) return;
 
@@ -44,7 +55,7 @@ void mtd::DefaultMeshManager::clearMeshes()
 }
 
 // Binds vertex and index buffers
-void mtd::DefaultMeshManager::bindBuffers(const vk::CommandBuffer& commandBuffer) const
+void mtd::MultiMaterial3DMeshManager::bindBuffers(const vk::CommandBuffer& commandBuffer) const
 {
 	vk::DeviceSize offset{0};
 	commandBuffer.bindVertexBuffers(0, 1, &(vertexBuffer.buffer), &offset);
@@ -52,27 +63,31 @@ void mtd::DefaultMeshManager::bindBuffers(const vk::CommandBuffer& commandBuffer
 }
 
 // Draws the mesh specified by the index
-void mtd::DefaultMeshManager::drawMesh(const vk::CommandBuffer& commandBuffer, const Pipeline& pipeline) const
+void mtd::MultiMaterial3DMeshManager::drawMesh(const vk::CommandBuffer& commandBuffer, const Pipeline& pipeline) const
 {
+	uint32_t materialOffset = 0;
 	for(uint32_t meshIndex = 0; meshIndex < meshes.size(); meshIndex++)
 	{
-		pipeline.bindMeshDescriptors(commandBuffer, meshIndex);
-
-		const DefaultMesh& mesh = meshes[meshIndex];
+		const MultiMaterial3DMesh& mesh = meshes[meshIndex];
 		mesh.bindInstanceBuffer(commandBuffer);
-		commandBuffer.drawIndexed
-		(
-			static_cast<uint32_t>(mesh.getIndices().size()),
-			mesh.getInstanceCount(),
-			mesh.getIndexOffset(),
-			0,
-			0
-		);
+		for(uint32_t submeshIndex = 0; submeshIndex < mesh.getSubmeshCount(); submeshIndex++)
+		{
+			pipeline.bindMeshDescriptors(commandBuffer, materialOffset + mesh.getSubmeshMaterialIndex(submeshIndex));
+			commandBuffer.drawIndexed
+			(
+				mesh.getSubmeshIndexCount(submeshIndex),
+				mesh.getInstanceCount(),
+				mesh.getSubmeshIndexOffset(submeshIndex),
+				0,
+				0
+			);
+		}
+		materialOffset += mesh.getTextureCount();
 	}
 }
 
 // Stores a mesh in the lump of data
-void mtd::DefaultMeshManager::loadMeshToLump(DefaultMesh& mesh)
+void mtd::MultiMaterial3DMeshManager::loadMeshToLump(MultiMaterial3DMesh& mesh)
 {
 	const std::vector<Vertex>& vertices = mesh.getVertices();
 	const std::vector<uint32_t>& indices = mesh.getIndices();
@@ -90,7 +105,7 @@ void mtd::DefaultMeshManager::loadMeshToLump(DefaultMesh& mesh)
 }
 
 // Loads the lumps into the VRAM and clears them
-void mtd::DefaultMeshManager::loadMeshesToGPU(const CommandHandler& commandHandler)
+void mtd::MultiMaterial3DMeshManager::loadMeshesToGPU(const CommandHandler& commandHandler)
 {
 	vertexBuffer.usage = vk::BufferUsageFlagBits::eVertexBuffer;
 	indexBuffer.usage = vk::BufferUsageFlagBits::eIndexBuffer;
@@ -98,8 +113,8 @@ void mtd::DefaultMeshManager::loadMeshesToGPU(const CommandHandler& commandHandl
 	Memory::createDeviceLocalBuffer<Vertex>(device, vertexBuffer, vertexLump, commandHandler);
 	Memory::createDeviceLocalBuffer<uint32_t>(device, indexBuffer, indexLump, commandHandler);
 
-	for(DefaultMesh& defaultMesh: meshes)
-		defaultMesh.createInstanceBuffer();
+	for(MultiMaterial3DMesh& mesh: meshes)
+		mesh.createInstanceBuffer();
 
 	vertexLump.clear();
 	indexLump.clear();

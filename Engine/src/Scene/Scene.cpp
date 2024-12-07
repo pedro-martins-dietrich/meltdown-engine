@@ -49,7 +49,7 @@ void mtd::Scene::loadMeshes(std::vector<Pipeline>& pipelines)
 		if(pMeshManager->getMeshCount() == 0) continue;
 
 		DescriptorSetHandler& descriptorSetHandler = pipelines[i].getDescriptorSetHandler(0);
-		descriptorSetHandler.defineDescriptorSetsAmount(pMeshManager->getMeshCount());
+		descriptorSetHandler.defineDescriptorSetsAmount(pMeshManager->getTextureCount());
 		descriptorPool.allocateDescriptorSet(descriptorSetHandler);
 
 		pMeshManager->loadMeshes(descriptorSetHandler);
@@ -61,7 +61,7 @@ void mtd::Scene::loadMeshes(std::vector<Pipeline>& pipelines)
 // Executes starting code on scene
 void mtd::Scene::start() const
 {
-	for(const std::unique_ptr<MeshManager>& pMeshManager : meshManagers)
+	for(const std::unique_ptr<MeshManager>& pMeshManager: meshManagers)
 	{
 		if(pMeshManager->getMeshCount() > 0)
 			pMeshManager->start();
@@ -71,7 +71,7 @@ void mtd::Scene::start() const
 // Updates scene data
 void mtd::Scene::update(double frameTime) const
 {
-	for(const std::unique_ptr<MeshManager>& pMeshManager : meshManagers)
+	for(const std::unique_ptr<MeshManager>& pMeshManager: meshManagers)
 	{
 		if(pMeshManager->getMeshCount() > 0)
 			pMeshManager->update(frameTime);
@@ -82,8 +82,8 @@ void mtd::Scene::update(double frameTime) const
 uint32_t mtd::Scene::getTotalTextureCount() const
 {
 	uint32_t count = 0;
-	for(const std::unique_ptr<MeshManager>& pMeshManager : meshManagers)
-		count += pMeshManager->getMeshCount();
+	for(const std::unique_ptr<MeshManager>& pMeshManager: meshManagers)
+		count += pMeshManager->getTextureCount();
 
 	return count;
 }

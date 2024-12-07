@@ -21,10 +21,7 @@ mtd::Billboard::Billboard(Billboard&& other) noexcept
 }
 
 // Loads the billboard texture
-void mtd::Billboard::loadTexture
-(
-	const CommandHandler& commandHandler, DescriptorSetHandler& descriptorSetHandler
-)
+void mtd::Billboard::loadTexture(const CommandHandler& commandHandler, DescriptorSetHandler& descriptorSetHandler)
 {
 	texture = std::make_unique<Texture>
 	(

@@ -14,6 +14,7 @@ void mtd::VertexInputBuilder::setVertexInput(MeshType type, vk::PipelineVertexIn
 	switch(type)
 	{
 		case MeshType::Default3D:
+		case MeshType::MultiMaterial3D:
 			defaultVertexInput(vertexInputInfo);
 			break;
 
@@ -40,7 +41,7 @@ void defaultVertexInput(vk::PipelineVertexInputStateCreateInfo& vertexInputInfo)
 	bindingDescriptions[1].stride = static_cast<uint32_t>(sizeof(glm::mat4));
 	bindingDescriptions[1].inputRate = vk::VertexInputRate::eInstance;
 
-	static std::array<vk::VertexInputAttributeDescription, 8> attributeDescriptions;
+	static std::array<vk::VertexInputAttributeDescription, 7> attributeDescriptions;
 	// Vertex position
 	attributeDescriptions[0].location = 0;
 	attributeDescriptions[0].binding = 0;
@@ -56,18 +57,13 @@ void defaultVertexInput(vk::PipelineVertexInputStateCreateInfo& vertexInputInfo)
 	attributeDescriptions[2].binding = 0;
 	attributeDescriptions[2].format = vk::Format::eR32G32B32Sfloat;
 	attributeDescriptions[2].offset = 5 * sizeof(float);
-	// Vertex color
-	attributeDescriptions[3].location = 3;
-	attributeDescriptions[3].binding = 0;
-	attributeDescriptions[3].format = vk::Format::eR32G32B32Sfloat;
-	attributeDescriptions[3].offset = 8 * sizeof(float);
 	// Instance transformation matrix
 	for(size_t i = 0; i < 4; i++)
 	{
-		attributeDescriptions[4 + i].location = 4 + i;
-		attributeDescriptions[4 + i].binding = 1;
-		attributeDescriptions[4 + i].format = vk::Format::eR32G32B32A32Sfloat;
-		attributeDescriptions[4 + i].offset = 4 * i * sizeof(float);
+		attributeDescriptions[3 + i].location = 4 + i;
+		attributeDescriptions[3 + i].binding = 1;
+		attributeDescriptions[3 + i].format = vk::Format::eR32G32B32A32Sfloat;
+		attributeDescriptions[3 + i].offset = 4 * i * sizeof(float);
 	}
 
 	vertexInputInfo.flags = vk::PipelineVertexInputStateCreateFlags();

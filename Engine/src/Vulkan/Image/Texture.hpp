@@ -16,12 +16,14 @@ namespace mtd
 				const char* fileName,
 				const CommandHandler& commandHandler,
 				DescriptorSetHandler& descriptorSetHandler,
-				uint32_t setIndex
+				uint32_t swappableSetIndex
 			);
 			~Texture();
 
 			Texture(const Texture&) = delete;
 			Texture& operator=(const Texture&) = delete;
+
+			Texture(Texture&& other) noexcept;
 
 		private:
 			// Texture data
@@ -38,12 +40,7 @@ namespace mtd
 			const vk::Device& device;
 
 			// Loads texture from file
-			void loadFromFile
-			(
-				const Device& mtdDevice,
-				const CommandHandler& commandHandler,
-				const char* fileName
-			);
+			void loadFromFile(const Device& mtdDevice, const CommandHandler& commandHandler, const char* fileName);
 			// Sends the texture data to the GPU
 			void loadToGpu(const Device& mtdDevice, const CommandHandler& commandHandler) const;
 			// Creates sampler to define how the texture should be rendered
@@ -51,7 +48,7 @@ namespace mtd
 			// Configures the texture descriptor set
 			void createDescriptorResource
 			(
-				DescriptorSetHandler& descriptorSetHandler, uint32_t setIndex
+				DescriptorSetHandler& descriptorSetHandler, uint32_t swappableSetIndex
 			) const;
 	};
 }

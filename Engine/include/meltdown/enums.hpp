@@ -45,6 +45,7 @@ namespace mtd
 	enum class MeshType
 	{
 		Default3D,
+		MultiMaterial3D,
 		Billboard
 	};
 
