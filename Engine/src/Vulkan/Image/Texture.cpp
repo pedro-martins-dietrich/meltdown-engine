@@ -79,14 +79,16 @@ void mtd::Texture::loadFromFile(const Device& mtdDevice, const CommandHandler& c
 // Sends the texture data to the GPU
 void mtd::Texture::loadToGpu(const Device& mtdDevice, const CommandHandler& commandHandler) const
 {
-	Memory::Buffer stagingBuffer;
-	stagingBuffer.size = static_cast<vk::DeviceSize>(width * height * 4);
-	stagingBuffer.usage = vk::BufferUsageFlagBits::eTransferSrc;
-	stagingBuffer.memoryProperties =
-		vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible;
-	Memory::createBuffer(mtdDevice, stagingBuffer);
+	const vk::DeviceSize imageSize = static_cast<vk::DeviceSize>(width * height * 4);
+	GpuBuffer stagingBuffer
+	{
+		mtdDevice,
+		imageSize,
+		vk::BufferUsageFlagBits::eTransferSrc,
+		vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible
+	};
+	stagingBuffer.copyMemoryToBuffer(imageSize, pixels);
 
-	Memory::copyMemory(device, stagingBuffer.bufferMemory, stagingBuffer.size, pixels);
 	Image::transitionImageLayout
 	(
 		image, commandHandler, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal
@@ -95,7 +97,7 @@ void mtd::Texture::loadToGpu(const Device& mtdDevice, const CommandHandler& comm
 	(
 		image,
 		commandHandler,
-		stagingBuffer.buffer,
+		stagingBuffer.getBuffer(),
 		FrameDimensions{static_cast<uint32_t>(width), static_cast<uint32_t>(height)}
 	);
 	Image::transitionImageLayout
@@ -105,9 +107,6 @@ void mtd::Texture::loadToGpu(const Device& mtdDevice, const CommandHandler& comm
 		vk::ImageLayout::eTransferDstOptimal,
 		vk::ImageLayout::eShaderReadOnlyOptimal
 	);
-
-	device.freeMemory(stagingBuffer.bufferMemory);
-	device.destroyBuffer(stagingBuffer.buffer);
 }
 
 // Creates sampler to define how the texture should be rendered

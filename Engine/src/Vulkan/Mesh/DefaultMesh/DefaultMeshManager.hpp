@@ -2,6 +2,7 @@
 
 #include "DefaultMesh.hpp"
 #include "../BaseMeshManager.hpp"
+#include "../../Device/GpuBuffer.hpp"
 
 namespace mtd
 {
@@ -28,8 +29,8 @@ namespace mtd
 
 		private:
 			// Vertex and index data of all meshes in the VRAM
-			Memory::Buffer vertexBuffer;
-			Memory::Buffer indexBuffer;
+			GpuBuffer vertexBuffer;
+			GpuBuffer indexBuffer;
 
 			// Lumps of data containing all vertices and indices from all meshes
 			std::vector<Vertex> vertexLump;

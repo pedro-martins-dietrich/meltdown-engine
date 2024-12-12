@@ -5,7 +5,7 @@
 
 #include <meltdown/model.hpp>
 
-#include "../Device/Memory.hpp"
+#include "../Device/GpuBuffer.hpp"
 
 namespace mtd
 {
@@ -21,7 +21,7 @@ namespace mtd
 				const std::vector<Mat4x4>& preTransforms,
 				uint32_t instanceBufferBindIndex = 0
 			);
-			virtual ~Mesh();
+			virtual ~Mesh() = default;
 
 			Mesh(const Mesh&) = delete;
 			Mesh& operator=(const Mesh&) = delete;
@@ -62,7 +62,7 @@ namespace mtd
 			// Transformation matrices for each mesh instance
 			std::vector<Mat4x4> instanceLump;
 			// GPU buffer for the transformation matrices
-			Memory::Buffer instanceBuffer;
+			GpuBuffer instanceBuffer;
 			// Binding index for the instance buffer
 			uint32_t instanceBufferBindIndex;
 

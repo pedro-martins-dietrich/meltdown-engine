@@ -1,16 +1,16 @@
 #pragma once
 
-#include "../Device/Memory.hpp"
+#include "../Device/GpuBuffer.hpp"
 
 namespace mtd
 {
 	// Information about each descriptor
 	struct DescriptorResources
 	{
-		Memory::Buffer descriptorBuffer;
+		std::unique_ptr<GpuBuffer> descriptorBuffer;
 		vk::DescriptorBufferInfo descriptorBufferInfo;
-		void* descriptorBufferWriteLocation;
 		vk::DescriptorImageInfo descriptorImageInfo;
+		void* descriptorBufferWriteLocation;
 	};
 
 	// Handles the data to be sent to the GPU through descriptors

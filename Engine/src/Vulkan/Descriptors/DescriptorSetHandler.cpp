@@ -52,17 +52,17 @@ void* mtd::DescriptorSetHandler::createDescriptorResources
 )
 {
 	DescriptorResources& resources = resourcesList[setIndex][resourceIndex];
-	resources.descriptorBuffer.size = resourceSize;
-	resources.descriptorBuffer.usage = usageFlags;
-	resources.descriptorBuffer.memoryProperties =
-		vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent;
-
-	Memory::createBuffer(mtdDevice, resources.descriptorBuffer);
-	resources.descriptorBufferWriteLocation = device.mapMemory
+	resources.descriptorBuffer = std::make_unique<GpuBuffer>
 	(
-		resources.descriptorBuffer.bufferMemory, 0UL, resourceSize
+		mtdDevice,
+		resourceSize,
+		usageFlags,
+		vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
 	);
-	resources.descriptorBufferInfo.buffer = resources.descriptorBuffer.buffer;
+
+	resources.descriptorBufferWriteLocation =
+		device.mapMemory(resources.descriptorBuffer->getBufferMemory(), 0UL, resourceSize);
+	resources.descriptorBufferInfo.buffer = resources.descriptorBuffer->getBuffer();
 	resources.descriptorBufferInfo.offset = 0UL;
 	resources.descriptorBufferInfo.range = resourceSize;
 
@@ -103,10 +103,7 @@ void mtd::DescriptorSetHandler::writeDescriptorSet(uint32_t setIndex)
 		writeOps[i].pTexelBufferView = nullptr;
 	}
 
-	device.updateDescriptorSets
-	(
-		static_cast<uint32_t>(writeOps.size()), writeOps.data(), 0, nullptr
-	);
+	device.updateDescriptorSets(static_cast<uint32_t>(writeOps.size()), writeOps.data(), 0, nullptr);
 }
 
 // Deletes all resources in GPU memory
@@ -116,21 +113,14 @@ void mtd::DescriptorSetHandler::clearResources()
 	{
 		for(DescriptorResources& resources: setResourcesList)
 		{
-			if(resources.descriptorBuffer.bufferMemory)
-			{
-				device.unmapMemory(resources.descriptorBuffer.bufferMemory);
-				device.freeMemory(resources.descriptorBuffer.bufferMemory);
-				device.destroyBuffer(resources.descriptorBuffer.buffer);
-			}
+			if(resources.descriptorBuffer && resources.descriptorBuffer->getBufferMemory())
+				device.unmapMemory(resources.descriptorBuffer->getBufferMemory());
 		}
 	}
 }
 
 // Creates a descriptor set layout
-void mtd::DescriptorSetHandler::createDescriptorSetLayout
-(
-	const std::vector<vk::DescriptorSetLayoutBinding>& bindings
-)
+void mtd::DescriptorSetHandler::createDescriptorSetLayout(const std::vector<vk::DescriptorSetLayoutBinding>& bindings)
 {
 	descriptorTypes.resize(bindings.size());
 	for(uint32_t i = 0; i < bindings.size(); i++)
@@ -141,8 +131,7 @@ void mtd::DescriptorSetHandler::createDescriptorSetLayout
 	layoutCreateInfo.bindingCount = static_cast<uint32_t>(bindings.size());
 	layoutCreateInfo.pBindings = bindings.data();
 
-	vk::Result result =
-		device.createDescriptorSetLayout(&layoutCreateInfo, nullptr, &descriptorSetLayout);
+	vk::Result result = device.createDescriptorSetLayout(&layoutCreateInfo, nullptr, &descriptorSetLayout);
 	if(result != vk::Result::eSuccess)
 		LOG_ERROR("Failed to create descriptor set layout. Vulkan result: %d", result);
 }

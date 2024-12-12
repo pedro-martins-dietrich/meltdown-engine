@@ -16,20 +16,19 @@ mtd::Mesh::Mesh
 	modelFactory{ModelHandler::getModelFactory(modelID)},
 	models{},
 	instanceLump{preTransforms},
-	instanceBufferBindIndex{instanceBufferBindIndex}
+	instanceBufferBindIndex{instanceBufferBindIndex},
+	instanceBuffer
+	{
+		device,
+		vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferSrc,
+		vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
+	}
 {
-
 	for(const Mat4x4& preTransform: preTransforms)
 	{
 		std::unique_ptr<Model> pModel = modelFactory(preTransform);
 		models[pModel->getInstanceID()] = std::move(pModel);
 	}
-}
-
-mtd::Mesh::~Mesh()
-{
-	device.getDevice().destroyBuffer(instanceBuffer.buffer);
-	device.getDevice().freeMemory(instanceBuffer.bufferMemory);
 }
 
 mtd::Mesh::Mesh(Mesh&& other) noexcept
@@ -42,8 +41,6 @@ mtd::Mesh::Mesh(Mesh&& other) noexcept
 	instanceBuffer{std::move(other.instanceBuffer)},
 	instanceBufferBindIndex{other.instanceBufferBindIndex}
 {
-	other.instanceBuffer.buffer = nullptr;
-	other.instanceBuffer.bufferMemory = nullptr;
 }
 
 // Runs once at the beginning of the scene for all instances
@@ -57,13 +54,7 @@ void mtd::Mesh::start()
 		i++;
 	}
 
-	Memory::copyMemory
-	(
-		device.getDevice(),
-		instanceBuffer.bufferMemory,
-		instanceLump.size() * sizeof(Mat4x4),
-		instanceLump.data()
-	);
+	instanceBuffer.copyMemoryToBuffer(instanceLump.size() * sizeof(Mat4x4), instanceLump.data());
 }
 
 // Updates all instances
@@ -79,26 +70,20 @@ void mtd::Mesh::update(double deltaTime)
 		i++;
 	}
 
-	Memory::copyMemory
-	(
-		device.getDevice(),
-		instanceBuffer.bufferMemory,
-		instanceLump.size() * sizeof(Mat4x4),
-		instanceLump.data()
-	);
+	instanceBuffer.copyMemoryToBuffer(instanceLump.size() * sizeof(Mat4x4), instanceLump.data());
 }
 
 // Adds multiple new mesh instances with the identity pre-transform matrix
 void mtd::Mesh::addInstances(const CommandHandler& commandHandler, uint32_t instanceCount)
 {
 	uint32_t minimumBufferSize = (models.size() + instanceCount) * sizeof(Mat4x4);
-	if(minimumBufferSize > instanceBuffer.size)
+	if(minimumBufferSize > instanceBuffer.getSize())
 	{
-		uint32_t newSize = 2 * instanceBuffer.size;
+		uint32_t newSize = 2 * instanceBuffer.getSize();
 		while(newSize < minimumBufferSize)
 			newSize += newSize;
 
-		Memory::resizeBuffer(device, commandHandler, instanceBuffer, newSize);
+		instanceBuffer.resizeBuffer(commandHandler, newSize);
 	}
 
 	for(uint32_t i = 0; i < instanceCount; i++)
@@ -125,28 +110,20 @@ void mtd::Mesh::removeInstanceByID(const CommandHandler& commandHandler, uint64_
 
 	vk::DeviceSize expectedBufferSize = models.size() * sizeof(Mat4x4);
 
-	if(2 * expectedBufferSize <= instanceBuffer.size)
-		Memory::resizeBuffer(device, commandHandler, instanceBuffer, expectedBufferSize);
+	if(2 * expectedBufferSize <= instanceBuffer.getSize())
+		instanceBuffer.resizeBuffer(commandHandler, expectedBufferSize);
 }
 
 // Creates a GPU buffer for the transformation matrices
 void mtd::Mesh::createInstanceBuffer()
 {
-	instanceBuffer.size = instanceLump.size() * sizeof(Mat4x4);
-	instanceBuffer.usage = vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferSrc;
-	instanceBuffer.memoryProperties =
-		vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent;
-
-	Memory::createBuffer(device, instanceBuffer);
-	Memory::copyMemory
-	(
-		device.getDevice(), instanceBuffer.bufferMemory, instanceBuffer.size, instanceLump.data()
-	);
+	instanceBuffer.create(instanceLump.size() * sizeof(Mat4x4));
+	instanceBuffer.copyMemoryToBuffer(instanceBuffer.getSize(), instanceLump.data());
 }
 
 // Binds the instance buffer for this mesh
 void mtd::Mesh::bindInstanceBuffer(const vk::CommandBuffer& commandBuffer) const
 {
 	vk::DeviceSize offset{0};
-	commandBuffer.bindVertexBuffers(instanceBufferBindIndex, 1, &(instanceBuffer.buffer), &offset);
+	commandBuffer.bindVertexBuffers(instanceBufferBindIndex, 1, &(instanceBuffer.getBuffer()), &offset);
 }
