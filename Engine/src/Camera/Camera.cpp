@@ -13,22 +13,16 @@ mtd::Camera::Camera(glm::vec3 initialPosition, float fovDegrees, float aspectRat
 	inputVelocity{0.0f},
 	maxSpeed{1.0f},
 	yaw{0.0f}, pitch{0.0f},
-	up{0.0f, -1.0f, 0.0f},
-	cameraMatricesWriteLocation{nullptr}
+	up{0.0f, -1.0f, 0.0f}
 {
-	matrices.view = glm::lookAt
-	(
-		position,
-		glm::vec3{0.0f, 0.0f, 0.0f},
-		up
-	);
+	matrices.view = glm::lookAt(position, glm::vec3{0.0f, 0.0f, 0.0f}, up);
 	updatePerspective(fovDegrees, aspectRatio);
 	calculateDirectionVectors();
 	setInputCallbacks();
 }
 
 // Updates camera position and direction
-void mtd::Camera::updateCamera(float deltaTime, const Window& window)
+void mtd::Camera::updateCamera(float deltaTime, const Window& window, DescriptorSetHandler* pGlobalDescriptorSet)
 {
 	float mouseX = 0.0f;
 	float mouseY = 0.0f;
@@ -51,28 +45,17 @@ void mtd::Camera::updateCamera(float deltaTime, const Window& window)
 
 	position += velocity * deltaTime;
 
-	matrices.view = glm::lookAt
-	(
-		position,
-		position + forwardDirection,
-		up
-	);
+	matrices.view = glm::lookAt(position, position + forwardDirection, up);
 
 	matrices.projectionView = matrices.projection * matrices.view;
 
-	memcpy(cameraMatricesWriteLocation, &matrices, sizeof(CameraMatrices));
+	pGlobalDescriptorSet->updateDescriptorData(0, 0, &matrices, sizeof(CameraMatrices));
 }
 
 // Updates the perspective matrix
 void mtd::Camera::updatePerspective(float fovDegrees, float aspectRatio)
 {
-	matrices.projection = glm::perspective
-	(
-		glm::radians(fovDegrees),
-		aspectRatio,
-		0.1f,
-		100.0f
-	);
+	matrices.projection = glm::perspective(glm::radians(fovDegrees), aspectRatio, 0.1f, 100.0f);
 	matrices.projection[1][1] *= -1;
 }
 

@@ -1,7 +1,7 @@
 #include <pch.hpp>
 #include "Image.hpp"
 
-#include "../Device/Memory.hpp"
+#include "../Device/GpuBuffer.hpp"
 #include "../../Utils/Logger.hpp"
 
 // Creates a Vulkan image

@@ -54,6 +54,12 @@ namespace mtd
 			virtual uint32_t getMeshCount() const override { return static_cast<uint32_t>(meshes.size()); }
 			std::vector<MeshType>& getMeshes() { return meshes; }
 
+			// Clears mesh data
+			virtual void clearMeshes() override
+			{
+				meshes.clear();
+			}
+
 			// Executes the start code for each mesh on scene loading
 			virtual void start() override
 			{

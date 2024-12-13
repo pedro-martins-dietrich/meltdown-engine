@@ -7,11 +7,6 @@ mtd::BillboardManager::BillboardManager(const Device& device) : BaseMeshManager{
 {
 }
 
-mtd::BillboardManager::~BillboardManager()
-{
-	clearMeshes();
-}
-
 // Loads the billboards textures to the GPU
 void mtd::BillboardManager::loadMeshes(DescriptorSetHandler& textureDescriptorSetHandler)
 {
@@ -23,17 +18,6 @@ void mtd::BillboardManager::loadMeshes(DescriptorSetHandler& textureDescriptorSe
 	}
 
 	LOG_VERBOSE("Billboards loaded.");
-}
-
-// Clears the list of billboards and the instance buffer
-void mtd::BillboardManager::clearMeshes()
-{
-	if(getMeshCount() == 0) return;
-
-	const vk::Device& vulkanDevice = device.getDevice();
-	vulkanDevice.waitIdle();
-
-	meshes.clear();
 }
 
 // There is no buffer common to all billboards to be binded

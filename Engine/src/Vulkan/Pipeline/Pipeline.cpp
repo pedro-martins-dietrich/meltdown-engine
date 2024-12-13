@@ -68,15 +68,13 @@ void mtd::Pipeline::configureUserDescriptorData(const Device& mtdDevice, const D
 }
 
 // Updates the user descriptor data for the specified binding
-void mtd::Pipeline::updateDescriptorData(uint32_t binding, const void* data)
+void mtd::Pipeline::updateDescriptorData(uint32_t binding, const void* data) const
 {
 	if(descriptorSetHandlers.size() < 2 || descriptorSetHandlers[1].getSetCount() <= binding) return;
 
-	memcpy
+	descriptorSetHandlers[1].updateDescriptorData
 	(
-		descriptorSetHandlers[1].getWriteLocation(0, binding),
-		data,
-		info.descriptorSetInfo[binding].totalDescriptorSize
+		0, binding, data, info.descriptorSetInfo[binding].totalDescriptorSize
 	);
 }
 

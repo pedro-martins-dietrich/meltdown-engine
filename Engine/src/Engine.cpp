@@ -80,7 +80,7 @@ void mtd::Engine::run()
 	while(window.keepOpen())
 	{
 		PROFILER_START_FRAME("Events");
-		camera.updateCamera(static_cast<float>(frameTime), window);
+		camera.updateCamera(static_cast<float>(frameTime), window, globalDescriptorSetHandler.get());
 
 		InputHandler::checkActionEvents();
 		EventManager::processEvents();
@@ -103,6 +103,7 @@ void mtd::Engine::run()
 // Loads a new scene, clearing the previous if necessary
 void mtd::Engine::loadScene(const char* sceneFile)
 {
+	device.getDevice().waitIdle();
 	pipelines.clear();
 	std::vector<PipelineInfo> pipelineInfos;
 
@@ -154,16 +155,12 @@ void mtd::Engine::createPipelines(const std::vector<PipelineInfo>& pipelineInfos
 // Sets up the descriptors
 void mtd::Engine::configureDescriptors()
 {
-	globalDescriptorSetHandler->clearResources();
-
 	globalDescriptorSetHandler->defineDescriptorSetsAmount(1);
 	scene.getDescriptorPool().allocateDescriptorSet(*globalDescriptorSetHandler);
-	void* cameraWriteLocation = globalDescriptorSetHandler->createDescriptorResources
+	globalDescriptorSetHandler->createDescriptorResources
 	(
 		device, sizeof(CameraMatrices), vk::BufferUsageFlagBits::eUniformBuffer, 0, 0
 	);
-
-	camera.setWriteLocation(cameraWriteLocation);
 
 	globalDescriptorSetHandler->writeDescriptorSet(0);
 
