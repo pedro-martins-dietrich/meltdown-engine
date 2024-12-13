@@ -10,7 +10,6 @@ namespace mtd
 		std::unique_ptr<GpuBuffer> descriptorBuffer;
 		vk::DescriptorBufferInfo descriptorBufferInfo;
 		vk::DescriptorImageInfo descriptorImageInfo;
-		void* descriptorBufferWriteLocation;
 	};
 
 	// Handles the data to be sent to the GPU through descriptors
@@ -36,34 +35,35 @@ namespace mtd
 			const vk::DescriptorSet& getSet(uint32_t swappableSet) const { return descriptorSets[swappableSet]; }
 			std::vector<vk::DescriptorSet>& getSets() { return descriptorSets; }
 			vk::DescriptorType getDescriptorType(uint32_t binding) const { return descriptorTypes[binding]; }
-			void* getWriteLocation(uint32_t swappableSet, uint32_t binding) const
-				{ return resourcesList[swappableSet][binding].descriptorBufferWriteLocation; }
 
 			// Defines how many descriptor sets can be associated with the descriptor set layout
-			void defineDescriptorSetsAmount(uint32_t setsAmount);
+			void defineDescriptorSetsAmount(uint32_t swappableSetsAmount);
 
 			// Creates a descriptor, assigning it to a set and returning the buffer write location
-			void* createDescriptorResources
+			void createDescriptorResources
 			(
 				const Device& mtdDevice,
 				vk::DeviceSize resourceSize,
 				vk::BufferUsageFlags usageFlags,
-				uint32_t setIndex,
-				uint32_t resourceIndex
+				uint32_t swappableSetIndex,
+				uint32_t binding
 			);
 			// Creates the resources for an image descriptor
 			void createImageDescriptorResources
 			(
-				uint32_t setIndex,
-				uint32_t resourceIndex,
+				uint32_t swappableSetIndex,
+				uint32_t binding,
 				const vk::DescriptorImageInfo& descriptorImageInfo
 			);
 
-			// Updates the descriptor set data
-			void writeDescriptorSet(uint32_t setIndex);
+			// Updates the descriptor set write data
+			void writeDescriptorSet(uint32_t swappableSetIndex);
 
-			// Deletes all resources in GPU memory
-			void clearResources();
+			// Updates the descriptor data
+			void updateDescriptorData
+			(
+				uint32_t swappableSetIndex, uint32_t binding, const void* data, vk::DeviceSize dataSize
+			) const;
 
 		private:
 			// Layout for the descriptor set

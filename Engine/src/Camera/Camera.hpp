@@ -2,6 +2,7 @@
 
 #include "../Utils/EngineStructs.hpp"
 #include "../Window/Window.hpp"
+#include "../Vulkan/Descriptors/DescriptorSetHandler.hpp"
 
 namespace mtd
 {
@@ -18,11 +19,8 @@ namespace mtd
 			// Getter
 			glm::vec3 getPosition() const { return position; }
 
-			// Sets the write location for the camera matrices
-			void setWriteLocation(void* location) { cameraMatricesWriteLocation = location; }
-
 			// Updates camera position and direction
-			void updateCamera(float deltaTime, const Window& window);
+			void updateCamera(float deltaTime, const Window& window, DescriptorSetHandler* pGlobalDescriptorSet);
 			// Updates the perspective matrix
 			void updatePerspective(float fovDegrees, float aspectRatio);
 
@@ -47,7 +45,6 @@ namespace mtd
 
 			// Transformation matrices
 			CameraMatrices matrices;
-			void* cameraMatricesWriteLocation;
 
 			// Calculates the normalized camera direction vectors
 			void calculateDirectionVectors();

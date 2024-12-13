@@ -14,8 +14,6 @@ mtd::DescriptorSetHandler::DescriptorSetHandler
 
 mtd::DescriptorSetHandler::~DescriptorSetHandler()
 {
-	clearResources();
-
 	device.destroyDescriptorSetLayout(descriptorSetLayout);
 }
 
@@ -33,25 +31,25 @@ mtd::DescriptorSetHandler::DescriptorSetHandler(DescriptorSetHandler&& other) no
 }
 
 // Defines how many descriptor sets can be associated with the descriptor set layout
-void mtd::DescriptorSetHandler::defineDescriptorSetsAmount(uint32_t setsAmount)
+void mtd::DescriptorSetHandler::defineDescriptorSetsAmount(uint32_t swappableSetsAmount)
 {
-	descriptorSets.resize(setsAmount);
-	resourcesList.resize(setsAmount);
+	descriptorSets.resize(swappableSetsAmount);
+	resourcesList.resize(swappableSetsAmount);
 	for(std::vector<DescriptorResources>& setResourcesList: resourcesList)
 		setResourcesList.resize(descriptorTypes.size());
 }
 
 // Creates a descriptor, assigning it to a set and returning the buffer write location
-void* mtd::DescriptorSetHandler::createDescriptorResources
+void mtd::DescriptorSetHandler::createDescriptorResources
 (
 	const Device& mtdDevice,
 	vk::DeviceSize resourceSize,
 	vk::BufferUsageFlags usageFlags,
-	uint32_t setIndex,
-	uint32_t resourceIndex
+	uint32_t swappableSetIndex,
+	uint32_t binding
 )
 {
-	DescriptorResources& resources = resourcesList[setIndex][resourceIndex];
+	DescriptorResources& resources = resourcesList[swappableSetIndex][binding];
 	resources.descriptorBuffer = std::make_unique<GpuBuffer>
 	(
 		mtdDevice,
@@ -60,63 +58,56 @@ void* mtd::DescriptorSetHandler::createDescriptorResources
 		vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
 	);
 
-	resources.descriptorBufferWriteLocation =
-		device.mapMemory(resources.descriptorBuffer->getBufferMemory(), 0UL, resourceSize);
 	resources.descriptorBufferInfo.buffer = resources.descriptorBuffer->getBuffer();
 	resources.descriptorBufferInfo.offset = 0UL;
 	resources.descriptorBufferInfo.range = resourceSize;
-
-	return resources.descriptorBufferWriteLocation;
 }
 
 // Creates the resources for an image descriptor
 void mtd::DescriptorSetHandler::createImageDescriptorResources
 (
-	uint32_t setIndex, uint32_t resourceIndex, const vk::DescriptorImageInfo& descriptorImageInfo
+	uint32_t swappableSetIndex, uint32_t binding, const vk::DescriptorImageInfo& descriptorImageInfo
 )
 {
-	resourcesList[setIndex][resourceIndex].descriptorImageInfo = descriptorImageInfo;
+	resourcesList[swappableSetIndex][binding].descriptorImageInfo = descriptorImageInfo;
 }
 
-// Updates the descriptor set data
-void mtd::DescriptorSetHandler::writeDescriptorSet(uint32_t setIndex)
+// Updates the descriptor set write data
+void mtd::DescriptorSetHandler::writeDescriptorSet(uint32_t swappableSetIndex)
 {
-	writeOps.resize(resourcesList[setIndex].size());
-	for(uint32_t i = 0; i < resourcesList[setIndex].size(); i++)
+	writeOps.resize(resourcesList[swappableSetIndex].size());
+	for(uint32_t binding = 0; binding < resourcesList[swappableSetIndex].size(); binding++)
 	{
 		vk::DescriptorImageInfo* pImageInfo =
-			descriptorTypes[i] == vk::DescriptorType::eCombinedImageSampler
-			? &resourcesList[setIndex][i].descriptorImageInfo
+			descriptorTypes[binding] == vk::DescriptorType::eCombinedImageSampler
+			? &resourcesList[swappableSetIndex][binding].descriptorImageInfo
 			: nullptr;
 		vk::DescriptorBufferInfo* pBufferInfo =
-			descriptorTypes[i] == vk::DescriptorType::eCombinedImageSampler
+			descriptorTypes[binding] == vk::DescriptorType::eCombinedImageSampler
 			? nullptr
-			: &resourcesList[setIndex][i].descriptorBufferInfo;
+			: &resourcesList[swappableSetIndex][binding].descriptorBufferInfo;
 
-		writeOps[i].dstSet = descriptorSets[setIndex];
-		writeOps[i].dstBinding = i;
-		writeOps[i].dstArrayElement = 0;
-		writeOps[i].descriptorCount = 1;
-		writeOps[i].descriptorType = descriptorTypes[i];
-		writeOps[i].pImageInfo = pImageInfo;
-		writeOps[i].pBufferInfo = pBufferInfo;
-		writeOps[i].pTexelBufferView = nullptr;
+		writeOps[binding].dstSet = descriptorSets[swappableSetIndex];
+		writeOps[binding].dstBinding = binding;
+		writeOps[binding].dstArrayElement = 0;
+		writeOps[binding].descriptorCount = 1;
+		writeOps[binding].descriptorType = descriptorTypes[binding];
+		writeOps[binding].pImageInfo = pImageInfo;
+		writeOps[binding].pBufferInfo = pBufferInfo;
+		writeOps[binding].pTexelBufferView = nullptr;
 	}
 
 	device.updateDescriptorSets(static_cast<uint32_t>(writeOps.size()), writeOps.data(), 0, nullptr);
 }
 
-// Deletes all resources in GPU memory
-void mtd::DescriptorSetHandler::clearResources()
+// Updates the descriptor data
+void mtd::DescriptorSetHandler::updateDescriptorData
+(
+	uint32_t swappableSetIndex, uint32_t binding, const void* data, vk::DeviceSize dataSize
+) const
 {
-	for(std::vector<DescriptorResources>& setResourcesList: resourcesList)
-	{
-		for(DescriptorResources& resources: setResourcesList)
-		{
-			if(resources.descriptorBuffer && resources.descriptorBuffer->getBufferMemory())
-				device.unmapMemory(resources.descriptorBuffer->getBufferMemory());
-		}
-	}
+	const std::unique_ptr<GpuBuffer>& buffer = resourcesList[swappableSetIndex][binding].descriptorBuffer;
+	buffer->copyMemoryToBuffer(dataSize, data);
 }
 
 // Creates a descriptor set layout

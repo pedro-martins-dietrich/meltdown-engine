@@ -41,7 +41,7 @@ namespace mtd
 			// Allocates user descriptor set data in the descriptor pool
 			void configureUserDescriptorData(const Device& mtdDevice, const DescriptorPool& pool);
 			// Updates the user descriptor data for the specified binding
-			void updateDescriptorData(uint32_t binding, const void* data);
+			void updateDescriptorData(uint32_t binding, const void* data) const;
 
 			// Binds the pipeline to the command buffer
 			void bind(const vk::CommandBuffer& commandBuffer) const;
