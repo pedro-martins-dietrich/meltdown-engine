@@ -4,15 +4,9 @@
 mtd::MultiMaterial3DMeshManager::MultiMaterial3DMeshManager(const Device& device)
 	: BaseMeshManager{device},
 	currentIndexOffset{0},
-	totalInstanceCount{0},
 	vertexBuffer{device, vk::BufferUsageFlagBits::eVertexBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal},
 	indexBuffer{device, vk::BufferUsageFlagBits::eIndexBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal}
 {
-}
-
-mtd::MultiMaterial3DMeshManager::~MultiMaterial3DMeshManager()
-{
-	clearMeshes();
 }
 
 // Gets the total number of textures handled by the manager
@@ -38,18 +32,6 @@ void mtd::MultiMaterial3DMeshManager::loadMeshes(DescriptorSetHandler& textureDe
 		meshIndexMap[meshes[i].getModelID()] = i;
 	}
 	loadMeshesToGPU(commandHandler);
-}
-
-// Clears the list of meshes and related buffers
-void mtd::MultiMaterial3DMeshManager::clearMeshes()
-{
-	if(getMeshCount() == 0) return;
-
-	const vk::Device& vulkanDevice = device.getDevice();
-	vulkanDevice.waitIdle();
-
-	totalInstanceCount = 0;
-	meshes.clear();
 }
 
 // Binds vertex and index buffers
@@ -98,7 +80,6 @@ void mtd::MultiMaterial3DMeshManager::loadMeshToLump(MultiMaterial3DMesh& mesh)
 	for(uint32_t index: indices)
 		indexLump.push_back(index + currentIndexOffset);
 
-	totalInstanceCount += mesh.getInstanceCount();
 	currentIndexOffset += vertices.size();
 }
 

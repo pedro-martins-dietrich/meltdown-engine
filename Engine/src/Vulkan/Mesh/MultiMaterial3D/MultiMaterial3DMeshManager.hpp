@@ -11,16 +11,13 @@ namespace mtd
 	{
 		public:
 			MultiMaterial3DMeshManager(const Device& device);
-			~MultiMaterial3DMeshManager();
+			~MultiMaterial3DMeshManager() = default;
 
 			// Gets the total number of textures handled by the manager
 			virtual uint32_t getTextureCount() const override;
 
 			// Loads textures and groups the meshes into a lump, then passes the data to the GPU
 			virtual void loadMeshes(DescriptorSetHandler& textureDescriptorSetHandler) override;
-
-			// Clears the list of meshes and related buffers
-			virtual void clearMeshes() override;
 
 			// Binds vertex and index buffers
 			virtual void bindBuffers(const vk::CommandBuffer& commandBuffer) const override;
@@ -36,8 +33,6 @@ namespace mtd
 			std::vector<Vertex> vertexLump;
 			std::vector<uint32_t> indexLump;
 
-			// Total number of instances
-			uint32_t totalInstanceCount;
 			// Index offset counter
 			uint32_t currentIndexOffset;
 

@@ -6,15 +6,9 @@
 mtd::DefaultMeshManager::DefaultMeshManager(const Device& device)
 	: BaseMeshManager{device},
 	currentIndexOffset{0},
-	totalInstanceCount{0},
 	vertexBuffer{device, vk::BufferUsageFlagBits::eVertexBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal},
 	indexBuffer{device, vk::BufferUsageFlagBits::eIndexBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal}
 {
-}
-
-mtd::DefaultMeshManager::~DefaultMeshManager()
-{
-	clearMeshes();
 }
 
 // Loads textures and groups the meshes into a lump, then passes the data to the GPU
@@ -27,17 +21,6 @@ void mtd::DefaultMeshManager::loadMeshes(DescriptorSetHandler& textureDescriptor
 		meshIndexMap[meshes[i].getModelID()] = i;
 	}
 	loadMeshesToGPU(commandHandler);
-}
-
-// Clears the list of default meshes and related buffers
-void mtd::DefaultMeshManager::clearMeshes()
-{
-	if(getMeshCount() == 0) return;
-
-	device.getDevice().waitIdle();
-
-	totalInstanceCount = 0;
-	meshes.clear();
 }
 
 // Binds vertex and index buffers
@@ -82,7 +65,6 @@ void mtd::DefaultMeshManager::loadMeshToLump(DefaultMesh& mesh)
 	for(uint32_t index: indices)
 		indexLump.push_back(index + currentIndexOffset);
 
-	totalInstanceCount += mesh.getInstanceCount();
 	currentIndexOffset += vertices.size();
 }
 
