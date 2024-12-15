@@ -12,18 +12,25 @@ mtd::MultiMaterial3DMesh::MultiMaterial3DMesh
 	const std::vector<Mat4x4>& preTransforms
 ) : Mesh{device, index, id, preTransforms, 1}, nextMeshIndexOffset{0}
 {
-	ObjMeshLoader::loadMultiMaterial3DMesh(fileName, vertices, indices, submeshInfos, texturePaths);
+	ObjMeshLoader::loadMultiMaterial3DMesh(fileName, vertices, indices, submeshInfos, materials);
 }
 
 mtd::MultiMaterial3DMesh::MultiMaterial3DMesh(MultiMaterial3DMesh&& other) noexcept
 	: Mesh{std::move(other)},
 	vertices{std::move(other.vertices)},
 	indices{std::move(other.indices)},
-	texturePaths{std::move(other.texturePaths)},
-	textures{std::move(other.textures)},
+	materials{std::move(other.materials)},
 	submeshInfos{std::move(other.submeshInfos)},
 	nextMeshIndexOffset{other.nextMeshIndexOffset}
 {
+}
+
+uint32_t mtd::MultiMaterial3DMesh::getTextureCount() const
+{
+	uint32_t textureCount = 0;
+	for(const Material& material: materials)
+		textureCount += material.getTextureCount();
+	return textureCount;
 }
 
 uint32_t mtd::MultiMaterial3DMesh::getSubmeshIndexCount(uint32_t submeshIndex) const
@@ -53,15 +60,6 @@ void mtd::MultiMaterial3DMesh::loadMaterials
 	uint32_t initialTextureIndex
 )
 {
-	for(uint32_t i = 0; i < texturePaths.size(); i++)
-	{
-		textures.emplace_back
-		(
-			device,
-			texturePaths[i].c_str(),
-			commandHandler,
-			descriptorSetHandler,
-			initialTextureIndex + i
-		);
-	}
+	for(uint32_t i = 0; i < materials.size(); i++)
+		materials[i].loadTextures(device, commandHandler, descriptorSetHandler, initialTextureIndex + i);
 }

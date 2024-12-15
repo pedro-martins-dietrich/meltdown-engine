@@ -5,6 +5,8 @@
 #include <glm/glm.hpp>
 #include <vulkan/vulkan.hpp>
 
+#include <meltdown/math.hpp>
+
 namespace mtd
 {
 	// Information about the size and position of a window
@@ -72,16 +74,16 @@ namespace mtd
 	// Vertex format
 	struct Vertex
 	{
-		glm::vec3 position;
+		Vec3 position;
 		glm::vec2 textureCoordinates;
-		glm::vec3 normal;
+		Vec3 normal;
 	};
 
 	// Information for submesh rendering
 	struct SubmeshData
 	{
 		uint32_t indexOffset;
-		uint32_t materialIndex;
+		uint32_t materialID;
 	};
 
 	// Information required for drawing a frame

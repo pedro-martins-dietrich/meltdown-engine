@@ -50,6 +50,22 @@ namespace mtd
 	};
 
 	/*
+	* @brief Types of material attributes stored as a float or a vector of floats.
+	*/
+	enum class MaterialFloatDataType
+	{
+		DiffuseColor
+	};
+
+	/*
+	* @brief Types of material attributes stored as a texture.
+	*/
+	enum class MaterialTextureType
+	{
+		DiffuseMap
+	};
+
+	/*
 	* @brief Enumeration describing how vertices will be assembled to create points, lines or triangles.
 	*/
 	enum class ShaderPrimitiveTopology

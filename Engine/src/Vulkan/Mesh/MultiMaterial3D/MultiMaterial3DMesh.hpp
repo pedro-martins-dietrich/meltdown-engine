@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../Mesh.hpp"
-#include "../../Image/Texture.hpp"
+#include "../../../Material/Material.hpp"
 
 namespace mtd
 {
@@ -24,12 +24,12 @@ namespace mtd
 			// Getters
 			const std::vector<Vertex>& getVertices() const { return vertices; }
 			const std::vector<uint32_t>& getIndices() const { return indices; }
-			uint32_t getTextureCount() const { return static_cast<uint32_t>(texturePaths.size()); }
+			uint32_t getTextureCount() const;
 			uint32_t getSubmeshCount() const { return static_cast<uint32_t>(submeshInfos.size()); }
 			uint32_t getSubmeshIndexOffset(uint32_t submeshIndex) const
 				{ return submeshInfos[submeshIndex].indexOffset; }
 			uint32_t getSubmeshMaterialIndex(uint32_t submeshIndex) const
-				{ return submeshInfos[submeshIndex].materialIndex; }
+				{ return submeshInfos[submeshIndex].materialID; }
 			uint32_t getSubmeshIndexCount(uint32_t submeshIndex) const;
 
 			// Sets all sub-mesh index offsets in the lump
@@ -51,8 +51,7 @@ namespace mtd
 			std::vector<SubmeshData> submeshInfos;
 			uint32_t nextMeshIndexOffset;
 
-			// Mesh texture
-			std::vector<std::string> texturePaths;
-			std::vector<Texture> textures;
+			// Mesh materials
+			std::vector<Material> materials;
 	};
 }

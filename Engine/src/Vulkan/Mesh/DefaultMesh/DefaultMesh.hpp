@@ -1,8 +1,7 @@
 #pragma once
 
 #include "../Mesh.hpp"
-#include "../../Image/Texture.hpp"
-#include "../../../Utils/EngineStructs.hpp"
+#include "../../../Material/Material.hpp"
 
 namespace mtd
 {
@@ -44,8 +43,7 @@ namespace mtd
 			std::vector<uint32_t> indices;
 			uint32_t indexOffset;
 			
-			// Mesh texture
-			std::string diffuseTexturePath;
-			std::unique_ptr<Texture> diffuseTexture;
+			// Mesh material
+			Material material;
 	};
 }
