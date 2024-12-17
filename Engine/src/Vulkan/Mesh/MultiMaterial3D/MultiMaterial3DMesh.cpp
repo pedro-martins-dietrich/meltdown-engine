@@ -9,10 +9,11 @@ mtd::MultiMaterial3DMesh::MultiMaterial3DMesh
 	uint32_t index,
 	const char* id,
 	const char* fileName,
+	const MaterialInfo& materialInfo,
 	const std::vector<Mat4x4>& preTransforms
 ) : Mesh{device, index, id, preTransforms, 1}, nextMeshIndexOffset{0}
 {
-	ObjMeshLoader::loadMultiMaterial3DMesh(fileName, vertices, indices, submeshInfos, materials);
+	ObjMeshLoader::loadMultiMaterial3DMesh(fileName, vertices, indices, submeshInfos, materials, materialInfo);
 }
 
 mtd::MultiMaterial3DMesh::MultiMaterial3DMesh(MultiMaterial3DMesh&& other) noexcept
@@ -27,10 +28,8 @@ mtd::MultiMaterial3DMesh::MultiMaterial3DMesh(MultiMaterial3DMesh&& other) noexc
 
 uint32_t mtd::MultiMaterial3DMesh::getTextureCount() const
 {
-	uint32_t textureCount = 0;
-	for(const Material& material: materials)
-		textureCount += material.getTextureCount();
-	return textureCount;
+	if(materials.empty()) return 0;
+	return static_cast<uint32_t>(materials[0].getTextureCount() * materials.size());
 }
 
 uint32_t mtd::MultiMaterial3DMesh::getSubmeshIndexCount(uint32_t submeshIndex) const
@@ -51,6 +50,13 @@ void mtd::MultiMaterial3DMesh::setIndexOffset(uint32_t offset)
 	nextMeshIndexOffset = indices.size() + offset;
 }
 
+// Checks if the used material has float data attributes
+bool mtd::MultiMaterial3DMesh::hasMaterialFloatData() const
+{
+	if(materials.empty()) return false;
+	return materials[0].hasFloatData();
+}
+
 // Loads mesh materials
 void mtd::MultiMaterial3DMesh::loadMaterials
 (
@@ -61,5 +67,5 @@ void mtd::MultiMaterial3DMesh::loadMaterials
 )
 {
 	for(uint32_t i = 0; i < materials.size(); i++)
-		materials[i].loadTextures(device, commandHandler, descriptorSetHandler, initialTextureIndex + i);
+		materials[i].loadMaterial(device, commandHandler, descriptorSetHandler, initialTextureIndex + i);
 }

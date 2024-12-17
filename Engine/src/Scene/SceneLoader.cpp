@@ -9,7 +9,7 @@
 #include "../Utils/FileHandler.hpp"
 #include "../Utils/Logger.hpp"
 
-static constexpr const char* sceneLoaderVersion = "0.1.3";
+static constexpr const char* sceneLoaderVersion = "0.1.4";
 
 static void loadPipeline
 (
@@ -21,18 +21,21 @@ static void loadDefaultMeshes
 (
 	const mtd::Device& device,
 	const nlohmann::json& meshListJson,
+	const mtd::PipelineInfo& pipelineInfo,
 	std::vector<std::unique_ptr<mtd::MeshManager>>& meshManagers
 );
 static void loadMultiMaterial3DMeshes
 (
 	const mtd::Device& device,
 	const nlohmann::json& meshListJson,
+	const mtd::PipelineInfo& pipelineInfo,
 	std::vector<std::unique_ptr<mtd::MeshManager>>& meshManagers
 );
 static void loadBillboards
 (
 	const mtd::Device& device,
 	const nlohmann::json& billboardListJson,
+	const mtd::PipelineInfo& pipelineInfo,
 	std::vector<std::unique_ptr<mtd::MeshManager>>& meshManagers
 );
 
@@ -55,44 +58,39 @@ void mtd::SceneLoader::load
 	std::string fileVersion = sceneJson["scene-loader-version"];
 	if(fileVersion.compare(sceneLoaderVersion))
 	{
-		LOG_ERROR
-		(
-			"Scene JSON file (\"%s\") version is incompatible with the scene loader.",
-			fileName
-		);
+		LOG_ERROR("Scene JSON file (\"%s\") version is incompatible with the scene loader.", fileName);
 		return;
 	}
 
+	const nlohmann::json& meshesJson = sceneJson["meshes"];
+
 	assert
 	(
-		sceneJson["pipelines"].size() == sceneJson["meshes"].size() &&
+		sceneJson["pipelines"].size() == meshesJson.size() &&
 		"The number of pipelines and mesh managers should be the same."
 	);
 
 	pipelineInfos.reserve(sceneJson["pipelines"].size());
-	meshManagers.reserve(sceneJson["meshes"].size());
+	meshManagers.reserve(meshesJson.size());
 
 	for(const nlohmann::json pipelineJson: sceneJson["pipelines"])
 		loadPipeline(device, pipelineJson, pipelineInfos);
 
-	for(uint32_t i = 0; i < sceneJson["meshes"].size(); i++)
+	for(uint32_t i = 0; i < meshesJson.size(); i++)
 	{
 		switch(pipelineInfos[i].associatedMeshType)
 		{
 			case MeshType::Default3D:
-				loadDefaultMeshes(device, sceneJson["meshes"][i], meshManagers);
+				loadDefaultMeshes(device, meshesJson[i], pipelineInfos[i], meshManagers);
 				break;
 			case MeshType::MultiMaterial3D:
-				loadMultiMaterial3DMeshes(device, sceneJson["meshes"][i], meshManagers);
+				loadMultiMaterial3DMeshes(device, meshesJson[i], pipelineInfos[i], meshManagers);
 				break;
 			case MeshType::Billboard:
-				loadBillboards(device, sceneJson["meshes"][i], meshManagers);
+				loadBillboards(device, meshesJson[i], pipelineInfos[i], meshManagers);
 				break;
 			default:
-				LOG_ERROR
-				(
-					"Unknown mesh type for mesh at index %d. Mesh type: %d", i, pipelineInfos[i].associatedMeshType
-				);
+				LOG_ERROR("Unknown mesh type (%d) for mesh at index %d.", pipelineInfos[i].associatedMeshType, i);
 		}
 	}
 
@@ -123,6 +121,16 @@ void loadPipeline
 		);
 	}
 
+	std::vector<mtd::MaterialFloatDataType> floatDataTypes;
+	floatDataTypes.reserve(pipelineJson["material-float-data-types"].size());
+	for(const nlohmann::json& floatDataType: pipelineJson["material-float-data-types"])
+		floatDataTypes.emplace_back(static_cast<mtd::MaterialFloatDataType>(floatDataType));
+
+	std::vector<mtd::MaterialTextureType> textureTypes;
+	textureTypes.reserve(pipelineJson["material-texture-types"].size());
+	for(const nlohmann::json& textureType: pipelineJson["material-texture-types"])
+		textureTypes.emplace_back(static_cast<mtd::MaterialTextureType>(textureType));
+
 	pipelineInfos.emplace_back(
 		mtd::PipelineInfo
 		{
@@ -133,7 +141,9 @@ void loadPipeline
 			std::move(descriptorInfos),
 			static_cast<mtd::ShaderPrimitiveTopology>(pipelineJson["shader-primitive-topology"]),
 			static_cast<mtd::ShaderFaceCulling>(pipelineJson["shader-face-culling"]),
-			pipelineJson["transparency"]
+			pipelineJson["transparency"],
+			std::move(floatDataTypes),
+			std::move(textureTypes)
 		}
 	);
 }
@@ -143,10 +153,13 @@ void loadDefaultMeshes
 (
 	const mtd::Device& device,
 	const nlohmann::json& meshListJson,
+	const mtd::PipelineInfo& pipelineInfo,
 	std::vector<std::unique_ptr<mtd::MeshManager>>& meshManagers
 )
 {
 	meshManagers.emplace_back(std::make_unique<mtd::DefaultMeshManager>(device));
+	mtd::MaterialInfo materialInfo{pipelineInfo.materialFloatDataTypes, pipelineInfo.materialTextureTypes};
+
 	for(uint32_t i = 0; i < meshListJson.size(); i++)
 	{
 		const std::string& id = meshListJson[i].value("model-id", "");
@@ -158,7 +171,7 @@ void loadDefaultMeshes
 
 		std::vector<mtd::DefaultMesh>& meshes =
 			dynamic_cast<mtd::DefaultMeshManager*>(meshManagers.back().get())->getMeshes();
-		meshes.emplace_back(device, i, id.c_str(), file.c_str(), *pPreTransforms);
+		meshes.emplace_back(device, i, id.c_str(), file.c_str(), materialInfo, *pPreTransforms);
 	}
 }
 
@@ -167,10 +180,13 @@ void loadMultiMaterial3DMeshes
 (
 	const mtd::Device& device,
 	const nlohmann::json& meshListJson,
+	const mtd::PipelineInfo& pipelineInfo,
 	std::vector<std::unique_ptr<mtd::MeshManager>>& meshManagers
 )
 {
 	meshManagers.emplace_back(std::make_unique<mtd::MultiMaterial3DMeshManager>(device));
+	mtd::MaterialInfo materialInfo{pipelineInfo.materialFloatDataTypes, pipelineInfo.materialTextureTypes};
+
 	for(uint32_t i = 0; i < meshListJson.size(); i++)
 	{
 		const std::string& id = meshListJson[i].value("model-id", "");
@@ -182,7 +198,7 @@ void loadMultiMaterial3DMeshes
 
 		std::vector<mtd::MultiMaterial3DMesh>& meshes =
 			dynamic_cast<mtd::MultiMaterial3DMeshManager*>(meshManagers.back().get())->getMeshes();
-		meshes.emplace_back(device, i, id.c_str(), file.c_str(), *pPreTransforms);
+		meshes.emplace_back(device, i, id.c_str(), file.c_str(), materialInfo, *pPreTransforms);
 	}
 }
 
@@ -191,14 +207,18 @@ void loadBillboards
 (
 	const mtd::Device& device,
 	const nlohmann::json& billboardListJson,
+	const mtd::PipelineInfo& pipelineInfo,
 	std::vector<std::unique_ptr<mtd::MeshManager>>& meshManagers
 )
 {
 	meshManagers.emplace_back(std::make_unique<mtd::BillboardManager>(device));
+	mtd::MaterialInfo materialInfo{pipelineInfo.materialFloatDataTypes, pipelineInfo.materialTextureTypes};
+
 	for(uint32_t i = 0; i < billboardListJson.size(); i++)
 	{
 		const std::string& id = billboardListJson[i].value("model-id", "");
-		const std::string& file = billboardListJson[i]["texture"];
+		const std::string& textureFile = billboardListJson[i]["texture"];
+		std::string texturePath = MTD_RESOURCES_PATH + textureFile;
 
 		const std::vector<std::array<float, 16>>& preTransforms = billboardListJson[i]["pre-transforms"];
 		const std::vector<mtd::Mat4x4>* pPreTransforms =
@@ -206,6 +226,6 @@ void loadBillboards
 
 		std::vector<mtd::Billboard>& billboards =
 			dynamic_cast<mtd::BillboardManager*>(meshManagers.back().get())->getMeshes();
-		billboards.emplace_back(device, i, id.c_str(), (MTD_RESOURCES_PATH + file).c_str(), *pPreTransforms);
+		billboards.emplace_back(device, i, id.c_str(), texturePath.c_str(), materialInfo, *pPreTransforms);
 	}
 }

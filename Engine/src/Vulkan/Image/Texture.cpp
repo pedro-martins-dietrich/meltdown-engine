@@ -13,11 +13,12 @@ mtd::Texture::Texture
 	const char* fileName,
 	const CommandHandler& commandHandler,
 	DescriptorSetHandler& descriptorSetHandler,
-	uint32_t swappableSetIndex
+	uint32_t swappableSetIndex,
+	uint32_t binding
 ) : device{mtdDevice.getDevice()}, width{0}, height{0}, channels{0}
 {
 	loadFromFile(mtdDevice, commandHandler, fileName);
-	createDescriptorResource(descriptorSetHandler, swappableSetIndex);
+	createDescriptorResource(descriptorSetHandler, swappableSetIndex, binding);
 }
 
 mtd::Texture::~Texture()
@@ -138,7 +139,7 @@ void mtd::Texture::createSampler()
 // Configures the texture descriptor set
 void mtd::Texture::createDescriptorResource
 (
-	DescriptorSetHandler& descriptorSetHandler, uint32_t swappableSetIndex
+	DescriptorSetHandler& descriptorSetHandler, uint32_t swappableSetIndex, uint32_t binding
 ) const
 {
 	vk::DescriptorImageInfo descriptorImageInfo{};
@@ -146,6 +147,6 @@ void mtd::Texture::createDescriptorResource
 	descriptorImageInfo.imageView = imageView;
 	descriptorImageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 
-	descriptorSetHandler.createImageDescriptorResources(swappableSetIndex, 0, descriptorImageInfo);
+	descriptorSetHandler.createImageDescriptorResources(swappableSetIndex, binding, descriptorImageInfo);
 	descriptorSetHandler.writeDescriptorSet(swappableSetIndex);
 }

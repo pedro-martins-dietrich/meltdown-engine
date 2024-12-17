@@ -13,8 +13,12 @@ namespace mtd
 			MultiMaterial3DMeshManager(const Device& device);
 			~MultiMaterial3DMeshManager() = default;
 
-			// Gets the total number of textures handled by the manager
+			// Getters
+			virtual uint32_t getMaterialCount() const override;
 			virtual uint32_t getTextureCount() const override;
+
+			// Checks if the material type for the stored meshes has float data
+			virtual bool hasMaterialFloatData() const override;
 
 			// Loads textures and groups the meshes into a lump, then passes the data to the GPU
 			virtual void loadMeshes(DescriptorSetHandler& textureDescriptorSetHandler) override;

@@ -9,13 +9,27 @@ mtd::MultiMaterial3DMeshManager::MultiMaterial3DMeshManager(const Device& device
 {
 }
 
-// Gets the total number of textures handled by the manager
+uint32_t mtd::MultiMaterial3DMeshManager::getMaterialCount() const
+{
+	uint32_t totalMaterialCount = 0;
+	for(const MultiMaterial3DMesh& mesh: meshes)
+		totalMaterialCount += mesh.getMaterialCount();
+	return totalMaterialCount;
+}
+
 uint32_t mtd::MultiMaterial3DMeshManager::getTextureCount() const
 {
 	uint32_t totalTextureCount = 0;
 	for(const MultiMaterial3DMesh& mesh: meshes)
 		totalTextureCount += mesh.getTextureCount();
 	return totalTextureCount;
+}
+
+// Checks if the material type for the stored meshes has float data
+bool mtd::MultiMaterial3DMeshManager::hasMaterialFloatData() const
+{
+	if(meshes.empty()) return false;
+	return meshes[0].hasMaterialFloatData();
 }
 
 // Loads textures and groups the meshes into a lump, then passes the data to the GPU
@@ -62,7 +76,7 @@ void mtd::MultiMaterial3DMeshManager::drawMesh(const vk::CommandBuffer& commandB
 				0
 			);
 		}
-		materialOffset += mesh.getTextureCount();
+		materialOffset += mesh.getMaterialCount();
 	}
 }
 

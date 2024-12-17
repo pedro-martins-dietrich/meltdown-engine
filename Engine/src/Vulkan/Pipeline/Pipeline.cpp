@@ -181,13 +181,33 @@ void mtd::Pipeline::createDescriptorSetLayouts()
 {
 	descriptorSetHandlers.reserve(info.descriptorSetInfo.size() == 0 ? 1 : 2);
 
-	std::vector<vk::DescriptorSetLayoutBinding> bindings(1);
-	// Mesh diffuse texture
-	bindings[0].binding = 0;
-	bindings[0].descriptorType = vk::DescriptorType::eCombinedImageSampler;
-	bindings[0].descriptorCount = 1;
-	bindings[0].stageFlags = vk::ShaderStageFlagBits::eFragment;
-	bindings[0].pImmutableSamplers = nullptr;
+	bool hasFloatData = !info.materialFloatDataTypes.empty();
+	bool hasTextures = !info.materialTextureTypes.empty();
+
+	uint32_t binding = 0;
+	std::vector<vk::DescriptorSetLayoutBinding> bindings
+	(
+		static_cast<uint32_t>(hasFloatData) + static_cast<uint32_t>(hasTextures)
+	);
+
+	if(hasFloatData)
+	{
+		bindings[binding].binding = binding;
+		bindings[binding].descriptorType = vk::DescriptorType::eUniformBuffer;
+		bindings[binding].descriptorCount = 1;
+		bindings[binding].stageFlags = vk::ShaderStageFlagBits::eFragment;
+		bindings[binding].pImmutableSamplers = nullptr;
+
+		binding++;
+	}
+	if(hasTextures)
+	{
+		bindings[binding].binding = binding;
+		bindings[binding].descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		bindings[binding].descriptorCount = static_cast<uint32_t>(info.materialTextureTypes.size());
+		bindings[binding].stageFlags = vk::ShaderStageFlagBits::eFragment;
+		bindings[binding].pImmutableSamplers = nullptr;
+	}
 
 	descriptorSetHandlers.emplace_back(device, bindings);
 

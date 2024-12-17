@@ -16,7 +16,8 @@ namespace mtd
 				const char* fileName,
 				const CommandHandler& commandHandler,
 				DescriptorSetHandler& descriptorSetHandler,
-				uint32_t swappableSetIndex
+				uint32_t swappableSetIndex,
+				uint32_t binding
 			);
 			~Texture();
 
@@ -48,7 +49,7 @@ namespace mtd
 			// Configures the texture descriptor set
 			void createDescriptorResource
 			(
-				DescriptorSetHandler& descriptorSetHandler, uint32_t swappableSetIndex
+				DescriptorSetHandler& descriptorSetHandler, uint32_t swappableSetIndex, uint32_t binding
 			) const;
 	};
 }

@@ -3,11 +3,8 @@
 
 #include "../Utils/Logger.hpp"
 
-mtd::Material::Material
-(
-	std::initializer_list<MaterialFloatDataType> floatAttributeTypes,
-	std::initializer_list<MaterialTextureType> textureTypes
-): floatAttributeTypes{floatAttributeTypes}, textureTypes{textureTypes}
+mtd::Material::Material(const MaterialInfo& materialInfo)
+	: floatAttributeTypes{materialInfo.floatDataTypes}, textureTypes{materialInfo.textureTypes}
 {
 	uint32_t offset = 0;
 	floatAttributeOffsets.reserve(floatAttributeTypes.size());
@@ -44,15 +41,39 @@ void mtd::Material::addTexturePath(MaterialTextureType textureType, std::string&
 	texturePaths[textureType] = std::move(texturePath);
 }
 
-// Loads all float attributes to the GPU
-void mtd::Material::loadFloatData
+// Loads all float attributes and textures to the GPU
+void mtd::Material::loadMaterial
 (
 	const Device& device,
 	const CommandHandler& commandHandler,
 	DescriptorSetHandler& descriptorSetHandler,
 	uint32_t swappableSetIndex
+)
+{
+	loadFloatData(device, descriptorSetHandler, swappableSetIndex);
+	loadTextures(device, commandHandler, descriptorSetHandler, swappableSetIndex);
+}
+
+// Loads all float attributes to the GPU
+void mtd::Material::loadFloatData
+(
+	const Device& device,
+	DescriptorSetHandler& descriptorSetHandler,
+	uint32_t swappableSetIndex
 ) const
 {
+	if(floatAttributeTypes.empty()) return;
+
+	uint32_t dataSize = sizeof(float) * floatAttributes.size();
+
+	descriptorSetHandler.createDescriptorResources
+	(
+		device, dataSize, vk::BufferUsageFlagBits::eUniformBuffer, swappableSetIndex, 0
+	);
+	descriptorSetHandler.updateDescriptorData(swappableSetIndex, 0, floatAttributes.data(), dataSize);
+
+	if(textureTypes.empty())
+		descriptorSetHandler.writeDescriptorSet(swappableSetIndex);
 }
 
 // Loads all material textures
@@ -72,8 +93,9 @@ void mtd::Material::loadTextures
 			return;
 		}
 
-		const std::string& texturePath = texturePaths.at(textureType);
-		textures.emplace_back(device, texturePath.c_str(), commandHandler, descriptorSetHandler, swappableSetIndex);
+		const char* texturePath = texturePaths.at(textureType).c_str();
+		uint32_t binding = floatAttributeTypes.empty() ? 0 : 1;
+		textures.emplace_back(device, texturePath, commandHandler, descriptorSetHandler, swappableSetIndex, binding);
 	}
 }
 

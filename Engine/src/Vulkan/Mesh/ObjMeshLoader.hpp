@@ -21,6 +21,7 @@ namespace mtd::ObjMeshLoader
 		std::vector<Vertex>& vertices,
 		std::vector<uint32_t>& indices,
 		std::vector<SubmeshData>& submeshInfos,
-		std::vector<Material>& meshMaterials
+		std::vector<Material>& meshMaterials,
+		const MaterialInfo& materialInfo
 	);
 }

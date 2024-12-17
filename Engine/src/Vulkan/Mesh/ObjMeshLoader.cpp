@@ -23,7 +23,8 @@ static void loadMaterials
 (
 	std::string filePath,
 	std::vector<mtd::Material>& materials,
-	std::unordered_map<std::string, uint32_t>& materialIDs
+	std::unordered_map<std::string, uint32_t>& materialIDs,
+	const mtd::MaterialInfo& materialInfo
 );
 
 // Parses each triangle of a face
@@ -78,7 +79,8 @@ void mtd::ObjMeshLoader::loadMultiMaterial3DMesh
 	std::vector<Vertex>& vertices,
 	std::vector<uint32_t>& indices,
 	std::vector<SubmeshData>& submeshInfos,
-	std::vector<Material>& meshMaterials
+	std::vector<Material>& meshMaterials,
+	const MaterialInfo& materialInfo
 )
 {
 	std::string objMeshPath{MTD_RESOURCES_PATH};
@@ -86,7 +88,7 @@ void mtd::ObjMeshLoader::loadMultiMaterial3DMesh
 	objMeshPath.append(fileName);
 
 	std::unordered_map<std::string, uint32_t> materialIDs;
-	loadMaterials(objMeshPath, meshMaterials, materialIDs);
+	loadMaterials(objMeshPath, meshMaterials, materialIDs, materialInfo);
 
 	std::string line;
 	std::vector<std::string> words;
@@ -157,7 +159,8 @@ void loadMaterials
 (
 	std::string filePath,
 	std::vector<mtd::Material>& materials,
-	std::unordered_map<std::string, uint32_t>& materialIDs
+	std::unordered_map<std::string, uint32_t>& materialIDs,
+	const mtd::MaterialInfo& materialInfo
 )
 {
 	filePath.replace(filePath.size() - 3, 3, "mtl");
@@ -178,7 +181,7 @@ void loadMaterials
 		{
 			currentMaterialID = nextMaterialID;
 			materialIDs[words[1]] = currentMaterialID;
-			materials.emplace_back(mtd::Material{{}, {mtd::MaterialTextureType::DiffuseMap}});
+			materials.emplace_back(materialInfo);
 			nextMaterialID++;
 		}
 		else if(!words[0].compare("Kd"))

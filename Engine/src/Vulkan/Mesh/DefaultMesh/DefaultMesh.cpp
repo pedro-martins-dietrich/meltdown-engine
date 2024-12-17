@@ -9,8 +9,9 @@ mtd::DefaultMesh::DefaultMesh
 	uint32_t index,
 	const char* id,
 	const char* fileName,
+	const MaterialInfo& materialInfo,
 	const std::vector<Mat4x4>& preTransforms
-) : Mesh{device, index, id, preTransforms, 1}, material{{}, {MaterialTextureType::DiffuseMap}}, indexOffset{0}
+) : Mesh{device, index, id, preTransforms, 1}, material{materialInfo}, indexOffset{0}
 {
 	ObjMeshLoader::loadDefault3DMesh(fileName, vertices, indices, material);
 }
@@ -30,5 +31,5 @@ void mtd::DefaultMesh::loadTexture
 	const Device& device, const CommandHandler& commandHandler, DescriptorSetHandler& descriptorSetHandler
 )
 {
-	material.loadTextures(device, commandHandler, descriptorSetHandler, meshIndex);
+	material.loadMaterial(device, commandHandler, descriptorSetHandler, meshIndex);
 }

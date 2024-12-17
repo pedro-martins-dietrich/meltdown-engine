@@ -15,6 +15,7 @@ namespace mtd
 				uint32_t index,
 				const char* id,
 				const char* fileName,
+				const MaterialInfo& materialInfo,
 				const std::vector<Mat4x4>& preTransforms
 			);
 			~MultiMaterial3DMesh() = default;
@@ -24,6 +25,7 @@ namespace mtd
 			// Getters
 			const std::vector<Vertex>& getVertices() const { return vertices; }
 			const std::vector<uint32_t>& getIndices() const { return indices; }
+			uint32_t getMaterialCount() const { return static_cast<uint32_t>(materials.size()); }
 			uint32_t getTextureCount() const;
 			uint32_t getSubmeshCount() const { return static_cast<uint32_t>(submeshInfos.size()); }
 			uint32_t getSubmeshIndexOffset(uint32_t submeshIndex) const
@@ -34,6 +36,9 @@ namespace mtd
 
 			// Sets all sub-mesh index offsets in the lump
 			void setIndexOffset(uint32_t offset);
+
+			// Checks if the used material has float data attributes
+			bool hasMaterialFloatData() const;
 
 			// Loads mesh materials
 			void loadMaterials
