@@ -46,7 +46,7 @@ namespace mtd
 				const Device& device,
 				const CommandHandler& commandHandler,
 				DescriptorSetHandler& descriptorSetHandler,
-				uint32_t initialTextureIndex
+				uint32_t initialMaterialIndex
 			);
 
 		private:

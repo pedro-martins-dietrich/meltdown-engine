@@ -23,7 +23,8 @@ void mtd::Scene::loadMeshes(std::vector<Pipeline>& pipelines)
 
 	std::unordered_map<vk::DescriptorType, uint32_t> totalDescriptorTypeCount;
 	totalDescriptorTypeCount[vk::DescriptorType::eUniformBuffer] = 1 + getMaterialFloatDataCount();
-	totalDescriptorTypeCount[vk::DescriptorType::eCombinedImageSampler] = getTotalTextureCount();
+	if(getTotalTextureCount() > 0)
+		totalDescriptorTypeCount[vk::DescriptorType::eCombinedImageSampler] = getTotalTextureCount();
 
 	for(const Pipeline& pipeline: pipelines)
 	{

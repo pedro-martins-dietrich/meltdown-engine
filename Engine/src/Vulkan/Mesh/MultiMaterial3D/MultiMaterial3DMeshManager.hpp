@@ -20,8 +20,8 @@ namespace mtd
 			// Checks if the material type for the stored meshes has float data
 			virtual bool hasMaterialFloatData() const override;
 
-			// Loads textures and groups the meshes into a lump, then passes the data to the GPU
-			virtual void loadMeshes(DescriptorSetHandler& textureDescriptorSetHandler) override;
+			// Loads the materials and groups the meshes into a lump, then passes the data to the GPU
+			virtual void loadMeshes(DescriptorSetHandler& meshDescriptorSetHandler) override;
 
 			// Binds vertex and index buffers
 			virtual void bindBuffers(const vk::CommandBuffer& commandBuffer) const override;

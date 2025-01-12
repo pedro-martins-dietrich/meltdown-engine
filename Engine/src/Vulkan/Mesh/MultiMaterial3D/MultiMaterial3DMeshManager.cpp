@@ -1,6 +1,8 @@
 #include <pch.hpp>
 #include "MultiMaterial3DMeshManager.hpp"
 
+#include "../../../Utils/Logger.hpp"
+
 mtd::MultiMaterial3DMeshManager::MultiMaterial3DMeshManager(const Device& device)
 	: BaseMeshManager{device},
 	currentIndexOffset{0},
@@ -32,16 +34,16 @@ bool mtd::MultiMaterial3DMeshManager::hasMaterialFloatData() const
 	return meshes[0].hasMaterialFloatData();
 }
 
-// Loads textures and groups the meshes into a lump, then passes the data to the GPU
-void mtd::MultiMaterial3DMeshManager::loadMeshes(DescriptorSetHandler& textureDescriptorSetHandler)
+// Loads the materials and groups the meshes into a lump, then passes the data to the GPU
+void mtd::MultiMaterial3DMeshManager::loadMeshes(DescriptorSetHandler& meshDescriptorSetHandler)
 {
-	uint32_t currentTextureCount = 0;
+	uint32_t currentMaterialCount = 0;
 	for(uint32_t i = 0; i < meshes.size(); i++)
 	{
 		loadMeshToLump(meshes[i]);
 
-		meshes[i].loadMaterials(device, commandHandler, textureDescriptorSetHandler, currentTextureCount);
-		currentTextureCount += meshes[i].getTextureCount();
+		meshes[i].loadMaterials(device, commandHandler, meshDescriptorSetHandler, currentMaterialCount);
+		currentMaterialCount += meshes[i].getMaterialCount();
 
 		meshIndexMap[meshes[i].getModelID()] = i;
 	}

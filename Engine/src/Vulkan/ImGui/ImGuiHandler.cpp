@@ -59,7 +59,7 @@ void mtd::ImGuiHandler::init
 	imGuiInitInfo.PipelineRenderingCreateInfo = {};
 	imGuiInitInfo.Allocator = nullptr;
 	imGuiInitInfo.CheckVkResultFn = checkVulkanResult;
-	imGuiInitInfo.MinAllocationSize = 1048576U;
+	imGuiInitInfo.MinAllocationSize = 0U;
 
 	ImGui_ImplVulkan_Init(&imGuiInitInfo);
 }

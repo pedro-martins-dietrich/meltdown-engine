@@ -63,9 +63,9 @@ void mtd::MultiMaterial3DMesh::loadMaterials
 	const Device& device,
 	const CommandHandler& commandHandler,
 	DescriptorSetHandler& descriptorSetHandler,
-	uint32_t initialTextureIndex
+	uint32_t initialMaterialIndex
 )
 {
 	for(uint32_t i = 0; i < materials.size(); i++)
-		materials[i].loadMaterial(device, commandHandler, descriptorSetHandler, initialTextureIndex + i);
+		materials[i].loadMaterial(device, commandHandler, descriptorSetHandler, initialMaterialIndex + i);
 }
