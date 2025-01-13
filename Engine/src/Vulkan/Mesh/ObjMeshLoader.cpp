@@ -10,22 +10,22 @@ struct ObjData
 {
 	std::vector<mtd::Vertex>& vertices;
 	std::vector<uint32_t>& indices;
-	std::vector<glm::vec3> positions;
+	std::vector<mtd::Vec3> positions;
 	std::vector<glm::vec2> textureCoordinates;
-	std::vector<glm::vec3> normals;
+	std::vector<mtd::Vec3> normals;
 	std::unordered_map<std::string, uint32_t> history;
 };
 
-// Data bundle for a single material
-struct MaterialData
-{
-	uint32_t materialID = 0;
-	glm::vec3 color{0.0f, 0.0f, 0.0f};
-	std::string diffuseTexture;
-};
-
+// Loads a single material from a .mtl file
+static void loadMaterial(std::string filePath, mtd::Material& material);
 // Loads the materials from a .mtl file
-static void loadMaterials(std::string filePath, std::unordered_map<std::string, MaterialData>& materials);
+static void loadMaterials
+(
+	std::string filePath,
+	std::vector<mtd::Material>& materials,
+	std::unordered_map<std::string, uint32_t>& materialIDs,
+	const mtd::MaterialInfo& materialInfo
+);
 
 // Parses each triangle of a face
 static void readFaceData(const std::vector<std::string>& words, ObjData& data);
@@ -38,16 +38,14 @@ void mtd::ObjMeshLoader::loadDefault3DMesh
 	const char* fileName,
 	std::vector<Vertex>& vertices,
 	std::vector<uint32_t>& indices,
-	std::string& diffuseTexturePath
+	Material& meshMaterial
 )
 {
 	std::string objMeshPath{MTD_RESOURCES_PATH};
 	objMeshPath.append("meshes/");
 	objMeshPath.append(fileName);
 
-	std::unordered_map<std::string, MaterialData> materials;
-	loadMaterials(objMeshPath, materials);
-	diffuseTexturePath = materials.begin()->second.diffuseTexture;
+	loadMaterial(objMeshPath, meshMaterial);
 
 	std::string line;
 	std::vector<std::string> words;
@@ -81,18 +79,16 @@ void mtd::ObjMeshLoader::loadMultiMaterial3DMesh
 	std::vector<Vertex>& vertices,
 	std::vector<uint32_t>& indices,
 	std::vector<SubmeshData>& submeshInfos,
-	std::vector<std::string>& texturePaths
+	std::vector<Material>& meshMaterials,
+	const MaterialInfo& materialInfo
 )
 {
 	std::string objMeshPath{MTD_RESOURCES_PATH};
 	objMeshPath.append("meshes/");
 	objMeshPath.append(fileName);
 
-	std::unordered_map<std::string, MaterialData> materials;
-	loadMaterials(objMeshPath, materials);
-	texturePaths.resize(materials.size());
-	for(const auto& [materialName, material]: materials)
-		texturePaths[material.materialID] = material.diffuseTexture;
+	std::unordered_map<std::string, uint32_t> materialIDs;
+	loadMaterials(objMeshPath, meshMaterials, materialIDs, materialInfo);
 
 	std::string line;
 	std::vector<std::string> words;
@@ -114,23 +110,22 @@ void mtd::ObjMeshLoader::loadMultiMaterial3DMesh
 		else if(!words[0].compare("f"))
 			readFaceData(words, data);
 		else if(!words[0].compare("usemtl"))
-			submeshInfos.emplace_back(static_cast<uint32_t>(data.indices.size()), materials[words[1]].materialID);
+			submeshInfos.emplace_back(static_cast<uint32_t>(data.indices.size()), materialIDs[words[1]]);
 	}
 	file.close();
 
 	LOG_VERBOSE("Mesh \"%s\" loaded.", fileName);
 }
 
-// Loads the materials from a .mtl file
-void loadMaterials(std::string filePath, std::unordered_map<std::string, MaterialData>& materials)
+// Loads a single material from a .mtl file
+void loadMaterial(std::string filePath, mtd::Material& material)
 {
 	filePath.replace(filePath.size() - 3, 3, "mtl");
 
 	std::string line;
 	std::vector<std::string> words;
 
-	uint32_t nextMaterialID = 0;
-	std::string currentMaterialName;
+	bool readFirstMaterial = false;
 
 	std::ifstream file;
 	file.open(filePath);
@@ -140,21 +135,68 @@ void loadMaterials(std::string filePath, std::unordered_map<std::string, Materia
 
 		if(!words[0].compare("newmtl"))
 		{
-			currentMaterialName = words[1];
-			materials[currentMaterialName].materialID = nextMaterialID;
-			nextMaterialID++;
+			if(readFirstMaterial) break;
+			readFirstMaterial = true;
 		}
 		else if(!words[0].compare("Kd"))
 		{
-			materials[currentMaterialName].color =
-				glm::vec3{std::stof(words[1]), std::stof(words[2]), std::stof(words[3])};
+			mtd::Vec4 color{std::stof(words[1]), std::stof(words[2]), std::stof(words[3]), 1.0f};
+			material.addFloatData(mtd::MaterialFloatDataType::DiffuseColor, reinterpret_cast<float*>(&color));
 		}
 		else if(!words[0].compare("map_Kd"))
 		{
 			std::string diffuseTexturePath{filePath};
 			diffuseTexturePath = diffuseTexturePath.substr(0, diffuseTexturePath.find_last_of("/\\") + 1);
 			diffuseTexturePath.append(words[1]);
-			materials[currentMaterialName].diffuseTexture = std::move(diffuseTexturePath);
+			material.addTexturePath(mtd::MaterialTextureType::DiffuseMap, std::move(diffuseTexturePath));
+		}
+	}
+	file.close();
+}
+
+// Loads the materials from a .mtl file
+void loadMaterials
+(
+	std::string filePath,
+	std::vector<mtd::Material>& materials,
+	std::unordered_map<std::string, uint32_t>& materialIDs,
+	const mtd::MaterialInfo& materialInfo
+)
+{
+	filePath.replace(filePath.size() - 3, 3, "mtl");
+
+	std::string line;
+	std::vector<std::string> words;
+
+	uint32_t currentMaterialID = 0;
+	uint32_t nextMaterialID = 0;
+
+	std::ifstream file;
+	file.open(filePath);
+	while(std::getline(file, line))
+	{
+		mtd::StringParser::split(line, " ", words);
+
+		if(!words[0].compare("newmtl"))
+		{
+			currentMaterialID = nextMaterialID;
+			materialIDs[words[1]] = currentMaterialID;
+			materials.emplace_back(materialInfo);
+			nextMaterialID++;
+		}
+		else if(!words[0].compare("Kd"))
+		{
+			mtd::Vec4 color{std::stof(words[1]), std::stof(words[2]), std::stof(words[3]), 1.0f};
+			materials[currentMaterialID]
+				.addFloatData(mtd::MaterialFloatDataType::DiffuseColor, reinterpret_cast<float*>(&color));
+		}
+		else if(!words[0].compare("map_Kd"))
+		{
+			std::string diffuseTexturePath{filePath};
+			diffuseTexturePath = diffuseTexturePath.substr(0, diffuseTexturePath.find_last_of("/\\") + 1);
+			diffuseTexturePath.append(words[1]);
+			materials[currentMaterialID]
+				.addTexturePath(mtd::MaterialTextureType::DiffuseMap, std::move(diffuseTexturePath));
 		}
 	}
 	file.close();
@@ -188,13 +230,13 @@ void readVertex(const std::string& vertexDescription, ObjData& data)
 	std::vector<std::string> fullVertexData;
 	mtd::StringParser::split(vertexDescription, "/", fullVertexData);
 
-	glm::vec3 pos = data.positions[stol(fullVertexData[0]) - 1];
+	mtd::Vec3 pos = data.positions[stol(fullVertexData[0]) - 1];
 
 	glm::vec2 texCoord{0.0f, 0.0f};
 	if(fullVertexData.size() > 1 && fullVertexData[1].size() > 0)
 		texCoord = data.textureCoordinates[stol(fullVertexData[1]) - 1];
 
-	glm::vec3 normal{0.0f, 0.0f, -1.0f};
+	mtd::Vec3 normal{0.0f, 0.0f, -1.0f};
 	if(fullVertexData.size() > 2 && fullVertexData[2].size() > 0)
 		normal = data.normals[stol(fullVertexData[2]) - 1];
 

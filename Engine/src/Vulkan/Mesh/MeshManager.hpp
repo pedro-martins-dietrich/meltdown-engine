@@ -15,10 +15,13 @@ namespace mtd
 			MeshManager(const MeshManager&) = delete;
 			MeshManager& operator=(const MeshManager&) = delete;
 
-			// Gets the number of different meshes handled by the manager
+			// Getters
 			virtual uint32_t getMeshCount() const = 0;
-			// Gets the total number of textures handled by the manager
+			virtual uint32_t getMaterialCount() const = 0;
 			virtual uint32_t getTextureCount() const = 0;
+
+			// Checks if the material type for the stored meshes has float data
+			virtual bool hasMaterialFloatData() const = 0;
 
 			// Loads mesh data to the GPU
 			virtual void loadMeshes(DescriptorSetHandler& textureDescriptorSetHandler) = 0;

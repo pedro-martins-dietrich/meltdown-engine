@@ -2,8 +2,7 @@
 #include "Scene.hpp"
 
 #include "../Utils/Logger.hpp"
-#include "../Vulkan/Mesh/DefaultMesh/DefaultMeshManager.hpp"
-#include "../Vulkan/Mesh/Billboard/BillboardManager.hpp"
+#include "../Vulkan/Mesh/MeshManager.hpp"
 
 mtd::Scene::Scene(const Device& device) : descriptorPool{device.getDevice()}
 {
@@ -23,8 +22,9 @@ void mtd::Scene::loadMeshes(std::vector<Pipeline>& pipelines)
 	descriptorPool.clear();
 
 	std::unordered_map<vk::DescriptorType, uint32_t> totalDescriptorTypeCount;
-	totalDescriptorTypeCount[vk::DescriptorType::eUniformBuffer] = 1;
-	totalDescriptorTypeCount[vk::DescriptorType::eCombinedImageSampler] = getTotalTextureCount();
+	totalDescriptorTypeCount[vk::DescriptorType::eUniformBuffer] = 1 + getMaterialFloatDataCount();
+	if(getTotalTextureCount() > 0)
+		totalDescriptorTypeCount[vk::DescriptorType::eCombinedImageSampler] = getTotalTextureCount();
 
 	for(const Pipeline& pipeline: pipelines)
 	{
@@ -49,7 +49,7 @@ void mtd::Scene::loadMeshes(std::vector<Pipeline>& pipelines)
 		if(pMeshManager->getMeshCount() == 0) continue;
 
 		DescriptorSetHandler& descriptorSetHandler = pipelines[i].getDescriptorSetHandler(0);
-		descriptorSetHandler.defineDescriptorSetsAmount(pMeshManager->getTextureCount());
+		descriptorSetHandler.defineDescriptorSetsAmount(pMeshManager->getMaterialCount());
 		descriptorPool.allocateDescriptorSet(descriptorSetHandler);
 
 		pMeshManager->loadMeshes(descriptorSetHandler);
@@ -85,5 +85,17 @@ uint32_t mtd::Scene::getTotalTextureCount() const
 	for(const std::unique_ptr<MeshManager>& pMeshManager: meshManagers)
 		count += pMeshManager->getTextureCount();
 
+	return count;
+}
+
+// Sums the amount of material float data descriptors
+uint32_t mtd::Scene::getMaterialFloatDataCount() const
+{
+	uint32_t count = 0;
+	for(const std::unique_ptr<MeshManager>& pMeshManager: meshManagers)
+	{
+		if(pMeshManager->hasMaterialFloatData())
+			count += pMeshManager->getMaterialCount();
+	}
 	return count;
 }

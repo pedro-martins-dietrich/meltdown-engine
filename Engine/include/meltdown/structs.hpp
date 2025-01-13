@@ -59,5 +59,9 @@ namespace mtd
 		ShaderFaceCulling faceCulling = ShaderFaceCulling::None;
 		/* @brief Enables or disables alpha blending for the pipeline. */
 		bool useTransparency = false;
+		/* @brief Types of materials attributes stored as floats used in the pipline. */
+		std::vector<MaterialFloatDataType> materialFloatDataTypes = {};
+		/* @brief Types of materials attributes stored as textures used in the pipline. */
+		std::vector<MaterialTextureType> materialTextureTypes = {};
 	};
 }

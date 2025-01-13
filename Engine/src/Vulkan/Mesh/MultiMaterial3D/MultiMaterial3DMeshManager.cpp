@@ -1,6 +1,8 @@
 #include <pch.hpp>
 #include "MultiMaterial3DMeshManager.hpp"
 
+#include "../../../Utils/Logger.hpp"
+
 mtd::MultiMaterial3DMeshManager::MultiMaterial3DMeshManager(const Device& device)
 	: BaseMeshManager{device},
 	currentIndexOffset{0},
@@ -9,7 +11,14 @@ mtd::MultiMaterial3DMeshManager::MultiMaterial3DMeshManager(const Device& device
 {
 }
 
-// Gets the total number of textures handled by the manager
+uint32_t mtd::MultiMaterial3DMeshManager::getMaterialCount() const
+{
+	uint32_t totalMaterialCount = 0;
+	for(const MultiMaterial3DMesh& mesh: meshes)
+		totalMaterialCount += mesh.getMaterialCount();
+	return totalMaterialCount;
+}
+
 uint32_t mtd::MultiMaterial3DMeshManager::getTextureCount() const
 {
 	uint32_t totalTextureCount = 0;
@@ -18,16 +27,23 @@ uint32_t mtd::MultiMaterial3DMeshManager::getTextureCount() const
 	return totalTextureCount;
 }
 
-// Loads textures and groups the meshes into a lump, then passes the data to the GPU
-void mtd::MultiMaterial3DMeshManager::loadMeshes(DescriptorSetHandler& textureDescriptorSetHandler)
+// Checks if the material type for the stored meshes has float data
+bool mtd::MultiMaterial3DMeshManager::hasMaterialFloatData() const
 {
-	uint32_t currentTextureCount = 0;
+	if(meshes.empty()) return false;
+	return meshes[0].hasMaterialFloatData();
+}
+
+// Loads the materials and groups the meshes into a lump, then passes the data to the GPU
+void mtd::MultiMaterial3DMeshManager::loadMeshes(DescriptorSetHandler& meshDescriptorSetHandler)
+{
+	uint32_t currentMaterialCount = 0;
 	for(uint32_t i = 0; i < meshes.size(); i++)
 	{
 		loadMeshToLump(meshes[i]);
 
-		meshes[i].loadMaterials(device, commandHandler, textureDescriptorSetHandler, currentTextureCount);
-		currentTextureCount += meshes[i].getTextureCount();
+		meshes[i].loadMaterials(device, commandHandler, meshDescriptorSetHandler, currentMaterialCount);
+		currentMaterialCount += meshes[i].getMaterialCount();
 
 		meshIndexMap[meshes[i].getModelID()] = i;
 	}
@@ -62,7 +78,7 @@ void mtd::MultiMaterial3DMeshManager::drawMesh(const vk::CommandBuffer& commandB
 				0
 			);
 		}
-		materialOffset += mesh.getTextureCount();
+		materialOffset += mesh.getMaterialCount();
 	}
 }
 

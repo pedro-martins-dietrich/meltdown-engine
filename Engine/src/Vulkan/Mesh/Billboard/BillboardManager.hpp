@@ -15,8 +15,12 @@ namespace mtd
 			BillboardManager(const Device& device);
 			~BillboardManager() = default;
 
-			// Gets the total number of textures handled by the manager
-			virtual uint32_t getTextureCount() const override { return static_cast<uint32_t>(meshes.size()); }
+			// Getters
+			virtual uint32_t getMaterialCount() const override { return static_cast<uint32_t>(meshes.size()); }
+			virtual uint32_t getTextureCount() const override;
+
+			// Checks if the material type for the stored meshes has float data
+			virtual bool hasMaterialFloatData() const override;
 
 			// Loads the billboards textures to the GPU
 			virtual void loadMeshes(DescriptorSetHandler& textureDescriptorSetHandler) override;

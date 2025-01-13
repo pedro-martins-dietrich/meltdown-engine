@@ -44,5 +44,7 @@ namespace mtd
 
 			// Sums the texture count from all mesh managers
 			uint32_t getTotalTextureCount() const;
+			// Sums the amount of material float data descriptors
+			uint32_t getMaterialFloatDataCount() const;
 	};
 }

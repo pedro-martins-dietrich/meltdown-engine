@@ -11,6 +11,19 @@ mtd::DefaultMeshManager::DefaultMeshManager(const Device& device)
 {
 }
 
+uint32_t mtd::DefaultMeshManager::getTextureCount() const
+{
+	if(meshes.empty()) return 0;
+	return static_cast<uint32_t>(meshes[0].getTextureCount() * meshes.size());
+}
+
+// Checks if the material type for the stored meshes has float data
+bool mtd::DefaultMeshManager::hasMaterialFloatData() const
+{
+	if(meshes.empty()) return false;
+	return meshes[0].hasMaterialFloatData();
+}
+
 // Loads textures and groups the meshes into a lump, then passes the data to the GPU
 void mtd::DefaultMeshManager::loadMeshes(DescriptorSetHandler& textureDescriptorSetHandler)
 {

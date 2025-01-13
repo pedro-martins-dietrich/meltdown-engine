@@ -1,9 +1,12 @@
 #pragma once
 
-#include <unordered_map>
+#include <vector>
 
 #include <glm/glm.hpp>
 #include <vulkan/vulkan.hpp>
+
+#include <meltdown/enums.hpp>
+#include <meltdown/math.hpp>
 
 namespace mtd
 {
@@ -41,15 +44,6 @@ namespace mtd
 		vk::PresentModeKHR presentMode;
 	};
 
-	// Customizable pipeline settings
-	struct PipelineSettings
-	{
-		vk::PrimitiveTopology inputAssemblyPrimitiveTopology;
-		vk::PolygonMode rasterizationPolygonMode;
-		vk::CullModeFlags rasterizationCullMode;
-		vk::FrontFace rasterizationFrontFace;
-	};
-
 	// Frame synchronization bundle
 	struct SynchronizationBundle
 	{
@@ -72,16 +66,23 @@ namespace mtd
 	// Vertex format
 	struct Vertex
 	{
-		glm::vec3 position;
+		Vec3 position;
 		glm::vec2 textureCoordinates;
-		glm::vec3 normal;
+		Vec3 normal;
+	};
+
+	// Information about the attributes for a specific material type
+	struct MaterialInfo
+	{
+		std::vector<MaterialFloatDataType> floatDataTypes;
+		std::vector<MaterialTextureType> textureTypes;
 	};
 
 	// Information for submesh rendering
 	struct SubmeshData
 	{
 		uint32_t indexOffset;
-		uint32_t materialIndex;
+		uint32_t materialID;
 	};
 
 	// Information required for drawing a frame

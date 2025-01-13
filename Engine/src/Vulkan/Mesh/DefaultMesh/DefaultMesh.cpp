@@ -9,31 +9,27 @@ mtd::DefaultMesh::DefaultMesh
 	uint32_t index,
 	const char* id,
 	const char* fileName,
+	const MaterialInfo& materialInfo,
 	const std::vector<Mat4x4>& preTransforms
-) : Mesh{device, index, id, preTransforms, 1}, indexOffset{0}
+) : Mesh{device, index, id, preTransforms, 1}, material{materialInfo}, indexOffset{0}
 {
-	ObjMeshLoader::loadDefault3DMesh(fileName, vertices, indices, diffuseTexturePath);
+	ObjMeshLoader::loadDefault3DMesh(fileName, vertices, indices, material);
 }
 
 mtd::DefaultMesh::DefaultMesh(DefaultMesh&& other) noexcept
 	: Mesh{std::move(other)},
 	vertices{std::move(other.vertices)},
 	indices{std::move(other.indices)},
-	diffuseTexturePath{std::move(other.diffuseTexturePath)},
-	diffuseTexture{std::move(other.diffuseTexture)},
+	material{std::move(other.material)},
 	indexOffset{other.indexOffset}
 {
-	other.diffuseTexture = nullptr;
 }
 
 // Loads mesh texture
 void mtd::DefaultMesh::loadTexture
 (
-	const Device& device,
-	const CommandHandler& commandHandler,
-	DescriptorSetHandler& descriptorSetHandler
+	const Device& device, const CommandHandler& commandHandler, DescriptorSetHandler& descriptorSetHandler
 )
 {
-	diffuseTexture =
-		std::make_unique<Texture>(device, diffuseTexturePath.c_str(), commandHandler, descriptorSetHandler, meshIndex);
+	material.loadMaterial(device, commandHandler, descriptorSetHandler, meshIndex);
 }
