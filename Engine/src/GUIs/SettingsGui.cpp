@@ -1,6 +1,8 @@
 #include <pch.hpp>
 #include "SettingsGui.hpp"
 
+#include <meltdown/event.hpp>
+
 static const std::array<const char*, 6> presentModeNames =
 {
 	"Immediate",
@@ -13,7 +15,8 @@ static const std::array<const char*, 6> presentModeNames =
 
 mtd::SettingsGui::SettingsGui(SwapchainSettings& swapchainSettings, bool& shouldUpdateEngine)
 	: GuiWindow{ImVec2{450.0f, 300.0f}, ImVec2{20.0f, 120.0f}},
-	swapchainSettings{swapchainSettings}, shouldUpdateEngine{shouldUpdateEngine}
+	swapchainSettings{swapchainSettings}, shouldUpdateEngine{shouldUpdateEngine},
+	orthographicMode{false}, nearPlane{0.01f}, farPlane{1000.0f}, yFOV{70.0f}, viewWidth{10.0f}, updateCamera{false}
 {
 }
 
@@ -27,6 +30,7 @@ void mtd::SettingsGui::renderGui()
 	ImGui::Begin("Engine Settings", &showWindow);
 
 	swapchainSettingsGui();
+	cameraSettingsGui();
 
 	ImGui::End();
 }
@@ -67,8 +71,7 @@ void mtd::SettingsGui::swapchainSettingsGui()
 		&compositeAlphaNumber,
 		static_cast<uint32_t>(vk::CompositeAlphaFlagBitsKHR::eInherit)
 	);
-	swapchainSettings.compositeAlpha =
-		static_cast<vk::CompositeAlphaFlagBitsKHR>(compositeAlphaNumber);
+	swapchainSettings.compositeAlpha = static_cast<vk::CompositeAlphaFlagBitsKHR>(compositeAlphaNumber);
 
 	ImGui::Separator();
 
@@ -85,4 +88,44 @@ void mtd::SettingsGui::swapchainSettingsGui()
 		(presentModeIndex == 4) ? vk::PresentModeKHR::eSharedDemandRefresh
 		: (presentModeIndex == 5) ? vk::PresentModeKHR::eSharedContinuousRefresh
 		: static_cast<vk::PresentModeKHR>(presentModeIndex);
+}
+
+// Camera settings section
+void mtd::SettingsGui::cameraSettingsGui()
+{
+	ImGui::SeparatorText("Camera");
+
+	ImGui::Text("Mode:");
+	if(ImGui::RadioButton("Perspective", !orthographicMode) && orthographicMode)
+	{
+		orthographicMode = false;
+		updateCamera = true;
+	}
+	ImGui::SameLine();
+	if(ImGui::RadioButton("Orthographic", orthographicMode) && !orthographicMode)
+	{
+		orthographicMode = true;
+		updateCamera = true;
+	}
+
+	ImGui::Separator();
+
+	updateCamera |= ImGui::InputFloat("Far plane", &farPlane, 0.1f, 1.0f, "%.1f");
+
+	if(orthographicMode)
+		updateCamera |= ImGui::InputFloat("View width", &viewWidth, 0.01f, 1.0f, "%.2f");
+	else
+	{
+		updateCamera |= ImGui::InputFloat("Near plane", &nearPlane, 0.001f, 0.01f, "%.3f");
+		updateCamera |= ImGui::DragFloat("FOV", &yFOV, 0.1f, 0.1f, 175.0f, "%.1f");
+	}
+
+	if(updateCamera)
+	{
+		updateCamera = false;
+		if(orthographicMode)
+			EventManager::dispatch(std::make_unique<SetOrthographicCameraEvent>(viewWidth, farPlane));
+		else
+			EventManager::dispatch(std::make_unique<SetPerspectiveCameraEvent>(yFOV, nearPlane, farPlane));
+	}
 }

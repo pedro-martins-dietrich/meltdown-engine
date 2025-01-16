@@ -19,11 +19,20 @@ namespace mtd
 			virtual void renderGui() override;
 
 		private:
-			// References to relevant objects
+			// References to swapchain data
 			SwapchainSettings& swapchainSettings;
 			bool& shouldUpdateEngine;
 
-			// Settings subsection
+			// Camera data
+			bool orthographicMode;
+			float nearPlane;
+			float farPlane;
+			float yFOV;
+			float viewWidth;
+			bool updateCamera;
+
+			// Settings subsections
 			void swapchainSettingsGui();
+			void cameraSettingsGui();
 	};
 }

@@ -58,9 +58,9 @@ namespace mtd
 	// Camera data to send to the shaders
 	struct CameraMatrices
 	{
-		glm::mat4 projection;
-		glm::mat4 view;
-		glm::mat4 projectionView;
+		Mat4x4 projection;
+		Mat4x4 view;
+		Mat4x4 projectionView;
 	};
 
 	// Vertex format

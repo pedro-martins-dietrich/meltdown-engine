@@ -179,7 +179,7 @@ void mtd::Engine::updateEngine()
 	for(Pipeline& pipeline: pipelines)
 		pipeline.recreate(swapchain, globalDescriptorSetHandler.get());
 
-	camera.updatePerspective(70.0f, window.getAspectRatio());
+	camera.setAspectRatio(window.getAspectRatio());
 
 	shouldUpdateEngine = false;
 }

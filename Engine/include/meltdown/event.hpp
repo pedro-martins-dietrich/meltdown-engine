@@ -177,6 +177,85 @@ namespace mtd
 	};
 
 	/*
+	* @brief Event to change the perspective camera configuration.
+	* If the camera is in the orthographic mode, it will change to perspective.
+	*/
+	class SetPerspectiveCameraEvent : public Event
+	{
+		public:
+			/*
+			* @brief Creates an event to configure the camera to use a perspective view with the provided data.
+			*
+			* @param yFOV Angle, in degrees, of the camera's field of view (FOV), for the vertical axis.
+			* @param nearPlane Distance to the closest region from the camera to get rendered.
+			* @param farPlane Maximum render distance.
+			*/
+			SetPerspectiveCameraEvent(float yFOV, float nearPlane, float farPlane);
+
+			virtual EventType getType() const override;
+
+			/*
+			* @brief Getter for the camera's field of view (FOV).
+			*
+			* @return Value, in degrees, for the vertical field of view (FOV) of the camera.
+			*/
+			float getFOV() const;
+			/*
+			* @brief Getter for the camera's near plane distance.
+			*
+			* @return View frustrum nearest plane distance.
+			*/
+			float getNearPlane() const;
+			/*
+			* @brief Getter for the camera's far plane distance.
+			*
+			* @return View frustrum farthest plane distance.
+			*/
+			float getFarPlane() const;
+
+		private:
+			float yFOV;
+			float nearPlane;
+			float farPlane;
+	};
+
+	/*
+	* @brief Event to change the orthographic camera configuration.
+	* If the camera is in the perspective mode, it will change to orthographic.
+	*/
+	class SetOrthographicCameraEvent : public Event
+	{
+		public:
+			/*
+			* @brief Creates an event to configure the camera to use a orthographic view with the provided data.
+			*
+			* @param viewWidth Width of the orthographic camera view.
+			* The view height will be set according to the window's aspect ratio.
+			* @param farPlane Maximum render distance from the camera.
+			*/
+			SetOrthographicCameraEvent(float viewWidth, float farPlane);
+
+			virtual EventType getType() const override;
+
+			/*
+			* @brief Getter for the camera's view width.
+			*
+			* @return Value for the orthographic camera view width.
+			*/
+			float getViewWidth() const;
+			/*
+			* @brief Getter for the camera's far plane distance. The near plane always intersects the camera position.
+			*
+			* @return View frustrum farthest plane distance.
+			*/
+			float getFarPlane() const;
+
+		private:
+			float viewWidth;
+			float farPlane;
+	};
+
+	/*
 	* @brief Event class for changing the current scene. Dispatching it will load the scene with
 	* the specified scene name.
 	*/

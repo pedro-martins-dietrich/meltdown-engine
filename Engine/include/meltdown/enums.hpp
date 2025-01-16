@@ -13,6 +13,8 @@ namespace mtd
 		ActionStart,
 		ActionStop,
 		WindowPosition,
+		SetPerspectiveCamera,
+		SetOrthographicCamera,
 		ChangeScene,
 		CreateInstances,
 		RemoveInstance,

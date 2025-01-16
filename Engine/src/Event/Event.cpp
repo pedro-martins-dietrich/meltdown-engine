@@ -87,6 +87,53 @@ int mtd::WindowPositionEvent::getPosY() const
 	return posY;
 }
 
+// Set perspective camera event
+mtd::SetPerspectiveCameraEvent::SetPerspectiveCameraEvent(float yFOV, float nearPlane, float farPlane)
+	: yFOV{yFOV}, nearPlane{nearPlane}, farPlane{farPlane}
+{
+}
+
+mtd::EventType mtd::SetPerspectiveCameraEvent::getType() const
+{
+	return EventType::SetPerspectiveCamera;
+}
+
+float mtd::SetPerspectiveCameraEvent::getFOV() const
+{
+	return yFOV;
+}
+
+float mtd::SetPerspectiveCameraEvent::getNearPlane() const
+{
+	return nearPlane;
+}
+
+float mtd::SetPerspectiveCameraEvent::getFarPlane() const
+{
+	return farPlane;
+}
+
+// Set orthographic camera event
+mtd::SetOrthographicCameraEvent::SetOrthographicCameraEvent(float viewWidth, float farPlane)
+	: viewWidth{viewWidth}, farPlane{farPlane}
+{
+}
+
+mtd::EventType mtd::SetOrthographicCameraEvent::getType() const
+{
+	return EventType::SetOrthographicCamera;
+}
+
+float mtd::SetOrthographicCameraEvent::getViewWidth() const
+{
+	return viewWidth;
+}
+
+float mtd::SetOrthographicCameraEvent::getFarPlane() const
+{
+	return farPlane;
+}
+
 // Change scene event
 mtd::ChangeSceneEvent::ChangeSceneEvent(const char* sceneName) : sceneName{sceneName}
 {
