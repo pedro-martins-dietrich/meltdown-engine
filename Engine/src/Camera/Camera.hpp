@@ -10,7 +10,7 @@ namespace mtd
 	class Camera
 	{
 		public:
-			Camera(glm::vec3 initialPosition, float fovDegrees, float aspectRatio);
+			Camera(Vec3 initialPosition, float yaw, float pitch, float fovDegrees, float aspectRatio);
 			~Camera() = default;
 
 			Camera(const Camera&) = delete;
@@ -24,17 +24,17 @@ namespace mtd
 
 		private:
 			// Current camera location
-			glm::vec3 position;
+			Vec3 position;
 			// Input velocity vector
-			glm::vec3 inputVelocity;
-			// View direction angles
+			Vec3 inputVelocity;
+			// View direction angles, in radians
 			float yaw;
 			float pitch;
 
 			// Camera direction vectors
-			glm::vec3 forwardDirection;
-			glm::vec3 rightDirection;
-			glm::vec3 upDirection;
+			Vec3 forwardDirection;
+			Vec3 rightDirection;
+			Vec3 upDirection;
 
 			// Maximum camera speed
 			float maxSpeed;

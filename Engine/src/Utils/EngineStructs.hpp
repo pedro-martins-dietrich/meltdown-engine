@@ -2,7 +2,6 @@
 
 #include <vector>
 
-#include <glm/glm.hpp>
 #include <vulkan/vulkan.hpp>
 
 #include <meltdown/enums.hpp>
@@ -67,7 +66,7 @@ namespace mtd
 	struct Vertex
 	{
 		Vec3 position;
-		glm::vec2 textureCoordinates;
+		Vec2 textureCoordinates;
 		Vec3 normal;
 	};
 

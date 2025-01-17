@@ -19,7 +19,7 @@ mtd::Engine::Engine(const EngineInfo& info)
 	settingsGui{swapchain.getSettings(), shouldUpdateEngine},
 	profilerGui{},
 	renderer{},
-	camera{glm::vec3{0.0f, -1.5f, -4.5f}, 70.0f, window.getAspectRatio()},
+	camera{Vec3{0.0f, -1.5f, -4.5f}, 0.0f, 0.0f, 70.0f, window.getAspectRatio()},
 	shouldUpdateEngine{false}
 {
 	configureEventCallbacks();

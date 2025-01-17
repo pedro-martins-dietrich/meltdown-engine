@@ -7,12 +7,13 @@
 
 #include "../Window/Window.hpp"
 
-static constexpr glm::vec3 up{0.0f, -1.0f, 0.0f};
+static constexpr mtd::Vec3 up{0.0f, -1.0f, 0.0f};
 
-mtd::Camera::Camera(glm::vec3 initialPosition, float fovDegrees, float aspectRatio)
+mtd::Camera::Camera(Vec3 initialPosition, float yaw, float pitch, float fovDegrees, float aspectRatio)
 	: position{initialPosition},
-	inputVelocity{0.0f}, maxSpeed{1.0f},
-	yaw{0.0f}, pitch{0.5f},
+	inputVelocity{0.0f, 0.0f, 0.0f}, maxSpeed{1.0f},
+	yaw{yaw}, pitch{pitch},
+	forwardDirection{0.0f, 0.0f, 1.0f}, rightDirection{1.0f, 0.0f, 0.0f}, upDirection{up},
 	aspectRatio{aspectRatio},
 	yFOV{fovDegrees}, viewWidth{10.0f}, nearPlane{0.01f}, farPlane{1000.0f},
 	orthographicMode{false},
@@ -46,13 +47,13 @@ void mtd::Camera::updateCamera(float deltaTime, const Window& window, Descriptor
 
 	calculateDirectionVectors();
 
-	glm::vec3 velocity{0.0f};
+	Vec3 velocity{0.0f, 0.0f, 0.0f};
 	velocity += rightDirection * inputVelocity.x;
 	velocity += upDirection * inputVelocity.y;
 	velocity += forwardDirection * inputVelocity.z;
 
-	if(glm::length(velocity) > std::numeric_limits<float>::epsilon())
-		velocity = glm::normalize(velocity) * maxSpeed;
+	if(velocity.dot(velocity) > std::numeric_limits<float>::epsilon())
+		velocity = velocity.normalized() * maxSpeed;
 
 	position += velocity * deltaTime;
 
@@ -70,7 +71,7 @@ void mtd::Camera::updateViewMatrix()
 		rightDirection.x, upDirection.x, -forwardDirection.x, 0.0f,
 		rightDirection.y, upDirection.y, -forwardDirection.y, 0.0f,
 		rightDirection.z, upDirection.z, -forwardDirection.z, 0.0f,
-		-glm::dot(rightDirection, position), -glm::dot(upDirection, position), glm::dot(forwardDirection, position), 1.0f
+		-rightDirection.dot(position), -upDirection.dot(position), forwardDirection.dot(position), 1.0f
 	};
 }
 
@@ -104,14 +105,14 @@ void mtd::Camera::updateProjectionMatrix()
 // Calculates the normalized camera direction vectors
 void mtd::Camera::calculateDirectionVectors()
 {
-	forwardDirection = glm::vec3
+	forwardDirection = Vec3
 	{
 		glm::sin(yaw) * glm::cos(pitch),
 		glm::sin(pitch),
 		glm::cos(yaw) * glm::cos(pitch)
 	};
-	rightDirection = glm::normalize(glm::cross(forwardDirection, up));
-	upDirection = glm::cross(rightDirection, forwardDirection);
+	rightDirection = forwardDirection.cross(up).normalized();
+	upDirection = rightDirection.cross(forwardDirection);
 }
 
 // Sets camera input logic
