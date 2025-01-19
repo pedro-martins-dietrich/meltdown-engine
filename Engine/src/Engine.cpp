@@ -14,12 +14,12 @@ mtd::Engine::Engine(const EngineInfo& info)
 	device{vulkanInstance},
 	swapchain{device, window.getDimensions(), vulkanInstance.getSurface()},
 	commandHandler{device},
+	camera{window.getAspectRatio()},
 	scene{device},
 	imGuiHandler{device.getDevice()},
-	settingsGui{swapchain.getSettings(), shouldUpdateEngine},
+	settingsGui{swapchain.getSettings(), camera, shouldUpdateEngine},
 	profilerGui{},
 	renderer{},
-	camera{Vec3{0.0f, -1.5f, -4.5f}, 0.0f, 0.0f, 70.0f, window.getAspectRatio()},
 	shouldUpdateEngine{false}
 {
 	configureEventCallbacks();

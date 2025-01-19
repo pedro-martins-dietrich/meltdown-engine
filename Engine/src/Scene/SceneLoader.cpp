@@ -3,14 +3,17 @@
 
 #include <nlohmann/json.hpp>
 
+#include <Meltdown.hpp>
+
 #include "../Vulkan/Mesh/DefaultMesh/DefaultMeshManager.hpp"
-#include "../Vulkan/Mesh/MultiMaterial3D/MultiMaterial3DMeshManager.hpp"
 #include "../Vulkan/Mesh/Billboard/BillboardManager.hpp"
+#include "../Vulkan/Mesh/MultiMaterial3D/MultiMaterial3DMeshManager.hpp"
 #include "../Utils/FileHandler.hpp"
 #include "../Utils/Logger.hpp"
 
-static constexpr const char* sceneLoaderVersion = "0.1.4";
+static constexpr const char* sceneLoaderVersion = "0.1.5";
 
+static void loadCamera(const nlohmann::json& cameraJson);
 static void loadPipeline
 (
 	const mtd::Device& device,
@@ -62,18 +65,18 @@ void mtd::SceneLoader::load
 		return;
 	}
 
+	loadCamera(sceneJson["camera"]);
+
+	const nlohmann::json& pipelineJson = sceneJson["pipelines"];
 	const nlohmann::json& meshesJson = sceneJson["meshes"];
 
-	assert
-	(
-		sceneJson["pipelines"].size() == meshesJson.size() &&
-		"The number of pipelines and mesh managers should be the same."
-	);
-
-	pipelineInfos.reserve(sceneJson["pipelines"].size());
+	if(pipelineJson.size() != meshesJson.size())
+		LOG_ERROR("The number of pipelines and mesh managers should be the same.");
+	
+	pipelineInfos.reserve(pipelineJson.size());
 	meshManagers.reserve(meshesJson.size());
 
-	for(const nlohmann::json pipelineJson: sceneJson["pipelines"])
+	for(const nlohmann::json pipelineJson: pipelineJson)
 		loadPipeline(device, pipelineJson, pipelineInfos);
 
 	for(uint32_t i = 0; i < meshesJson.size(); i++)
@@ -95,6 +98,31 @@ void mtd::SceneLoader::load
 	}
 
 	LOG_INFO("Scene \"%s\" loaded.", fileName);
+}
+
+// Loads initial camera data for the scene
+void loadCamera(const nlohmann::json& cameraJson)
+{
+	if(cameraJson["orthographic"])
+	{
+		mtd::EventManager::dispatch(std::make_unique<mtd::SetOrthographicCameraEvent>
+		(
+			cameraJson["view-width"], cameraJson["far-plane"]
+		));
+	}
+	else
+	{
+		mtd::EventManager::dispatch(std::make_unique<mtd::SetPerspectiveCameraEvent>
+		(
+			cameraJson["fov"], cameraJson["near-plane"], cameraJson["far-plane"]
+		));
+	}
+
+	mtd::CameraHandler::setPosition
+	(
+		mtd::Vec3{cameraJson["position"][0], cameraJson["position"][1], cameraJson["position"][2]}
+	);
+	mtd::CameraHandler::setOrientation(cameraJson["yaw"], cameraJson["pitch"]);
 }
 
 // Fetches the pipeline info from the scene file

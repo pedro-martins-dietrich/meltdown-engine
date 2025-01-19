@@ -13,11 +13,32 @@ static const std::array<const char*, 6> presentModeNames =
 	"Shared continuous refresh"
 };
 
-mtd::SettingsGui::SettingsGui(SwapchainSettings& swapchainSettings, bool& shouldUpdateEngine)
+mtd::SettingsGui::SettingsGui(SwapchainSettings& swapchainSettings, const Camera& camera, bool& shouldUpdateEngine)
 	: GuiWindow{ImVec2{450.0f, 300.0f}, ImVec2{20.0f, 120.0f}},
 	swapchainSettings{swapchainSettings}, shouldUpdateEngine{shouldUpdateEngine},
-	orthographicMode{false}, nearPlane{0.01f}, farPlane{1000.0f}, yFOV{70.0f}, viewWidth{10.0f}, updateCamera{false}
+	orthographicMode{camera.isOrthographic()}, nearPlane{camera.getNearPlane()}, farPlane{camera.getFarPlane()},
+	yFOV{camera.getFOV()}, viewWidth{camera.getViewWidth()}, updateCamera{false}
 {
+	EventManager::addCallback(EventType::SetPerspectiveCamera, [this](const Event& e)
+	{
+		const SetPerspectiveCameraEvent* spce = dynamic_cast<const SetPerspectiveCameraEvent*>(&e);
+		if(!spce) return;
+
+		orthographicMode = false;
+		yFOV = spce->getFOV();
+		nearPlane = spce->getNearPlane();
+		farPlane = spce->getFarPlane();
+	});
+
+	EventManager::addCallback(EventType::SetOrthographicCamera, [this](const Event& e)
+	{
+		const SetOrthographicCameraEvent* soce = dynamic_cast<const SetOrthographicCameraEvent*>(&e);
+		if(!soce) return;
+
+		orthographicMode = true;
+		viewWidth = soce->getViewWidth();
+		farPlane = soce->getFarPlane();
+	});
 }
 
 // Exhibits the GUI window

@@ -84,6 +84,83 @@ namespace mtd
 	};
 
 	/*
+	* @brief Set of functions to control the camera.
+	*/
+	namespace CameraHandler
+	{
+		/*
+		* @brief Getter for the camera position.
+		*
+		* @return Coordinates of the camera.
+		*/
+		const Vec3& MELTDOWN_API getPosition();
+		/*
+		* @brief Getter for the camera view direction.
+		*
+		* @return Normalized ray direction of the camera view.
+		*/
+		const Vec3& MELTDOWN_API getViewDirection();
+		/*
+		* @brief Getter for the perspective camera FOV.
+		*
+		* @return Vertical FOV of the camera, in degrees.
+		*/
+		float MELTDOWN_API getFOV();
+		/*
+		* @brief Getter for the perspective camera near plane.
+		*
+		* @return Distance from the camera position to the nearest region rendered.
+		*/
+		float MELTDOWN_API getNearPlane();
+		/*
+		* @brief Getter for the camera far plane.
+		*
+		* @return Distance from the camera position to the farthest region rendered.
+		*/
+		float MELTDOWN_API getFarPlane();
+		/*
+		* @brief Getter for the orthographic camera view width.
+		*
+		* @return Horizontal width of the orthographic camera view.
+		*/
+		float MELTDOWN_API getViewWidth();
+		/*
+		* @brief Checks if the camera is in perspective or orthographic mode.
+		*
+		* @return `true` when in orthographic mode, or `false` in perspective mode.
+		*/
+		bool MELTDOWN_API isOrthographic();
+
+		/*
+		* @brief Sets the camera position to the specified location.
+		*
+		* @param newPosition Coordinates of the new camera position.
+		*/
+		void MELTDOWN_API setPosition(const Vec3& newPosition);
+		/*
+		* @brief Sets the camera view direction to the specified orientation.
+		*
+		* @param yaw Angle of rotation around the world Y axis, in radians [0, 2*PI].
+		* @param pitch Angle of rotation around the camera's X axis, in radians [-PI/2, PI/2].
+		*/
+		void MELTDOWN_API setOrientation(float yaw, float pitch);
+
+		/*
+		* @brief Moves the camera from the current location by the specified amount.
+		*
+		* @param deltaPos Translation amount for each coordinate.
+		*/
+		void MELTDOWN_API translate(const Vec3& deltaPos);
+		/*
+		* @brief Rotates the camera view direction by the specified amount.
+		*
+		* @param deltaYaw Rotation amount, in radians, around the world Y axis.
+		* @param deltaPitch Rotation amount, in radians, around the camera X axis.
+		*/
+		void MELTDOWN_API rotate(float deltaYaw, float deltaPitch);
+	};
+
+	/*
 	* @brief Handles the key mapping to actions in the engine.
 	*/
 	namespace Input

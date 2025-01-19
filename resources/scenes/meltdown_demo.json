@@ -1,5 +1,16 @@
 {
-	"scene-loader-version": "0.1.4",
+	"scene-loader-version": "0.1.5",
+	"camera":
+	{
+		"orthographic": false,
+		"fov": 75.0,
+		"near-plane": 0.01,
+		"far-plane": 1000.0,
+		"view-width": 10.0,
+		"position": [0.0, -2.0, -6.0],
+		"yaw": 0.0,
+		"pitch": 0.4
+	},
 	"pipelines":
 	[
 		{

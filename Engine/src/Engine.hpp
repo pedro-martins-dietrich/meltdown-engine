@@ -21,6 +21,9 @@ namespace mtd
 			Engine(const Engine&) = delete;
 			Engine& operator=(const Engine&) = delete;
 
+			// Getter
+			Camera& getCamera() { return camera; }
+
 			// Configures the clear color for the framebuffer
 			void setClearColor(const Vec4& color);
 			// Configures V-Sync

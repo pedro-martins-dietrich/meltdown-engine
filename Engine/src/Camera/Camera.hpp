@@ -10,14 +10,30 @@ namespace mtd
 	class Camera
 	{
 		public:
-			Camera(Vec3 initialPosition, float yaw, float pitch, float fovDegrees, float aspectRatio);
+			Camera(float aspectRatio);
 			~Camera() = default;
 
 			Camera(const Camera&) = delete;
 			Camera& operator=(const Camera&) = delete;
 
-			// Setter
+			// Getters
+			const Vec3& getPosition() const { return position; }
+			const Vec3& getViewDirection() const { return forwardDirection; }
+			float getFOV() const { return yFOV; }
+			float getNearPlane() const { return nearPlane; }
+			float getFarPlane() const { return farPlane; }
+			float getViewWidth() const { return viewWidth; }
+			bool isOrthographic() const { return orthographicMode; }
+
+			// Setters
 			void setAspectRatio(float newAspectRatio);
+			void setPosition(const Vec3& newPosition) { position = newPosition; }
+			void setOrientation(float newYaw, float newPitch) { yaw = newYaw; pitch = newPitch; }
+
+			// Translates the camera position
+			void translate(const Vec3& deltaPos) { position += deltaPos; }
+			// Rotates the camera orientation
+			void rotate(float deltaYaw, float deltaPitch) { yaw += deltaYaw; pitch += deltaPitch; }
 
 			// Updates camera position and direction
 			void updateCamera(float deltaTime, const Window& window, DescriptorSetHandler* pGlobalDescriptorSet);

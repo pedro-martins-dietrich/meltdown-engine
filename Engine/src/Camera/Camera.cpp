@@ -9,13 +9,13 @@
 
 static constexpr mtd::Vec3 up{0.0f, -1.0f, 0.0f};
 
-mtd::Camera::Camera(Vec3 initialPosition, float yaw, float pitch, float fovDegrees, float aspectRatio)
-	: position{initialPosition},
+mtd::Camera::Camera(float aspectRatio)
+	: position{0.0f, 0.0f, 0.0f},
 	inputVelocity{0.0f, 0.0f, 0.0f}, maxSpeed{1.0f},
-	yaw{yaw}, pitch{pitch},
+	yaw{0.0f}, pitch{0.0f},
 	forwardDirection{0.0f, 0.0f, 1.0f}, rightDirection{1.0f, 0.0f, 0.0f}, upDirection{up},
 	aspectRatio{aspectRatio},
-	yFOV{fovDegrees}, viewWidth{10.0f}, nearPlane{0.01f}, farPlane{1000.0f},
+	yFOV{75.0f}, viewWidth{10.0f}, nearPlane{0.01f}, farPlane{1000.0f},
 	orthographicMode{false},
 	matrices{{1.0f}, {1.0f}, {1.0f}}
 {
