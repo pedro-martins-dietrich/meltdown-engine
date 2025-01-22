@@ -5,6 +5,7 @@
 #include <string>
 
 #include <meltdown/enums.hpp>
+#include <meltdown/math.hpp>
 
 namespace mtd
 {
@@ -86,6 +87,45 @@ namespace mtd
 
 		private:
 			KeyCode keyCode;
+	};
+
+	/*
+	* @brief Event created when a mouse movement is detected.
+	*/
+	class MousePositionEvent : public Event
+	{
+		public:
+			/*
+			* @brief Creates an event indicating the mouse position has changed.
+			*
+			* @param xPos Horizontal coordinate of the mouse, relative to the window center.
+			* The value ranges between `-aspectRatio` and `+aspectRatio`, when inside the window.
+			* @param yPos Vertical coordinate of the mouse, relative to the window center.
+			* The value ranges between `-1` and `1`, when inside the window.
+			*/
+			MousePositionEvent(float xPos, float yPos, bool cursorHidden);
+
+			virtual EventType getType() const override;
+
+			/*
+			* @brief Getter for the mouse position coordinates, relative to the screen center.
+			*
+			* @return Mouse cursor coordinates, ranging between `-1` and `1` vertically,
+			* and `-aspectRatio` and `+aspectRatio` horizontally.
+			*/
+			const Vec2& getMousePosition() const;
+
+			/*
+			* @brief Hidden status of the cursor.
+			* When hidden, the cursor resets its position to the window center every frame.
+			*
+			* @return Equals `true` when cursor is hidden, or `false` when visible.
+			*/
+			bool isCursorHidden() const;
+
+		private:
+			Vec2 position;
+			bool cursorHidden;
 	};
 
 	/*

@@ -10,6 +10,7 @@ namespace mtd
 	{
 		KeyPress,
 		KeyRelease,
+		MousePosition,
 		ActionStart,
 		ActionStop,
 		WindowPosition,
