@@ -1,17 +1,6 @@
 #include <pch.hpp>
 #include <meltdown/math.hpp>
 
-mtd::Vec4::Vec4(float angle, const Vec3& axis)
-{
-	float halfAngle = 0.5f * angle;
-	float angleSin = sinf(halfAngle);
-
-	x = axis.x * angleSin;
-	y = axis.y * angleSin;
-	z = axis.z * angleSin;
-	w = cosf(halfAngle);
-}
-
 float& mtd::Vec4::operator[](int i)
 {
 	return (&x)[i];
@@ -34,6 +23,11 @@ mtd::Vec4& mtd::Vec4::operator+=(const Vec4& other)
 	z += other.z;
 	w += other.w;
 	return *this;
+}
+
+mtd::Vec4 mtd::Vec4::operator-() const
+{
+	return {-x, -y, -z, -w};
 }
 
 mtd::Vec4 mtd::Vec4::operator-(const Vec4& other) const
@@ -103,7 +97,7 @@ namespace mtd
 {
 	std::ostream& operator<<(std::ostream& os, const Vec4& v4)
 	{
-		os << '(';
+		os << '(' << std::fixed;
 		for(uint32_t i = 0; i < 4; i++)
 			os << std::setw(8) << std::setprecision(3) << v4[i] << ((i % 4 == 3) ? ")" : ", ");
 		return os;

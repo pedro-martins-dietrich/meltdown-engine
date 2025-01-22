@@ -23,6 +23,11 @@ mtd::Vec2& mtd::Vec2::operator+=(const Vec2& other)
 	return *this;
 }
 
+mtd::Vec2 mtd::Vec2::operator-() const
+{
+	return {-x, -y};
+}
+
 mtd::Vec2 mtd::Vec2::operator-(const Vec2& other) const
 {
 	return {x - other.x, y - other.y};
@@ -82,7 +87,7 @@ namespace mtd
 {
 	std::ostream& operator<<(std::ostream& os, const Vec2& v2)
 	{
-		os << '(' << std::setw(8) << std::setprecision(3) << v2.x << ", ";
+		os << '(' << std::fixed << std::setw(8) << std::setprecision(3) << v2.x << ", ";
 		os << std::setw(8) << std::setprecision(3) << v2.y << ')';
 		return os;
 	}

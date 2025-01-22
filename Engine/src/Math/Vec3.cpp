@@ -24,6 +24,11 @@ mtd::Vec3& mtd::Vec3::operator+=(const Vec3& other)
 	return *this;
 }
 
+mtd::Vec3 mtd::Vec3::operator-() const
+{
+	return {-x, -y, -z};
+}
+
 mtd::Vec3 mtd::Vec3::operator-(const Vec3& other) const
 {
 	return {x - other.x, y - other.y, z - other.z};
@@ -87,7 +92,7 @@ namespace mtd
 {
 	std::ostream& operator<<(std::ostream& os, const Vec3& v3)
 	{
-		os << '(';
+		os << '(' << std::fixed;
 		for(uint32_t i = 0; i < 3; i++)
 			os << std::setw(8) << std::setprecision(3) << v3[i] << ((i % 3 == 2) ? ")" : ", ");
 		return os;

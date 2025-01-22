@@ -22,7 +22,7 @@ mtd::Mat4x4::Mat4x4(float value)
 {
 }
 
-mtd::Mat4x4::Mat4x4(const Vec4& quat)
+mtd::Mat4x4::Mat4x4(const Quaternion& quat)
 	: x
 	{
 		1.0f - 2.0f * (quat.y * quat.y + quat.z * quat.z),
@@ -111,7 +111,7 @@ namespace mtd
 
 void mtd::Mat4x4::rotateIntrinsic(float angle, const Vec3& axis)
 {
-	Mat4x4 rotationMatrix{Vec4{angle, axis}};
+	Mat4x4 rotationMatrix{Quaternion{angle, axis}};
 
 	*this *= rotationMatrix;
 }
@@ -123,7 +123,7 @@ void mtd::Mat4x4::rotateExtrinsic(float angle, const Vec3& axis)
 	this->w.y = 0.0f;
 	this->w.z = 0.0f;
 
-	Mat4x4 rotationMatrix{Vec4{angle, axis}};
+	Mat4x4 rotationMatrix{Quaternion{angle, axis}};
 
 	*this = rotationMatrix * *this;
 	this->w.x = offset.x;

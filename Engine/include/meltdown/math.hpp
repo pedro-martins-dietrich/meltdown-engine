@@ -4,6 +4,8 @@
 
 namespace mtd
 {
+	constexpr float PI = 3.1415926536f;
+
 	/*
 	* @brief Representation of a 2D vector.
 	*/
@@ -18,6 +20,7 @@ namespace mtd
 		Vec2 operator+(const Vec2& other) const;
 		Vec2& operator+=(const Vec2& other);
 
+		Vec2 operator-() const;
 		Vec2 operator-(const Vec2& other) const;
 		Vec2& operator-=(const Vec2& other);
 
@@ -90,6 +93,7 @@ namespace mtd
 		Vec3 operator+(const Vec3& other) const;
 		Vec3& operator+=(const Vec3& other);
 
+		Vec3 operator-() const;
 		Vec3 operator-(const Vec3& other) const;
 		Vec3& operator-=(const Vec3& other);
 
@@ -154,7 +158,6 @@ namespace mtd
 
 	/*
 	* @brief Representation of a 4D vector.
-	* Can also be used to represent a RGBA color or a quaternion.
 	*/
 	struct Vec4
 	{
@@ -182,6 +185,7 @@ namespace mtd
 		Vec4 operator+(const Vec4& other) const;
 		Vec4& operator+=(const Vec4& other);
 
+		Vec4 operator-() const;
 		Vec4 operator-(const Vec4& other) const;
 		Vec4& operator-=(const Vec4& other);
 
@@ -226,13 +230,6 @@ namespace mtd
 		* @param zw 2D vector with the two last elements (Z and W axes).
 		*/
 		constexpr Vec4(Vec2 xy, Vec2 zw) : x{xy.x}, y{xy.y}, z{zw.x}, w{zw.y} {}
-		/*
-		* @brief Builds a quaternion from an axis and an angle.
-		*
-		* @param axis Main axis of rotation.
-		* @param angle Rotation angle, in radians.
-		*/
-		Vec4(float angle, const Vec3& axis);
 
 		/*
 		* @brief Calculates the dot product between this `Vec4` and a second `Vec4`.
@@ -256,6 +253,80 @@ namespace mtd
 		* @return The normalized 4D vector.
 		*/
 		Vec4 normalized() const;
+	};
+
+	/*
+	* @brief Representation of a quaternion.
+	*/
+	struct Quaternion
+	{
+		float w;
+		float x;
+		float y;
+		float z;
+
+		Quaternion operator+(const Quaternion& other) const;
+		Quaternion& operator+=(const Quaternion& other);
+
+		Quaternion operator-(const Quaternion& other) const;
+		Quaternion& operator-=(const Quaternion& other);
+
+		Quaternion operator*(float scalar) const;
+		Quaternion operator*(const Quaternion& other) const;
+		Vec3 operator*(const Vec3& vec) const;
+		Quaternion& operator*=(float scalar);
+		Quaternion& operator*=(const Quaternion& other);
+
+		Quaternion operator/(float scalar) const;
+		Quaternion& operator/=(float scalar);
+
+		friend std::ostream& operator<<(std::ostream& os, const Quaternion& quat);
+
+		/*
+		* @brief Builds a quaternion by specifying all four elements.
+		*
+		* @param w Real component.
+		* @param x Imaginary `i` component.
+		* @param y Imaginary `j` component.
+		* @param z Imaginary `k` component.
+		*/
+		constexpr Quaternion(float w, float x, float y, float z) : w{w}, x{x}, y{y}, z{z} {}
+
+		/*
+		* @brief Builds a quaternion from an axis and an angle.
+		*
+		* @param axis Main axis of rotation.
+		* @param angle Rotation angle, in radians.
+		*/
+		Quaternion(float angle, const Vec3& axis);
+
+		/*
+		* @brief Gets the imaginary portion of the quaternion (xyz elements), as a 3D vector.
+		*
+		* @return Imaginary component of the quaternion.
+		*/
+		constexpr Vec3 imaginary() const { return Vec3{x, y, z}; }
+
+		/*
+		* @brief Calculates the norm of the quaternion.
+		*
+		* @return The value of the quaternion's norm.
+		*/
+		float norm() const;
+
+		/*
+		* @brief Calculates the conjugate of the quaternion.
+		*
+		* @return The conjugated quaternion.
+		*/
+		Quaternion conjugated() const;
+
+		/*
+		* @brief Calculates the normalized value of the quaternion.
+		*
+		* @return The normalized quaternion.
+		*/
+		Quaternion normalized() const;
 	};
 
 	/*
@@ -299,7 +370,7 @@ namespace mtd
 		*
 		* @param quat Quaternion that the describes the rotation the created matrix will perform.
 		*/
-		Mat4x4(const Vec4& quat);
+		Mat4x4(const Quaternion& quat);
 
 		/*
 		* @brief Rotates () the matrix around the axis, by an angle (in radians).
