@@ -2,7 +2,6 @@
 
 #include <vector>
 
-#include <glm/glm.hpp>
 #include <vulkan/vulkan.hpp>
 
 #include <meltdown/enums.hpp>
@@ -58,16 +57,16 @@ namespace mtd
 	// Camera data to send to the shaders
 	struct CameraMatrices
 	{
-		glm::mat4 projection;
-		glm::mat4 view;
-		glm::mat4 projectionView;
+		Mat4x4 projection;
+		Mat4x4 view;
+		Mat4x4 projectionView;
 	};
 
 	// Vertex format
 	struct Vertex
 	{
 		Vec3 position;
-		glm::vec2 textureCoordinates;
+		Vec2 textureCoordinates;
 		Vec3 normal;
 	};
 

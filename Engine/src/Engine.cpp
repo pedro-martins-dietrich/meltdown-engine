@@ -14,12 +14,12 @@ mtd::Engine::Engine(const EngineInfo& info)
 	device{vulkanInstance},
 	swapchain{device, window.getDimensions(), vulkanInstance.getSurface()},
 	commandHandler{device},
+	camera{window.getAspectRatio()},
 	scene{device},
 	imGuiHandler{device.getDevice()},
-	settingsGui{swapchain.getSettings(), shouldUpdateEngine},
+	settingsGui{swapchain.getSettings(), camera, shouldUpdateEngine},
 	profilerGui{},
 	renderer{},
-	camera{glm::vec3{0.0f, -1.5f, -4.5f}, 70.0f, window.getAspectRatio()},
 	shouldUpdateEngine{false}
 {
 	configureEventCallbacks();
@@ -64,7 +64,7 @@ void mtd::Engine::setVSync(bool enableVSync)
 }
 
 // Begins the engine main loop
-void mtd::Engine::run()
+void mtd::Engine::run(const std::function<void(double)>& onUpdateCallback)
 {
 	double lastTime;
 	double currentTime = glfwGetTime();
@@ -80,12 +80,12 @@ void mtd::Engine::run()
 	while(window.keepOpen())
 	{
 		PROFILER_START_FRAME("Events");
-		camera.updateCamera(static_cast<float>(frameTime), window, globalDescriptorSetHandler.get());
-
 		InputHandler::checkActionEvents();
 		EventManager::processEvents();
 
 		PROFILER_NEXT_STAGE("Scene update");
+		onUpdateCallback(frameTime);
+		camera.updateCamera(globalDescriptorSetHandler.get());
 		scene.update(frameTime);
 
 		renderer.render(device, swapchain, imGuiHandler, pipelines, scene, drawInfo, shouldUpdateEngine);
@@ -179,7 +179,7 @@ void mtd::Engine::updateEngine()
 	for(Pipeline& pipeline: pipelines)
 		pipeline.recreate(swapchain, globalDescriptorSetHandler.get());
 
-	camera.updatePerspective(70.0f, window.getAspectRatio());
+	camera.setAspectRatio(window.getAspectRatio());
 
 	shouldUpdateEngine = false;
 }

@@ -11,7 +11,7 @@ struct ObjData
 	std::vector<mtd::Vertex>& vertices;
 	std::vector<uint32_t>& indices;
 	std::vector<mtd::Vec3> positions;
-	std::vector<glm::vec2> textureCoordinates;
+	std::vector<mtd::Vec2> textureCoordinates;
 	std::vector<mtd::Vec3> normals;
 	std::unordered_map<std::string, uint32_t> history;
 };
@@ -232,7 +232,7 @@ void readVertex(const std::string& vertexDescription, ObjData& data)
 
 	mtd::Vec3 pos = data.positions[stol(fullVertexData[0]) - 1];
 
-	glm::vec2 texCoord{0.0f, 0.0f};
+	mtd::Vec2 texCoord{0.0f, 0.0f};
 	if(fullVertexData.size() > 1 && fullVertexData[1].size() > 0)
 		texCoord = data.textureCoordinates[stol(fullVertexData[1]) - 1];
 

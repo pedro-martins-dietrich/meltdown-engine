@@ -22,7 +22,7 @@ mtd::Mat4x4::Mat4x4(float value)
 {
 }
 
-mtd::Mat4x4::Mat4x4(const Vec4& quat)
+mtd::Mat4x4::Mat4x4(const Quaternion& quat)
 	: x
 	{
 		1.0f - 2.0f * (quat.y * quat.y + quat.z * quat.z),
@@ -58,6 +58,17 @@ const mtd::Vec4& mtd::Mat4x4::operator[](int i) const
 	return (&x)[i];
 }
 
+mtd::Mat4x4 mtd::Mat4x4::operator*(float scalar) const
+{
+	return
+	{
+		x.x * scalar, x.y * scalar, x.z * scalar, x.w * scalar,
+		y.x * scalar, y.y * scalar, y.z * scalar, y.w * scalar,
+		z.x * scalar, z.y * scalar, z.z * scalar, z.w * scalar,
+		w.x * scalar, w.y * scalar, w.z * scalar, w.w * scalar
+	};
+}
+
 mtd::Mat4x4 mtd::Mat4x4::operator*(const Mat4x4& other) const
 {
 	glm::mat4 result{*((glm::mat4*)this) * *((glm::mat4*)(&other))};
@@ -68,6 +79,17 @@ mtd::Mat4x4& mtd::Mat4x4::operator*=(const Mat4x4& other)
 {
 	glm::mat4 result{*((glm::mat4*)this) * *((glm::mat4*)(&other))};
 	return *this = *((Mat4x4*)(&result));
+}
+
+mtd::Mat4x4 mtd::operator*(float scalar, const Mat4x4& mat)
+{
+	return
+	{
+		mat.x.x * scalar, mat.x.y * scalar, mat.x.z * scalar, mat.x.w * scalar,
+		mat.y.x * scalar, mat.y.y * scalar, mat.y.z * scalar, mat.y.w * scalar,
+		mat.z.x * scalar, mat.z.y * scalar, mat.z.z * scalar, mat.z.w * scalar,
+		mat.w.x * scalar, mat.w.y * scalar, mat.w.z * scalar, mat.w.w * scalar
+	};
 }
 
 namespace mtd
@@ -89,7 +111,7 @@ namespace mtd
 
 void mtd::Mat4x4::rotateIntrinsic(float angle, const Vec3& axis)
 {
-	Mat4x4 rotationMatrix{Vec4{axis, angle}};
+	Mat4x4 rotationMatrix{Quaternion{angle, axis}};
 
 	*this *= rotationMatrix;
 }
@@ -101,7 +123,7 @@ void mtd::Mat4x4::rotateExtrinsic(float angle, const Vec3& axis)
 	this->w.y = 0.0f;
 	this->w.z = 0.0f;
 
-	Mat4x4 rotationMatrix{Vec4{axis, angle}};
+	Mat4x4 rotationMatrix{Quaternion{angle, axis}};
 
 	*this = rotationMatrix * *this;
 	this->w.x = offset.x;

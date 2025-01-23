@@ -35,6 +35,9 @@ mtd::FrameDimensions mtd::Window::getDimensions() const
 // Poll events and checks if window should be kept open
 bool mtd::Window::keepOpen() const
 {
+	if(cursorHidden)
+		glfwSetCursorPos(glfwWindow, 0.5f * info.width, 0.5f * info.height);
+
 	glfwPollEvents();
 	return !glfwWindowShouldClose(glfwWindow);
 }
@@ -81,9 +84,6 @@ void mtd::Window::getMousePos(float* x, float* y, bool needsCursorHidden) const
 
 	*x = static_cast<float>((mouseX - halfWidth) / info.height);
 	*y = static_cast<float>((mouseY - halfHeight) / info.height);
-
-	if(cursorHidden)
-		glfwSetCursorPos(glfwWindow, halfWidth, halfHeight);
 }
 
 // Configures GLFW parameters
@@ -106,12 +106,13 @@ void mtd::Window::createWindowInstance()
 	aspectRatio = static_cast<float>(info.width) / static_cast<float>(info.height);
 
 	glfwWindow = glfwCreateWindow(info.width, info.height, name, nullptr, nullptr);
-
 	if(!glfwWindow)
 	{
 		LOG_ERROR("Failed to create GLFW window (%d, %d).", info.width, info.height);
 		return;
 	}
+
+	glfwSetWindowUserPointer(glfwWindow, this);
 
 	monitor = glfwGetPrimaryMonitor();
 	glfwGetWindowPos(glfwWindow, &info.posX, &info.posY);
@@ -141,6 +142,20 @@ void mtd::Window::setupWindowEventDispatching() const
 		}
 	});
 
+	glfwSetCursorPosCallback(glfwWindow, [](GLFWwindow* win, double xPos, double yPos)
+	{
+		Window* pWindow = reinterpret_cast<Window*>(glfwGetWindowUserPointer(win));
+		double halfWidth = 0.5f * pWindow->info.width;
+		double halfHeight = 0.5f * pWindow->info.height;
+
+		EventManager::dispatch(std::make_unique<MousePositionEvent>
+		(
+			static_cast<float>((xPos - halfWidth) / halfHeight),
+			static_cast<float>((yPos - halfHeight) / halfHeight),
+			pWindow->cursorHidden
+		));
+	});
+
 	glfwSetWindowPosCallback(glfwWindow, [](GLFWwindow* win, int posX, int posY)
 	{
 		EventManager::dispatch(std::make_unique<WindowPositionEvent>(posX, posY));
@@ -157,10 +172,7 @@ void mtd::Window::setInputCallbacks()
 			return;
 
 		cursorHidden = !cursorHidden;
-		glfwSetInputMode
-		(
-			glfwWindow, GLFW_CURSOR, cursorHidden ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL
-		);
+		glfwSetInputMode(glfwWindow, GLFW_CURSOR, cursorHidden ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
 	});
 
 	EventManager::addCallback(EventType::KeyPress, [this](const Event& e)
@@ -196,10 +208,7 @@ void mtd::Window::toggleFullscreen()
 		glfwGetWindowPos(glfwWindow, &info.posX, &info.posY);
 		savedWindowedInfo = info;
 
-		glfwSetWindowMonitor
-		(
-			glfwWindow, monitor, 0, 0, mode->width, mode->height, mode->refreshRate
-		);
+		glfwSetWindowMonitor(glfwWindow, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
 	}
 	else
 	{

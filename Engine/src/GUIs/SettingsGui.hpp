@@ -1,7 +1,7 @@
 #pragma once
 
 #include "GuiWindow.hpp"
-#include "../Vulkan/Frame/Swapchain.hpp"
+#include "../Camera/Camera.hpp"
 
 namespace mtd
 {
@@ -9,7 +9,7 @@ namespace mtd
 	class SettingsGui : public GuiWindow
 	{
 		public:
-			SettingsGui(SwapchainSettings& swapchainSettings, bool& shouldUpdateEngine);
+			SettingsGui(SwapchainSettings& swapchainSettings, const Camera& camera, bool& shouldUpdateEngine);
 			~SettingsGui() = default;
 
 			SettingsGui(const SettingsGui&) = delete;
@@ -19,11 +19,20 @@ namespace mtd
 			virtual void renderGui() override;
 
 		private:
-			// References to relevant objects
+			// References to swapchain data
 			SwapchainSettings& swapchainSettings;
 			bool& shouldUpdateEngine;
 
-			// Settings subsection
+			// Camera data
+			bool orthographicMode;
+			float nearPlane;
+			float farPlane;
+			float yFOV;
+			float viewWidth;
+			bool updateCamera;
+
+			// Settings subsections
 			void swapchainSettingsGui();
+			void cameraSettingsGui();
 	};
 }

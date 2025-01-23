@@ -10,9 +10,12 @@ namespace mtd
 	{
 		KeyPress,
 		KeyRelease,
+		MousePosition,
 		ActionStart,
 		ActionStop,
 		WindowPosition,
+		SetPerspectiveCamera,
+		SetOrthographicCamera,
 		ChangeScene,
 		CreateInstances,
 		RemoveInstance,
