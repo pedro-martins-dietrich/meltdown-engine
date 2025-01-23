@@ -30,7 +30,7 @@ namespace mtd
 			void setVSync(bool enableVSync);
 
 			// Begins the engine main loop
-			void run();
+			void run(const std::function<void(double)>& onUpdateCallback);
 
 			// Loads a new scene, clearing the previous if necessary
 			void loadScene(const char* sceneFile);

@@ -1,8 +1,15 @@
 #pragma once
 
-#include <Meltdown.hpp>
-
 enum Actions : uint32_t
 {
+	Forward,
+	Backward,
+	Left,
+	Right,
+	Up,
+	Down,
+	RollCW,
+	RollCCW,
+	Run,
 	Jump
 };

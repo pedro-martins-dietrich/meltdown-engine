@@ -1,30 +1,21 @@
 #include <pch.hpp>
 #include "Camera.hpp"
 
-#include <limits>
-
 #include <meltdown/event.hpp>
-
-#include "../Window/Window.hpp"
-
-static constexpr mtd::Vec3 up{0.0f, -1.0f, 0.0f};
 
 mtd::Camera::Camera(float aspectRatio)
 	: position{0.0f, 0.0f, 0.0f},
 	inputVelocity{0.0f, 0.0f, 0.0f}, maxSpeed{1.0f},
-	yaw{0.0f}, pitch{0.0f},
-	forwardDirection{0.0f, 0.0f, 1.0f}, rightDirection{1.0f, 0.0f, 0.0f}, upDirection{up},
+	orientation{1.0f, 0.0f, 0.0f, 0.0f},
 	aspectRatio{aspectRatio},
 	yFOV{75.0f}, viewWidth{10.0f}, nearPlane{0.01f}, farPlane{1000.0f},
 	orthographicMode{false},
 	matrices{{1.0f}, {1.0f}, {1.0f}}
 {
-	calculateDirectionVectors();
-
 	updateViewMatrix();
 	updateProjectionMatrix();
 
-	setInputCallbacks();
+	setEventCallbacks();
 }
 
 void mtd::Camera::setAspectRatio(float newAspectRatio)
@@ -33,46 +24,39 @@ void mtd::Camera::setAspectRatio(float newAspectRatio)
 	updateProjectionMatrix();
 }
 
-// Updates camera position and direction
-void mtd::Camera::updateCamera(float deltaTime, const Window& window, DescriptorSetHandler* pGlobalDescriptorSet)
+void mtd::Camera::setOrientation(float newYaw, float newPitch, float newRoll)
 {
-	float mouseX = 0.0f;
-	float mouseY = 0.0f;
-	window.getMousePos(&mouseX, &mouseY, true);
+	Quaternion yawQuat{newYaw, {0.0f, 1.0f, 0.0f}};
+	Quaternion pitchQuat{newPitch, {-1.0f, 0.0f, 0.0f}};
+	Quaternion rollQuat{newRoll, {0.0f, 0.0f, -1.0f}};
+	orientation = (yawQuat * Quaternion{1.0f, 0.0f, 0.0f, 0.0f} * pitchQuat * rollQuat).normalized();
+}
 
-	yaw += mouseX;
-	pitch += mouseY;
-	yaw = glm::mod(yaw, glm::two_pi<float>());
-	pitch = glm::clamp(pitch, -1.5f, 1.5f);
+// Rotates the camera orientation by the specified angles, in radians
+void mtd::Camera::rotate(float deltaYaw, float deltaPitch, float deltaRoll)
+{
+	Quaternion yawQuat{deltaYaw, {0.0f, 1.0f, 0.0f}};
+	Quaternion pitchQuat{deltaPitch, {-1.0f, 0.0f, 0.0f}};
+	Quaternion rollQuat{deltaRoll, {0.0f, 0.0f, -1.0f}};
+	orientation = (yawQuat * orientation * pitchQuat * rollQuat).normalized();
+}
 
-	calculateDirectionVectors();
-
-	Vec3 velocity{0.0f, 0.0f, 0.0f};
-	velocity += rightDirection * inputVelocity.x;
-	velocity += upDirection * inputVelocity.y;
-	velocity += forwardDirection * inputVelocity.z;
-
-	if(velocity.dot(velocity) > std::numeric_limits<float>::epsilon())
-		velocity = velocity.normalized() * maxSpeed;
-
-	position += velocity * deltaTime;
-
+// Updates the camera matrices
+void mtd::Camera::updateCamera(DescriptorSetHandler* pGlobalDescriptorSet)
+{
 	updateViewMatrix();
-	matrices.projectionView = matrices.projection * matrices.view;
-
 	pGlobalDescriptorSet->updateDescriptorData(0, 0, &matrices, sizeof(CameraMatrices));
 }
 
 // Updates the view matrix
 void mtd::Camera::updateViewMatrix()
 {
-	matrices.view = Mat4x4
-	{
-		rightDirection.x, upDirection.x, -forwardDirection.x, 0.0f,
-		rightDirection.y, upDirection.y, -forwardDirection.y, 0.0f,
-		rightDirection.z, upDirection.z, -forwardDirection.z, 0.0f,
-		-rightDirection.dot(position), -upDirection.dot(position), forwardDirection.dot(position), 1.0f
-	};
+	matrices.view = Mat4x4{orientation};
+	matrices.view.w.x = position.dot(Vec3{-matrices.view.x.x, -matrices.view.y.x, -matrices.view.z.x});
+	matrices.view.w.y = position.dot(Vec3{-matrices.view.x.y, -matrices.view.y.y, -matrices.view.z.y});
+	matrices.view.w.z = position.dot(Vec3{-matrices.view.x.z, -matrices.view.y.z, -matrices.view.z.z});
+
+	matrices.projectionView = matrices.projection * matrices.view;
 }
 
 // Updates the projection matrix
@@ -83,8 +67,8 @@ void mtd::Camera::updateProjectionMatrix()
 		matrices.projection = Mat4x4
 		{
 			1.0f / viewWidth, 0.0f, 0.0f, 0.0f,
-			0.0, -aspectRatio / viewWidth, 0.0f, 0.0f,
-			0.0f, 0.0f, -1.0f / farPlane, 0.0f,	
+			0.0, aspectRatio / viewWidth, 0.0f, 0.0f,
+			0.0f, 0.0f, 1.0f / farPlane, 0.0f,
 			0.0f, 0.0f, 0.0f, 1.0f
 		};
 	}
@@ -95,28 +79,17 @@ void mtd::Camera::updateProjectionMatrix()
 		matrices.projection = Mat4x4
 		{
 			cotanY / aspectRatio, 0.0f, 0.0f, 0.0f,
-			0.0f, -cotanY, 0.0f, 0.0f,
-			0.0f, 0.0f, farPlane / (nearPlane - farPlane), -1.0f,
+			0.0f, cotanY, 0.0f, 0.0f,
+			0.0f, 0.0f, farPlane / (farPlane - nearPlane), 1.0f,
 			0.0f, 0.0f, (nearPlane * farPlane) / (nearPlane - farPlane), 0.0f
 		};
 	}
+
+	matrices.projectionView = matrices.projection * matrices.view;
 }
 
-// Calculates the normalized camera direction vectors
-void mtd::Camera::calculateDirectionVectors()
-{
-	forwardDirection = Vec3
-	{
-		glm::sin(yaw) * glm::cos(pitch),
-		glm::sin(pitch),
-		glm::cos(yaw) * glm::cos(pitch)
-	};
-	rightDirection = forwardDirection.cross(up).normalized();
-	upDirection = rightDirection.cross(forwardDirection);
-}
-
-// Sets camera input logic
-void mtd::Camera::setInputCallbacks()
+// Sets camera event callbacks
+void mtd::Camera::setEventCallbacks()
 {
 	EventManager::addCallback(EventType::SetPerspectiveCamera, [this](const Event& e)
 	{
@@ -139,71 +112,5 @@ void mtd::Camera::setInputCallbacks()
 		viewWidth = soce->getViewWidth();
 		farPlane = soce->getFarPlane();
 		updateProjectionMatrix();
-	});
-
-	EventManager::addCallback(EventType::KeyPress, [this](const Event& e)
-	{
-		const KeyPressEvent* keyPress = dynamic_cast<const KeyPressEvent*>(&e);
-		if(!keyPress || keyPress->isRepeating()) return;
-
-		switch(keyPress->getKeyCode())
-		{
-			case KeyCode::W:
-				inputVelocity.z += 1.0f;
-				break;
-			case KeyCode::A:
-				inputVelocity.x -= 1.0f;
-				break;
-			case KeyCode::S:
-				inputVelocity.z -= 1.0f;
-				break;
-			case KeyCode::D:
-				inputVelocity.x += 1.0f;
-				break;
-			case KeyCode::Space:
-				inputVelocity.y += 1.0f;
-				break;
-			case KeyCode::LeftControl:
-				inputVelocity.y -= 1.0f;
-				break;
-			case KeyCode::LeftShift:
-				maxSpeed = 2.0f;
-				break;
-			default:
-				return;
-		}
-	});
-
-	EventManager::addCallback(EventType::KeyRelease, [this](const Event& e)
-	{
-		const KeyReleaseEvent* keyRelease = dynamic_cast<const KeyReleaseEvent*>(&e);
-		if(!keyRelease) return;
-
-		switch(keyRelease->getKeyCode())
-		{
-			case KeyCode::W:
-				inputVelocity.z -= 1.0f;
-				break;
-			case KeyCode::A:
-				inputVelocity.x += 1.0f;
-				break;
-			case KeyCode::S:
-				inputVelocity.z += 1.0f;
-				break;
-			case KeyCode::D:
-				inputVelocity.x -= 1.0f;
-				break;
-			case KeyCode::Space:
-				inputVelocity.y -= 1.0f;
-				break;
-			case KeyCode::LeftControl:
-				inputVelocity.y += 1.0f;
-				break;
-			case KeyCode::LeftShift:
-				maxSpeed = 1.0f;
-				break;
-			default:
-				return;
-		}
 	});
 }

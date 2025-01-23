@@ -64,7 +64,7 @@ void mtd::Engine::setVSync(bool enableVSync)
 }
 
 // Begins the engine main loop
-void mtd::Engine::run()
+void mtd::Engine::run(const std::function<void(double)>& onUpdateCallback)
 {
 	double lastTime;
 	double currentTime = glfwGetTime();
@@ -80,12 +80,12 @@ void mtd::Engine::run()
 	while(window.keepOpen())
 	{
 		PROFILER_START_FRAME("Events");
-		camera.updateCamera(static_cast<float>(frameTime), window, globalDescriptorSetHandler.get());
-
 		InputHandler::checkActionEvents();
 		EventManager::processEvents();
 
 		PROFILER_NEXT_STAGE("Scene update");
+		onUpdateCallback(frameTime);
+		camera.updateCamera(globalDescriptorSetHandler.get());
 		scene.update(frameTime);
 
 		renderer.render(device, swapchain, imGuiHandler, pipelines, scene, drawInfo, shouldUpdateEngine);

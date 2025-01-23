@@ -26,9 +26,9 @@ void mtd::MeltdownEngine::setVSync(bool enableVSync)
 	engine->setVSync(enableVSync);
 }
 
-void mtd::MeltdownEngine::run()
+void mtd::MeltdownEngine::run(const std::function<void(double)>& onUpdateCallback)
 {
-	engine->run();
+	engine->run(onUpdateCallback);
 }
 
 void mtd::MeltdownEngine::loadScene(const char* sceneFile)
@@ -41,9 +41,19 @@ const mtd::Vec3& mtd::CameraHandler::getPosition()
 	return pCamera->getPosition();
 }
 
-const mtd::Vec3& mtd::CameraHandler::getViewDirection()
+mtd::Vec3 mtd::CameraHandler::getViewDirection()
 {
 	return pCamera->getViewDirection();
+}
+
+mtd::Vec3 mtd::CameraHandler::getRightDirection()
+{
+	return pCamera->getRightDirection();
+}
+
+mtd::Vec3 mtd::CameraHandler::getUpDirection()
+{
+	return pCamera->getUpDirection();
 }
 
 float mtd::CameraHandler::getFOV()
@@ -76,9 +86,14 @@ void mtd::CameraHandler::setPosition(const Vec3& newPosition)
 	pCamera->setPosition(newPosition);
 }
 
-void mtd::CameraHandler::setOrientation(float yaw, float pitch)
+void mtd::CameraHandler::setOrientation(float yaw, float pitch, float roll)
 {
-	pCamera->setOrientation(yaw, pitch);
+	pCamera->setOrientation(yaw, pitch, roll);
+}
+
+void mtd::CameraHandler::setOrientation(const Quaternion& newOrientation)
+{
+	pCamera->setOrientation(newOrientation);
 }
 
 void mtd::CameraHandler::translate(const Vec3& deltaPos)
@@ -86,7 +101,12 @@ void mtd::CameraHandler::translate(const Vec3& deltaPos)
 	pCamera->translate(deltaPos);
 }
 
-void mtd::CameraHandler::rotate(float deltaYaw, float deltaPitch)
+void mtd::CameraHandler::rotate(float deltaYaw, float deltaPitch, float deltaRoll)
 {
-	pCamera->rotate(deltaYaw, deltaPitch);
+	pCamera->rotate(deltaYaw, deltaPitch, deltaRoll);
+}
+
+void mtd::CameraHandler::rotate(const Quaternion& quaternion)
+{
+	pCamera->rotate(quaternion);
 }

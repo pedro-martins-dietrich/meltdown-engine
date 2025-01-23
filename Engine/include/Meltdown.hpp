@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <memory>
 #include <vector>
 
@@ -67,8 +68,10 @@ namespace mtd
 
 			/*
 			* @brief Begins the engine main loop, transfering the application control to the engine.
+			*
+			* @param onUpdateCallback Callback function called on every engine update.
 			*/
-			void run();
+			void run(const std::function<void(double)>& onUpdateCallback);
 
 			/*
 			* @brief Loads a new scene to be rendered by the engine. It needs to be called before
@@ -99,7 +102,20 @@ namespace mtd
 		*
 		* @return Normalized ray direction of the camera view.
 		*/
-		const Vec3& MELTDOWN_API getViewDirection();
+		Vec3 MELTDOWN_API getViewDirection();
+		/*
+		* @brief Getter for the camera right direction vector, in its local coordinate system.
+		*
+		* @return Right direction of the camera's local coordinate system.
+		*/
+		Vec3 MELTDOWN_API getRightDirection();
+		/*
+		* @brief Getter for the camera up direction vector, in its local coordinate system.
+		*
+		* @return Up direction of the camera's local coordinate system.
+		*/
+		Vec3 MELTDOWN_API getUpDirection();
+
 		/*
 		* @brief Getter for the perspective camera FOV.
 		*
@@ -124,6 +140,7 @@ namespace mtd
 		* @return Horizontal width of the orthographic camera view.
 		*/
 		float MELTDOWN_API getViewWidth();
+
 		/*
 		* @brief Checks if the camera is in perspective or orthographic mode.
 		*
@@ -143,7 +160,14 @@ namespace mtd
 		* @param yaw Angle of rotation around the world Y axis, in radians [0, 2*PI].
 		* @param pitch Angle of rotation around the camera's X axis, in radians [-PI/2, PI/2].
 		*/
-		void MELTDOWN_API setOrientation(float yaw, float pitch);
+		void MELTDOWN_API setOrientation(float yaw, float pitch, float roll = 0.0f);
+		/*
+		* @brief Sets the camera view direction to the specified orientation.
+		*
+		* @param newOrientation Quaternion describing the camera orientation.
+		* The quaternion should be normalized to avoid weird camera behavior.
+		*/
+		void MELTDOWN_API setOrientation(const Quaternion& newOrientation);
 
 		/*
 		* @brief Moves the camera from the current location by the specified amount.
@@ -157,7 +181,13 @@ namespace mtd
 		* @param deltaYaw Rotation amount, in radians, around the world Y axis.
 		* @param deltaPitch Rotation amount, in radians, around the camera X axis.
 		*/
-		void MELTDOWN_API rotate(float deltaYaw, float deltaPitch);
+		void MELTDOWN_API rotate(float deltaYaw, float deltaPitch, float deltaRoll = 0.0f);
+		/*
+		* @brief Rotates the camera view direction by the specified amount.
+		*
+		* @param quaternion Rotation in world coordinates, described as a quaternion.
+		*/
+		void MELTDOWN_API rotate(const Quaternion& quaternion);
 	};
 
 	/*
