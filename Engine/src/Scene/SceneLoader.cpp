@@ -105,17 +105,17 @@ void loadCamera(const nlohmann::json& cameraJson)
 {
 	if(cameraJson["orthographic"])
 	{
-		mtd::EventManager::dispatch(std::make_unique<mtd::SetOrthographicCameraEvent>
+		mtd::EventManager::dispatch<mtd::SetOrthographicCameraEvent>
 		(
 			cameraJson["view-width"], cameraJson["far-plane"]
-		));
+		);
 	}
 	else
 	{
-		mtd::EventManager::dispatch(std::make_unique<mtd::SetPerspectiveCameraEvent>
+		mtd::EventManager::dispatch<mtd::SetPerspectiveCameraEvent>
 		(
 			cameraJson["fov"], cameraJson["near-plane"], cameraJson["far-plane"]
-		));
+		);
 	}
 
 	mtd::CameraHandler::setPosition

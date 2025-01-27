@@ -3,8 +3,6 @@
 
 #include <meltdown/event.hpp>
 
-#include "../Window/Window.hpp"
-
 using ActionKeys = std::vector<mtd::KeyCode>;
 static std::unordered_map<uint32_t, ActionKeys> actionMappings;
 static std::unordered_map<mtd::KeyCode, bool> pressedKeys;
@@ -50,12 +48,12 @@ void mtd::InputHandler::checkActionEvents()
 		}
 		if(allKeysPressed && !actionStatuses[action])
 		{
-			EventManager::dispatch(std::make_unique<ActionStartEvent>(action));
+			EventManager::dispatch<ActionStartEvent>(action);
 			actionStatuses[action] = true;
 		}
 		else if(!allKeysPressed && actionStatuses[action])
 		{
-			EventManager::dispatch(std::make_unique<ActionStopEvent>(action));
+			EventManager::dispatch<ActionStopEvent>(action);
 			actionStatuses[action] = false;
 		}
 	}

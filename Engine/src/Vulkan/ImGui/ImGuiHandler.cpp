@@ -4,8 +4,6 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
 
-#include <meltdown/event.hpp>
-
 #include "../../Utils/Logger.hpp"
 
 mtd::ImGuiHandler::ImGuiHandler(const vk::Device& vulkanDevice)
@@ -95,20 +93,15 @@ void mtd::ImGuiHandler::createDescriptorPool()
 	poolSizesInfo[0].descriptorCount = 1;
 	poolSizesInfo[0].descriptorType = vk::DescriptorType::eCombinedImageSampler;
 
-	guiDescriptorPool.createDescriptorPool
-	(
-		poolSizesInfo, vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet
-	);
+	guiDescriptorPool.createDescriptorPool(poolSizesInfo, vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet);
 }
 
 // Configures the input logic for the GUI
 void mtd::ImGuiHandler::setInputCallbacks()
 {
-	EventManager::addCallback(EventType::KeyPress, [this](const Event& e)
+	toggleGuiCallbackHandle = EventManager::addCallback([this](const KeyPressEvent& event)
 	{
-		const KeyPressEvent* keyPress = dynamic_cast<const KeyPressEvent*>(&e);
-		if(!keyPress || keyPress->getKeyCode() != KeyCode::G) return;
-
-		showGui = !showGui;
+		if(event.getKeyCode() == KeyCode::G && !event.isRepeating())
+			showGui = !showGui;
 	});
 }

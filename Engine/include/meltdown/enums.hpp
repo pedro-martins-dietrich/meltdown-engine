@@ -3,27 +3,6 @@
 namespace mtd
 {
 	/*
-	* @brief Enumeration of events types handled by the engine.
-	* New types of events should use the `Custom` variant.
-	*/
-	enum class EventType
-	{
-		KeyPress,
-		KeyRelease,
-		MousePosition,
-		ActionStart,
-		ActionStop,
-		WindowPosition,
-		SetPerspectiveCamera,
-		SetOrthographicCamera,
-		ChangeScene,
-		CreateInstances,
-		RemoveInstance,
-		UpdateDescriptorData,
-		Custom
-	};
-
-	/*
 	* @brief Identifier for the pipeline shader stage.
 	*/
 	enum class ShaderStage

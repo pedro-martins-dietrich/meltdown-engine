@@ -1,13 +1,14 @@
 #pragma once
 
 #include <Meltdown.hpp>
+#include <meltdown/event.hpp>
 
 // Handles the camera behavior for the application
 class CameraController
 {
 	public:
 		CameraController();
-		~CameraController();
+		~CameraController() = default;
 
 		CameraController(const CameraController&) = delete;
 		CameraController& operator=(const CameraController&) = delete;
@@ -27,8 +28,9 @@ class CameraController
 		float roll;
 
 		// Callback IDs
-		uint64_t actionStartCallbackID;
-		uint64_t actionStopCallbackID;
+		mtd::EventCallbackHandle actionStartCallbackHandle;
+		mtd::EventCallbackHandle actionStopCallbackHandle;
+		mtd::EventCallbackHandle mousePositionCallbackHandle;
 
 		// Registers action event callbacks for camera input
 		void registerCallbacks();

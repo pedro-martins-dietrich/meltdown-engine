@@ -55,9 +55,9 @@ namespace mtd
 			// Scene being currently rendered
 			Scene scene;
 
-			// Callback IDs
-			uint64_t changeSceneCallbackID;
-			uint64_t updateDescriptorDataCallbackID;
+			// Event callback handles
+			EventCallbackHandle changeSceneCallbackHandle;
+			EventCallbackHandle updateDescriptorDataCallbackHandle;
 
 			// Flag for updating the engine
 			bool shouldUpdateEngine;

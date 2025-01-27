@@ -1,5 +1,7 @@
 #pragma once
 
+#include <meltdown/event.hpp>
+
 #include "../Utils/EngineStructs.hpp"
 #include "../Vulkan/Descriptors/DescriptorSetHandler.hpp"
 
@@ -68,6 +70,10 @@ namespace mtd
 
 			// Transformation matrices
 			CameraMatrices matrices;
+
+			// Event callback handles
+			EventCallbackHandle setPerspectiveCameraCallbackHandle;
+			EventCallbackHandle setOrthographicCameraCallbackHandle;
 
 			// Updates the view matrix
 			void updateViewMatrix();

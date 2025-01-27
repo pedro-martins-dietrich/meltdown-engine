@@ -31,6 +31,10 @@ namespace mtd
 			float viewWidth;
 			bool updateCamera;
 
+			// Camera mode callback handles
+			EventCallbackHandle setPerspectiveCallbackHandle;
+			EventCallbackHandle setOrthographicCallbackHandle;
+
 			// Settings subsections
 			void swapchainSettingsGui();
 			void cameraSettingsGui();

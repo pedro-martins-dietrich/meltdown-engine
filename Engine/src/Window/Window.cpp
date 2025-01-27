@@ -3,8 +3,6 @@
 
 #include <imgui_impl_glfw.h>
 
-#include <meltdown/event.hpp>
-
 #include "../Utils/Logger.hpp"
 #include "../Input/InputHandler.hpp"
 
@@ -18,7 +16,6 @@ mtd::Window::Window(const WindowInfo& initialInfo, const char* windowName)
 	initializeGLFW();
 	createWindowInstance();
 	setupWindowEventDispatching();
-	setInputCallbacks();
 	setWindowEventCallbacks();
 }
 
@@ -130,14 +127,14 @@ void mtd::Window::setupWindowEventDispatching() const
 		{
 			case GLFW_PRESS:
 				InputHandler::keyPressed(keyCode);
-				EventManager::dispatch(std::make_unique<KeyPressEvent>(keyCode, false));
+				EventManager::dispatch<KeyPressEvent>(keyCode, false);
 				break;
 			case GLFW_REPEAT:
-				EventManager::dispatch(std::make_unique<KeyPressEvent>(keyCode, true));
+				EventManager::dispatch<KeyPressEvent>(keyCode, true);
 				break;
 			case GLFW_RELEASE:
 				InputHandler::keyReleased(keyCode);
-				EventManager::dispatch(std::make_unique<KeyReleaseEvent>(keyCode));
+				EventManager::dispatch<KeyReleaseEvent>(keyCode);
 				break;
 		}
 	});
@@ -148,53 +145,40 @@ void mtd::Window::setupWindowEventDispatching() const
 		double halfWidth = 0.5f * pWindow->info.width;
 		double halfHeight = 0.5f * pWindow->info.height;
 
-		EventManager::dispatch(std::make_unique<MousePositionEvent>
+		EventManager::dispatch<MousePositionEvent>
 		(
 			static_cast<float>((xPos - halfWidth) / halfHeight),
 			static_cast<float>((yPos - halfHeight) / halfHeight),
 			pWindow->cursorHidden
-		));
+		);
 	});
 
 	glfwSetWindowPosCallback(glfwWindow, [](GLFWwindow* win, int posX, int posY)
 	{
-		EventManager::dispatch(std::make_unique<WindowPositionEvent>(posX, posY));
+		Window* pWindow = reinterpret_cast<Window*>(glfwGetWindowUserPointer(win));
+		pWindow->info.posX = posX;
+		pWindow->info.posY = posY;
 	});
 }
 
-// Sets window input callbacks
-void mtd::Window::setInputCallbacks()
-{
-	EventManager::addCallback(EventType::KeyPress, [this](const Event& e)
-	{
-		const KeyPressEvent* keyPress = dynamic_cast<const KeyPressEvent*>(&e);
-		if(!keyPress || keyPress->getKeyCode() != KeyCode::Tab || keyPress->isRepeating())
-			return;
-
-		cursorHidden = !cursorHidden;
-		glfwSetInputMode(glfwWindow, GLFW_CURSOR, cursorHidden ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
-	});
-
-	EventManager::addCallback(EventType::KeyPress, [this](const Event& e)
-	{
-		const KeyPressEvent* keyPress = dynamic_cast<const KeyPressEvent*>(&e);
-		if(!keyPress || keyPress->getKeyCode() != KeyCode::F11 || keyPress->isRepeating())
-			return;
-
-		toggleFullscreen();
-	});
-}
-
-// Sets window event callbacks
+// Configures the callbacks for window related events
 void mtd::Window::setWindowEventCallbacks()
 {
-	EventManager::addCallback(EventType::WindowPosition, [this](const Event& e)
+	keyPressCallbackHandle = EventManager::addCallback([this](const KeyPressEvent& event)
 	{
-		const WindowPositionEvent* winPos = dynamic_cast<const WindowPositionEvent*>(&e);
-		if(!winPos) return;
-
-		info.posX = winPos->getPosX();
-		info.posY = winPos->getPosY();
+		if(event.isRepeating()) return;
+		switch(event.getKeyCode())
+		{
+			case KeyCode::Tab:
+				cursorHidden = !cursorHidden;
+				glfwSetInputMode(glfwWindow, GLFW_CURSOR, cursorHidden ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+				break;
+			case KeyCode::F11:
+				toggleFullscreen();
+				break;
+			default:
+				return;
+		}
 	});
 }
 

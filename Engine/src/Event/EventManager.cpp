@@ -4,36 +4,54 @@
 
 using EventCallbackMap = std::unordered_map<uint64_t, mtd::EventCallback>;
 
-static std::unordered_map<mtd::EventType, EventCallbackMap> callbackMaps;
-static uint64_t currentCallbackIndex = 0;
-
-static std::unordered_map<uint64_t, EventCallbackMap> customCallbackMaps;
-static uint64_t currentCustomCallbackIndex = 0;
+static std::unordered_map<std::type_index, EventCallbackMap> callbackMaps;
+static uint64_t currentCallbackIndex = 1;
 
 static std::queue<std::unique_ptr<mtd::Event>> eventQueue;
 
-uint64_t mtd::EventManager::addCallback(EventType eventType, EventCallback callback)
+mtd::EventCallbackHandle::EventCallbackHandle() : eventType{typeid(void)}, callbackID{0}
+{
+}
+
+mtd::EventCallbackHandle::EventCallbackHandle(std::type_index eventType, uint64_t callbackID)
+	: eventType{eventType}, callbackID{callbackID}
+{
+}
+
+mtd::EventCallbackHandle::~EventCallbackHandle()
+{
+	removeCallback();
+}
+
+mtd::EventCallbackHandle::EventCallbackHandle(EventCallbackHandle&& other) noexcept
+	: eventType{other.eventType}, callbackID{other.callbackID}
+{
+	other.callbackID = 0;
+}
+
+mtd::EventCallbackHandle& mtd::EventCallbackHandle::operator=(EventCallbackHandle&& other) noexcept
+{
+	if(this != &other)
+	{
+		eventType = other.eventType;
+		callbackID = other.callbackID;
+		other.callbackID = 0;
+	}
+	return *this;
+}
+
+void mtd::EventCallbackHandle::removeCallback()
+{
+	if(callbackID == 0 || callbackMaps.find(eventType) == callbackMaps.cend()) return;
+	callbackMaps.at(eventType).erase(callbackID);
+
+	callbackID = 0;
+}
+
+mtd::EventCallbackHandle mtd::EventManager::addCallback(std::type_index eventType, const EventCallback& callback)
 {
 	callbackMaps[eventType][currentCallbackIndex] = callback;
-
-	return currentCallbackIndex++;
-}
-
-uint64_t mtd::EventManager::addCallback(uint64_t customEventID, EventCallback callback)
-{
-	customCallbackMaps[customEventID][currentCustomCallbackIndex] = callback;
-
-	return currentCustomCallbackIndex++;
-}
-
-void mtd::EventManager::removeCallback(mtd::EventType eventType, uint64_t callbackID)
-{
-	callbackMaps[eventType].erase(callbackID);
-}
-
-void mtd::EventManager::removeCallback(uint64_t customEventID, uint64_t callbackID)
-{
-	customCallbackMaps[customEventID].erase(callbackID);
+	return {eventType, currentCallbackIndex++};
 }
 
 void mtd::EventManager::dispatch(std::unique_ptr<Event> pEvent)
@@ -46,20 +64,14 @@ void mtd::EventManager::processEvents()
 	while(!eventQueue.empty())
 	{
 		std::unique_ptr<Event> pEvent = std::move(eventQueue.front());
+		Event& event = *pEvent;
 		eventQueue.pop();
 
-		if(pEvent->getType() != EventType::Custom)
-		{
-			const EventCallbackMap& callbacks = callbackMaps[pEvent->getType()];
-			for(const auto& [index, callback] : callbacks)
-				callback(*pEvent);
-		}
-		else
-		{
-			const CustomEvent& customEvent = static_cast<const CustomEvent&>(*pEvent);
-			const EventCallbackMap& callbacks = customCallbackMaps[customEvent.getID()];
-			for(const auto& [index, callback] : callbacks)
-				callback(customEvent);
-		}
+		const std::type_index eventType{typeid(event)};
+		if(callbackMaps.find(eventType) == callbackMaps.cend()) continue;
+
+		const EventCallbackMap& callbacks = callbackMaps.at(eventType);
+		for(const auto& [index, callback]: callbacks)
+			callback(*pEvent);
 	}
 }

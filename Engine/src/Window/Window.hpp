@@ -3,6 +3,8 @@
 #include <vulkan/vulkan.hpp>
 #include <GLFW/glfw3.h>
 
+#include <meltdown/event.hpp>
+
 #include "../Utils/EngineStructs.hpp"
 
 namespace mtd
@@ -60,6 +62,10 @@ namespace mtd
 			// Last windowed mode settings before going fullscreen mode
 			WindowInfo savedWindowedInfo;
 
+			// Event callback handles
+			EventCallbackHandle keyPressCallbackHandle;
+			EventCallbackHandle windowPositionCallbackHandle;
+
 			// Configures GLFW parameters
 			void initializeGLFW() const;
 			// Creates GLFW window instance
@@ -67,9 +73,7 @@ namespace mtd
 
 			// Configures event dispatching on window callbacks
 			void setupWindowEventDispatching() const;
-			// Sets window input callbacks
-			void setInputCallbacks();
-			// Sets window event callbacks
+			// Configures the callbacks for window related events
 			void setWindowEventCallbacks();
 
 			// Toggles between fullscreen and windowed mode

@@ -15,12 +15,6 @@ CameraController::CameraController()
 	registerCallbacks();
 }
 
-CameraController::~CameraController()
-{
-	mtd::EventManager::removeCallback(mtd::EventType::ActionStart, actionStartCallbackID);
-	mtd::EventManager::removeCallback(mtd::EventType::ActionStop, actionStopCallbackID);
-}
-
 // Updates the camera data every frame
 void CameraController::update(double deltaTime)
 {
@@ -44,12 +38,9 @@ void CameraController::update(double deltaTime)
 // Registers action event callbacks for camera input
 void CameraController::registerCallbacks()
 {
-	actionStartCallbackID = mtd::EventManager::addCallback(mtd::EventType::ActionStart, [this](const mtd::Event& e)
+	actionStartCallbackHandle = mtd::EventManager::addCallback([this](const mtd::ActionStartEvent& event)
 	{
-		const mtd::ActionStartEvent* actionStart = dynamic_cast<const mtd::ActionStartEvent*>(&e);
-		if(!actionStart) return;
-
-		switch(actionStart->getAction())
+		switch(event.getAction())
 		{
 			case Actions::Forward:
 				inputVelocity.z += 1.0f;
@@ -83,12 +74,9 @@ void CameraController::registerCallbacks()
 		}
 	});
 
-	actionStopCallbackID = mtd::EventManager::addCallback(mtd::EventType::ActionStop, [this](const mtd::Event& e)
+	actionStopCallbackHandle = mtd::EventManager::addCallback([this](const mtd::ActionStopEvent& event)
 	{
-		const mtd::ActionStopEvent* actionStop = dynamic_cast<const mtd::ActionStopEvent*>(&e);
-		if(!actionStop) return;
-
-		switch(actionStop->getAction())
+		switch(event.getAction())
 		{
 			case Actions::Forward:
 				inputVelocity.z -= 1.0f;
@@ -122,12 +110,9 @@ void CameraController::registerCallbacks()
 		}
 	});
 
-	mtd::EventManager::addCallback(mtd::EventType::MousePosition, [this](const mtd::Event& e)
+	mousePositionCallbackHandle = mtd::EventManager::addCallback([this](const mtd::MousePositionEvent& event)
 	{
-		const mtd::MousePositionEvent* mousePosition = dynamic_cast<const mtd::MousePositionEvent*>(&e);
-		if(!mousePosition) return;
-
-		if(mousePosition->isCursorHidden())
-			lastCursorPos = mousePosition->getMousePosition();
+		if(event.isCursorHidden())
+			lastCursorPos = event.getMousePosition();
 	});
 }
