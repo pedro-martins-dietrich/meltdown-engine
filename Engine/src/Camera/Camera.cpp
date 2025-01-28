@@ -1,8 +1,6 @@
 #include <pch.hpp>
 #include "Camera.hpp"
 
-#include <meltdown/event.hpp>
-
 mtd::Camera::Camera(float aspectRatio)
 	: position{0.0f, 0.0f, 0.0f},
 	inputVelocity{0.0f, 0.0f, 0.0f}, maxSpeed{1.0f},
@@ -91,26 +89,20 @@ void mtd::Camera::updateProjectionMatrix()
 // Sets camera event callbacks
 void mtd::Camera::setEventCallbacks()
 {
-	EventManager::addCallback(EventType::SetPerspectiveCamera, [this](const Event& e)
+	setPerspectiveCameraCallbackHandle = EventManager::addCallback([this](const SetPerspectiveCameraEvent& event)
 	{
-		const SetPerspectiveCameraEvent* spce = dynamic_cast<const SetPerspectiveCameraEvent*>(&e);
-		if(!spce) return;
-
 		orthographicMode = false;
-		yFOV = spce->getFOV();
-		nearPlane = spce->getNearPlane();
-		farPlane = spce->getFarPlane();
+		yFOV = event.getFOV();
+		nearPlane = event.getNearPlane();
+		farPlane = event.getFarPlane();
 		updateProjectionMatrix();
 	});
 
-	EventManager::addCallback(EventType::SetOrthographicCamera, [this](const Event& e)
+	setOrthographicCameraCallbackHandle = EventManager::addCallback([this](const SetOrthographicCameraEvent& event)
 	{
-		const SetOrthographicCameraEvent* soce = dynamic_cast<const SetOrthographicCameraEvent*>(&e);
-		if(!soce) return;
-
 		orthographicMode = true;
-		viewWidth = soce->getViewWidth();
-		farPlane = soce->getFarPlane();
+		viewWidth = event.getViewWidth();
+		farPlane = event.getFarPlane();
 		updateProjectionMatrix();
 	});
 }

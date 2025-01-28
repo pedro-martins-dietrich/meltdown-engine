@@ -1,8 +1,6 @@
 #include <pch.hpp>
 #include "SettingsGui.hpp"
 
-#include <meltdown/event.hpp>
-
 static const std::array<const char*, 6> presentModeNames =
 {
 	"Immediate",
@@ -19,25 +17,19 @@ mtd::SettingsGui::SettingsGui(SwapchainSettings& swapchainSettings, const Camera
 	orthographicMode{camera.isOrthographic()}, nearPlane{camera.getNearPlane()}, farPlane{camera.getFarPlane()},
 	yFOV{camera.getFOV()}, viewWidth{camera.getViewWidth()}, updateCamera{false}
 {
-	EventManager::addCallback(EventType::SetPerspectiveCamera, [this](const Event& e)
+	EventManager::addCallback([this](const SetPerspectiveCameraEvent& event)
 	{
-		const SetPerspectiveCameraEvent* spce = dynamic_cast<const SetPerspectiveCameraEvent*>(&e);
-		if(!spce) return;
-
 		orthographicMode = false;
-		yFOV = spce->getFOV();
-		nearPlane = spce->getNearPlane();
-		farPlane = spce->getFarPlane();
+		yFOV = event.getFOV();
+		nearPlane = event.getNearPlane();
+		farPlane = event.getFarPlane();
 	});
 
-	EventManager::addCallback(EventType::SetOrthographicCamera, [this](const Event& e)
+	EventManager::addCallback([this](const SetOrthographicCameraEvent& event)
 	{
-		const SetOrthographicCameraEvent* soce = dynamic_cast<const SetOrthographicCameraEvent*>(&e);
-		if(!soce) return;
-
 		orthographicMode = true;
-		viewWidth = soce->getViewWidth();
-		farPlane = soce->getFarPlane();
+		viewWidth = event.getViewWidth();
+		farPlane = event.getFarPlane();
 	});
 }
 
@@ -145,8 +137,8 @@ void mtd::SettingsGui::cameraSettingsGui()
 	{
 		updateCamera = false;
 		if(orthographicMode)
-			EventManager::dispatch(std::make_unique<SetOrthographicCameraEvent>(viewWidth, farPlane));
+			EventManager::dispatch<SetOrthographicCameraEvent>(viewWidth, farPlane);
 		else
-			EventManager::dispatch(std::make_unique<SetPerspectiveCameraEvent>(yFOV, nearPlane, farPlane));
+			EventManager::dispatch<SetPerspectiveCameraEvent>(yFOV, nearPlane, farPlane);
 	}
 }

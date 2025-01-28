@@ -3,6 +3,8 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <typeindex>
+#include <type_traits>
 
 #include <meltdown/enums.hpp>
 #include <meltdown/math.hpp>
@@ -18,13 +20,6 @@ namespace mtd
 	{
 		public:
 			virtual ~Event() = default;
-
-			/*
-			* @brief Getter for the event type, for identification.
-			*
-			* @return Kind of event the event object contains.
-			*/
-			virtual EventType getType() const = 0;
 	};
 
 	/*
@@ -41,8 +36,6 @@ namespace mtd
 			* or if it is being held down (`true`).
 			*/
 			KeyPressEvent(KeyCode keyCode, bool repeatedPress);
-
-			virtual EventType getType() const override;
 
 			/*
 			* @brief Getter for the pressed key code.
@@ -76,8 +69,6 @@ namespace mtd
 			*/
 			KeyReleaseEvent(KeyCode keyCode);
 
-			virtual EventType getType() const override;
-
 			/*
 			* @brief Getter for the released key code.
 			*
@@ -104,8 +95,6 @@ namespace mtd
 			* The value ranges between `-1` and `1`, when inside the window.
 			*/
 			MousePositionEvent(float xPos, float yPos, bool cursorHidden);
-
-			virtual EventType getType() const override;
 
 			/*
 			* @brief Getter for the mouse position coordinates, relative to the screen center.
@@ -141,8 +130,6 @@ namespace mtd
 			*/
 			ActionStartEvent(uint32_t action);
 
-			virtual EventType getType() const override;
-
 			/*
 			* @brief Getter for the action that has been started.
 			*
@@ -166,8 +153,6 @@ namespace mtd
 			* @param action Identifier of the action.
 			*/
 			ActionStopEvent(uint32_t action);
-
-			virtual EventType getType() const override;
 
 			/*
 			* @brief Getter for the action that has been stopped.
@@ -193,8 +178,6 @@ namespace mtd
 			* @param posX Coordinate X of the window position.
 			*/
 			WindowPositionEvent(int posX, int posY);
-
-			virtual EventType getType() const override;
 
 			/*
 			* @brief Getter for the X coordinate of the window top left corner.
@@ -231,8 +214,6 @@ namespace mtd
 			* @param farPlane Maximum render distance.
 			*/
 			SetPerspectiveCameraEvent(float yFOV, float nearPlane, float farPlane);
-
-			virtual EventType getType() const override;
 
 			/*
 			* @brief Getter for the camera's field of view (FOV).
@@ -275,8 +256,6 @@ namespace mtd
 			*/
 			SetOrthographicCameraEvent(float viewWidth, float farPlane);
 
-			virtual EventType getType() const override;
-
 			/*
 			* @brief Getter for the camera's view width.
 			*
@@ -309,8 +288,6 @@ namespace mtd
 			*/
 			ChangeSceneEvent(const char* sceneName);
 
-			virtual EventType getType() const override;
-
 			/*
 			* @brief Getter for the name of the new scene.
 			*
@@ -335,8 +312,6 @@ namespace mtd
 			* @param instanceCount Quantity of instances to be added.
 			*/
 			CreateInstancesEvent(const char* modelID, uint32_t instanceCount);
-
-			virtual EventType getType() const override;
 
 			/*
 			* @brief Getter for the target model ID.
@@ -369,8 +344,6 @@ namespace mtd
 			*/
 			RemoveInstanceEvent(uint64_t instanceID);
 
-			virtual EventType getType() const override;
-
 			/*
 			* @brief Getter for the target instance ID.
 			*
@@ -396,8 +369,6 @@ namespace mtd
 			* @param data Pointer to the updated descriptor data.
 			*/
 			UpdateDescriptorDataEvent(uint32_t pipelineIndex, uint32_t binding, const void* data);
-
-			virtual EventType getType() const override;
 
 			/*
 			* @brief Getter for the target pipeline index.
@@ -427,23 +398,62 @@ namespace mtd
 	};
 
 	/*
-	* @brief Base class for custom events. Each custom event must have an unique ID.
+	* @brief Container class to handle the event callback function after being registered in the `EventManager`.
+	* The event callback tied to an instance of this class will be removed with the deletion of the instance.
 	*/
-	class CustomEvent : public Event
+	class EventCallbackHandle
 	{
 		public:
-			virtual EventType getType() const override;
+			EventCallbackHandle();
+			EventCallbackHandle(std::type_index eventType, uint64_t callbackID);
+			~EventCallbackHandle();
+
+			EventCallbackHandle(const EventCallbackHandle&) = delete;
+			EventCallbackHandle& operator=(const EventCallbackHandle&) = delete;
+
+			EventCallbackHandle(EventCallbackHandle&& other) noexcept;
+			EventCallbackHandle& operator=(EventCallbackHandle&& other) noexcept;
 
 			/*
-			* @brief Getter that returns the ID of the custom event.
-			* It is recommended for the application to create an `enum` to handle the IDs.
+			* @brief Removes the callback tied to this object from the `EventManager`.
 			*/
-			virtual uint64_t getID() const = 0;
+			void removeCallback();
+
+		private:
+			std::type_index eventType;
+			uint64_t callbackID;
 	};
 
 	/*
+	* @brief Base template struct for lambda function traits.
+	*/
+	template<typename T>
+	struct LambdaTraits;
+	/*
+	* @brief Template struct containing type data for a lambda function.
+	*/
+	template<typename ReturnType, typename ClassType, typename... Args>
+	struct LambdaTraits<ReturnType(ClassType::*)(Args...) const>
+	{
+		using ArgsTuple = std::tuple<Args...>;
+		using Return = ReturnType;
+
+		static constexpr size_t argCount = sizeof...(Args);
+	};
+	/*
+	* @brief Helper template struct to check if the type overloads the `()` operator.
+	*/
+	template<typename T>
+	using LambdaTraitsHelper = LambdaTraits<decltype(&T::operator())>;
+	/*
+	* @brief Template struct to verify the types used in a lambda function.
+	*/
+	template<typename T>
+	struct LambdaTraits : LambdaTraitsHelper<T> {};
+
+	/*
 	* @brief Type for callback functions that accept a const reference to an `Event` as parameter
-	* and does not have a return value.
+	* and have a `void` return type.
 	*/
 	using EventCallback = std::function<void(const Event&)>;
 
@@ -454,56 +464,56 @@ namespace mtd
 	{
 		/*
 		* @brief Adds a callback function to the specified event type.
-		* The callbacks must be removed with `removeCallback()` as soon as it is no longer used.
 		*
-		* @param eventType Enum identifying the type of event to listen.
-		* @param callback Callback function to be called when the event is triggered.
+		* @param eventType Index of the event type associated with the callback.
+		* @param callback Lambda function called when the event is triggered.
+		* The callback must receive a `const Event&` argument and return `void`.
 		*
-		* @return Callback ID where the callback was saved. Required for removing the callback
-		* once it is no longer used.
+		* @return Object to handle the callback's lifetime.
 		*/
-		uint64_t addCallback(EventType eventType, EventCallback callback);
+		EventCallbackHandle addCallback(std::type_index eventType, const EventCallback& callback);
 		/*
-		* @brief Adds a callbacks to the specified custom event.
-		* The callbacks must be removed with `removeCallback()` as soon as it is no longer used.
+		* @brief Adds a callback function to the event type specified in the lambda function parameter.
 		*
-		* @param customEventID ID identifying the custom event to listen.
-		* @param callback Callback function to be called when the custom event is triggered.
+		* @param callback Lambda function called when the event is triggered.
+		* The callback must receive a `const EventType&` argument and return `void`.
 		*
-		* @return Callback ID where the callback was saved. Required for removing the callback
-		* once it is no longer used.
+		* @return Object to handle the callback's lifetime.
 		*/
-		uint64_t addCallback(uint64_t customEventID, EventCallback callback);
+		template<typename Callback>
+		EventCallbackHandle addCallback(const Callback& callback)
+		{
+			static_assert(std::is_void_v<typename LambdaTraits<Callback>::Return>, "Callback must have a void return type.");
+			static_assert(LambdaTraits<Callback>::argCount == 1, "Callback must take exactly 1 argument.");
 
-		/*
-		* @brief Removes an event callback from the handler, specified by the event type and
-		* the callback ID.
-		*
-		* If the callback depends on an object that got deleted, the callback must be deleted
-		* from the `EventManager`.
-		*
-		* @param eventType Enum identifying the type of event of the callback.
-		* @param callbackID Identification of the callback to be removed.
-		*/
-		void removeCallback(EventType eventType, uint64_t callbackID);
-		/*
-		* @brief Removes an custom event callback from the handler, specified by the
-		* custom event ID and the callback ID.
-		*
-		* If the callback depends on an object that got deleted, the callback must be deleted
-		* from the `EventManager`.
-		*
-		* @param eventType Enum identifying the type of event of the callback.
-		* @param callbackID Identification of the callback to be removed.
-		*/
-		void removeCallback(uint64_t customEventID, uint64_t callbackID);
+			using Arguments = typename LambdaTraits<Callback>::ArgsTuple;
+			using EventType = typename std::remove_cvref_t<std::tuple_element_t<0, Arguments>>;
+			static_assert(std::is_base_of_v<Event, EventType>, "Callback parameter must be derived from the Event class.");
+
+			return addCallback(std::type_index{typeid(EventType)}, [callback](const Event& event)
+			{
+				callback(static_cast<const EventType&>(event));
+			});
+		}
 
 		/*
 		* @brief Dispatches an event to be handled.
 		*
-		* @param pEvent Unique pointer to an event, transfering the pointer ownership to the
-		* `EventManager`.
+		* @param pEvent Unique pointer to an event, transfering the pointer ownership to the `EventManager`.
 		*/
 		void dispatch(std::unique_ptr<Event> pEvent);
+		/*
+		* @brief Dispatches an event to be handled.
+		*
+		* @param args Arguments to construct the event instance.
+		*/
+		template<typename EventType, typename... Args>
+		void dispatch(Args&&... args)
+		{
+			static_assert(std::is_base_of_v<Event, EventType>, "Callback parameter must be derived from the Event class.");
+			static_assert(std::is_constructible_v<EventType, Args...>, "Arguments does not match the event type constructor.");
+
+			dispatch(std::make_unique<EventType>(std::forward<Args>(args)...));
+		}
 	};
 }

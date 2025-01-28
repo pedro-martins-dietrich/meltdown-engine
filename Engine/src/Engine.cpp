@@ -45,9 +45,6 @@ mtd::Engine::~Engine()
 {
 	device.getDevice().waitIdle();
 
-	EventManager::removeCallback(EventType::ChangeScene, changeSceneCallbackID);
-	EventManager::removeCallback(EventType::UpdateDescriptorData, updateDescriptorDataCallbackID);
-
 	LOG_INFO("Engine shut down.");
 }
 
@@ -118,15 +115,13 @@ void mtd::Engine::loadScene(const char* sceneFile)
 // Sets up event callback functions
 void mtd::Engine::configureEventCallbacks()
 {
-	changeSceneCallbackID = EventManager::addCallback(EventType::ChangeScene, [this](const Event& e)
+	changeSceneCallbackHandle = EventManager::addCallback([this](const ChangeSceneEvent& event)
 	{
-		const ChangeSceneEvent* cse = dynamic_cast<const ChangeSceneEvent*>(&e);
-		loadScene(cse->getSceneName());
+		loadScene(event.getSceneName());
 	});
-	updateDescriptorDataCallbackID = EventManager::addCallback(EventType::UpdateDescriptorData, [this](const Event& e)
+	updateDescriptorDataCallbackHandle = EventManager::addCallback([this](const UpdateDescriptorDataEvent& event)
 	{
-		const UpdateDescriptorDataEvent* udde = dynamic_cast<const UpdateDescriptorDataEvent*>(&e);
-		pipelines[udde->getPipelineIndex()].updateDescriptorData(udde->getBinding(), udde->getData());
+		pipelines[event.getPipelineIndex()].updateDescriptorData(event.getBinding(), event.getData());
 	});
 }
 

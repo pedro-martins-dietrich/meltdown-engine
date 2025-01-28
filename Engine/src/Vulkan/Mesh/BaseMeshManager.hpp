@@ -1,7 +1,5 @@
 #pragma once
 
-#include <type_traits>
-
 #include <meltdown/event.hpp>
 
 #include "MeshManager.hpp"
@@ -9,45 +7,28 @@
 namespace mtd
 {
 	// Base class for the mesh managers, which implements generic mesh handling
-	template <typename MeshType = Mesh>
+	template<typename MeshType = Mesh>
 	class BaseMeshManager : public MeshManager
 	{
-		static_assert(std::is_base_of<Mesh, MeshType>::value, "The MeshType must be derived from the Mesh class.");
+		static_assert(std::is_base_of_v<Mesh, MeshType>, "The MeshType must be derived from the Mesh class.");
 
 		public:
 			BaseMeshManager(const Device& device) : MeshManager{device}
 			{
-				createInstanceEventCallbackID = EventManager::addCallback
-				(
-					EventType::CreateInstances,
-					[this](const Event& e)
-					{
-						const CreateInstancesEvent* pEvent = dynamic_cast<const CreateInstancesEvent*>(&e);
-						if(meshIndexMap.find(pEvent->getModelID()) == meshIndexMap.end()) return;
+				createInstanceCallbackHandle = EventManager::addCallback([this](const CreateInstancesEvent& event)
+				{
+					if(meshIndexMap.find(event.getModelID()) == meshIndexMap.end()) return;
 
-						MeshType& mesh = meshes[meshIndexMap.at(pEvent->getModelID())];
-						uint32_t instanceVariation = pEvent->getInstanceCount();
+					MeshType& mesh = meshes[meshIndexMap.at(event.getModelID())];
+					uint32_t instanceVariation = event.getInstanceCount();
 
-						mesh.addInstances(commandHandler, instanceVariation);
-					}
-				);
-				removeInstanceEventCallbackID = EventManager::addCallback
-				(
-					EventType::RemoveInstance,
-					[this](const Event& e)
-					{
-						const RemoveInstanceEvent* pEvent = dynamic_cast<const RemoveInstanceEvent*>(&e);
-
-						for(MeshType& mesh: meshes)
-							mesh.removeInstanceByID(commandHandler, pEvent->getInstanceID());
-					}
-				);
-			}
-
-			~BaseMeshManager()
-			{
-				EventManager::removeCallback(EventType::CreateInstances, createInstanceEventCallbackID);
-				EventManager::removeCallback(EventType::RemoveInstance, removeInstanceEventCallbackID);
+					mesh.addInstances(commandHandler, instanceVariation);
+				});
+				removeInstanceCallbackHandle = EventManager::addCallback([this](const RemoveInstanceEvent& event)
+				{
+					for(MeshType& mesh: meshes)
+						mesh.removeInstanceByID(commandHandler, event.getInstanceID());
+				});
 			}
 
 			// Getters
@@ -82,8 +63,8 @@ namespace mtd
 			std::unordered_map<std::string, uint32_t> meshIndexMap;
 
 		private:
-			// Event callback IDs
-			uint64_t createInstanceEventCallbackID;
-			uint64_t removeInstanceEventCallbackID;
+			// Event callback handles
+			EventCallbackHandle createInstanceCallbackHandle;
+			EventCallbackHandle removeInstanceCallbackHandle;
 	};
 }

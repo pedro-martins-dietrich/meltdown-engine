@@ -1,5 +1,6 @@
 #pragma once
 
+#include <meltdown/event.hpp>
 #include <meltdown/model.hpp>
 
 // Data for the scene lightning
@@ -16,14 +17,12 @@ class RotatingModel : public mtd::Model
 	public:
 		using Model::Model;
 
-		virtual ~RotatingModel() override;
-
 		virtual void start() override;
 		virtual void update(double deltaTime) override;
 
 	private:
 		// ID of the callback for posterior deleting
-		uint64_t callbackID;
+		mtd::EventCallbackHandle jumpCallbackHandle;
 
 		// Flag for jumping animation
 		bool isJumping = false;

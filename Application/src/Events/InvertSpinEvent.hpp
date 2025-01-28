@@ -1,12 +1,7 @@
 #pragma once
 
-#include "CustomEventType.hpp"
+#include <meltdown/event.hpp>
 
-class InvertSpinEvent : public mtd::CustomEvent
+class InvertSpinEvent : public mtd::Event
 {
-	public:
-		virtual uint64_t getID() const override
-		{
-			return CustomEventType::InvertSpin;
-		}
 };

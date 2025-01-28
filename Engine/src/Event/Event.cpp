@@ -7,11 +7,6 @@ mtd::KeyPressEvent::KeyPressEvent(KeyCode keyCode, bool repeatedPress)
 {
 }
 
-mtd::EventType mtd::KeyPressEvent::getType() const
-{
-	return EventType::KeyPress;
-}
-
 mtd::KeyCode mtd::KeyPressEvent::getKeyCode() const
 {
 	return keyCode;
@@ -27,11 +22,6 @@ mtd::KeyReleaseEvent::KeyReleaseEvent(KeyCode keyCode) : keyCode{keyCode}
 {
 }
 
-mtd::EventType mtd::KeyReleaseEvent::getType() const
-{
-	return EventType::KeyRelease;
-}
-
 mtd::KeyCode mtd::KeyReleaseEvent::getKeyCode() const
 {
 	return keyCode;
@@ -41,11 +31,6 @@ mtd::KeyCode mtd::KeyReleaseEvent::getKeyCode() const
 mtd::MousePositionEvent::MousePositionEvent(float xPos, float yPos, bool cursorHidden)
 	: position{xPos, yPos}, cursorHidden{cursorHidden}
 {
-}
-
-mtd::EventType mtd::MousePositionEvent::getType() const
-{
-	return EventType::MousePosition;
 }
 
 const mtd::Vec2& mtd::MousePositionEvent::getMousePosition() const
@@ -63,11 +48,6 @@ mtd::ActionStartEvent::ActionStartEvent(uint32_t action) : action{action}
 {
 }
 
-mtd::EventType mtd::ActionStartEvent::getType() const
-{
-	return EventType::ActionStart;
-}
-
 uint32_t mtd::ActionStartEvent::getAction() const
 {
 	return action;
@@ -78,11 +58,6 @@ mtd::ActionStopEvent::ActionStopEvent(uint32_t action) : action{action}
 {
 }
 
-mtd::EventType mtd::ActionStopEvent::getType() const
-{
-	return EventType::ActionStop;
-}
-
 uint32_t mtd::ActionStopEvent::getAction() const
 {
 	return action;
@@ -91,11 +66,6 @@ uint32_t mtd::ActionStopEvent::getAction() const
 // Window position event
 mtd::WindowPositionEvent::WindowPositionEvent(int posX, int posY) : posX{posX}, posY{posY}
 {
-}
-
-mtd::EventType mtd::WindowPositionEvent::getType() const
-{
-	return EventType::WindowPosition;
 }
 
 int mtd::WindowPositionEvent::getPosX() const
@@ -112,11 +82,6 @@ int mtd::WindowPositionEvent::getPosY() const
 mtd::SetPerspectiveCameraEvent::SetPerspectiveCameraEvent(float yFOV, float nearPlane, float farPlane)
 	: yFOV{yFOV}, nearPlane{nearPlane}, farPlane{farPlane}
 {
-}
-
-mtd::EventType mtd::SetPerspectiveCameraEvent::getType() const
-{
-	return EventType::SetPerspectiveCamera;
 }
 
 float mtd::SetPerspectiveCameraEvent::getFOV() const
@@ -140,11 +105,6 @@ mtd::SetOrthographicCameraEvent::SetOrthographicCameraEvent(float viewWidth, flo
 {
 }
 
-mtd::EventType mtd::SetOrthographicCameraEvent::getType() const
-{
-	return EventType::SetOrthographicCamera;
-}
-
 float mtd::SetOrthographicCameraEvent::getViewWidth() const
 {
 	return viewWidth;
@@ -160,11 +120,6 @@ mtd::ChangeSceneEvent::ChangeSceneEvent(const char* sceneName) : sceneName{scene
 {
 }
 
-mtd::EventType mtd::ChangeSceneEvent::getType() const
-{
-	return EventType::ChangeScene;
-}
-
 const char* mtd::ChangeSceneEvent::getSceneName() const
 {
 	return sceneName;
@@ -174,11 +129,6 @@ const char* mtd::ChangeSceneEvent::getSceneName() const
 mtd::CreateInstancesEvent::CreateInstancesEvent(const char* modelID, uint32_t instanceCount)
 	: modelID{modelID}, instanceCount{instanceCount}
 {
-}
-
-mtd::EventType mtd::CreateInstancesEvent::getType() const
-{
-	return EventType::CreateInstances;
 }
 
 const std::string& mtd::CreateInstancesEvent::getModelID() const
@@ -196,11 +146,6 @@ mtd::RemoveInstanceEvent::RemoveInstanceEvent(uint64_t instanceID) : instanceID{
 {
 }
 
-mtd::EventType mtd::RemoveInstanceEvent::getType() const
-{
-	return EventType::RemoveInstance;
-}
-
 uint64_t mtd::RemoveInstanceEvent::getInstanceID() const
 {
 	return instanceID;
@@ -210,11 +155,6 @@ uint64_t mtd::RemoveInstanceEvent::getInstanceID() const
 mtd::UpdateDescriptorDataEvent::UpdateDescriptorDataEvent(uint32_t pipelineIndex, uint32_t binding, const void* data)
 	: pipelineIndex{pipelineIndex}, binding{binding}, data{data}
 {
-}
-
-mtd::EventType mtd::UpdateDescriptorDataEvent::getType() const
-{
-	return EventType::UpdateDescriptorData;
 }
 
 uint32_t mtd::UpdateDescriptorDataEvent::getPipelineIndex() const
@@ -230,10 +170,4 @@ uint32_t mtd::UpdateDescriptorDataEvent::getBinding() const
 const void* mtd::UpdateDescriptorDataEvent::getData() const
 {
 	return data;
-}
-
-// Custom event
-mtd::EventType mtd::CustomEvent::getType() const
-{
-	return EventType::Custom;
 }

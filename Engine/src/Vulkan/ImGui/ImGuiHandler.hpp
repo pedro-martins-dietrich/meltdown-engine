@@ -40,6 +40,9 @@ namespace mtd
 			// List of windows to be rendered
 			std::vector<GuiWindow*> guiWindows;
 
+			// Toggle GUI event callback
+			EventCallbackHandle toggleGuiCallbackHandle;
+
 			// Checks ImGui Vulkan results
 			static void checkVulkanResult(VkResult result);
 
