@@ -8,6 +8,7 @@ static std::unordered_map<std::type_index, EventCallbackMap> callbackMaps;
 static uint64_t currentCallbackIndex = 1;
 
 static std::queue<std::unique_ptr<mtd::Event>> eventQueue;
+static std::mutex eventQueueMutex;
 
 mtd::EventCallbackHandle::EventCallbackHandle() : eventType{typeid(void)}, callbackID{0}
 {
@@ -56,11 +57,13 @@ mtd::EventCallbackHandle mtd::EventManager::addCallback(std::type_index eventTyp
 
 void mtd::EventManager::dispatch(std::unique_ptr<Event> pEvent)
 {
+	std::lock_guard eventQueueLock{eventQueueMutex};
 	eventQueue.push(std::move(pEvent));
 }
 
 void mtd::EventManager::processEvents()
 {
+	std::lock_guard eventQueueLock{eventQueueMutex};
 	while(!eventQueue.empty())
 	{
 		std::unique_ptr<Event> pEvent = std::move(eventQueue.front());

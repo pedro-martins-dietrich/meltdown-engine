@@ -106,6 +106,13 @@ void mtd::DescriptorSetHandler::updateDescriptorData
 	uint32_t swappableSetIndex, uint32_t binding, const void* data, vk::DeviceSize dataSize
 ) const
 {
+	assert
+	(
+		swappableSetIndex < resourcesList.size() &&
+		binding < resourcesList[swappableSetIndex].size() &&
+		"Descriptor out of bounds for data update."
+	);
+
 	const std::unique_ptr<GpuBuffer>& buffer = resourcesList[swappableSetIndex][binding].descriptorBuffer;
 	buffer->copyMemoryToBuffer(dataSize, data);
 }

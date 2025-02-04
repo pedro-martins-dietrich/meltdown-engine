@@ -1,8 +1,6 @@
 #include <pch.hpp>
 #include "Profiler.hpp"
 
-#include <chrono>
-
 using ChronoClock = std::chrono::steady_clock;
 using ChronoTime = ChronoClock::time_point;
 using ChronoDuration = std::chrono::duration<float, std::milli>;

@@ -3,7 +3,6 @@
 #include <meltdown/event.hpp>
 
 #include "../Utils/EngineStructs.hpp"
-#include "../Vulkan/Descriptors/DescriptorSetHandler.hpp"
 
 namespace mtd
 {
@@ -41,8 +40,8 @@ namespace mtd
 			// Applies the rotation described in the quaternion on the camera orientation
 			void rotate(const Quaternion& quaternion) { orientation = quaternion * orientation; }
 
-			// Updates the camera matrices
-			void updateCamera(DescriptorSetHandler* pGlobalDescriptorSet);
+			// Updates the camera matrices and returns a pointer to the matrices
+			const void* fetchUpdatedMatrices();
 
 		private:
 			// Current camera location
@@ -56,7 +55,7 @@ namespace mtd
 			float maxSpeed;
 
 			// Camera aspect ratio
-			float aspectRatio;
+			std::atomic<float> aspectRatio;
 			// Camera vertical FOV, in degrees
 			float yFOV;
 			// Orthographic camera view width
@@ -70,6 +69,7 @@ namespace mtd
 
 			// Transformation matrices
 			CameraMatrices matrices;
+			std::mutex matricesMutex;
 
 			// Event callback handles
 			EventCallbackHandle setPerspectiveCameraCallbackHandle;

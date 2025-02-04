@@ -20,6 +20,7 @@ mtd::Engine::Engine(const EngineInfo& info)
 	settingsGui{swapchain.getSettings(), camera, shouldUpdateEngine},
 	profilerGui{},
 	renderer{},
+	running{false},
 	shouldUpdateEngine{false}
 {
 	configureEventCallbacks();
@@ -63,10 +64,6 @@ void mtd::Engine::setVSync(bool enableVSync)
 // Begins the engine main loop
 void mtd::Engine::run(const std::function<void(double)>& onUpdateCallback)
 {
-	double lastTime;
-	double currentTime = glfwGetTime();
-	double frameTime = 0.016;
-
 	DrawInfo drawInfo
 	{
 		swapchain.getRenderPass(),
@@ -74,27 +71,26 @@ void mtd::Engine::run(const std::function<void(double)>& onUpdateCallback)
 		globalDescriptorSetHandler->getSet(0)
 	};
 
-	while(window.keepOpen())
+	running.store(window.keepOpen());
+	std::thread updateThread{&Engine::updateLoop, this, onUpdateCallback};
+
+	while(running.load())
 	{
-		PROFILER_START_FRAME("Events");
-		InputHandler::checkActionEvents();
-		EventManager::processEvents();
-
-		PROFILER_NEXT_STAGE("Scene update");
-		onUpdateCallback(frameTime);
-		camera.updateCamera(globalDescriptorSetHandler.get());
-		scene.update(frameTime);
-
+		PROFILER_START_FRAME("Update descriptors");
+		updateDescriptors();
+		
 		renderer.render(device, swapchain, imGuiHandler, pipelines, scene, drawInfo, shouldUpdateEngine);
 
+		PROFILER_NEXT_STAGE("Update engine");
 		if(shouldUpdateEngine)
 			updateEngine();
 
-		lastTime = currentTime;
-		currentTime = glfwGetTime();
-		frameTime = glm::min(currentTime - lastTime, 1.0);
+		running.store(window.keepOpen());
 		PROFILER_END_FRAME();
 	}
+
+	if(updateThread.joinable())
+		updateThread.join();
 }
 
 // Loads a new scene, clearing the previous if necessary
@@ -112,6 +108,46 @@ void mtd::Engine::loadScene(const char* sceneFile)
 	scene.start();
 }
 
+// Runs the update loop (update thread)
+void mtd::Engine::updateLoop(const std::function<void(double)>& onUpdateCallback)
+{
+	using ChronoClock = std::chrono::steady_clock;
+	using ChronoTime = std::chrono::steady_clock::time_point;
+	using ChronoDuration = std::chrono::duration<double>;
+
+	ChronoTime endTime = ChronoClock::now();
+	ChronoDuration totalDuration{0.001};
+
+	while(running.load())
+	{
+		ChronoTime startTime = endTime;
+
+		InputHandler::checkActionEvents();
+		EventManager::processEvents();
+
+		onUpdateCallback(totalDuration.count());
+		scene.update(totalDuration.count());
+
+		endTime = ChronoClock::now();
+		totalDuration = endTime - startTime;
+	}
+}
+
+// Applies all the pending updates for the descriptors
+void mtd::Engine::updateDescriptors()
+{
+	globalDescriptorSetHandler->updateDescriptorData(0, 0, camera.fetchUpdatedMatrices(), sizeof(CameraMatrices));
+
+	std::lock_guard lock{pendingDescriptorUpdateMutex};
+	for(const auto& [key, data]: pendingDescriptorUpdates)
+	{
+		uint32_t pipelineIndex = key >> 32;
+		uint32_t binding = key & 0xFFFFFFFF;
+		pipelines[pipelineIndex].updateDescriptorData(binding, data);
+	}
+	pendingDescriptorUpdates.clear();
+}
+
 // Sets up event callback functions
 void mtd::Engine::configureEventCallbacks()
 {
@@ -121,7 +157,9 @@ void mtd::Engine::configureEventCallbacks()
 	});
 	updateDescriptorDataCallbackHandle = EventManager::addCallback([this](const UpdateDescriptorDataEvent& event)
 	{
-		pipelines[event.getPipelineIndex()].updateDescriptorData(event.getBinding(), event.getData());
+		uint64_t key = static_cast<uint64_t>(event.getPipelineIndex()) << 32 | event.getBinding();
+		std::lock_guard lock{pendingDescriptorUpdateMutex};
+		pendingDescriptorUpdates[key] = event.getData();
 	});
 }
 

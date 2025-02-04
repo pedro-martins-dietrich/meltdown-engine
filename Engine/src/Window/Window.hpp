@@ -24,7 +24,7 @@ namespace mtd
 			float getAspectRatio() const { return aspectRatio; }
 
 			// Polls events and checks if window should be kept open
-			bool keepOpen() const;
+			bool keepOpen();
 			// Checks if a specific key is pressed
 			bool isKeyPressed(int glfwKeyCode) const
 				{ return glfwGetKey(glfwWindow, glfwKeyCode) == GLFW_PRESS; }
@@ -54,10 +54,15 @@ namespace mtd
 			// Window aspect ratio
 			float aspectRatio;
 
-			// True if cursor is not visible
+			// Cursor visibility status
 			bool cursorHidden;
-			// True if window is in fullscreen mode
+			// Window fullscreen mode status
 			bool fullscreenMode;
+
+			// Flag to set input mode
+			bool shouldSetInputMode;
+			// Flag to toggle fullscreen
+			bool shouldToggleFullscreen;
 
 			// Last windowed mode settings before going fullscreen mode
 			WindowInfo savedWindowedInfo;
