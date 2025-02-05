@@ -67,7 +67,7 @@ namespace mtd
 			void setVSync(bool enableVSync);
 
 			/*
-			* @brief Begins the engine main loop, transfering the application control to the engine.
+			* @brief Begins the engine main loop, returning only when the window is closed.
 			*
 			* @param onUpdateCallback Callback function called on every engine update.
 			*/

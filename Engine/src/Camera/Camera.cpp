@@ -18,7 +18,7 @@ mtd::Camera::Camera(float aspectRatio)
 
 void mtd::Camera::setAspectRatio(float newAspectRatio)
 {
-	aspectRatio = newAspectRatio;
+	aspectRatio.store(newAspectRatio);
 	updateProjectionMatrix();
 }
 
@@ -39,16 +39,17 @@ void mtd::Camera::rotate(float deltaYaw, float deltaPitch, float deltaRoll)
 	orientation = (yawQuat * orientation * pitchQuat * rollQuat).normalized();
 }
 
-// Updates the camera matrices
-void mtd::Camera::updateCamera(DescriptorSetHandler* pGlobalDescriptorSet)
+// Updates the camera matrices and returns a pointer to the matrices
+const void* mtd::Camera::fetchUpdatedMatrices()
 {
 	updateViewMatrix();
-	pGlobalDescriptorSet->updateDescriptorData(0, 0, &matrices, sizeof(CameraMatrices));
+	return &matrices;
 }
 
 // Updates the view matrix
 void mtd::Camera::updateViewMatrix()
 {
+	std::lock_guard matricesLock{matricesMutex};
 	matrices.view = Mat4x4{orientation};
 	matrices.view.w.x = position.dot(Vec3{-matrices.view.x.x, -matrices.view.y.x, -matrices.view.z.x});
 	matrices.view.w.y = position.dot(Vec3{-matrices.view.x.y, -matrices.view.y.y, -matrices.view.z.y});
@@ -60,12 +61,13 @@ void mtd::Camera::updateViewMatrix()
 // Updates the projection matrix
 void mtd::Camera::updateProjectionMatrix()
 {
+	std::lock_guard matricesLock{matricesMutex};
 	if(orthographicMode)
 	{
 		matrices.projection = Mat4x4
 		{
 			1.0f / viewWidth, 0.0f, 0.0f, 0.0f,
-			0.0, aspectRatio / viewWidth, 0.0f, 0.0f,
+			0.0, aspectRatio.load() / viewWidth, 0.0f, 0.0f,
 			0.0f, 0.0f, 1.0f / farPlane, 0.0f,
 			0.0f, 0.0f, 0.0f, 1.0f
 		};
@@ -76,7 +78,7 @@ void mtd::Camera::updateProjectionMatrix()
 
 		matrices.projection = Mat4x4
 		{
-			cotanY / aspectRatio, 0.0f, 0.0f, 0.0f,
+			cotanY / aspectRatio.load(), 0.0f, 0.0f, 0.0f,
 			0.0f, cotanY, 0.0f, 0.0f,
 			0.0f, 0.0f, farPlane / (farPlane - nearPlane), 1.0f,
 			0.0f, 0.0f, (nearPlane * farPlane) / (nearPlane - farPlane), 0.0f

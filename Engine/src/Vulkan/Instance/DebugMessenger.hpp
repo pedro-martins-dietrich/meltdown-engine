@@ -11,7 +11,7 @@
 		void createDebugMessenger
 		(
 			const vk::Instance& instance,
-			const vk::DispatchLoaderDynamic* pDispatchLoader,
+			const vk::detail::DispatchLoaderDynamic* pDispatchLoader,
 			vk::DebugUtilsMessengerEXT* pDebugMessenger
 		);
 	}

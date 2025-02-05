@@ -27,7 +27,7 @@ void RotatingModel::update(double deltaTime)
 
 	static uint32_t count = 0;
 	count++;
-	if(count >= 1000)
+	if(count >= 10000)
 	{
 		mtd::EventManager::dispatch<InvertSpinEvent>();
 		count = 0;

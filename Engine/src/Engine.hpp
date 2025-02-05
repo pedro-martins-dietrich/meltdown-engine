@@ -59,8 +59,20 @@ namespace mtd
 			EventCallbackHandle changeSceneCallbackHandle;
 			EventCallbackHandle updateDescriptorDataCallbackHandle;
 
+			// Flag to ensure all threads finish executing
+			std::atomic<bool> running;
 			// Flag for updating the engine
 			bool shouldUpdateEngine;
+
+			// Descriptors to update before rendering the next frame
+			std::unordered_map<uint64_t, const void*> pendingDescriptorUpdates;
+			std::mutex pendingDescriptorUpdateMutex;
+
+			// Runs the update loop (update thread)
+			void updateLoop(const std::function<void(double)>& onUpdateCallback);
+
+			// Applies all the pending updates for the descriptors
+			void updateDescriptors();
 
 			// Sets up event callback functions
 			void configureEventCallbacks();

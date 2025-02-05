@@ -26,7 +26,7 @@ void mtd::Renderer::render
 	bool& shouldUpdateEngine
 )
 {
-	PROFILER_NEXT_STAGE("Render - Aquire frame");
+	PROFILER_NEXT_STAGE("Render - Acquire frame");
 
 	const vk::Device& device = mtdDevice.getDevice();
 	const Frame& frame = swapchain.getFrame(currentFrameIndex);
@@ -63,8 +63,7 @@ void mtd::Renderer::render
 	}
 
 	swapchain.getFrame(currentFrameIndex).fetchFrameDrawData(drawInfo);
-	const CommandHandler& commandHandler =
-		swapchain.getFrame(currentFrameIndex).getCommandHandler();
+	const CommandHandler& commandHandler = swapchain.getFrame(currentFrameIndex).getCommandHandler();
 
 	recordDrawCommand(pipelines, scene, commandHandler, drawInfo, guiHandler);
 	commandHandler.submitDrawCommandBuffer(*(drawInfo.syncBundle));
@@ -77,8 +76,7 @@ void mtd::Renderer::render
 		drawInfo.syncBundle->renderFinished
 	);
 
-	currentFrameIndex =
-		shouldUpdateEngine ? 0 : (currentFrameIndex + 1) % swapchain.getFrameCount();
+	currentFrameIndex = shouldUpdateEngine ? 0 : (currentFrameIndex + 1) % swapchain.getFrameCount();
 }
 
 // Records draw command to the command buffer
@@ -112,7 +110,6 @@ void mtd::Renderer::recordDrawCommand
 
 	commandBuffer.beginRenderPass(&renderPassBeginInfo, vk::SubpassContents::eInline);
 
-	// Global descriptor set
 	commandBuffer.bindDescriptorSets
 	(
 		vk::PipelineBindPoint::eGraphics,
@@ -127,8 +124,8 @@ void mtd::Renderer::recordDrawCommand
 	{
 		PROFILER_NEXT_STAGE(pipelines[i].getName().c_str());
 		const MeshManager* pMeshManager = scene.getMeshManager(i);
-		if(pMeshManager->getMeshCount() == 0)
-			continue;
+
+		if(pMeshManager->getMeshCount() == 0) continue;
 
 		pipelines[i].bind(commandBuffer);
 		pipelines[i].bindPipelineDescriptors(commandBuffer);
@@ -159,6 +156,10 @@ void mtd::Renderer::presentFrame
 	presentInfo.pResults = nullptr;
 
 	vk::Result result = presentQueue.presentKHR(&presentInfo);
-	if(result != vk::Result::eSuccess && result != vk::Result::eErrorOutOfDateKHR)
-		LOG_ERROR("Failed to present frame to screen. Vulkan result: %d", result);
+	if
+	(
+		result != vk::Result::eSuccess &&
+		result != vk::Result::eErrorOutOfDateKHR &&
+		result != vk::Result::eSuboptimalKHR
+	) LOG_ERROR("Failed to present frame to screen. Vulkan result: %d", result);
 }

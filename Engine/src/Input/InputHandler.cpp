@@ -6,6 +6,7 @@
 using ActionKeys = std::vector<mtd::KeyCode>;
 static std::unordered_map<uint32_t, ActionKeys> actionMappings;
 static std::unordered_map<mtd::KeyCode, bool> pressedKeys;
+static std::mutex pressedKeysMutex;
 static std::unordered_map<uint32_t, bool> actionStatuses;
 
 // Defines the keys that needs to be pressed to trigger an action
@@ -23,12 +24,14 @@ void mtd::InputHandler::unmapAction(uint32_t action)
 // Adds key to the list of pressed keys
 void mtd::InputHandler::keyPressed(KeyCode keyCode)
 {
+	std::lock_guard lock{pressedKeysMutex};
 	pressedKeys[keyCode] = true;
 }
 
 // Removes key from the list of pressed keys
 void mtd::InputHandler::keyReleased(KeyCode keyCode)
 {
+	std::lock_guard lock{pressedKeysMutex};
 	pressedKeys[keyCode] = false;
 }
 
@@ -40,6 +43,7 @@ void mtd::InputHandler::checkActionEvents()
 		bool allKeysPressed = true;
 		for(KeyCode key: keyList)
 		{
+			std::lock_guard lock{pressedKeysMutex};
 			if(!pressedKeys[key])
 			{
 				allKeysPressed = false;

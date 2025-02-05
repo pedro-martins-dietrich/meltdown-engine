@@ -11,6 +11,7 @@ mtd::Window::Window(const WindowInfo& initialInfo, const char* windowName)
 	name{windowName},
 	info{initialInfo}, aspectRatio{0.0f},
 	cursorHidden{false}, fullscreenMode{false},
+	shouldToggleFullscreen{false}, shouldSetInputMode{false},
 	savedWindowedInfo{initialInfo}
 {
 	initializeGLFW();
@@ -26,14 +27,24 @@ mtd::Window::~Window()
 
 mtd::FrameDimensions mtd::Window::getDimensions() const
 {
-	return FrameDimensions{static_cast<uint32_t>(info.width), static_cast<uint32_t>(info.height)};
+	return {static_cast<uint32_t>(info.width), static_cast<uint32_t>(info.height)};
 }
 
-// Poll events and checks if window should be kept open
-bool mtd::Window::keepOpen() const
+// Polls events and checks if window should be kept open
+bool mtd::Window::keepOpen()
 {
+	if(shouldToggleFullscreen)
+	{
+		shouldToggleFullscreen = false;
+		toggleFullscreen();
+	}
+	if(shouldSetInputMode)
+	{
+		shouldSetInputMode = false;
+		glfwSetInputMode(glfwWindow, GLFW_CURSOR, cursorHidden ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+	}
 	if(cursorHidden)
-		glfwSetCursorPos(glfwWindow, 0.5f * info.width, 0.5f * info.height);
+		glfwSetCursorPos(glfwWindow, 0.5 * info.width, 0.5 * info.height);
 
 	glfwPollEvents();
 	return !glfwWindowShouldClose(glfwWindow);
@@ -76,8 +87,8 @@ void mtd::Window::getMousePos(float* x, float* y, bool needsCursorHidden) const
 
 	double mouseX, mouseY;
 	glfwGetCursorPos(glfwWindow, &mouseX, &mouseY);
-	double halfWidth = 0.5f * info.width;
-	double halfHeight = 0.5f * info.height;
+	double halfWidth = 0.5 * info.width;
+	double halfHeight = 0.5 * info.height;
 
 	*x = static_cast<float>((mouseX - halfWidth) / info.height);
 	*y = static_cast<float>((mouseY - halfHeight) / info.height);
@@ -171,10 +182,10 @@ void mtd::Window::setWindowEventCallbacks()
 		{
 			case KeyCode::Tab:
 				cursorHidden = !cursorHidden;
-				glfwSetInputMode(glfwWindow, GLFW_CURSOR, cursorHidden ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+				shouldSetInputMode = true;
 				break;
 			case KeyCode::F11:
-				toggleFullscreen();
+				shouldToggleFullscreen = true;
 				break;
 			default:
 				return;
