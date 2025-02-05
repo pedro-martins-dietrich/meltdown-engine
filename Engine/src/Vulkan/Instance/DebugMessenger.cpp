@@ -34,17 +34,18 @@
 
 		switch(messageSeverity)
 		{
+			using namespace mtd;
 			case vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose:
-				mtd::LOG_VERBOSE(message.c_str());
+				LOG_VERBOSE(message.c_str());
 				break;
 			case vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo:
-				mtd::LOG_INFO(message.c_str());
+				LOG_INFO(message.c_str());
 				break;
 			case vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning:
-				mtd::LOG_WARNING(message.c_str());
+				LOG_WARNING(message.c_str());
 				break;
 			case vk::DebugUtilsMessageSeverityFlagBitsEXT::eError:
-				mtd::LOG_ERROR(message.c_str());
+				LOG_ERROR(message.c_str());
 				break;
 		}
 
@@ -55,7 +56,7 @@
 	void mtd::DebugMessenger::createDebugMessenger
 	(
 		const vk::Instance& instance,
-		const vk::DispatchLoaderDynamic* pDispatchLoader,
+		const vk::detail::DispatchLoaderDynamic* pDispatchLoader,
 		vk::DebugUtilsMessengerEXT* pDebugMessenger
 	)
 	{
@@ -66,7 +67,7 @@
 		debugMessengerInfo.messageType = vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral |
 			vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation |
 			vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance;
-		debugMessengerInfo.pfnUserCallback = (PFN_vkDebugUtilsMessengerCallbackEXT) debugCallback;
+		debugMessengerInfo.pfnUserCallback = (vk::PFN_DebugUtilsMessengerCallbackEXT) debugCallback;
 
 		if(instance.createDebugUtilsMessengerEXT
 		(

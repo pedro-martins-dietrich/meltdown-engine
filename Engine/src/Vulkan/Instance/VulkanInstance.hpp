@@ -3,7 +3,6 @@
 #include <memory>
 
 #include <meltdown/structs.hpp>
-#include <vulkan/vulkan.hpp>
 
 #include "../../Window/Window.hpp"
 
@@ -28,7 +27,7 @@ namespace mtd
 			vk::Instance instance;
 
 			// Dispatch loader dynamic instance
-			std::unique_ptr<vk::DispatchLoaderDynamic> dispatchLoader;
+			std::unique_ptr<vk::detail::DispatchLoaderDynamic> dispatchLoader;
 			// Vulkan debug messenger (it depends on the validation layer)
 			vk::DebugUtilsMessengerEXT debugMessenger;
 

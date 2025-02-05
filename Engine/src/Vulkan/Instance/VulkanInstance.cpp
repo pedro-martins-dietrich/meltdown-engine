@@ -44,7 +44,7 @@ mtd::VulkanInstance::VulkanInstance(const EngineInfo& info, const Window& window
 		throw std::runtime_error("Failed to create Vulkan instance.\n");
 	LOG_INFO("Vulkan instance created.\n");
 
-	dispatchLoader = std::make_unique<vk::DispatchLoaderDynamic>(instance, vkGetInstanceProcAddr);
+	dispatchLoader = std::make_unique<vk::detail::DispatchLoaderDynamic>(instance, vkGetInstanceProcAddr);
 	#ifdef MTD_DEBUG
 		DebugMessenger::createDebugMessenger(instance, dispatchLoader.get(), &debugMessenger);
 	#endif
@@ -68,7 +68,7 @@ uint32_t mtd::VulkanInstance::checkVulkanVersion() const
 {
 	uint32_t version = 0;
 	vk::Result result = vk::enumerateInstanceVersion(&version);
-	uint32_t requestedVersion = VK_MAKE_API_VERSION(0, 1, 3, 0);
+	uint32_t requestedVersion = VK_MAKE_API_VERSION(0, 1, 4, 0);
 
 	LOG_VERBOSE
 	(
@@ -108,10 +108,8 @@ bool mtd::VulkanInstance::supports
 	std::vector<const char*> requiredLayers
 )
 {
-	std::vector<vk::ExtensionProperties> supportedExtensions =
-		vk::enumerateInstanceExtensionProperties();
-	std::vector<vk::LayerProperties> supportedLayers =
-		vk::enumerateInstanceLayerProperties();
+	std::vector<vk::ExtensionProperties> supportedExtensions = vk::enumerateInstanceExtensionProperties();
+	std::vector<vk::LayerProperties> supportedLayers = vk::enumerateInstanceLayerProperties();
 
 	bool found;
 	for(const char* requiredExtension: requiredExtensions)
