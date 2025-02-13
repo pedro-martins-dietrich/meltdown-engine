@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <vector>
 
 #include <vulkan/vulkan.hpp>
@@ -41,6 +42,23 @@ namespace mtd
 		vk::ColorSpaceKHR colorSpace;
 		vk::CompositeAlphaFlagBitsKHR compositeAlpha;
 		vk::PresentModeKHR presentMode;
+	};
+
+	// Data associated with a Vulkan attachment
+	struct AttachmentData
+	{
+		vk::Image image;
+		vk::ImageView imageView;
+		vk::DeviceMemory imageMemory;
+		vk::Format format = vk::Format::eUndefined;
+	};
+
+	// Information about the pipelines that targets a framebuffer
+	struct RenderPassInfo
+	{
+		int32_t targetFramebufferIndex;
+		std::optional<uint32_t> framebufferPipelineIndex = std::nullopt;
+		std::vector<uint32_t> pipelineIndices = {};
 	};
 
 	// Frame synchronization bundle

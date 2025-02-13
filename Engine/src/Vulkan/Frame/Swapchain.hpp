@@ -63,10 +63,7 @@ namespace mtd
 			void configureDefaultSettings();
 
 			// Retrieves swapchain features supported by the physical device
-			void getSupportedDetails
-			(
-				const vk::PhysicalDevice& physicalDevice, const vk::SurfaceKHR& surface
-			);
+			void getSupportedDetails(const vk::PhysicalDevice& physicalDevice, const vk::SurfaceKHR& surface);
 			// Creates the swapchain
 			void createSwapchain
 			(

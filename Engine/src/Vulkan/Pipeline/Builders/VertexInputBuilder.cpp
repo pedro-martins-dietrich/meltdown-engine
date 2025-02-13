@@ -38,7 +38,7 @@ void defaultVertexInput(vk::PipelineVertexInputStateCreateInfo& vertexInputInfo)
 	bindingDescriptions[0].inputRate = vk::VertexInputRate::eVertex;
 	// Per instance binding
 	bindingDescriptions[1].binding = 1;
-	bindingDescriptions[1].stride = static_cast<uint32_t>(sizeof(glm::mat4));
+	bindingDescriptions[1].stride = static_cast<uint32_t>(sizeof(mtd::Mat4x4));
 	bindingDescriptions[1].inputRate = vk::VertexInputRate::eInstance;
 
 	static std::array<vk::VertexInputAttributeDescription, 7> attributeDescriptions;
@@ -79,7 +79,7 @@ void noVertexInput(vk::PipelineVertexInputStateCreateInfo& vertexInputInfo)
 	static vk::VertexInputBindingDescription bindingDescription;
 	// Per instance binding
 	bindingDescription.binding = 0;
-	bindingDescription.stride = static_cast<uint32_t>(sizeof(glm::mat4));
+	bindingDescription.stride = static_cast<uint32_t>(sizeof(mtd::Mat4x4));
 	bindingDescription.inputRate = vk::VertexInputRate::eInstance;
 
 	static std::array<vk::VertexInputAttributeDescription, 4> attributeDescriptions;

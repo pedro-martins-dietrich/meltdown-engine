@@ -4,8 +4,7 @@
 #include "../../Utils/Logger.hpp"
 #include "../../Utils/Profiler.hpp"
 
-mtd::Renderer::Renderer()
-	: currentFrameIndex{0}, clearColor{0.1f, 0.1f, 0.1f, 1.0f}
+mtd::Renderer::Renderer() : currentFrameIndex{0}, clearColor{0.1f, 0.1f, 0.1f, 1.0f}
 {
 }
 
@@ -20,7 +19,9 @@ void mtd::Renderer::render
 	const Device& mtdDevice,
 	const Swapchain& swapchain,
 	const ImGuiHandler& guiHandler,
+	const std::vector<Framebuffer>& framebuffers,
 	const std::vector<Pipeline>& pipelines,
+	const std::vector<FramebufferPipeline>& framebufferPipelines,
 	const Scene& scene,
 	DrawInfo& drawInfo,
 	bool& shouldUpdateEngine
@@ -65,7 +66,10 @@ void mtd::Renderer::render
 	swapchain.getFrame(currentFrameIndex).fetchFrameDrawData(drawInfo);
 	const CommandHandler& commandHandler = swapchain.getFrame(currentFrameIndex).getCommandHandler();
 
-	recordDrawCommand(pipelines, scene, commandHandler, drawInfo, guiHandler);
+	recordDrawCommands
+	(
+		framebuffers, pipelines, framebufferPipelines, scene, commandHandler, drawInfo, guiHandler
+	);
 	commandHandler.submitDrawCommandBuffer(*(drawInfo.syncBundle));
 
 	PROFILER_NEXT_STAGE("Present frame");
@@ -79,10 +83,12 @@ void mtd::Renderer::render
 	currentFrameIndex = shouldUpdateEngine ? 0 : (currentFrameIndex + 1) % swapchain.getFrameCount();
 }
 
-// Records draw command to the command buffer
-void mtd::Renderer::recordDrawCommand
+// Records draw commands to the command buffer
+void mtd::Renderer::recordDrawCommands
 (
+	const std::vector<Framebuffer>& framebuffers,
 	const std::vector<Pipeline>& pipelines,
+	const std::vector<FramebufferPipeline>& framebufferPipelines,
 	const Scene& scene,
 	const CommandHandler& commandHandler,
 	const DrawInfo& drawInfo,
@@ -91,25 +97,7 @@ void mtd::Renderer::recordDrawCommand
 {
 	commandHandler.beginCommand();
 
-	vk::Rect2D renderArea{};
-	renderArea.offset = vk::Offset2D{0, 0};
-	renderArea.extent = drawInfo.extent;
-
-	std::vector<vk::ClearValue> clearValues;
-	clearValues.push_back(clearColor);
-	clearValues.push_back(vk::ClearDepthStencilValue{1.0f, 0});
-
-	vk::RenderPassBeginInfo renderPassBeginInfo{};
-	renderPassBeginInfo.renderPass = drawInfo.renderPass;
-	renderPassBeginInfo.framebuffer = *(drawInfo.framebuffer);
-	renderPassBeginInfo.renderArea = renderArea;
-	renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-	renderPassBeginInfo.pClearValues = clearValues.data();
-
 	const vk::CommandBuffer& commandBuffer = commandHandler.getCommandBuffer();
-
-	commandBuffer.beginRenderPass(&renderPassBeginInfo, vk::SubpassContents::eInline);
-
 	commandBuffer.bindDescriptorSets
 	(
 		vk::PipelineBindPoint::eGraphics,
@@ -119,25 +107,77 @@ void mtd::Renderer::recordDrawCommand
 		0, nullptr
 	);
 
-	uint32_t startInstance = 0;
-	for(uint32_t i = 0; i < pipelines.size(); i++)
+	std::vector<vk::ClearValue> clearValues;
+	clearValues.push_back(clearColor);
+	clearValues.push_back(vk::ClearDepthStencilValue{1.0f, 0});
+
+	vk::Rect2D renderArea{};
+	renderArea.offset = vk::Offset2D{0, 0};
+
+	for(const RenderPassInfo& renderPassInfo: renderOrder)
 	{
-		PROFILER_NEXT_STAGE(pipelines[i].getName().c_str());
-		const MeshManager* pMeshManager = scene.getMeshManager(i);
+		int32_t fbIndex = renderPassInfo.targetFramebufferIndex;
+		bool toSwapchain = fbIndex == -1;
 
-		if(pMeshManager->getMeshCount() == 0) continue;
+		renderArea.extent = toSwapchain ? drawInfo.extent : framebuffers[fbIndex].getExtent();
 
-		pipelines[i].bind(commandBuffer);
-		pipelines[i].bindPipelineDescriptors(commandBuffer);
-		pMeshManager->bindBuffers(commandBuffer);
+		vk::ImageMemoryBarrier barrier{};
+		if(renderPassInfo.framebufferPipelineIndex.has_value())
+		{
+			const FramebufferPipeline& fbPipeline =
+				framebufferPipelines[renderPassInfo.framebufferPipelineIndex.value()];
 
-		pMeshManager->drawMesh(commandBuffer, pipelines[i]);
+			for(AttachmentIdentifier attachmentIdentifier: fbPipeline.getAttachmentIdentifiers())
+			{
+				framebuffers[attachmentIdentifier.framebufferIndex]
+					.transitionAttachmentLayout(true, attachmentIdentifier.attachmentIndex, barrier, commandBuffer);
+			}
+		}
+
+		vk::RenderPassBeginInfo renderPassBeginInfo{};
+		renderPassBeginInfo.renderPass = toSwapchain ? drawInfo.renderPass : framebuffers[fbIndex].getRenderPass();
+		renderPassBeginInfo.framebuffer =
+			toSwapchain ? *(drawInfo.framebuffer) : framebuffers[fbIndex].getFramebuffer();
+		renderPassBeginInfo.renderArea = renderArea;
+		renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+		renderPassBeginInfo.pClearValues = clearValues.data();
+
+		commandBuffer.beginRenderPass(&renderPassBeginInfo, vk::SubpassContents::eInline);
+
+		if(renderPassInfo.framebufferPipelineIndex.has_value())
+		{
+			const FramebufferPipeline& fbPipeline =
+				framebufferPipelines[renderPassInfo.framebufferPipelineIndex.value()];
+			PROFILER_NEXT_STAGE(fbPipeline.getName().c_str());
+
+			fbPipeline.bind(commandBuffer);
+			fbPipeline.bindPipelineDescriptors(commandBuffer);
+			commandBuffer.draw(3, 1, 0, 0);
+		}
+
+		for(uint32_t pipelineIndex: renderPassInfo.pipelineIndices)
+		{
+			const Pipeline& pipeline = pipelines[pipelineIndex];
+			PROFILER_NEXT_STAGE(pipeline.getName().c_str());
+			const MeshManager* pMeshManager = scene.getMeshManager(pipelineIndex);
+
+			if(pMeshManager->getMeshCount() == 0) continue;
+
+			pipeline.bind(commandBuffer);
+			pipeline.bindPipelineDescriptors(commandBuffer);
+			pMeshManager->bindBuffers(commandBuffer);
+
+			pMeshManager->drawMesh(commandBuffer, pipeline);
+		}
+
+		if(toSwapchain)
+		{
+			PROFILER_NEXT_STAGE("Render - ImGUI");
+			guiHandler.renderGui(commandBuffer);
+		}
+
+		commandBuffer.endRenderPass();
 	}
-
-	PROFILER_NEXT_STAGE("Render - ImGUI");
-	guiHandler.renderGui(commandBuffer);
-
-	commandBuffer.endRenderPass();
 	commandHandler.endCommand();
 }
 

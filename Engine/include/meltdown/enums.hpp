@@ -76,6 +76,15 @@ namespace mtd
 	};
 
 	/*
+	* @brief Filtering type used for sampling textures.
+	*/
+	enum class TextureSamplingFilterType
+	{
+		Nearest,
+		Linear
+	};
+
+	/*
 	* @brief Enumeration of the physical keys that can be pressed in the keyboard.
 	*/
 	enum class KeyCode

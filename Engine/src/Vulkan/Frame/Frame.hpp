@@ -1,7 +1,5 @@
 #pragma once
 
-#include <vulkan/vulkan.hpp>
-
 #include "../../Utils/EngineStructs.hpp"
 #include "../Command/CommandHandler.hpp"
 
@@ -27,7 +25,7 @@ namespace mtd
 			Frame(Frame&& other) noexcept;
 
 			// Getters
-			vk::Format getDepthFormat() const { return depthBufferFormat; }
+			vk::Format getDepthFormat() const { return depthBuffer.format; }
 			const vk::Fence& getInFlightFence() const
 				{ return synchronizationBundle.inFlightFence; }
 			const vk::Semaphore& getImageAvailableSemaphore() const
@@ -48,11 +46,8 @@ namespace mtd
 			// Frame storage
 			vk::Framebuffer framebuffer;
 
-			// Depth buffer data
-			vk::Image depthBuffer;
-			vk::ImageView depthBufferView;
-			vk::DeviceMemory depthBufferMemory;
-			vk::Format depthBufferFormat;
+			// Depth buffer attachment data
+			AttachmentData depthBuffer;
 
 			// Frame index in the swapchain
 			uint32_t frameIndex;

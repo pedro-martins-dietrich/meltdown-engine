@@ -101,11 +101,9 @@ void mtd::Swapchain::createSwapchain
 {
 	checkSurfaceFormat();
 
-	uint32_t distinctQueueFamilyIndices =
-		static_cast<uint32_t>(device.getQueueFamilies().getUniqueIndices().size());
-	vk::SharingMode selectedSharingMode = distinctQueueFamilyIndices
-		? vk::SharingMode::eExclusive
-		: vk::SharingMode::eConcurrent;
+	uint32_t distinctQueueFamilyIndices = static_cast<uint32_t>(device.getQueueFamilies().getUniqueIndices().size());
+	vk::SharingMode selectedSharingMode =
+		distinctQueueFamilyIndices ? vk::SharingMode::eExclusive : vk::SharingMode::eConcurrent;
 
 	selectExtent(frameDimensions);
 	checkPresentMode();
@@ -128,8 +126,7 @@ void mtd::Swapchain::createSwapchain
 	swapchainCreateInfo.clipped = vk::True;
 	swapchainCreateInfo.oldSwapchain = nullptr;
 
-	vk::Result result =
-		device.getDevice().createSwapchainKHR(&swapchainCreateInfo, nullptr, &swapchain);
+	vk::Result result = device.getDevice().createSwapchainKHR(&swapchainCreateInfo, nullptr, &swapchain);
 	if(result != vk::Result::eSuccess)
 	{
 		LOG_ERROR("Failed to create swapchain.");
@@ -174,7 +171,7 @@ void mtd::Swapchain::createRenderPass()
 	depthAttachmentReference.attachment = 1;
 	depthAttachmentReference.layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
 
-	std::vector<vk::AttachmentDescription> attachmentDescriptions
+	std::array<vk::AttachmentDescription, 2> attachmentDescriptions
 	{
 		colorAttachmentDescription, depthAttachmentDescription
 	};
@@ -207,6 +204,7 @@ void mtd::Swapchain::createRenderPass()
 		return;
 	}
 	LOG_VERBOSE("Created render pass.");
+
 	createFramebuffers();
 }
 
@@ -222,11 +220,8 @@ void mtd::Swapchain::checkSurfaceFormat()
 {
 	for(vk::SurfaceFormatKHR supportedFormat: supportedDetails.formats)
 	{
-		if(supportedFormat.format == settings.colorFormat &&
-			supportedFormat.colorSpace == settings.colorSpace)
-		{
+		if(supportedFormat.format == settings.colorFormat && supportedFormat.colorSpace == settings.colorSpace)
 			return;
-		}
 	}
 
 	LOG_WARNING("Could not find a surface format with the desired properties.");
@@ -240,8 +235,7 @@ void mtd::Swapchain::checkImageCount()
 {
 	if(supportedDetails.capabilities.maxImageCount == 0)
 	{
-		settings.frameCount =
-			std::max(settings.frameCount, supportedDetails.capabilities.minImageCount);
+		settings.frameCount = std::max(settings.frameCount, supportedDetails.capabilities.minImageCount);
 		return;
 	}
 

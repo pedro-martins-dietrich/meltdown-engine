@@ -11,15 +11,27 @@
 #include "../Utils/FileHandler.hpp"
 #include "../Utils/Logger.hpp"
 
-static constexpr const char* sceneLoaderVersion = "0.1.5";
+static constexpr const char* sceneLoaderVersion = "0.1.6";
 
 static void loadCamera(const nlohmann::json& cameraJson);
+static void loadFramebuffer
+(
+	const nlohmann::json& framebufferJson,
+	std::vector<mtd::FramebufferInfo>& framebufferInfos
+);
 static void loadPipeline
 (
-	const mtd::Device& device,
-	const nlohmann::json& pipelinesJson,
-	std::vector<mtd::PipelineInfo>& pipelineInfos
+	const nlohmann::json& pipelineJson,
+	std::vector<mtd::PipelineInfo>& pipelineInfos,
+	std::vector<mtd::RenderPassInfo>& renderOrder
 );
+static void loadFramebufferPipeline
+(
+	const nlohmann::json& framebufferPipelineJson,
+	std::vector<mtd::FramebufferPipelineInfo>& framebufferPipelineInfos,
+	std::vector<mtd::RenderPassInfo>& renderOrder
+);
+
 static void loadDefaultMeshes
 (
 	const mtd::Device& device,
@@ -47,7 +59,10 @@ void mtd::SceneLoader::load
 (
 	const Device& device,
 	const char* fileName,
+	std::vector<FramebufferInfo>& framebufferInfos,
 	std::vector<PipelineInfo>& pipelineInfos,
+	std::vector<FramebufferPipelineInfo>& framebufferPipelineInfos,
+	std::vector<RenderPassInfo>& renderOrder,
 	std::vector<std::unique_ptr<MeshManager>>& meshManagers
 )
 {
@@ -67,17 +82,31 @@ void mtd::SceneLoader::load
 
 	loadCamera(sceneJson["camera"]);
 
-	const nlohmann::json& pipelineJson = sceneJson["pipelines"];
+	const nlohmann::json& framebuffersJson = sceneJson["framebuffers"];
+	const nlohmann::json& pipelinesJson = sceneJson["pipelines"];
+	const nlohmann::json& fbPipelinesJson = sceneJson["framebuffer-pipelines"];
 	const nlohmann::json& meshesJson = sceneJson["meshes"];
 
-	if(pipelineJson.size() != meshesJson.size())
+	if(pipelinesJson.size() != meshesJson.size())
 		LOG_ERROR("The number of pipelines and mesh managers should be the same.");
 	
-	pipelineInfos.reserve(pipelineJson.size());
+	framebufferInfos.reserve(framebuffersJson.size());
+	pipelineInfos.reserve(pipelinesJson.size());
+	framebufferInfos.reserve(fbPipelinesJson.size());
+	renderOrder.reserve(framebuffersJson.size() + 1);
 	meshManagers.reserve(meshesJson.size());
 
-	for(const nlohmann::json pipelineJson: pipelineJson)
-		loadPipeline(device, pipelineJson, pipelineInfos);
+	for(int32_t i = 0; i < framebuffersJson.size(); i++)
+	{
+		loadFramebuffer(framebuffersJson[i], framebufferInfos);
+		renderOrder.emplace_back(i);
+	}
+	renderOrder.emplace_back(-1);
+
+	for(const nlohmann::json& pipelineJson: pipelinesJson)
+		loadPipeline(pipelineJson, pipelineInfos, renderOrder);
+	for(const nlohmann::json& fbPipelineJson: fbPipelinesJson)
+		loadFramebufferPipeline(fbPipelineJson, framebufferPipelineInfos, renderOrder);
 
 	for(uint32_t i = 0; i < meshesJson.size(); i++)
 	{
@@ -125,12 +154,32 @@ void loadCamera(const nlohmann::json& cameraJson)
 	mtd::CameraHandler::setOrientation(cameraJson["yaw"], cameraJson["pitch"]);
 }
 
+// Fetches the framebuffer info from the scene file
+void loadFramebuffer
+(
+	const nlohmann::json& fbJson,
+	std::vector<mtd::FramebufferInfo>& framebufferInfos
+)
+{
+	framebufferInfos.emplace_back
+	(
+		mtd::FramebufferInfo
+		{
+			fbJson["color-attachment-count"],
+			fbJson["use-depth-buffer"],
+			static_cast<mtd::TextureSamplingFilterType>(fbJson["sampling-filter"]),
+			{fbJson.value("resolution-ratio-horizontal", -1.0f), fbJson.value("resolution-ratio-vertical", -1.0f)},
+			fbJson.value("fixed-horizontal-resolution", 1280U), fbJson.value("fixed-vertical-resolution", 720U)
+		}
+	);
+}
+
 // Fetches the pipeline info from the scene file
 void loadPipeline
 (
-	const mtd::Device& device,
 	const nlohmann::json& pipelineJson,
-	std::vector<mtd::PipelineInfo>& pipelineInfos
+	std::vector<mtd::PipelineInfo>& pipelineInfos,
+	std::vector<mtd::RenderPassInfo>& renderOrder
 )
 {
 	std::vector<mtd::DescriptorInfo> descriptorInfos;
@@ -159,19 +208,80 @@ void loadPipeline
 	for(const nlohmann::json& textureType: pipelineJson["material-texture-types"])
 		textureTypes.emplace_back(static_cast<mtd::MaterialTextureType>(textureType));
 
-	pipelineInfos.emplace_back(
+	int32_t targetFramebuffer = pipelineJson["target-framebuffer"];
+	if(targetFramebuffer == -1)
+		renderOrder.back().pipelineIndices.emplace_back(static_cast<uint32_t>(pipelineInfos.size()));
+	else
+		renderOrder[targetFramebuffer].pipelineIndices.emplace_back(static_cast<uint32_t>(pipelineInfos.size()));
+
+	pipelineInfos.emplace_back
+	(
 		mtd::PipelineInfo
 		{
 			pipelineJson["name"],
 			pipelineJson["vertex-shader"],
 			pipelineJson["fragment-shader"],
 			static_cast<mtd::MeshType>(pipelineJson["mesh-type"]),
+			targetFramebuffer,
 			std::move(descriptorInfos),
 			static_cast<mtd::ShaderPrimitiveTopology>(pipelineJson["shader-primitive-topology"]),
 			static_cast<mtd::ShaderFaceCulling>(pipelineJson["shader-face-culling"]),
 			pipelineJson["transparency"],
 			std::move(floatDataTypes),
 			std::move(textureTypes)
+		}
+	);
+}
+
+// Fetches the framebuffer pipeline info from the scene file
+void loadFramebufferPipeline
+(
+	const nlohmann::json& fbPipelineJson,
+	std::vector<mtd::FramebufferPipelineInfo>& framebufferPipelineInfos,
+	std::vector<mtd::RenderPassInfo>& renderOrder
+)
+{
+	std::vector<mtd::DescriptorInfo> descriptorInfos;
+	descriptorInfos.reserve(fbPipelineJson["descriptor-set-info"].size());
+	for(const nlohmann::json& descriptorInfoJson: fbPipelineJson["descriptor-set-info"])
+	{
+		descriptorInfos.emplace_back
+		(
+			mtd::DescriptorInfo
+			{
+				static_cast<mtd::DescriptorType>(descriptorInfoJson["descriptor-type"]),
+				static_cast<mtd::ShaderStage>(descriptorInfoJson["shader-stage"]),
+				descriptorInfoJson["total-descriptor-size"],
+				descriptorInfoJson["descriptor-count"]
+			}
+		);
+	}
+
+	const nlohmann::json& inputAttachmentsJson = fbPipelineJson["input-attachments"];
+	std::vector<mtd::AttachmentIdentifier> inputAttachments(inputAttachmentsJson.size());
+	for(uint32_t i = 0; i < inputAttachmentsJson.size(); i++)
+	{
+		inputAttachments[i].framebufferIndex = inputAttachmentsJson[i]["framebuffer-index"];
+		inputAttachments[i].attachmentIndex = inputAttachmentsJson[i]["attachment-index"];
+	}
+
+	int32_t targetFramebuffer = fbPipelineJson["target-framebuffer"];
+	if(targetFramebuffer == -1)
+		renderOrder.back().framebufferPipelineIndex = static_cast<uint32_t>(framebufferPipelineInfos.size());
+	else
+		renderOrder[targetFramebuffer].framebufferPipelineIndex = static_cast<uint32_t>(framebufferPipelineInfos.size());
+
+	framebufferPipelineInfos.emplace_back
+	(
+		mtd::FramebufferPipelineInfo
+		{
+			fbPipelineJson["name"],
+			fbPipelineJson["vertex-shader"],
+			fbPipelineJson["fragment-shader"],
+			targetFramebuffer,
+			std::move(descriptorInfos),
+			std::move(inputAttachments),
+			fbPipelineJson["dependencies"]
 		}
 	);
 }
