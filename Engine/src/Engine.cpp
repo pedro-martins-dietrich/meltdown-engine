@@ -18,8 +18,8 @@ mtd::Engine::Engine(const EngineInfo& info)
 	settingsGui{swapchain.getSettings(), camera, shouldUpdateEngine},
 	profilerGui{},
 	renderer{},
-	running{false},
-	shouldUpdateEngine{false}
+	shouldUpdateEngine{false}, running{false},
+	shouldLoadScene{false}
 {
 	configureEventCallbacks();
 	configureGlobalDescriptorSetHandler();
@@ -74,6 +74,9 @@ void mtd::Engine::run(const std::function<void(double)>& onUpdateCallback)
 
 	while(running.load())
 	{
+		if(shouldLoadScene.load())
+			loadScene(sceneFileToLoad.c_str());
+
 		PROFILER_START_FRAME("Update descriptors");
 		updateDescriptors();
 		
@@ -128,6 +131,10 @@ void mtd::Engine::loadScene(const char* sceneFile)
 	configureDescriptors();
 
 	scene.start();
+
+	shouldLoadScene.store(false);
+	std::unique_lock sceneLoadLock{sceneLoadMutex};
+	sceneLoadCV.notify_all();
 }
 
 // Runs the update loop (update thread)
@@ -142,6 +149,11 @@ void mtd::Engine::updateLoop(const std::function<void(double)>& onUpdateCallback
 
 	while(running.load())
 	{
+		{
+			std::unique_lock sceneLoadLock{sceneLoadMutex};
+			sceneLoadCV.wait(sceneLoadLock, [this] { return !shouldLoadScene.load(); });
+		}
+
 		ChronoTime startTime = endTime;
 
 		InputHandler::checkActionEvents();
@@ -175,7 +187,8 @@ void mtd::Engine::configureEventCallbacks()
 {
 	changeSceneCallbackHandle = EventManager::addCallback([this](const ChangeSceneEvent& event)
 	{
-		loadScene(event.getSceneName());
+		sceneFileToLoad = event.getSceneName();
+		shouldLoadScene.store(true);
 	});
 	updateDescriptorDataCallbackHandle = EventManager::addCallback([this](const UpdateDescriptorDataEvent& event)
 	{

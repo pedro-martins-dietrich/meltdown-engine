@@ -63,10 +63,16 @@ namespace mtd
 			EventCallbackHandle changeSceneCallbackHandle;
 			EventCallbackHandle updateDescriptorDataCallbackHandle;
 
-			// Flag to ensure all threads finish executing
-			std::atomic<bool> running;
 			// Flag for updating the engine
 			bool shouldUpdateEngine;
+			// Flag to ensure all threads finish executing
+			std::atomic<bool> running;
+
+			// Scene loading objects
+			std::atomic<bool> shouldLoadScene;
+			std::string sceneFileToLoad;
+			std::mutex sceneLoadMutex;
+			std::condition_variable sceneLoadCV;
 
 			// Descriptors to update before rendering the next frame
 			std::unordered_map<uint64_t, const void*> pendingDescriptorUpdates;
