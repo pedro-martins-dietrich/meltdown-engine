@@ -29,7 +29,10 @@ mtd::FramebufferPipeline::FramebufferPipeline(FramebufferPipeline&& other) noexc
 	: device{other.device},
 	info{std::move(other.info)},
 	pipeline{std::move(other.pipeline)},
-	pipelineLayout{std::move(other.pipelineLayout)}
+	pipelineLayout{std::move(other.pipelineLayout)},
+	shaders{std::move(other.shaders)},
+	descriptorSetHandlers{std::move(other.descriptorSetHandlers)},
+	descriptorTypeCount{std::move(other.descriptorTypeCount)}
 {
 	other.pipeline = nullptr;
 	other.pipelineLayout = nullptr;

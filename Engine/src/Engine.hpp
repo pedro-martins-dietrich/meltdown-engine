@@ -1,5 +1,7 @@
 #pragma once
 
+#include <condition_variable>
+
 #include "Vulkan/Pipeline/FramebufferPipeline.hpp"
 #include "Vulkan/Descriptors/DescriptorPool.hpp"
 #include "Vulkan/ImGui/ImGuiHandler.hpp"

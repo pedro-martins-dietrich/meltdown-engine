@@ -165,8 +165,7 @@ void loadFramebuffer
 	(
 		mtd::FramebufferInfo
 		{
-			fbJson["color-attachment-count"],
-			fbJson["use-depth-buffer"],
+			static_cast<mtd::FramebufferAttachments>(fbJson["attachments"]),
 			static_cast<mtd::TextureSamplingFilterType>(fbJson["sampling-filter"]),
 			{fbJson.value("resolution-ratio-horizontal", -1.0f), fbJson.value("resolution-ratio-vertical", -1.0f)},
 			fbJson.value("fixed-horizontal-resolution", 1280U), fbJson.value("fixed-vertical-resolution", 720U)

@@ -95,13 +95,18 @@ void mtd::Renderer::recordDrawCommands
 	const ImGuiHandler& guiHandler
 ) const
 {
-	commandHandler.beginCommand();
+	assert(!(pipelines.empty() && framebufferPipelines.empty()) && "There must be at least one pipeline to render.");
 
 	const vk::CommandBuffer& commandBuffer = commandHandler.getCommandBuffer();
+	const vk::PipelineLayout& firstPipelineLayout =
+		pipelines.empty() ? framebufferPipelines[0].getLayout() : pipelines[0].getLayout();
+
+	commandHandler.beginCommand();
+
 	commandBuffer.bindDescriptorSets
 	(
 		vk::PipelineBindPoint::eGraphics,
-		pipelines[0].getLayout(),
+		firstPipelineLayout,
 		0,
 		1, &(drawInfo.globalDescriptorSet),
 		0, nullptr

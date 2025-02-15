@@ -49,6 +49,13 @@ void mtd::DescriptorSetHandler::createDescriptorResources
 	uint32_t binding
 )
 {
+	assert
+	(
+		swappableSetIndex < resourcesList.size() &&
+		binding < resourcesList[swappableSetIndex].size() &&
+		"Descriptor out of bounds for resource creation."
+	);
+
 	DescriptorResources& resources = resourcesList[swappableSetIndex][binding];
 	resources.descriptorBuffer = std::make_unique<GpuBuffer>
 	(
@@ -69,12 +76,21 @@ void mtd::DescriptorSetHandler::createImageDescriptorResources
 	uint32_t swappableSetIndex, uint32_t binding, const vk::DescriptorImageInfo& descriptorImageInfo
 )
 {
+	assert
+	(
+		swappableSetIndex < resourcesList.size() &&
+		binding < resourcesList[swappableSetIndex].size() &&
+		"Descriptor out of bounds for image resource creation."
+	);
+
 	resourcesList[swappableSetIndex][binding].descriptorImageInfo = descriptorImageInfo;
 }
 
 // Updates the descriptor set write data
 void mtd::DescriptorSetHandler::writeDescriptorSet(uint32_t swappableSetIndex)
 {
+	assert(swappableSetIndex < resourcesList.size() && "Swappable descriptor set not available to write data.");
+
 	writeOps.resize(resourcesList[swappableSetIndex].size());
 	for(uint32_t binding = 0; binding < resourcesList[swappableSetIndex].size(); binding++)
 	{

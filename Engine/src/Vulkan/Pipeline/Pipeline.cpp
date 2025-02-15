@@ -32,7 +32,8 @@ mtd::Pipeline::Pipeline(Pipeline&& other) noexcept
 	pipeline{std::move(other.pipeline)},
 	pipelineLayout{std::move(other.pipelineLayout)},
 	shaders{std::move(other.shaders)},
-	descriptorSetHandlers{std::move(other.descriptorSetHandlers)}
+	descriptorSetHandlers{std::move(other.descriptorSetHandlers)},
+	descriptorTypeCount{std::move(other.descriptorTypeCount)}
 {
 	other.pipeline = nullptr;
 	other.pipelineLayout = nullptr;

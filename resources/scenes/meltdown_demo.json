@@ -14,8 +14,7 @@
 	"framebuffers":
 	[
 		{
-			"color-attachment-count": 1,
-			"use-depth-buffer": true,
+			"attachments": 1,
 			"sampling-filter": 1,
 			"resolution-ratio-horizontal": 1.0,
 			"resolution-ratio-vertical": 1.0

@@ -73,10 +73,8 @@ namespace mtd
 	*/
 	struct FramebufferInfo
 	{
-		/* @brief Number of color attachments stored in the framebuffer. */
-		uint32_t colorAttachmentCount;
-		/* @brief Usage of a depth stencil attachment in the framebuffer. */
-		bool useDepthStencilAttachment;
+		/* @brief Attachments used in the framebuffer. */
+		FramebufferAttachments framebufferAttachments;
 		/* @brief Type of filter used for sampling the attachments. */
 		TextureSamplingFilterType samplingFilter;
 		/* @brief Ratio between the framebuffer and window resolution. Use negative values for a fixed resolution. */

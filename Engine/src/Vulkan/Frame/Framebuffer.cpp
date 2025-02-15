@@ -68,10 +68,12 @@ void mtd::Framebuffer::transitionAttachmentLayout
 	assert(attachmentIndex < attachmentsData.size() && "Attachment index out of bounds.");
 	const AttachmentData& attachmentData = attachmentsData[attachmentIndex];
 
+	bool useDepth = static_cast<uint32_t>(info.framebufferAttachments) & 0x01U;
+
 	vk::PipelineStageFlags pipelineSrcStage = vk::PipelineStageFlagBits::eColorAttachmentOutput;
 	vk::PipelineStageFlags pipelineDstStage = vk::PipelineStageFlagBits::eFragmentShader;
 
-	if(info.useDepthStencilAttachment && (attachmentIndex == (attachmentsData.size() - 1)))
+	if(useDepth && (attachmentIndex == (attachmentsData.size() - 1)))
 	{
 		if(toShaderReadOnly)
 		{
@@ -155,13 +157,14 @@ void mtd::Framebuffer::resize(const Device& mtdDevice, vk::Extent2D swapchainExt
 // Creates the Vulkan render pass for the framebuffer
 void mtd::Framebuffer::createRenderPass()
 {
-	uint32_t totalAttachmentCount = info.colorAttachmentCount;
-	if(info.useDepthStencilAttachment) totalAttachmentCount++;
+	uint32_t colorAttachmentCount = 1U + (static_cast<uint32_t>(info.framebufferAttachments) >> 1);
+	bool useDepth = static_cast<uint32_t>(info.framebufferAttachments) & 0x01U;
+	uint32_t totalAttachmentCount = useDepth ? (colorAttachmentCount + 1) : colorAttachmentCount;
 
 	std::vector<vk::AttachmentDescription> attachments(totalAttachmentCount);
-	std::vector<vk::AttachmentReference> colorAttachmentReferences(info.colorAttachmentCount);
+	std::vector<vk::AttachmentReference> colorAttachmentReferences(colorAttachmentCount);
 
-	for(uint32_t i = 0; i < info.colorAttachmentCount; i++)
+	for(uint32_t i = 0; i < colorAttachmentCount; i++)
 	{
 		attachments[i].flags = vk::AttachmentDescriptionFlags();
 		attachments[i].format = vk::Format::eB8G8R8A8Unorm;
@@ -178,7 +181,7 @@ void mtd::Framebuffer::createRenderPass()
 	}
 
 	vk::AttachmentReference depthAttachmentReference{};
-	if(info.useDepthStencilAttachment)
+	if(useDepth)
 	{
 		attachments.back().flags = vk::AttachmentDescriptionFlags();
 		attachments.back().format = vk::Format::eD32Sfloat;
@@ -190,7 +193,7 @@ void mtd::Framebuffer::createRenderPass()
 		attachments.back().initialLayout = vk::ImageLayout::eUndefined;
 		attachments.back().finalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
 
-		depthAttachmentReference.attachment = info.colorAttachmentCount;
+		depthAttachmentReference.attachment = colorAttachmentCount;
 		depthAttachmentReference.layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
 	}
 
@@ -202,7 +205,7 @@ void mtd::Framebuffer::createRenderPass()
 	subpassDescription.colorAttachmentCount = static_cast<uint32_t>(colorAttachmentReferences.size());
 	subpassDescription.pColorAttachments = colorAttachmentReferences.data();
 	subpassDescription.pResolveAttachments = nullptr;
-	subpassDescription.pDepthStencilAttachment = info.useDepthStencilAttachment ? &depthAttachmentReference : nullptr;
+	subpassDescription.pDepthStencilAttachment = useDepth ? &depthAttachmentReference : nullptr;
 	subpassDescription.preserveAttachmentCount = 0;
 	subpassDescription.pPreserveAttachments = nullptr;
 
@@ -238,12 +241,14 @@ void mtd::Framebuffer::createAttachments(const Device& mtdDevice, vk::Extent2D s
 		windowResolutionDependant = true;
 	}
 
-	uint32_t totalAttachmentCount = info.colorAttachmentCount;
-	if(info.useDepthStencilAttachment) totalAttachmentCount++;
+	uint32_t colorAttachmentCount = 1U + (static_cast<uint32_t>(info.framebufferAttachments) >> 1);
+	bool useDepth = static_cast<uint32_t>(info.framebufferAttachments) & 0x01U;
+	uint32_t totalAttachmentCount = useDepth ? (colorAttachmentCount + 1) : colorAttachmentCount;
+
 	attachmentsData.resize(totalAttachmentCount);
 	descriptorInfos.resize(totalAttachmentCount);
 
-	for(uint32_t i = 0; i < info.colorAttachmentCount; i++)
+	for(uint32_t i = 0; i < colorAttachmentCount; i++)
 	{
 		attachmentsData[i].format = vk::Format::eB8G8R8A8Unorm;
 		createAttachment
@@ -258,7 +263,7 @@ void mtd::Framebuffer::createAttachments(const Device& mtdDevice, vk::Extent2D s
 		descriptorInfos[i].imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 	}
 
-	if(info.useDepthStencilAttachment)
+	if(useDepth)
 	{
 		attachmentsData.back().format = vk::Format::eD32Sfloat;
 		createAttachment

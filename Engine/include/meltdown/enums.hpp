@@ -76,6 +76,21 @@ namespace mtd
 	};
 
 	/*
+	* @brief Allowed configuration of attachments for a framebuffer.
+	*/
+	enum class FramebufferAttachments
+	{
+		SingleColor,
+		SingleColorWithDepth,
+		TwoColors,
+		TwoColorsWithDepth,
+		ThreeColors,
+		ThreeColorsWithDepth,
+		FourColors,
+		FourColorsWithDepth
+	};
+
+	/*
 	* @brief Filtering type used for sampling textures.
 	*/
 	enum class TextureSamplingFilterType

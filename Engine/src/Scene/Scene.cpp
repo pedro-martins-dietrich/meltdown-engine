@@ -56,6 +56,11 @@ void mtd::Scene::allocateResources
 		for(const auto& [type, count]: pipeline.getDescriptorTypeCount())
 			totalDescriptorTypeCount[type] += count;
 	}
+	for(const FramebufferPipeline& fbPipeline: framebufferPipelines)
+	{
+		for(const auto& [type, count]: fbPipeline.getDescriptorTypeCount())
+			totalDescriptorTypeCount[type] += count;
+	}
 
 	std::vector<PoolSizeData> poolSizesInfo{totalDescriptorTypeCount.size()};
 	uint32_t i = 0;
