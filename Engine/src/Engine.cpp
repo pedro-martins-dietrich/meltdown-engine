@@ -1,8 +1,6 @@
 #include <pch.hpp>
 #include "Engine.hpp"
 
-#include <meltdown/event.hpp>
-
 #include "Utils/Logger.hpp"
 #include "Utils/Profiler.hpp"
 #include "Input/InputHandler.hpp"
@@ -20,8 +18,8 @@ mtd::Engine::Engine(const EngineInfo& info)
 	settingsGui{swapchain.getSettings(), camera, shouldUpdateEngine},
 	profilerGui{},
 	renderer{},
-	running{false},
-	shouldUpdateEngine{false}
+	shouldUpdateEngine{false}, running{false},
+	shouldLoadScene{false}
 {
 	configureEventCallbacks();
 	configureGlobalDescriptorSetHandler();
@@ -49,7 +47,7 @@ mtd::Engine::~Engine()
 	LOG_INFO("Engine shut down.");
 }
 
-// Configures the clear color for the framebuffer
+// Configures the clear color for the framebuffers
 void mtd::Engine::setClearColor(const Vec4& color)
 {
 	renderer.setClearColor(color);
@@ -76,10 +74,24 @@ void mtd::Engine::run(const std::function<void(double)>& onUpdateCallback)
 
 	while(running.load())
 	{
+		if(shouldLoadScene.load())
+			loadScene(sceneFileToLoad.c_str());
+
 		PROFILER_START_FRAME("Update descriptors");
 		updateDescriptors();
 		
-		renderer.render(device, swapchain, imGuiHandler, pipelines, scene, drawInfo, shouldUpdateEngine);
+		renderer.render
+		(
+			device,
+			swapchain,
+			imGuiHandler,
+			framebuffers,
+			pipelines,
+			framebufferPipelines,
+			scene,
+			drawInfo,
+			shouldUpdateEngine
+		);
 
 		PROFILER_NEXT_STAGE("Update engine");
 		if(shouldUpdateEngine)
@@ -97,15 +109,32 @@ void mtd::Engine::run(const std::function<void(double)>& onUpdateCallback)
 void mtd::Engine::loadScene(const char* sceneFile)
 {
 	device.getDevice().waitIdle();
+	framebuffers.clear();
 	pipelines.clear();
-	std::vector<PipelineInfo> pipelineInfos;
+	framebufferPipelines.clear();
 
-	scene.loadScene(device, sceneFile, pipelineInfos);
-	createPipelines(pipelineInfos);
-	scene.loadMeshes(pipelines);
+	std::vector<FramebufferInfo> framebufferInfos;
+	std::vector<PipelineInfo> pipelineInfos;
+	std::vector<FramebufferPipelineInfo> framebufferPipelineInfos;
+
+	scene.loadScene
+	(
+		device,
+		sceneFile,
+		framebufferInfos,
+		pipelineInfos,
+		framebufferPipelineInfos,
+		renderer.getRenderOrder()
+	);
+	createRenderResources(framebufferInfos, pipelineInfos, framebufferPipelineInfos);
+	scene.allocateResources(pipelines, framebufferPipelines);
 	configureDescriptors();
 
 	scene.start();
+
+	shouldLoadScene.store(false);
+	std::unique_lock sceneLoadLock{sceneLoadMutex};
+	sceneLoadCV.notify_all();
 }
 
 // Runs the update loop (update thread)
@@ -120,6 +149,11 @@ void mtd::Engine::updateLoop(const std::function<void(double)>& onUpdateCallback
 
 	while(running.load())
 	{
+		{
+			std::unique_lock sceneLoadLock{sceneLoadMutex};
+			sceneLoadCV.wait(sceneLoadLock, [this] { return !shouldLoadScene.load(); });
+		}
+
 		ChronoTime startTime = endTime;
 
 		InputHandler::checkActionEvents();
@@ -153,7 +187,8 @@ void mtd::Engine::configureEventCallbacks()
 {
 	changeSceneCallbackHandle = EventManager::addCallback([this](const ChangeSceneEvent& event)
 	{
-		loadScene(event.getSceneName());
+		sceneFileToLoad = event.getSceneName();
+		shouldLoadScene.store(true);
 	});
 	updateDescriptorDataCallbackHandle = EventManager::addCallback([this](const UpdateDescriptorDataEvent& event)
 	{
@@ -177,12 +212,49 @@ void mtd::Engine::configureGlobalDescriptorSetHandler()
 	globalDescriptorSetHandler = std::make_unique<DescriptorSetHandler>(device.getDevice(), bindings);
 }
 
-// Creates the pipelines to be used in the scene
-void mtd::Engine::createPipelines(const std::vector<PipelineInfo>& pipelineInfos)
+// Creates the framebuffers and pipelines to be used in the scene
+void mtd::Engine::createRenderResources
+(
+	const std::vector<FramebufferInfo>& framebufferInfos,
+	const std::vector<PipelineInfo>& pipelineInfos,
+	const std::vector<FramebufferPipelineInfo>& framebufferPipelineInfos
+)
 {
+	framebuffers.reserve(framebufferInfos.size());
+	for(const FramebufferInfo& framebufferInfo: framebufferInfos)
+		framebuffers.emplace_back(device, framebufferInfo, swapchain.getExtent());
+
 	pipelines.reserve(pipelineInfos.size());
 	for(const PipelineInfo& pipelineInfo: pipelineInfos)
-		pipelines.emplace_back(device.getDevice(), swapchain, globalDescriptorSetHandler.get(), pipelineInfo);
+	{
+		int32_t fbIndex = pipelineInfo.targetFramebufferIndex;
+		bool targetSwapchain = fbIndex == -1;
+
+		pipelines.emplace_back
+		(
+			device.getDevice(),
+			pipelineInfo,
+			globalDescriptorSetHandler->getLayout(),
+			targetSwapchain ? swapchain.getExtent() : framebuffers[fbIndex].getExtent(),
+			targetSwapchain ? swapchain.getRenderPass() : framebuffers[fbIndex].getRenderPass()
+		);
+	}
+
+	framebufferPipelines.reserve(framebufferPipelineInfos.size());
+	for(const FramebufferPipelineInfo& fbPipelineInfo: framebufferPipelineInfos)
+	{
+		int32_t fbIndex = fbPipelineInfo.targetFramebufferIndex;
+		bool targetSwapchain = fbIndex == -1;
+
+		framebufferPipelines.emplace_back
+		(
+			device.getDevice(),
+			fbPipelineInfo,
+			globalDescriptorSetHandler->getLayout(),
+			targetSwapchain ? swapchain.getExtent() : framebuffers[fbIndex].getExtent(),
+			targetSwapchain ? swapchain.getRenderPass() : framebuffers[fbIndex].getRenderPass()
+		);
+	}
 }
 
 // Sets up the descriptors
@@ -199,6 +271,20 @@ void mtd::Engine::configureDescriptors()
 
 	for(Pipeline& pipeline: pipelines)
 		pipeline.configureUserDescriptorData(device, scene.getDescriptorPool());
+	for(FramebufferPipeline& fbPipeline: framebufferPipelines)
+	{
+		DescriptorSetHandler& descriptorSetHandler = fbPipeline.getDescriptorSetHandler(0);
+		fbPipeline.configureUserDescriptorData(device, scene.getDescriptorPool());
+
+		const std::vector<AttachmentIdentifier>& attachmentIdentifiers = fbPipeline.getAttachmentIdentifiers();
+		for(uint32_t binding = 0; binding < attachmentIdentifiers.size(); binding++)
+		{
+			uint32_t fbIndex = attachmentIdentifiers[binding].framebufferIndex;
+			uint32_t attachmentIndex = attachmentIdentifiers[binding].attachmentIndex;
+			framebuffers[fbIndex].configureAttachmentAsDescriptor(descriptorSetHandler, binding, attachmentIndex);
+		}
+		descriptorSetHandler.writeDescriptorSet(0);
+	}
 }
 
 // Recreates swapchain and pipeline to apply new settings
@@ -209,8 +295,34 @@ void mtd::Engine::updateEngine()
 
 	swapchain.recreate(device, window.getDimensions(), vulkanInstance.getSurface());
 
+	for(Framebuffer& framebuffer: framebuffers)
+		framebuffer.resize(device, swapchain.getExtent());
 	for(Pipeline& pipeline: pipelines)
-		pipeline.recreate(swapchain, globalDescriptorSetHandler.get());
+	{
+		int32_t fbIndex = pipeline.getTargetFramebuffer();
+		bool targetSwapchain = fbIndex == -1;
+
+		pipeline.recreate
+		(
+			targetSwapchain ? swapchain.getExtent() : framebuffers[fbIndex].getExtent(),
+			targetSwapchain ? swapchain.getRenderPass() : framebuffers[fbIndex].getRenderPass(),
+			globalDescriptorSetHandler->getLayout()
+		);
+	}
+	for(FramebufferPipeline& fbPipeline: framebufferPipelines)
+	{
+		DescriptorSetHandler& descriptorSetHandler = fbPipeline.getDescriptorSetHandler(0);
+		fbPipeline.recreate(swapchain.getExtent(), swapchain.getRenderPass(), globalDescriptorSetHandler->getLayout());
+
+		const std::vector<AttachmentIdentifier>& attachmentIdentifiers = fbPipeline.getAttachmentIdentifiers();
+		for(uint32_t binding = 0; binding < attachmentIdentifiers.size(); binding++)
+		{
+			uint32_t fbIndex = attachmentIdentifiers[binding].framebufferIndex;
+			uint32_t attachmentIndex = attachmentIdentifiers[binding].attachmentIndex;
+			framebuffers[fbIndex].configureAttachmentAsDescriptor(descriptorSetHandler, binding, attachmentIndex);
+		}
+		descriptorSetHandler.writeDescriptorSet(0);
+	}
 
 	camera.setAspectRatio(window.getAspectRatio());
 

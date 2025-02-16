@@ -1,42 +1,42 @@
 #pragma once
 
-#include <meltdown/structs.hpp>
-
 #include "ShaderModule.hpp"
 #include "../Descriptors/DescriptorPool.hpp"
 
 namespace mtd
 {
-	// Vulkan graphics pipeline handler
-	class Pipeline
+	// Vulkan graphics pipeline to handle framebuffers
+	class FramebufferPipeline
 	{
 		public:
-			Pipeline
+			FramebufferPipeline
 			(
 				const vk::Device& device,
-				const PipelineInfo& info,
+				const FramebufferPipelineInfo& info,
 				const vk::DescriptorSetLayout& globalDescriptorSetLayout,
 				vk::Extent2D extent,
 				vk::RenderPass renderPass
 			);
-			~Pipeline();
+			~FramebufferPipeline();
 
-			Pipeline(const Pipeline&) = delete;
-			Pipeline& operator=(const Pipeline&) = delete;
+			FramebufferPipeline(const FramebufferPipeline&) = delete;
+			FramebufferPipeline& operator=(const FramebufferPipeline&) = delete;
 
-			Pipeline(Pipeline&& other) noexcept;
+			FramebufferPipeline(FramebufferPipeline&& other) noexcept;
 
 			// Getters
 			const vk::Pipeline& getPipeline() const { return pipeline; }
 			const vk::PipelineLayout& getLayout() const { return pipelineLayout; }
 			const std::string& getName() const { return info.pipelineName; }
-			int32_t getTargetFramebuffer() const { return info.targetFramebufferIndex; }
-			MeshType getAssociatedMeshType() const { return info.associatedMeshType; }
+			int32_t getTargetFramebufferIndex() const { return info.targetFramebufferIndex; }
 			DescriptorSetHandler& getDescriptorSetHandler(uint32_t set) { return descriptorSetHandlers[set]; }
 			const std::unordered_map<vk::DescriptorType, uint32_t>& getDescriptorTypeCount() const
 				{ return descriptorTypeCount; }
+			const std::vector<AttachmentIdentifier>& getAttachmentIdentifiers() const
+				{ return info.inputAttachments; }
+			const std::vector<uint32_t>& getPipelineIndices() const { return info.dependencies; }
 
-			// Recreates the pipeline
+			// Recreates the framebuffer pipeline
 			void recreate
 			(
 				vk::Extent2D extent,
@@ -53,8 +53,6 @@ namespace mtd
 			void bind(const vk::CommandBuffer& commandBuffer) const;
 			// Binds per pipeline descriptors
 			void bindPipelineDescriptors(const vk::CommandBuffer& commandBuffer) const;
-			// Binds per mesh descriptors
-			void bindMeshDescriptors(const vk::CommandBuffer& commandBuffer, uint32_t index) const;
 
 		private:
 			// Vulkan graphics pipeline
@@ -62,8 +60,8 @@ namespace mtd
 			// Pipeline layout
 			vk::PipelineLayout pipelineLayout;
 
-			// Pipeline specific configurations
-			PipelineInfo info;
+			// Framebuffer pipeline specific configurations
+			FramebufferPipelineInfo info;
 
 			// Shader modules used in the pipeline
 			std::vector<ShaderModule> shaders;
@@ -89,6 +87,8 @@ namespace mtd
 			// Configures the descriptor set handlers to be used
 			void createDescriptorSetLayouts();
 
+			// Sets the vertex input create info
+			void setVertexInput(vk::PipelineVertexInputStateCreateInfo& vertexInputInfo) const;
 			// Sets the input assembly create info
 			void setInputAssembly(vk::PipelineInputAssemblyStateCreateInfo& inputAssemblyInfo) const;
 			// Sets the vertex shader stage create info
@@ -118,10 +118,10 @@ namespace mtd
 			// Sets the depth stencil create info
 			void setDepthStencil(vk::PipelineDepthStencilStateCreateInfo& depthStencilInfo) const;
 
-			// Creates the layout for the pipeline
+			// Creates the layout for the framebuffer pipeline
 			void createPipelineLayout(const vk::DescriptorSetLayout& globalDescriptorSetLayout);
 
-			// Clears pipeline objects
+			// Clears the framebuffer pipeline objects
 			void destroy();
 	};
 }

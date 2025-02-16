@@ -39,9 +39,9 @@ mtd::Frame::Frame
 
 mtd::Frame::~Frame()
 {
-	device.destroyImage(depthBuffer);
-	device.freeMemory(depthBufferMemory);
-	device.destroyImageView(depthBufferView);
+	device.destroyImage(depthBuffer.image);
+	device.freeMemory(depthBuffer.imageMemory);
+	device.destroyImageView(depthBuffer.imageView);
 
 	device.destroySemaphore(synchronizationBundle.renderFinished);
 	device.destroySemaphore(synchronizationBundle.imageAvailable);
@@ -59,18 +59,15 @@ mtd::Frame::Frame(Frame&& other) noexcept
 	imageView{std::move(other.imageView)},
 	framebuffer{std::move(other.framebuffer)},
 	depthBuffer{std::move(other.depthBuffer)},
-	depthBufferView{std::move(other.depthBufferView)},
-	depthBufferMemory{std::move(other.depthBufferMemory)},
-	depthBufferFormat{other.depthBufferFormat},
 	commandHandler{std::move(other.commandHandler)},
 	synchronizationBundle{std::move(other.synchronizationBundle)}
 {
 	other.image = nullptr;
 	other.imageView = nullptr;
 	other.framebuffer = nullptr;
-	other.depthBuffer = nullptr;
-	other.depthBufferView = nullptr;
-	other.depthBufferMemory = nullptr;
+	other.depthBuffer.image = nullptr;
+	other.depthBuffer.imageView = nullptr;
+	other.depthBuffer.imageMemory = nullptr;
 	other.synchronizationBundle.inFlightFence = nullptr;
 	other.synchronizationBundle.imageAvailable = nullptr;
 	other.synchronizationBundle.renderFinished = nullptr;
@@ -86,7 +83,7 @@ void mtd::Frame::fetchFrameDrawData(DrawInfo& drawInfo) const
 // Set up framebuffer
 void mtd::Frame::createFramebuffer(const vk::RenderPass& renderPass)
 {
-	std::vector<vk::ImageView> attachments{imageView, depthBufferView};
+	std::vector<vk::ImageView> attachments{imageView, depthBuffer.imageView};
 
 	vk::FramebufferCreateInfo framebufferCreateInfo{};
 	framebufferCreateInfo.flags = vk::FramebufferCreateFlags();
@@ -110,7 +107,7 @@ void mtd::Frame::createFramebuffer(const vk::RenderPass& renderPass)
 // Creates depth buffer data
 void mtd::Frame::createDepthResources(const Device& device)
 {
-	depthBufferFormat = findSupportedFormat
+	depthBuffer.format = findSupportedFormat
 	(
 		device.getPhysicalDevice(),
 		{vk::Format::eD32Sfloat, vk::Format::eD24UnormS8Uint},
@@ -121,23 +118,23 @@ void mtd::Frame::createDepthResources(const Device& device)
 	Image::CreateImageBundle imageBundle{device.getDevice()};
 	imageBundle.tiling = vk::ImageTiling::eOptimal;
 	imageBundle.usage = vk::ImageUsageFlagBits::eDepthStencilAttachment;
-	imageBundle.format = depthBufferFormat;
+	imageBundle.format = depthBuffer.format;
 	imageBundle.imageFlags = vk::ImageCreateFlags();
 	imageBundle.dimensions = frameDimensions;
 
-	Image::createImage(imageBundle, depthBuffer);
+	Image::createImage(imageBundle, depthBuffer.image);
 	Image::createImageMemory
 	(
-		device, depthBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal, depthBufferMemory
+		device, depthBuffer.image, vk::MemoryPropertyFlagBits::eDeviceLocal, depthBuffer.imageMemory
 	);
 	Image::createImageView
 	(
 		device.getDevice(),
-		depthBuffer,
-		depthBufferFormat,
+		depthBuffer.image,
+		depthBuffer.format,
 		vk::ImageAspectFlagBits::eDepth,
 		vk::ImageViewType::e2D,
-		depthBufferView
+		depthBuffer.imageView
 	);
 }
 
@@ -155,15 +152,9 @@ vk::Format mtd::Frame::findSupportedFormat
 		vk::FormatProperties properties = physicalDevice.getFormatProperties(candidate);
 		if
 		(
-			(tiling == vk::ImageTiling::eLinear &&
-				(properties.linearTilingFeatures & features) == features)
-			||
-			(tiling == vk::ImageTiling::eOptimal &&
-				(properties.optimalTilingFeatures & features) == features)
-		)
-		{
-			return candidate;
-		}
+			(tiling == vk::ImageTiling::eLinear && (properties.linearTilingFeatures & features) == features) ||
+			(tiling == vk::ImageTiling::eOptimal && (properties.optimalTilingFeatures & features) == features)
+		) return candidate;
 	}
 
 	LOG_ERROR("Failed to find suitable Vulkan format.");

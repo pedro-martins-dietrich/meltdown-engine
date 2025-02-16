@@ -1,8 +1,10 @@
 #pragma once
 
-#include "../Pipeline/Pipeline.hpp"
-#include "../../Scene/Scene.hpp"
+#include "../Frame/Swapchain.hpp"
+#include "../Frame/Framebuffer.hpp"
+#include "../Pipeline/FramebufferPipeline.hpp"
 #include "../ImGui/ImGuiHandler.hpp"
+#include "../../Scene/Scene.hpp"
 
 namespace mtd
 {
@@ -16,6 +18,9 @@ namespace mtd
 			Renderer(const Renderer&) = delete;
 			Renderer& operator=(const Renderer&) = delete;
 
+			// Getter
+			std::vector<RenderPassInfo>& getRenderOrder() { return renderOrder; }
+
 			// Setter
 			void setClearColor(const Vec4& color);
 
@@ -25,7 +30,9 @@ namespace mtd
 				const Device& device,
 				const Swapchain& swapchain,
 				const ImGuiHandler& guiHandler,
+				const std::vector<Framebuffer>& framebuffers,
 				const std::vector<Pipeline>& pipelines,
+				const std::vector<FramebufferPipeline>& framebufferPipelines,
 				const Scene& scene,
 				DrawInfo& drawInfo,
 				bool& shouldUpdateEngine
@@ -36,11 +43,15 @@ namespace mtd
 			uint32_t currentFrameIndex;
 			// Framebuffer clear color
 			vk::ClearColorValue clearColor;
+			// Order which the framebuffers will be rendered
+			std::vector<RenderPassInfo> renderOrder;
 
-			// Records draw command to the command buffer
-			void recordDrawCommand
+			// Records draw commands to the command buffer
+			void recordDrawCommands
 			(
+				const std::vector<Framebuffer>& framebuffers,
 				const std::vector<Pipeline>& pipelines,
+				const std::vector<FramebufferPipeline>& framebufferPipelines,
 				const Scene& scene,
 				const CommandHandler& commandHandler,
 				const DrawInfo& drawInfo,

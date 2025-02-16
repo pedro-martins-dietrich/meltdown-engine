@@ -1,5 +1,5 @@
 {
-	"scene-loader-version": "0.1.5",
+	"scene-loader-version": "0.1.6",
 	"camera":
 	{
 		"orthographic": false,
@@ -11,6 +11,15 @@
 		"yaw": 0.0,
 		"pitch": 0.4
 	},
+	"framebuffers":
+	[
+		{
+			"attachments": 1,
+			"sampling-filter": 1,
+			"resolution-ratio-horizontal": 1.0,
+			"resolution-ratio-vertical": 1.0
+		}
+	],
 	"pipelines":
 	[
 		{
@@ -18,6 +27,7 @@
 			"vertex-shader": "default.vert.spv",
 			"fragment-shader": "default.frag.spv",
 			"mesh-type": 0,
+			"target-framebuffer": 0,
 			"descriptor-set-info":
 			[
 				{
@@ -38,12 +48,31 @@
 			"vertex-shader": "billboard.vert.spv",
 			"fragment-shader": "billboard.frag.spv",
 			"mesh-type": 2,
+			"target-framebuffer": 0,
 			"descriptor-set-info": [],
 			"shader-primitive-topology": 5,
 			"shader-face-culling": 2,
 			"transparency": true,
 			"material-float-data-types": [],
 			"material-texture-types": [0]
+		}
+	],
+	"framebuffer-pipelines":
+	[
+		{
+			"name": "Framebuffer Pipeline",
+			"vertex-shader": "framebuffer.vert.spv",
+			"fragment-shader": "framebuffer.frag.spv",
+			"target-framebuffer": -1,
+			"descriptor-set-info": [],
+			"input-attachments":
+			[
+				{
+					"framebuffer-index": 0,
+					"attachment-index": 0
+				}
+			],
+			"dependencies": [0, 1]
 		}
 	],
 	"meshes":

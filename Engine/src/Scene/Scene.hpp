@@ -5,6 +5,7 @@
 #include "SceneLoader.hpp"
 #include "../Vulkan/Mesh/MeshManager.hpp"
 #include "../Vulkan/Pipeline/Pipeline.hpp"
+#include "../Vulkan/Pipeline/FramebufferPipeline.hpp"
 #include "../Vulkan/Descriptors/DescriptorPool.hpp"
 
 namespace mtd
@@ -25,10 +26,21 @@ namespace mtd
 			const DescriptorPool& getDescriptorPool() const { return descriptorPool; }
 
 			// Loads scene from file
-			void loadScene(const Device& device, const char* sceneFileName, std::vector<PipelineInfo>& pipelineInfos);
+			void loadScene
+			(
+				const Device& device,
+				const char* sceneFileName,
+				std::vector<FramebufferInfo>& framebufferInfos,
+				std::vector<PipelineInfo>& pipelineInfos,
+				std::vector<FramebufferPipelineInfo>& framebufferPipelineInfos,
+				std::vector<RenderPassInfo>& renderOrder
+			);
 
-			// Allocate resources and loads all mesh data
-			void loadMeshes(std::vector<Pipeline>& pipelines);
+			// Allocates resources and loads all mesh data
+			void allocateResources
+			(
+				std::vector<Pipeline>& pipelines, std::vector<FramebufferPipeline>& framebufferPipelines
+			);
 
 			// Executes starting code on scene
 			void start() const;
