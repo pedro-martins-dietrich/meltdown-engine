@@ -8,7 +8,7 @@ namespace mtd
 	class ShaderModule
 	{
 		public:
-			ShaderModule(const char* shaderFile, const vk::Device& device);
+			ShaderModule(const vk::Device& device, vk::ShaderStageFlagBits shaderStage, const char* shaderFile);
 			~ShaderModule();
 
 			ShaderModule(const ShaderModule&) = delete;
@@ -16,12 +16,15 @@ namespace mtd
 
 			ShaderModule(ShaderModule&& other) noexcept;
 
-			// Getter
-			const vk::ShaderModule& getShaderModule() const { return shaderModule; }
+			// Creates the Vulkan pipeline shader stage create info
+			vk::PipelineShaderStageCreateInfo generatePipelineShaderCreateInfo() const;
 
 		private:
 			// Representation of the compiled shader code
 			vk::ShaderModule shaderModule;
+
+			// Indicator of the shader type
+			vk::ShaderStageFlagBits shaderStage;
 
 			// Vulkan device reference
 			const vk::Device& device;

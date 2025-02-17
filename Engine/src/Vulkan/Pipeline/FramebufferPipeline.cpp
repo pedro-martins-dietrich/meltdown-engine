@@ -116,8 +116,8 @@ void mtd::FramebufferPipeline::bindPipelineDescriptors(const vk::CommandBuffer& 
 void mtd::FramebufferPipeline::loadShaderModules(const char* vertexShaderPath, const char* fragmentShaderPath)
 {
 	shaders.reserve(2);
-	shaders.emplace_back(vertexShaderPath, device);
-	shaders.emplace_back(fragmentShaderPath, device);
+	shaders.emplace_back(device, vk::ShaderStageFlagBits::eVertex, vertexShaderPath);
+	shaders.emplace_back(device, vk::ShaderStageFlagBits::eFragment, fragmentShaderPath);
 }
 
 // Creates the graphics pipeline
@@ -126,7 +126,11 @@ void mtd::FramebufferPipeline::createPipeline
 	vk::Extent2D extent, vk::RenderPass renderPass, const vk::DescriptorSetLayout& globalDescriptorSetLayout
 )
 {
-	std::vector<vk::PipelineShaderStageCreateInfo> shaderStagesCreateInfos;
+	std::vector<vk::PipelineShaderStageCreateInfo> shaderStageCreateInfos;
+	shaderStageCreateInfos.reserve(shaders.size());
+	for(const ShaderModule& shader: shaders)
+		shaderStageCreateInfos.emplace_back(shader.generatePipelineShaderCreateInfo());
+
 	vk::Viewport viewport{};
 	vk::Rect2D scissor{};
 	vk::PipelineColorBlendAttachmentState colorBlendAttachment{};
@@ -141,10 +145,8 @@ void mtd::FramebufferPipeline::createPipeline
 
 	setVertexInput(vertexInputCreateInfo);
 	setInputAssembly(inputAssemblyCreateInfo);
-	setVertexShader(shaderStagesCreateInfos, shaders[0]);
 	setViewport(viewportCreateInfo, viewport, scissor, extent);
 	setRasterizer(rasterizationCreateInfo);
-	setFragmentShader(shaderStagesCreateInfos, shaders[1]);
 	setMultisampling(multisampleCreateInfo);
 	setDepthStencil(depthStencilCreateInfo);
 	ColorBlendBuilder::setColorBlending(false, colorBlendCreateInfo, colorBlendAttachment);
@@ -153,8 +155,8 @@ void mtd::FramebufferPipeline::createPipeline
 
 	vk::GraphicsPipelineCreateInfo graphicsPipelineCreateInfo{};
 	graphicsPipelineCreateInfo.flags = vk::PipelineCreateFlags();
-	graphicsPipelineCreateInfo.stageCount = static_cast<uint32_t>(shaderStagesCreateInfos.size());
-	graphicsPipelineCreateInfo.pStages = shaderStagesCreateInfos.data();
+	graphicsPipelineCreateInfo.stageCount = static_cast<uint32_t>(shaderStageCreateInfos.size());
+	graphicsPipelineCreateInfo.pStages = shaderStageCreateInfos.data();
 	graphicsPipelineCreateInfo.pVertexInputState = &vertexInputCreateInfo;
 	graphicsPipelineCreateInfo.pInputAssemblyState = &inputAssemblyCreateInfo;
 	graphicsPipelineCreateInfo.pTessellationState = nullptr;
@@ -221,23 +223,6 @@ void mtd::FramebufferPipeline::setInputAssembly(vk::PipelineInputAssemblyStateCr
 	inputAssemblyInfo.primitiveRestartEnable = vk::False;
 }
 
-// Sets the vertex shader stage create info
-void mtd::FramebufferPipeline::setVertexShader
-(
-	std::vector<vk::PipelineShaderStageCreateInfo>& shaderStageInfos,
-	const ShaderModule& vertexShaderModule
-) const
-{
-	shaderStageInfos.emplace_back
-	(
-		vk::PipelineShaderStageCreateFlags(),	// flags
-		vk::ShaderStageFlagBits::eVertex,		// stage
-		vertexShaderModule.getShaderModule(),	// module
-		"main",									// pName
-		nullptr									// pSpecializationInfo
-	);
-}
-
 // Sets the viewport create info
 void mtd::FramebufferPipeline::setViewport
 (
@@ -279,23 +264,6 @@ void mtd::FramebufferPipeline::setRasterizer(vk::PipelineRasterizationStateCreat
 	rasterizationInfo.depthBiasClamp = 0.0f;
 	rasterizationInfo.depthBiasSlopeFactor = 0.0f;
 	rasterizationInfo.lineWidth = 1.0f;
-}
-
-// Sets the fragment shader stage create info
-void mtd::FramebufferPipeline::setFragmentShader
-(
-	std::vector<vk::PipelineShaderStageCreateInfo>& shaderStageInfos,
-	const ShaderModule& fragmentShaderModule
-) const
-{
-	shaderStageInfos.emplace_back
-	(
-		vk::PipelineShaderStageCreateFlags(),	// flags
-		vk::ShaderStageFlagBits::eFragment,		// stage
-		fragmentShaderModule.getShaderModule(),	// module
-		"main",									// pName
-		nullptr									// pSpecializationInfo
-	);
 }
 
 // Sets the multisample create info

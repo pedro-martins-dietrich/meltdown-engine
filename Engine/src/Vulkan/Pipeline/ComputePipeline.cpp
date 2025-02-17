@@ -4,7 +4,7 @@
 #include "../../Utils/Logger.hpp"
 
 mtd::ComputePipeline::ComputePipeline(const vk::Device& device, const char* computeShaderFile)
-	: device{device}, computeShader{computeShaderFile, device}
+	: device{device}, computeShader{device, vk::ShaderStageFlagBits::eCompute, computeShaderFile}
 {
 	createDescriptorSetLayouts();
 	createPipelineLayout();
@@ -18,10 +18,7 @@ mtd::ComputePipeline::~ComputePipeline()
 }
 
 // Starts the compute shader execution
-void mtd::ComputePipeline::dispatchCompute
-(
-	const CommandHandler& commandHandler, glm::uvec3 workgroups
-) const
+void mtd::ComputePipeline::dispatchCompute(const CommandHandler& commandHandler, glm::uvec3 workgroups) const
 {
 	vk::CommandBuffer computeCommandBuffer = commandHandler.beginSingleTimeCommand();
 
@@ -76,8 +73,7 @@ void mtd::ComputePipeline::createPipelineLayout()
 	pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
 	pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
 
-	vk::Result result =
-		device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &pipelineLayout);
+	vk::Result result = device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &pipelineLayout);
 	if(result != vk::Result::eSuccess)
 	{
 		LOG_ERROR("Failed to create compute pipeline layout. Vulkan result: %d", result);
@@ -89,22 +85,14 @@ void mtd::ComputePipeline::createPipelineLayout()
 // Creates the compute pipeline from the layout
 void mtd::ComputePipeline::createComputePipeline()
 {
-	vk::PipelineShaderStageCreateInfo computeShaderStageCreateInfo{};
-	computeShaderStageCreateInfo.flags = vk::PipelineShaderStageCreateFlags();
-	computeShaderStageCreateInfo.stage = vk::ShaderStageFlagBits::eCompute;
-	computeShaderStageCreateInfo.module = computeShader.getShaderModule();
-	computeShaderStageCreateInfo.pName = "main";
-	computeShaderStageCreateInfo.pSpecializationInfo = nullptr;
-
 	vk::ComputePipelineCreateInfo pipelineCreateInfo{};
 	pipelineCreateInfo.flags = vk::PipelineCreateFlags();
-	pipelineCreateInfo.stage = computeShaderStageCreateInfo;
+	pipelineCreateInfo.stage = computeShader.generatePipelineShaderCreateInfo();
 	pipelineCreateInfo.layout = pipelineLayout;
 	pipelineCreateInfo.basePipelineHandle = nullptr;
 	pipelineCreateInfo.basePipelineIndex = 0;
 
-	vk::Result result =
-		device.createComputePipelines(nullptr, 1, &pipelineCreateInfo, nullptr, &computePipeline);
+	vk::Result result = device.createComputePipelines(nullptr, 1, &pipelineCreateInfo, nullptr, &computePipeline);
 	if(result != vk::Result::eSuccess)
 	{
 		LOG_ERROR("Failed to create compute pipeline. Vulkan result: %d", result);

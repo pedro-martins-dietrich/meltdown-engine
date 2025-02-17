@@ -91,12 +91,6 @@ namespace mtd
 
 			// Sets the input assembly create info
 			void setInputAssembly(vk::PipelineInputAssemblyStateCreateInfo& inputAssemblyInfo) const;
-			// Sets the vertex shader stage create info
-			void setVertexShader
-			(
-				std::vector<vk::PipelineShaderStageCreateInfo>& shaderStageInfos,
-				const ShaderModule& vertexShaderModule
-			) const;
 			// Sets the viewport create info
 			void setViewport
 			(
@@ -107,12 +101,6 @@ namespace mtd
 			) const;
 			// Sets the rasterization create info
 			void setRasterizer(vk::PipelineRasterizationStateCreateInfo& rasterizationInfo) const;
-			// Sets the fragment shader stage create info
-			void setFragmentShader
-			(
-				std::vector<vk::PipelineShaderStageCreateInfo>& shaderStageInfos,
-				const ShaderModule& fragmentShaderModule
-			) const;
 			// Sets the multisample create info
 			void setMultisampling(vk::PipelineMultisampleStateCreateInfo& multisampleInfo) const;
 			// Sets the depth stencil create info

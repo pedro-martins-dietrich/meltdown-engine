@@ -4,8 +4,8 @@
 #include "../../Utils/FileHandler.hpp"
 #include "../../Utils/Logger.hpp"
 
-mtd::ShaderModule::ShaderModule(const char* shaderFile, const vk::Device& device)
-	: device{device}
+mtd::ShaderModule::ShaderModule(const vk::Device& device, vk::ShaderStageFlagBits shaderStage, const char* shaderFile)
+	: device{device}, shaderStage{shaderStage}
 {
 	std::string shaderPath{MTD_RESOURCES_PATH};
 	shaderPath.append("shaders/");
@@ -39,7 +39,15 @@ mtd::ShaderModule::~ShaderModule()
 }
 
 mtd::ShaderModule::ShaderModule(ShaderModule&& other) noexcept
-	: device{other.device}, shaderModule{std::move(other.shaderModule)}
+	: device{other.device},
+	shaderModule{std::move(other.shaderModule)},
+	shaderStage{other.shaderStage}
 {
 	shaderModule = nullptr;
+}
+
+// Creates the Vulkan pipeline shader stage create info
+vk::PipelineShaderStageCreateInfo mtd::ShaderModule::generatePipelineShaderCreateInfo() const
+{
+	return {vk::PipelineShaderStageCreateFlags(), shaderStage, shaderModule, "main", nullptr};
 }
