@@ -25,8 +25,9 @@ namespace mtd
 			Engine(const Engine&) = delete;
 			Engine& operator=(const Engine&) = delete;
 
-			// Getter
+			// Getters
 			Camera& getCamera() { return camera; }
+			bool isRayTracingEnabled() const { return device.isRayTracingEnabled(); }
 
 			// Configures the clear color for the framebuffers
 			void setClearColor(const Vec4& color);

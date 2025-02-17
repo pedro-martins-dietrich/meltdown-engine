@@ -43,19 +43,26 @@ namespace mtd
 			/*
 			* @brief Initializes the application window, Vulkan and other engine dependencies.
 			*
-			* @param applicationInfo Information about the application name and version.
+			* @param info Information about the engine options and the application name and version.
 			*/
-			MeltdownEngine(const EngineInfo& applicationInfo);
+			MeltdownEngine(const EngineInfo& info);
 			~MeltdownEngine();
 
 			MeltdownEngine(const MeltdownEngine&) = delete;
 			MeltdownEngine& operator=(const MeltdownEngine&) = delete;
 
 			/*
+			* @brief Checks if ray tracing is supported by the hardware and enabled.
+			* This requires enabling the option in the `EngineInfo` when initializing the engine.
+			*
+			* @return Wether the ray tracing has been enabled or not.
+			*/
+			bool isRayTracingEnabled() const;
+
+			/*
 			* @brief Sets a new value for the clear color of the framebuffer.
 			*
-			* @param color The RGBA value for the clear color
-			* (each channel should be between 0.0f and 1.0f).
+			* @param color The RGBA value for the clear color (each channel should be between 0.0f and 1.0f).
 			*/
 			void setClearColor(const Vec4& color);
 			/*
@@ -74,8 +81,8 @@ namespace mtd
 			void run(const std::function<void(double)>& onUpdateCallback);
 
 			/*
-			* @brief Loads a new scene to be rendered by the engine. It needs to be called before
-			* starting the main engine loop.
+			* @brief Loads a new scene to be rendered by the engine. It needs to be called before starting
+			* the main engine loop.
 			* If a scene is already being rendered, it will be cleared before loading the new scene.
 			*
 			* @param sceneFile Path to the file containing the new scene data.

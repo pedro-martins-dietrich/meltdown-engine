@@ -8,7 +8,7 @@
 #include "Models/RotatingModel.hpp"
 
 Application::Application()
-	: meltdownEngine{mtd::EngineInfo{"Meltdown Application", 1, 0, 0}}
+	: meltdownEngine{mtd::EngineInfo{"Meltdown Application", 1, 0, 0, true}}
 {
 	mapActions();
 	mtd::ModelHandler::registerModel<SpinningModel>("spinning");

@@ -10,7 +10,7 @@ namespace mtd
 	class Device
 	{
 		public:
-			Device(const VulkanInstance& vulkanInstance);
+			Device(const VulkanInstance& vulkanInstance, bool tryEnableRayTracing);
 			~Device();
 
 			Device(const Device&) = delete;
@@ -24,13 +24,12 @@ namespace mtd
 			// Queue getters
 			const QueueFamilies& getQueueFamilies() const { return queueFamilies; }
 			const vk::Queue getGraphicsQueue() const
-			{
-				return device.getQueue(queueFamilies.getGraphicsFamilyIndex(), 0);
-			}
+				{ return device.getQueue(queueFamilies.getGraphicsFamilyIndex(), 0); }
 			const vk::Queue getPresentQueue() const
-			{
-				return device.getQueue(queueFamilies.getPresentFamilyIndex(), 0);
-			}
+				{ return device.getQueue(queueFamilies.getPresentFamilyIndex(), 0); }
+
+			// Checks if hardware ray tracing is enabled
+			bool isRayTracingEnabled() const { return rayTracingEnabled; }
 
 		private:
 			// Vulkan logical device
@@ -39,5 +38,14 @@ namespace mtd
 			PhysicalDevice physicalDevice;
 			// Queue family handler
 			QueueFamilies queueFamilies;
+
+			// Ray tracing hardware support status
+			bool rayTracingEnabled;
+
+			// Configures the Vulkan queues
+			void configureQueues(std::vector<vk::DeviceQueueCreateInfo>& deviceQueueCreateInfos) const;
+
+			// Selects the Vulkan extensions to be used
+			void selectExtensions(std::vector<const char*>& extensions) const;
 	};
 }

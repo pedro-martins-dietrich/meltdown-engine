@@ -9,7 +9,7 @@
 mtd::Engine::Engine(const EngineInfo& info)
 	: window{WindowInfo{1280, 720, 640, 360}, info.appName},
 	vulkanInstance{info, window},
-	device{vulkanInstance},
+	device{vulkanInstance, info.enableRayTracing},
 	swapchain{device, window.getDimensions(), vulkanInstance.getSurface()},
 	commandHandler{device},
 	camera{window.getAspectRatio()},

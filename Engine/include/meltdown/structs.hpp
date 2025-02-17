@@ -22,6 +22,8 @@ namespace mtd
 		uint32_t appVersionMinor = 0;
 		/* @brief Patch version of the application. */
 		uint32_t appVersionPatch = 0;
+		/* @brief Flag to enable ray tracing if the hardware supports it. */
+		bool enableRayTracing = false;
 	};
 
 	/*
