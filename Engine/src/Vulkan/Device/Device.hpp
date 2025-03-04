@@ -20,6 +20,7 @@ namespace mtd
 			const vk::Device& getDevice() const { return device; }
 			const vk::PhysicalDevice& getPhysicalDevice() const
 				{ return physicalDevice.getPhysicalDevice(); }
+			const vk::detail::DispatchLoaderDynamic& getDLDI() const { return *dldi; }
 
 			// Queue getters
 			const QueueFamilies& getQueueFamilies() const { return queueFamilies; }
@@ -31,6 +32,10 @@ namespace mtd
 			// Checks if hardware ray tracing is enabled
 			bool isRayTracingEnabled() const { return rayTracingEnabled; }
 
+			// Acquires the physical device ray tracing properties
+			const vk::PhysicalDeviceRayTracingPipelinePropertiesKHR& fetchRayTracingProperties() const
+				{ return physicalDevice.fetchRayTracingProperties(); }
+
 		private:
 			// Vulkan logical device
 			vk::Device device;
@@ -38,6 +43,9 @@ namespace mtd
 			PhysicalDevice physicalDevice;
 			// Queue family handler
 			QueueFamilies queueFamilies;
+
+			// Dispatch loader dynamic instance
+			std::unique_ptr<vk::detail::DispatchLoaderDynamic> dldi;
 
 			// Ray tracing hardware support status
 			bool rayTracingEnabled;

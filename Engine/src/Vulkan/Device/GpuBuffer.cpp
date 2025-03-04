@@ -137,10 +137,15 @@ void mtd::GpuBuffer::allocateBufferMemory()
 	const vk::Device& vulkanDevice = device.getDevice();
 	vk::MemoryRequirements memoryRequirements = vulkanDevice.getBufferMemoryRequirements(buffer);
 
+	vk::MemoryAllocateFlagsInfo memoryAllocateFlagsInfo{};
+	if(usage & vk::BufferUsageFlagBits::eShaderDeviceAddress)
+		memoryAllocateFlagsInfo.flags = vk::MemoryAllocateFlagBits::eDeviceAddress;
+
 	vk::MemoryAllocateInfo memoryAllocateInfo{};
 	memoryAllocateInfo.allocationSize = memoryRequirements.size;
 	memoryAllocateInfo.memoryTypeIndex =
 		Memory::findMemoryTypeIndex(device.getPhysicalDevice(), memoryRequirements.memoryTypeBits, memoryProperties);
+	memoryAllocateInfo.pNext = &memoryAllocateFlagsInfo;
 
 	vk::Result result = vulkanDevice.allocateMemory(&memoryAllocateInfo, nullptr, &bufferMemory);
 	if(result != vk::Result::eSuccess)

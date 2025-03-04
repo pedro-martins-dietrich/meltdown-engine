@@ -20,7 +20,22 @@ mtd::Device::Device(const VulkanInstance& vulkanInstance, bool tryEnableRayTraci
 	std::vector<const char*> extensions;
 	selectExtensions(extensions);
 
+	vk::PhysicalDeviceBufferDeviceAddressFeaturesKHR bufferDeviceAddressFeatures{};
+	bufferDeviceAddressFeatures.bufferDeviceAddress = vk::True;
+	vk::PhysicalDeviceAccelerationStructureFeaturesKHR accelerationFeatures{};
+	accelerationFeatures.accelerationStructure = vk::True;
+	accelerationFeatures.pNext = &bufferDeviceAddressFeatures;
+	vk::PhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingFeatures{};
+	rayTracingFeatures.rayTracingPipeline = vk::True;
+	rayTracingFeatures.pNext = &accelerationFeatures;
+
 	vk::PhysicalDeviceFeatures physicalDeviceFeatures{};
+	vk::PhysicalDeviceFeatures2 physicalDeviceFeatures2{};
+	physicalDeviceFeatures2.pNext = &rayTracingFeatures;
+
+	physicalDevice.getPhysicalDevice().getFeatures2(&physicalDeviceFeatures2);
+	if(!(rayTracingFeatures.rayTracingPipeline && accelerationFeatures.accelerationStructure))
+		rayTracingEnabled = false;
 
 	vk::DeviceCreateInfo deviceCreateInfo{};
 	deviceCreateInfo.flags = vk::DeviceCreateFlags();
@@ -30,7 +45,8 @@ mtd::Device::Device(const VulkanInstance& vulkanInstance, bool tryEnableRayTraci
 	deviceCreateInfo.ppEnabledLayerNames = enabledLayers.data();
 	deviceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
 	deviceCreateInfo.ppEnabledExtensionNames = extensions.data();
-	deviceCreateInfo.pEnabledFeatures = &physicalDeviceFeatures;
+	deviceCreateInfo.pEnabledFeatures = rayTracingEnabled ? nullptr : &physicalDeviceFeatures;
+	deviceCreateInfo.pNext = rayTracingEnabled ? &physicalDeviceFeatures2 : nullptr;
 
 	vk::Result result = physicalDevice.getPhysicalDevice().createDevice(&deviceCreateInfo, nullptr, &device);
 	if(result != vk::Result::eSuccess)
@@ -38,8 +54,13 @@ mtd::Device::Device(const VulkanInstance& vulkanInstance, bool tryEnableRayTraci
 		LOG_ERROR("Failed to create logical device. Vulkan result: %d", result);
 		return;
 	}
-
 	LOG_INFO("Created logical device.\n");
+
+	dldi = std::make_unique<vk::detail::DispatchLoaderDynamic>
+	(
+		vulkanInstance.getInstance(), vkGetInstanceProcAddr,
+		device, vkGetDeviceProcAddr
+	);
 }
 
 mtd::Device::~Device()
@@ -78,7 +99,8 @@ void mtd::Device::selectExtensions(std::vector<const char*>& extensions) const
 			vk::KHRSwapchainExtensionName,
 			vk::KHRRayTracingPipelineExtensionName,
 			vk::KHRAccelerationStructureExtensionName,
-			vk::KHRDeferredHostOperationsExtensionName
+			vk::KHRDeferredHostOperationsExtensionName,
+			vk::KHRBufferDeviceAddressExtensionName
 		};
 	}
 	else
