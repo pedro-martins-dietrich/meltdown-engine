@@ -11,5 +11,6 @@ enum Actions : uint32_t
 	RollCW,
 	RollCCW,
 	Run,
-	Jump
+	Jump,
+	ChangeScene
 };
