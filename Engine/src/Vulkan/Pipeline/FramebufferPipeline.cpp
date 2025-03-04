@@ -16,13 +16,15 @@ mtd::FramebufferPipeline::FramebufferPipeline
 ) : device{device}, info{info}
 {
 	createDescriptorSetLayouts();
-	loadShaderModules(info.vertexShaderPath.c_str(), info.fragmentShaderPath.c_str());
-	createPipeline(extent, renderPass, globalDescriptorSetLayout);
+	loadShaderModules();
+	createPipelineLayout(globalDescriptorSetLayout);
+	createPipeline(extent, renderPass);
 }
 
 mtd::FramebufferPipeline::~FramebufferPipeline()
 {
-	destroy();
+	device.destroyPipeline(pipeline);
+	device.destroyPipelineLayout(pipelineLayout);
 }
 
 mtd::FramebufferPipeline::FramebufferPipeline(FramebufferPipeline&& other) noexcept
@@ -39,13 +41,36 @@ mtd::FramebufferPipeline::FramebufferPipeline(FramebufferPipeline&& other) noexc
 }
 
 // Recreates the framebuffer pipeline
-void mtd::FramebufferPipeline::recreate
-(
-	vk::Extent2D extent, vk::RenderPass renderPass, const vk::DescriptorSetLayout& globalDescriptorSetLayout
-)
+void mtd::FramebufferPipeline::recreate(vk::Extent2D extent, vk::RenderPass renderPass)
 {
-	destroy();
-	createPipeline(extent, renderPass, globalDescriptorSetLayout);
+	device.destroyPipeline(pipeline);
+	createPipeline(extent, renderPass);
+}
+
+// Binds the pipeline to the command buffer
+void mtd::FramebufferPipeline::bind(const vk::CommandBuffer& commandBuffer) const
+{
+	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
+
+	commandBuffer.bindDescriptorSets
+	(
+		vk::PipelineBindPoint::eGraphics,
+		pipelineLayout,
+		1,
+		1, &(descriptorSetHandlers[0].getSet(0)),
+		0, nullptr
+	);
+
+	if(descriptorSetHandlers.size() == 1 || descriptorSetHandlers[1].getSetCount() == 0) return;
+
+	commandBuffer.bindDescriptorSets
+	(
+		vk::PipelineBindPoint::eGraphics,
+		pipelineLayout,
+		2,
+		1, &(descriptorSetHandlers[1].getSet(0)),
+		0, nullptr
+	);
 }
 
 // Allocates user descriptor set data in the descriptor pool
@@ -82,49 +107,68 @@ void mtd::FramebufferPipeline::updateDescriptorData(uint32_t binding, const void
 	);
 }
 
-// Binds the pipeline to the command buffer
-void mtd::FramebufferPipeline::bind(const vk::CommandBuffer& commandBuffer) const
+// Updates all the input images descriptors
+void mtd::FramebufferPipeline::updateInputImagesDescriptors
+(
+	const std::vector<Framebuffer>& framebuffers, const std::vector<RayTracingPipeline>& rayTracingPipelines
+)
 {
-	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
-}
+	DescriptorSetHandler& descriptorSetHandler = descriptorSetHandlers[0];
+	uint32_t binding = 0;
 
-// Binds per pipeline descriptors
-void mtd::FramebufferPipeline::bindPipelineDescriptors(const vk::CommandBuffer& commandBuffer) const
-{
-	commandBuffer.bindDescriptorSets
-	(
-		vk::PipelineBindPoint::eGraphics,
-		pipelineLayout,
-		1,
-		1, &(descriptorSetHandlers[0].getSet(0)),
-		0, nullptr
-	);
+	for(const AttachmentIdentifier& attachmentIdentifier: info.inputAttachments)
+	{
+		uint32_t fbIndex = attachmentIdentifier.framebufferIndex;
+		uint32_t attachmentIndex = attachmentIdentifier.attachmentIndex;
 
-	if(descriptorSetHandlers.size() == 1 || descriptorSetHandlers[1].getSetCount() == 0) return;
+		assert(fbIndex < framebuffers.size() && "Framebuffer index out of bounds.");
+		framebuffers[fbIndex].configureAttachmentAsDescriptor(descriptorSetHandler, binding, attachmentIndex);
+		binding++;
+	}
 
-	commandBuffer.bindDescriptorSets
-	(
-		vk::PipelineBindPoint::eGraphics,
-		pipelineLayout,
-		2,
-		1, &(descriptorSetHandlers[1].getSet(0)),
-		0, nullptr
-	);
+	for(uint32_t rtPipelineIndex: info.rayTracingStorageImages)
+	{
+		assert(rtPipelineIndex < rayTracingPipelines.size() && "Ray tracing pipeline index out of bounds.");
+		rayTracingPipelines[rtPipelineIndex].shareRenderTargetImageDescriptor(descriptorSetHandler, binding);
+		binding++;
+	}
+
+	descriptorSetHandler.writeDescriptorSet(0);
 }
 
 // Loads the pipeline shader modules
-void mtd::FramebufferPipeline::loadShaderModules(const char* vertexShaderPath, const char* fragmentShaderPath)
+void mtd::FramebufferPipeline::loadShaderModules()
 {
 	shaders.reserve(2);
-	shaders.emplace_back(device, vk::ShaderStageFlagBits::eVertex, vertexShaderPath);
-	shaders.emplace_back(device, vk::ShaderStageFlagBits::eFragment, fragmentShaderPath);
+	shaders.emplace_back(device, vk::ShaderStageFlagBits::eVertex, info.vertexShaderPath.c_str());
+	shaders.emplace_back(device, vk::ShaderStageFlagBits::eFragment, info.fragmentShaderPath.c_str());
+}
+
+// Creates the layout for the framebuffer pipeline
+void mtd::FramebufferPipeline::createPipelineLayout(const vk::DescriptorSetLayout& globalDescriptorSetLayout)
+{
+	std::vector<vk::DescriptorSetLayout> descriptorSetLayouts{globalDescriptorSetLayout};
+	for(const DescriptorSetHandler& descriptorSetHandler: descriptorSetHandlers)
+		descriptorSetLayouts.push_back(descriptorSetHandler.getLayout());
+
+	vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
+	pipelineLayoutCreateInfo.flags = vk::PipelineLayoutCreateFlags();
+	pipelineLayoutCreateInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
+	pipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayouts.data();
+	pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
+	pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
+
+	vk::Result result = device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &pipelineLayout);
+	if(result != vk::Result::eSuccess)
+	{
+		LOG_ERROR("Failed to create framebuffer pipeline layout. Vulkan result: %d", result);
+		return;
+	}
+	LOG_VERBOSE("Created framebuffer pipeline layout.");
 }
 
 // Creates the graphics pipeline
-void mtd::FramebufferPipeline::createPipeline
-(
-	vk::Extent2D extent, vk::RenderPass renderPass, const vk::DescriptorSetLayout& globalDescriptorSetLayout
-)
+void mtd::FramebufferPipeline::createPipeline(vk::Extent2D extent, vk::RenderPass renderPass)
 {
 	std::vector<vk::PipelineShaderStageCreateInfo> shaderStageCreateInfos;
 	shaderStageCreateInfos.reserve(shaders.size());
@@ -150,8 +194,6 @@ void mtd::FramebufferPipeline::createPipeline
 	setMultisampling(multisampleCreateInfo);
 	setDepthStencil(depthStencilCreateInfo);
 	ColorBlendBuilder::setColorBlending(false, colorBlendCreateInfo, colorBlendAttachment);
-
-	createPipelineLayout(globalDescriptorSetLayout);
 
 	vk::GraphicsPipelineCreateInfo graphicsPipelineCreateInfo{};
 	graphicsPipelineCreateInfo.flags = vk::PipelineCreateFlags();
@@ -186,7 +228,8 @@ void mtd::FramebufferPipeline::createDescriptorSetLayouts()
 {
 	descriptorSetHandlers.reserve(info.descriptorSetInfo.size() == 0 ? 1 : 2);
 
-	std::vector<vk::DescriptorSetLayoutBinding> layoutBindings(info.inputAttachments.size());
+	uint32_t imageDescriptorsCount = info.inputAttachments.size() + info.rayTracingStorageImages.size();
+	std::vector<vk::DescriptorSetLayoutBinding> layoutBindings(imageDescriptorsCount);
 	for(uint32_t i = 0; i < layoutBindings.size(); i++)
 	{
 		layoutBindings[i].binding = i;
@@ -291,34 +334,4 @@ void mtd::FramebufferPipeline::setDepthStencil(vk::PipelineDepthStencilStateCrea
 	depthStencilInfo.back = vk::StencilOpState{};
 	depthStencilInfo.minDepthBounds = 0.0f;
 	depthStencilInfo.maxDepthBounds = 0.0f;
-}
-
-// Creates the layout for the framebuffer pipeline
-void mtd::FramebufferPipeline::createPipelineLayout(const vk::DescriptorSetLayout& globalDescriptorSetLayout)
-{
-	std::vector<vk::DescriptorSetLayout> descriptorSetLayouts{globalDescriptorSetLayout};
-	for(const DescriptorSetHandler& descriptorSetHandler: descriptorSetHandlers)
-		descriptorSetLayouts.push_back(descriptorSetHandler.getLayout());
-
-	vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
-	pipelineLayoutCreateInfo.flags = vk::PipelineLayoutCreateFlags();
-	pipelineLayoutCreateInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
-	pipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayouts.data();
-	pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
-	pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
-
-	vk::Result result = device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &pipelineLayout);
-	if(result != vk::Result::eSuccess)
-	{
-		LOG_ERROR("Failed to create framebuffer pipeline layout. Vulkan result: %d", result);
-		return;
-	}
-	LOG_VERBOSE("Created framebuffer pipeline layout.");
-}
-
-// Clears the framebuffer pipeline objects
-void mtd::FramebufferPipeline::destroy()
-{
-	device.destroyPipeline(pipeline);
-	device.destroyPipelineLayout(pipelineLayout);
 }

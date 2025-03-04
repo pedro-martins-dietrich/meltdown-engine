@@ -11,7 +11,7 @@
 #include "../Utils/FileHandler.hpp"
 #include "../Utils/Logger.hpp"
 
-static constexpr const char* sceneLoaderVersion = "0.1.6";
+static constexpr const char* sceneLoaderVersion = "0.1.7";
 
 static void loadCamera(const nlohmann::json& cameraJson);
 static void loadFramebuffer
@@ -24,6 +24,11 @@ static void loadPipeline
 	const nlohmann::json& pipelineJson,
 	std::vector<mtd::PipelineInfo>& pipelineInfos,
 	std::vector<mtd::RenderPassInfo>& renderOrder
+);
+static void loadRayTracingPipeline
+(
+	const nlohmann::json& rayTracingPipelineJson,
+	std::vector<mtd::RayTracingPipelineInfo>& rayTracingPipelineInfos
 );
 static void loadFramebufferPipeline
 (
@@ -62,6 +67,7 @@ void mtd::SceneLoader::load
 	std::vector<FramebufferInfo>& framebufferInfos,
 	std::vector<PipelineInfo>& pipelineInfos,
 	std::vector<FramebufferPipelineInfo>& framebufferPipelineInfos,
+	std::vector<RayTracingPipelineInfo>& rayTracingPipelineInfos,
 	std::vector<RenderPassInfo>& renderOrder,
 	std::vector<std::unique_ptr<MeshManager>>& meshManagers
 )
@@ -85,6 +91,7 @@ void mtd::SceneLoader::load
 	const nlohmann::json& framebuffersJson = sceneJson["framebuffers"];
 	const nlohmann::json& pipelinesJson = sceneJson["pipelines"];
 	const nlohmann::json& fbPipelinesJson = sceneJson["framebuffer-pipelines"];
+	const nlohmann::json& rayTracingPipelinesJson = sceneJson["ray-tracing-pipelines"];
 	const nlohmann::json& meshesJson = sceneJson["meshes"];
 
 	if(pipelinesJson.size() != meshesJson.size())
@@ -92,7 +99,8 @@ void mtd::SceneLoader::load
 	
 	framebufferInfos.reserve(framebuffersJson.size());
 	pipelineInfos.reserve(pipelinesJson.size());
-	framebufferInfos.reserve(fbPipelinesJson.size());
+	rayTracingPipelineInfos.reserve(rayTracingPipelinesJson.size());
+	framebufferPipelineInfos.reserve(fbPipelinesJson.size());
 	renderOrder.reserve(framebuffersJson.size() + 1);
 	meshManagers.reserve(meshesJson.size());
 
@@ -105,6 +113,8 @@ void mtd::SceneLoader::load
 
 	for(const nlohmann::json& pipelineJson: pipelinesJson)
 		loadPipeline(pipelineJson, pipelineInfos, renderOrder);
+	for(const nlohmann::json& rtPipelineJson: rayTracingPipelinesJson)
+		loadRayTracingPipeline(rtPipelineJson, rayTracingPipelineInfos);
 	for(const nlohmann::json& fbPipelineJson: fbPipelinesJson)
 		loadFramebufferPipeline(fbPipelineJson, framebufferPipelineInfos, renderOrder);
 
@@ -173,7 +183,7 @@ void loadFramebuffer
 	);
 }
 
-// Fetches the pipeline info from the scene file
+// Fetches the pipeline infos from the scene file
 void loadPipeline
 (
 	const nlohmann::json& pipelineJson,
@@ -232,6 +242,47 @@ void loadPipeline
 	);
 }
 
+// Fetches the ray tracing pipeline infos from the scene file
+void loadRayTracingPipeline
+(
+	const nlohmann::json& rtPipelineJson,
+	std::vector<mtd::RayTracingPipelineInfo>& rayTracingPipelineInfos
+)
+{
+	std::vector<mtd::DescriptorInfo> descriptorInfos;
+	descriptorInfos.reserve(rtPipelineJson["descriptor-set-info"].size());
+	for(const nlohmann::json& descriptorInfoJson: rtPipelineJson["descriptor-set-info"])
+	{
+		descriptorInfos.emplace_back
+		(
+			mtd::DescriptorInfo
+			{
+				static_cast<mtd::DescriptorType>(descriptorInfoJson["descriptor-type"]),
+				static_cast<mtd::ShaderStage>(descriptorInfoJson["shader-stage"]),
+				descriptorInfoJson["total-descriptor-size"],
+				descriptorInfoJson["descriptor-count"]
+			}
+		);
+	}
+
+	rayTracingPipelineInfos.emplace_back
+	(
+		mtd::RayTracingPipelineInfo
+		{
+			rtPipelineJson["name"],
+			rtPipelineJson["ray-gen-shader"],
+			rtPipelineJson["miss-shader"],
+			std::move(descriptorInfos),
+			{
+				rtPipelineJson.value("resolution-ratio-horizontal", -1.0f),
+				rtPipelineJson.value("resolution-ratio-vertical", -1.0f)
+			},
+			rtPipelineJson.value("fixed-horizontal-resolution", 1280U),
+			rtPipelineJson.value("fixed-vertical-resolution", 720U)
+		}
+	);
+}
+
 // Fetches the framebuffer pipeline info from the scene file
 void loadFramebufferPipeline
 (
@@ -280,6 +331,7 @@ void loadFramebufferPipeline
 			targetFramebuffer,
 			std::move(descriptorInfos),
 			std::move(inputAttachments),
+			fbPipelineJson["ray-tracing-storage-images"],
 			fbPipelineJson["dependencies"]
 		}
 	);

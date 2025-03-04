@@ -16,6 +16,7 @@ void mtd::Scene::loadScene
 	std::vector<FramebufferInfo>& framebufferInfos,
 	std::vector<PipelineInfo>& pipelineInfos,
 	std::vector<FramebufferPipelineInfo>& framebufferPipelineInfos,
+	std::vector<RayTracingPipelineInfo>& rayTracingPipelineInfos,
 	std::vector<RenderPassInfo>& renderOrder
 )
 {
@@ -29,6 +30,7 @@ void mtd::Scene::loadScene
 		framebufferInfos,
 		pipelineInfos,
 		framebufferPipelineInfos,
+		rayTracingPipelineInfos,
 		renderOrder,
 		meshManagers
 	);
@@ -37,7 +39,9 @@ void mtd::Scene::loadScene
 // Allocates resources and loads all mesh data
 void mtd::Scene::allocateResources
 (
-	std::vector<Pipeline>& pipelines, std::vector<FramebufferPipeline>& framebufferPipelines
+	std::vector<Pipeline>& pipelines,
+	std::vector<FramebufferPipeline>& framebufferPipelines,
+	std::vector<RayTracingPipeline>& rayTracingPipelines
 )
 {
 	descriptorPool.clear();
@@ -47,7 +51,7 @@ void mtd::Scene::allocateResources
 
 	uint32_t totalImageSamplerCount = getTotalTextureCount();
 	for(const FramebufferPipeline& fbPipeline: framebufferPipelines)
-		totalImageSamplerCount += fbPipeline.getAttachmentIdentifiers().size();
+		totalImageSamplerCount += fbPipeline.getImageDescriptorsCount();
 	if(totalImageSamplerCount > 0)
 		totalDescriptorTypeCount[vk::DescriptorType::eCombinedImageSampler] = totalImageSamplerCount;
 
@@ -60,6 +64,12 @@ void mtd::Scene::allocateResources
 	{
 		for(const auto& [type, count]: fbPipeline.getDescriptorTypeCount())
 			totalDescriptorTypeCount[type] += count;
+	}
+	for(const RayTracingPipeline& rtPipeline: rayTracingPipelines)
+	{
+		for(const auto& [type, count]: rtPipeline.getDescriptorTypeCount())
+			totalDescriptorTypeCount[type] += count;
+		totalDescriptorTypeCount[vk::DescriptorType::eStorageImage]++;
 	}
 
 	std::vector<PoolSizeData> poolSizesInfo{totalDescriptorTypeCount.size()};
@@ -84,6 +94,7 @@ void mtd::Scene::allocateResources
 
 		pMeshManager->loadMeshes(descriptorSetHandler);
 	}
+	LOG_INFO("Meshes loaded to the GPU.\n");
 
 	for(FramebufferPipeline& fbPipeline: framebufferPipelines)
 	{
@@ -92,7 +103,12 @@ void mtd::Scene::allocateResources
 		descriptorPool.allocateDescriptorSet(descriptorSetHandler);
 	}
 
-	LOG_INFO("Meshes loaded to the GPU.\n");
+	for(RayTracingPipeline& rtPipeline: rayTracingPipelines)
+	{
+		DescriptorSetHandler& descriptorSetHandler = rtPipeline.getDescriptorSetHandler(0);
+		descriptorSetHandler.defineDescriptorSetsAmount(1);
+		descriptorPool.allocateDescriptorSet(descriptorSetHandler);
+	}
 }
 
 // Executes starting code on scene

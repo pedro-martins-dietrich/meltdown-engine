@@ -64,6 +64,12 @@ file(
     "${SOURCE_SHADERS_DIR}/**.vert"
     "${SOURCE_SHADERS_DIR}/**.frag"
     "${SOURCE_SHADERS_DIR}/**.comp"
+    "${SOURCE_SHADERS_DIR}/**.rgen"
+    "${SOURCE_SHADERS_DIR}/**.rmiss"
+    "${SOURCE_SHADERS_DIR}/**.rahit"
+    "${SOURCE_SHADERS_DIR}/**.rchit"
+    "${SOURCE_SHADERS_DIR}/**.rint"
+    "${SOURCE_SHADERS_DIR}/**.rcall"
 )
 foreach(SHADER_SRC_FILE ${SHADER_SRC_FILES})
     get_filename_component(SHADER_NAME ${SHADER_SRC_FILE} NAME)
@@ -72,7 +78,7 @@ foreach(SHADER_SRC_FILE ${SHADER_SRC_FILES})
     add_custom_command(
         OUTPUT ${SHADER_OUTPUT}
         COMMAND ${CMAKE_COMMAND} -E remove ${SHADER_OUTPUT}
-        COMMAND glslc "${SHADER_SRC_FILE}" -o "${SHADER_OUTPUT}"
+        COMMAND glslc --target-env=vulkan1.3 "${SHADER_SRC_FILE}" -o "${SHADER_OUTPUT}"
         DEPENDS ${SHADER_SRC_FILE}
         COMMENT "[MELTDOWN] Compiled shader: ${SHADER_NAME}"
     )

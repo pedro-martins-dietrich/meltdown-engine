@@ -42,15 +42,15 @@ namespace mtd
 	};
 
 	/*
-	* @brief Parameters used to create a pipeline with custom shaders.
+	* @brief Parameters to create a pipeline with custom shaders.
 	*/
 	struct PipelineInfo
 	{
 		/* @brief Exhibition name for the pipeline. */
 		std::string pipelineName;
-		/* @brief File path to the vertex shader from the shaders folder. */
+		/* @brief File path to the vertex shader, from the shaders folder. */
 		std::string vertexShaderPath;
-		/* @brief File path to the fragment shader from the shaders folder. */
+		/* @brief File path to the fragment shader, from the shaders folder. */
 		std::string fragmentShaderPath;
 		/* @brief Mesh type the pipeline will render. */
 		MeshType associatedMeshType;
@@ -71,7 +71,7 @@ namespace mtd
 	};
 
 	/*
-	* @brief Parameters used to create a custom framebuffer.
+	* @brief Parameters to create a custom framebuffer.
 	*/
 	struct FramebufferInfo
 	{
@@ -99,23 +99,46 @@ namespace mtd
 	};
 
 	/*
-	* @brief Parameters used to create a render-to-framebuffer pipeline with custom shaders.
+	* @brief Parameters to create a render-to-framebuffer pipeline with custom shaders.
 	*/
 	struct FramebufferPipelineInfo
 	{
 		/* @brief Exhibition name for the pipeline. */
 		std::string pipelineName;
-		/* @brief File path to the vertex shader from the shaders folder. */
+		/* @brief File path to the vertex shader, from the shaders folder. */
 		std::string vertexShaderPath;
-		/* @brief File path to the fragment shader from the shaders folder. */
+		/* @brief File path to the fragment shader, from the shaders folder. */
 		std::string fragmentShaderPath;
 		/* @brief Framebuffer index where the pipeline will render to. Use -1 to render to the swapchain. */
 		int32_t targetFramebufferIndex = -1;
 		/* @brief Info about each binding for the user defined descriptor set (set = 2). */
 		std::vector<DescriptorInfo> descriptorSetInfo = {};
-		/* @brief Attachments used as input for the pipeline. */
+		/* @brief Framebuffer attachments used as input for the pipeline. */
 		std::vector<AttachmentIdentifier> inputAttachments = {};
+		/* @brief Ray tracing storage images used as input for the pipeline. */
+		std::vector<uint32_t> rayTracingStorageImages = {};
 		/* @brief Indices of the pipelines that draw to the input framebuffers. */
 		std::vector<uint32_t> dependencies = {};
+	};
+
+	/*
+	* @brief Parameters to create a ray tracing pipeline with custom shaders.
+	*/
+	struct RayTracingPipelineInfo
+	{
+		/* @brief Exhibition name for the pipeline. */
+		std::string pipelineName;
+		/* @brief File path to the ray generation shader, from the shaders folder. */
+		std::string rayGenShaderPath;
+		/* @brief File path to the miss shader, from the shaders folder. */
+		std::string missShaderPath;
+		/* @brief Info about each binding for the user defined descriptor set (set = 2). */
+		std::vector<DescriptorInfo> descriptorSetInfo = {};
+		/* @brief Ratio between the storage image and window resolution. Use negative values for a fixed resolution. */
+		Vec2 windowResolutionRatio;
+		/* @brief Storage image horizontal resolution. Ignored when a positive `windowResolutionRatio.x` is set. */
+		uint32_t width;
+		/* @brief Storage image vertical resolution. Ignored when a positive `windowResolutionRatio.y` is set. */
+		uint32_t height;
 	};
 }

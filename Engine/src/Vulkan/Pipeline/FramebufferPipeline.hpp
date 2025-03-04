@@ -1,7 +1,7 @@
 #pragma once
 
-#include "ShaderModule.hpp"
-#include "../Descriptors/DescriptorPool.hpp"
+#include "RayTracingPipeline.hpp"
+#include "../Frame/Framebuffer.hpp"
 
 namespace mtd
 {
@@ -30,29 +30,29 @@ namespace mtd
 			const std::string& getName() const { return info.pipelineName; }
 			int32_t getTargetFramebufferIndex() const { return info.targetFramebufferIndex; }
 			DescriptorSetHandler& getDescriptorSetHandler(uint32_t set) { return descriptorSetHandlers[set]; }
+			const std::vector<uint32_t>& getPipelineIndices() const { return info.dependencies; }
+			const std::vector<AttachmentIdentifier>& getAttachmentIdentifiers() const { return info.inputAttachments; }
 			const std::unordered_map<vk::DescriptorType, uint32_t>& getDescriptorTypeCount() const
 				{ return descriptorTypeCount; }
-			const std::vector<AttachmentIdentifier>& getAttachmentIdentifiers() const
-				{ return info.inputAttachments; }
-			const std::vector<uint32_t>& getPipelineIndices() const { return info.dependencies; }
+			uint32_t getImageDescriptorsCount() const
+				{ return static_cast<uint32_t>(info.inputAttachments.size() + info.rayTracingStorageImages.size()); }
 
 			// Recreates the framebuffer pipeline
-			void recreate
-			(
-				vk::Extent2D extent,
-				vk::RenderPass renderPass,
-				const vk::DescriptorSetLayout& globalDescriptorSetLayout
-			);
+			void recreate(vk::Extent2D extent, vk::RenderPass renderPass);
+
+			// Binds the pipeline and per pipeline descriptors to the command buffer
+			void bind(const vk::CommandBuffer& commandBuffer) const;
 
 			// Allocates user descriptor set data in the descriptor pool
 			void configureUserDescriptorData(const Device& mtdDevice, const DescriptorPool& pool);
 			// Updates the user descriptor data for the specified binding
 			void updateDescriptorData(uint32_t binding, const void* data) const;
-
-			// Binds the pipeline to the command buffer
-			void bind(const vk::CommandBuffer& commandBuffer) const;
-			// Binds per pipeline descriptors
-			void bindPipelineDescriptors(const vk::CommandBuffer& commandBuffer) const;
+			// Updates all the input images descriptors
+			void updateInputImagesDescriptors
+			(
+				const std::vector<Framebuffer>& framebuffers,
+				const std::vector<RayTracingPipeline>& rayTracingPipelines
+			);
 
 		private:
 			// Vulkan graphics pipeline
@@ -74,15 +74,12 @@ namespace mtd
 			const vk::Device& device;
 
 			// Loads the pipeline shader modules
-			void loadShaderModules(const char* vertexShaderPath, const char* fragmentShaderPath);
+			void loadShaderModules();
 
+			// Creates the layout for the framebuffer pipeline
+			void createPipelineLayout(const vk::DescriptorSetLayout& globalDescriptorSetLayout);
 			// Creates the graphics pipeline
-			void createPipeline
-			(
-				vk::Extent2D extent,
-				vk::RenderPass renderPass,
-				const vk::DescriptorSetLayout& globalDescriptorSetLayout
-			);
+			void createPipeline(vk::Extent2D extent, vk::RenderPass renderPass);
 
 			// Configures the descriptor set handlers to be used
 			void createDescriptorSetLayouts();
@@ -105,11 +102,5 @@ namespace mtd
 			void setMultisampling(vk::PipelineMultisampleStateCreateInfo& multisampleInfo) const;
 			// Sets the depth stencil create info
 			void setDepthStencil(vk::PipelineDepthStencilStateCreateInfo& depthStencilInfo) const;
-
-			// Creates the layout for the framebuffer pipeline
-			void createPipelineLayout(const vk::DescriptorSetLayout& globalDescriptorSetLayout);
-
-			// Clears the framebuffer pipeline objects
-			void destroy();
 	};
 }

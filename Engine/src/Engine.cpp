@@ -88,6 +88,7 @@ void mtd::Engine::run(const std::function<void(double)>& onUpdateCallback)
 			framebuffers,
 			pipelines,
 			framebufferPipelines,
+			rayTracingPipelines,
 			scene,
 			drawInfo,
 			shouldUpdateEngine
@@ -108,14 +109,20 @@ void mtd::Engine::run(const std::function<void(double)>& onUpdateCallback)
 // Loads a new scene, clearing the previous if necessary
 void mtd::Engine::loadScene(const char* sceneFile)
 {
+	{
+		std::lock_guard lock{pendingDescriptorUpdateMutex};
+		pendingDescriptorUpdates.clear();
+	}
 	device.getDevice().waitIdle();
 	framebuffers.clear();
 	pipelines.clear();
 	framebufferPipelines.clear();
+	rayTracingPipelines.clear();
 
 	std::vector<FramebufferInfo> framebufferInfos;
 	std::vector<PipelineInfo> pipelineInfos;
 	std::vector<FramebufferPipelineInfo> framebufferPipelineInfos;
+	std::vector<RayTracingPipelineInfo> rayTracingPipelineInfos;
 
 	scene.loadScene
 	(
@@ -124,10 +131,12 @@ void mtd::Engine::loadScene(const char* sceneFile)
 		framebufferInfos,
 		pipelineInfos,
 		framebufferPipelineInfos,
+		rayTracingPipelineInfos,
 		renderer.getRenderOrder()
 	);
-	createRenderResources(framebufferInfos, pipelineInfos, framebufferPipelineInfos);
-	scene.allocateResources(pipelines, framebufferPipelines);
+
+	createRenderResources(framebufferInfos, pipelineInfos, framebufferPipelineInfos, rayTracingPipelineInfos);
+	scene.allocateResources(pipelines, framebufferPipelines, rayTracingPipelines);
 	configureDescriptors();
 
 	scene.start();
@@ -176,6 +185,8 @@ void mtd::Engine::updateDescriptors()
 	for(const auto& [key, data]: pendingDescriptorUpdates)
 	{
 		uint32_t pipelineIndex = key >> 32;
+		if(pipelineIndex >= pipelines.size()) continue;
+
 		uint32_t binding = key & 0xFFFFFFFF;
 		pipelines[pipelineIndex].updateDescriptorData(binding, data);
 	}
@@ -206,7 +217,7 @@ void mtd::Engine::configureGlobalDescriptorSetHandler()
 	bindings[0].binding = 0;
 	bindings[0].descriptorType = vk::DescriptorType::eUniformBuffer;
 	bindings[0].descriptorCount = 1;
-	bindings[0].stageFlags = vk::ShaderStageFlagBits::eVertex;
+	bindings[0].stageFlags = vk::ShaderStageFlagBits::eAll;
 	bindings[0].pImmutableSamplers = nullptr;
 
 	globalDescriptorSetHandler = std::make_unique<DescriptorSetHandler>(device.getDevice(), bindings);
@@ -217,7 +228,8 @@ void mtd::Engine::createRenderResources
 (
 	const std::vector<FramebufferInfo>& framebufferInfos,
 	const std::vector<PipelineInfo>& pipelineInfos,
-	const std::vector<FramebufferPipelineInfo>& framebufferPipelineInfos
+	const std::vector<FramebufferPipelineInfo>& framebufferPipelineInfos,
+	const std::vector<RayTracingPipelineInfo>& rayTracingPipelineInfos
 )
 {
 	framebuffers.reserve(framebufferInfos.size());
@@ -255,6 +267,16 @@ void mtd::Engine::createRenderResources
 			targetSwapchain ? swapchain.getRenderPass() : framebuffers[fbIndex].getRenderPass()
 		);
 	}
+
+	if(!device.isRayTracingEnabled()) return;
+	rayTracingPipelines.reserve(rayTracingPipelineInfos.size());
+	for(const RayTracingPipelineInfo& rtPipelineInfo: rayTracingPipelineInfos)
+	{
+		rayTracingPipelines.emplace_back
+		(
+			device, rtPipelineInfo, globalDescriptorSetHandler->getLayout(), swapchain.getExtent()
+		);
+	}
 }
 
 // Sets up the descriptors
@@ -271,19 +293,15 @@ void mtd::Engine::configureDescriptors()
 
 	for(Pipeline& pipeline: pipelines)
 		pipeline.configureUserDescriptorData(device, scene.getDescriptorPool());
+	for(RayTracingPipeline& rtPipeline: rayTracingPipelines)
+	{
+		rtPipeline.configureUserDescriptorData(device, scene.getDescriptorPool());
+		rtPipeline.configurePipelineDescriptorSet();
+	}
 	for(FramebufferPipeline& fbPipeline: framebufferPipelines)
 	{
-		DescriptorSetHandler& descriptorSetHandler = fbPipeline.getDescriptorSetHandler(0);
 		fbPipeline.configureUserDescriptorData(device, scene.getDescriptorPool());
-
-		const std::vector<AttachmentIdentifier>& attachmentIdentifiers = fbPipeline.getAttachmentIdentifiers();
-		for(uint32_t binding = 0; binding < attachmentIdentifiers.size(); binding++)
-		{
-			uint32_t fbIndex = attachmentIdentifiers[binding].framebufferIndex;
-			uint32_t attachmentIndex = attachmentIdentifiers[binding].attachmentIndex;
-			framebuffers[fbIndex].configureAttachmentAsDescriptor(descriptorSetHandler, binding, attachmentIndex);
-		}
-		descriptorSetHandler.writeDescriptorSet(0);
+		fbPipeline.updateInputImagesDescriptors(framebuffers, rayTracingPipelines);
 	}
 }
 
@@ -300,28 +318,17 @@ void mtd::Engine::updateEngine()
 	for(Pipeline& pipeline: pipelines)
 	{
 		int32_t fbIndex = pipeline.getTargetFramebuffer();
-		bool targetSwapchain = fbIndex == -1;
-
-		pipeline.recreate
-		(
-			targetSwapchain ? swapchain.getExtent() : framebuffers[fbIndex].getExtent(),
-			targetSwapchain ? swapchain.getRenderPass() : framebuffers[fbIndex].getRenderPass(),
-			globalDescriptorSetHandler->getLayout()
-		);
+		if(fbIndex == -1)
+			pipeline.recreate(swapchain.getExtent(), swapchain.getRenderPass());
+		else
+			pipeline.recreate(framebuffers[fbIndex].getExtent(), framebuffers[fbIndex].getRenderPass());
 	}
+	for(RayTracingPipeline& rtPipeline: rayTracingPipelines)
+		rtPipeline.resize(device, swapchain.getExtent());
 	for(FramebufferPipeline& fbPipeline: framebufferPipelines)
 	{
-		DescriptorSetHandler& descriptorSetHandler = fbPipeline.getDescriptorSetHandler(0);
-		fbPipeline.recreate(swapchain.getExtent(), swapchain.getRenderPass(), globalDescriptorSetHandler->getLayout());
-
-		const std::vector<AttachmentIdentifier>& attachmentIdentifiers = fbPipeline.getAttachmentIdentifiers();
-		for(uint32_t binding = 0; binding < attachmentIdentifiers.size(); binding++)
-		{
-			uint32_t fbIndex = attachmentIdentifiers[binding].framebufferIndex;
-			uint32_t attachmentIndex = attachmentIdentifiers[binding].attachmentIndex;
-			framebuffers[fbIndex].configureAttachmentAsDescriptor(descriptorSetHandler, binding, attachmentIndex);
-		}
-		descriptorSetHandler.writeDescriptorSet(0);
+		fbPipeline.recreate(swapchain.getExtent(), swapchain.getRenderPass());
+		fbPipeline.updateInputImagesDescriptors(framebuffers, rayTracingPipelines);
 	}
 
 	camera.setAspectRatio(window.getAspectRatio());

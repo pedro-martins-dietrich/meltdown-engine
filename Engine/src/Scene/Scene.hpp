@@ -33,13 +33,16 @@ namespace mtd
 				std::vector<FramebufferInfo>& framebufferInfos,
 				std::vector<PipelineInfo>& pipelineInfos,
 				std::vector<FramebufferPipelineInfo>& framebufferPipelineInfos,
+				std::vector<RayTracingPipelineInfo>& rayTracingPipelineInfos,
 				std::vector<RenderPassInfo>& renderOrder
 			);
 
 			// Allocates resources and loads all mesh data
 			void allocateResources
 			(
-				std::vector<Pipeline>& pipelines, std::vector<FramebufferPipeline>& framebufferPipelines
+				std::vector<Pipeline>& pipelines,
+				std::vector<FramebufferPipeline>& framebufferPipelines,
+				std::vector<RayTracingPipeline>& rayTracingPipelines
 			);
 
 			// Executes starting code on scene

@@ -15,6 +15,7 @@ namespace mtd::SceneLoader
 		std::vector<FramebufferInfo>& framebufferInfos,
 		std::vector<PipelineInfo>& pipelineInfos,
 		std::vector<FramebufferPipelineInfo>& framebufferPipelineInfos,
+		std::vector<RayTracingPipelineInfo>& rayTracingPipelineInfos,
 		std::vector<RenderPassInfo>& renderOrder,
 		std::vector<std::unique_ptr<MeshManager>>& meshManagers
 	);

@@ -37,24 +37,17 @@ namespace mtd
 				{ return descriptorTypeCount; }
 
 			// Recreates the pipeline
-			void recreate
-			(
-				vk::Extent2D extent,
-				vk::RenderPass renderPass,
-				const vk::DescriptorSetLayout& globalDescriptorSetLayout
-			);
+			void recreate(vk::Extent2D extent, vk::RenderPass renderPass);
+
+			// Binds the pipeline and per pipeline descriptors to the command buffer
+			void bind(const vk::CommandBuffer& commandBuffer) const;
+			// Binds per mesh descriptors
+			void bindMeshDescriptors(const vk::CommandBuffer& commandBuffer, uint32_t index) const;
 
 			// Allocates user descriptor set data in the descriptor pool
 			void configureUserDescriptorData(const Device& mtdDevice, const DescriptorPool& pool);
 			// Updates the user descriptor data for the specified binding
 			void updateDescriptorData(uint32_t binding, const void* data) const;
-
-			// Binds the pipeline to the command buffer
-			void bind(const vk::CommandBuffer& commandBuffer) const;
-			// Binds per pipeline descriptors
-			void bindPipelineDescriptors(const vk::CommandBuffer& commandBuffer) const;
-			// Binds per mesh descriptors
-			void bindMeshDescriptors(const vk::CommandBuffer& commandBuffer, uint32_t index) const;
 
 		private:
 			// Vulkan graphics pipeline
@@ -76,15 +69,12 @@ namespace mtd
 			const vk::Device& device;
 
 			// Loads the pipeline shader modules
-			void loadShaderModules(const char* vertexShaderPath, const char* fragmentShaderPath);
+			void loadShaderModules();
 
+			// Creates the layout for the pipeline
+			void createPipelineLayout(const vk::DescriptorSetLayout& globalDescriptorSetLayout);
 			// Creates the graphics pipeline
-			void createPipeline
-			(
-				vk::Extent2D extent,
-				vk::RenderPass renderPass,
-				const vk::DescriptorSetLayout& globalDescriptorSetLayout
-			);
+			void createPipeline(vk::Extent2D extent, vk::RenderPass renderPass);
 
 			// Configures the descriptor set handlers to be used
 			void createDescriptorSetLayouts();
@@ -105,11 +95,5 @@ namespace mtd
 			void setMultisampling(vk::PipelineMultisampleStateCreateInfo& multisampleInfo) const;
 			// Sets the depth stencil create info
 			void setDepthStencil(vk::PipelineDepthStencilStateCreateInfo& depthStencilInfo) const;
-
-			// Creates the layout for the pipeline
-			void createPipelineLayout(const vk::DescriptorSetLayout& globalDescriptorSetLayout);
-
-			// Clears pipeline objects
-			void destroy();
 	};
 }
