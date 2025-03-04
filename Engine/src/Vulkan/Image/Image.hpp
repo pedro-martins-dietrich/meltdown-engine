@@ -39,7 +39,7 @@ namespace mtd::Image
 	void transitionImageLayout
 	(
 		const vk::Image& image,
-		const CommandHandler& commandHandler,
+		const vk::CommandBuffer& commandBuffer,
 		vk::ImageLayout oldLayout,
 		vk::ImageLayout newLayout
 	);

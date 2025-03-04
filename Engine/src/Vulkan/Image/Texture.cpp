@@ -90,10 +90,13 @@ void mtd::Texture::loadToGpu(const Device& mtdDevice, const CommandHandler& comm
 	};
 	stagingBuffer.copyMemoryToBuffer(imageSize, pixels);
 
+	vk::CommandBuffer commandBuffer = commandHandler.beginSingleTimeCommand();
 	Image::transitionImageLayout
 	(
-		image, commandHandler, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal
+		image, commandBuffer, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal
 	);
+	commandHandler.endSingleTimeCommand(commandBuffer);
+
 	Image::copyBufferToImage
 	(
 		image,
@@ -101,13 +104,13 @@ void mtd::Texture::loadToGpu(const Device& mtdDevice, const CommandHandler& comm
 		stagingBuffer.getBuffer(),
 		FrameDimensions{static_cast<uint32_t>(width), static_cast<uint32_t>(height)}
 	);
+
+	commandBuffer = commandHandler.beginSingleTimeCommand();
 	Image::transitionImageLayout
 	(
-		image,
-		commandHandler,
-		vk::ImageLayout::eTransferDstOptimal,
-		vk::ImageLayout::eShaderReadOnlyOptimal
+		image, commandBuffer, vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal
 	);
+	commandHandler.endSingleTimeCommand(commandBuffer);
 }
 
 // Creates sampler to define how the texture should be rendered

@@ -11,8 +11,7 @@ void mtd::Image::createImage(const CreateImageBundle& createBundle, vk::Image& i
 	imageCreateInfo.flags = createBundle.imageFlags;
 	imageCreateInfo.imageType = vk::ImageType::e2D;
 	imageCreateInfo.format = createBundle.format;
-	imageCreateInfo.extent =
-		vk::Extent3D{createBundle.dimensions.width, createBundle.dimensions.height, 1};
+	imageCreateInfo.extent = vk::Extent3D{createBundle.dimensions.width, createBundle.dimensions.height, 1};
 	imageCreateInfo.mipLevels = 1;
 	imageCreateInfo.arrayLayers = 1;
 	imageCreateInfo.samples = vk::SampleCountFlagBits::e1;
@@ -23,8 +22,7 @@ void mtd::Image::createImage(const CreateImageBundle& createBundle, vk::Image& i
 	imageCreateInfo.pQueueFamilyIndices = nullptr;
 	imageCreateInfo.initialLayout = vk::ImageLayout::eUndefined;
 
-	vk::Result result =
-		createBundle.device.createImage(&imageCreateInfo, nullptr, &image);
+	vk::Result result = createBundle.device.createImage(&imageCreateInfo, nullptr, &image);
 	if(result != vk::Result::eSuccess)
 		LOG_ERROR("Failed to create image. Vulkan result: %d", result);
 }
@@ -102,7 +100,7 @@ void mtd::Image::createImageView
 void mtd::Image::transitionImageLayout
 (
 	const vk::Image& image,
-	const CommandHandler& commandHandler,
+	const vk::CommandBuffer& commandBuffer,
 	vk::ImageLayout oldLayout,
 	vk::ImageLayout newLayout
 )
@@ -135,6 +133,10 @@ void mtd::Image::transitionImageLayout
 			barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
 			srcStage = vk::PipelineStageFlagBits::eTransfer;
 			break;
+		case vk::ImageLayout::eGeneral:
+			barrier.srcAccessMask = vk::AccessFlagBits::eShaderWrite;
+			srcStage = vk::PipelineStageFlagBits::eRayTracingShaderKHR;
+			break;
 		default:
 			LOG_WARNING("Unexpected source image layout for transition: %d.", oldLayout);
 			srcStage = vk::PipelineStageFlagBits::eNone;
@@ -149,19 +151,16 @@ void mtd::Image::transitionImageLayout
 			barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
 			dstStage = vk::PipelineStageFlagBits::eFragmentShader;
 			break;
+		case vk::ImageLayout::eGeneral:
+			barrier.dstAccessMask = vk::AccessFlagBits::eShaderWrite;
+			dstStage = vk::PipelineStageFlagBits::eRayTracingShaderKHR;
+			break;
 		default:
 			LOG_WARNING("Unexpected destination image layout for transition: %d.", newLayout);
 			dstStage = vk::PipelineStageFlagBits::eNone;
 	}
 
-	vk::CommandBuffer commandBuffer = commandHandler.beginSingleTimeCommand();
-
-	commandBuffer.pipelineBarrier
-	(
-		srcStage, dstStage, vk::DependencyFlags(), nullptr, nullptr, barrier
-	);
-
-	commandHandler.endSingleTimeCommand(commandBuffer);
+	commandBuffer.pipelineBarrier(srcStage, dstStage, vk::DependencyFlags(), nullptr, nullptr, barrier);
 }
 
 // Copies buffer data to Vulkan image
