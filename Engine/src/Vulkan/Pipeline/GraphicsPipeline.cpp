@@ -1,5 +1,5 @@
 #include <pch.hpp>
-#include "Pipeline.hpp"
+#include "GraphicsPipeline.hpp"
 
 #include "Builders/PipelineMapping.hpp"
 #include "Builders/VertexInputBuilder.hpp"
@@ -7,10 +7,10 @@
 #include "Builders/DescriptorSetBuilder.hpp"
 #include "../../Utils/Logger.hpp"
 
-mtd::Pipeline::Pipeline
+mtd::GraphicsPipeline::GraphicsPipeline
 (
 	const vk::Device& device,
-	const PipelineInfo& info,
+	const GraphicsPipelineInfo& info,
 	const vk::DescriptorSetLayout& globalDescriptorSetLayout,
 	vk::Extent2D extent,
 	vk::RenderPass renderPass
@@ -22,13 +22,13 @@ mtd::Pipeline::Pipeline
 	createPipeline(extent, renderPass);
 }
 
-mtd::Pipeline::~Pipeline()
+mtd::GraphicsPipeline::~GraphicsPipeline()
 {
 	device.destroyPipeline(pipeline);
 	device.destroyPipelineLayout(pipelineLayout);
 }
 
-mtd::Pipeline::Pipeline(Pipeline&& other) noexcept
+mtd::GraphicsPipeline::GraphicsPipeline(GraphicsPipeline&& other) noexcept
 	: device{other.device},
 	info{std::move(other.info)},
 	pipeline{std::move(other.pipeline)},
@@ -42,14 +42,14 @@ mtd::Pipeline::Pipeline(Pipeline&& other) noexcept
 }
 
 // Recreates the pipeline
-void mtd::Pipeline::recreate(vk::Extent2D extent, vk::RenderPass renderPass)
+void mtd::GraphicsPipeline::recreate(vk::Extent2D extent, vk::RenderPass renderPass)
 {
 	device.destroyPipeline(pipeline);
 	createPipeline(extent, renderPass);
 }
 
 // Binds the pipeline and per pipeline descriptors to the command buffer
-void mtd::Pipeline::bind(const vk::CommandBuffer& commandBuffer) const
+void mtd::GraphicsPipeline::bind(const vk::CommandBuffer& commandBuffer) const
 {
 	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
 
@@ -66,7 +66,7 @@ void mtd::Pipeline::bind(const vk::CommandBuffer& commandBuffer) const
 }
 
 // Binds per mesh descriptors
-void mtd::Pipeline::bindMeshDescriptors(const vk::CommandBuffer& commandBuffer, uint32_t index) const
+void mtd::GraphicsPipeline::bindMeshDescriptors(const vk::CommandBuffer& commandBuffer, uint32_t index) const
 {
 	commandBuffer.bindDescriptorSets
 	(
@@ -79,7 +79,7 @@ void mtd::Pipeline::bindMeshDescriptors(const vk::CommandBuffer& commandBuffer, 
 }
 
 // Allocates user descriptor set data in the descriptor pool
-void mtd::Pipeline::configureUserDescriptorData(const Device& mtdDevice, const DescriptorPool& pool)
+void mtd::GraphicsPipeline::configureUserDescriptorData(const Device& mtdDevice, const DescriptorPool& pool)
 {
 	if(descriptorSetHandlers.size() < 2) return;
 
@@ -102,7 +102,7 @@ void mtd::Pipeline::configureUserDescriptorData(const Device& mtdDevice, const D
 }
 
 // Updates the user descriptor data for the specified binding
-void mtd::Pipeline::updateDescriptorData(uint32_t binding, const void* data) const
+void mtd::GraphicsPipeline::updateDescriptorData(uint32_t binding, const void* data) const
 {
 	if(descriptorSetHandlers.size() < 2 || descriptorSetHandlers[1].getSetCount() <= binding) return;
 
@@ -113,7 +113,7 @@ void mtd::Pipeline::updateDescriptorData(uint32_t binding, const void* data) con
 }
 
 // Loads the pipeline shader modules
-void mtd::Pipeline::loadShaderModules()
+void mtd::GraphicsPipeline::loadShaderModules()
 {
 	shaders.reserve(2);
 	shaders.emplace_back(device, vk::ShaderStageFlagBits::eVertex, info.vertexShaderPath.c_str());
@@ -121,7 +121,7 @@ void mtd::Pipeline::loadShaderModules()
 }
 
 // Creates the layout for the pipeline
-void mtd::Pipeline::createPipelineLayout(const vk::DescriptorSetLayout& globalDescriptorSetLayout)
+void mtd::GraphicsPipeline::createPipelineLayout(const vk::DescriptorSetLayout& globalDescriptorSetLayout)
 {
 	std::vector<vk::DescriptorSetLayout> descriptorSetLayouts{globalDescriptorSetLayout};
 	for(const DescriptorSetHandler& descriptorSetHandler: descriptorSetHandlers)
@@ -144,7 +144,7 @@ void mtd::Pipeline::createPipelineLayout(const vk::DescriptorSetLayout& globalDe
 }
 
 // Creates the graphics pipeline
-void mtd::Pipeline::createPipeline(vk::Extent2D extent, vk::RenderPass renderPass)
+void mtd::GraphicsPipeline::createPipeline(vk::Extent2D extent, vk::RenderPass renderPass)
 {
 	std::vector<vk::PipelineShaderStageCreateInfo> shaderStageCreateInfos;
 	shaderStageCreateInfos.reserve(shaders.size());
@@ -200,7 +200,7 @@ void mtd::Pipeline::createPipeline(vk::Extent2D extent, vk::RenderPass renderPas
 }
 
 // Configures the descriptor set handlers to be used
-void mtd::Pipeline::createDescriptorSetLayouts()
+void mtd::GraphicsPipeline::createDescriptorSetLayouts()
 {
 	descriptorSetHandlers.reserve(info.descriptorSetInfo.size() == 0 ? 1 : 2);
 
@@ -242,7 +242,7 @@ void mtd::Pipeline::createDescriptorSetLayouts()
 }
 
 // Sets the input assembly create info
-void mtd::Pipeline::setInputAssembly(vk::PipelineInputAssemblyStateCreateInfo& inputAssemblyInfo) const
+void mtd::GraphicsPipeline::setInputAssembly(vk::PipelineInputAssemblyStateCreateInfo& inputAssemblyInfo) const
 {
 	inputAssemblyInfo.flags = vk::PipelineInputAssemblyStateCreateFlags();
 	inputAssemblyInfo.topology = PipelineMapping::mapPrimitiveTopology(info.primitiveTopology);
@@ -250,7 +250,7 @@ void mtd::Pipeline::setInputAssembly(vk::PipelineInputAssemblyStateCreateInfo& i
 }
 
 // Sets the viewport create info
-void mtd::Pipeline::setViewport
+void mtd::GraphicsPipeline::setViewport
 (
 	vk::PipelineViewportStateCreateInfo& viewportInfo,
 	vk::Viewport& viewport,
@@ -277,7 +277,7 @@ void mtd::Pipeline::setViewport
 }
 
 // Sets the rasterization create info
-void mtd::Pipeline::setRasterizer(vk::PipelineRasterizationStateCreateInfo& rasterizationInfo) const
+void mtd::GraphicsPipeline::setRasterizer(vk::PipelineRasterizationStateCreateInfo& rasterizationInfo) const
 {
 	rasterizationInfo.flags = vk::PipelineRasterizationStateCreateFlags();
 	rasterizationInfo.depthClampEnable = vk::False;
@@ -293,7 +293,7 @@ void mtd::Pipeline::setRasterizer(vk::PipelineRasterizationStateCreateInfo& rast
 }
 
 // Sets the multisample create info
-void mtd::Pipeline::setMultisampling(vk::PipelineMultisampleStateCreateInfo& multisampleInfo) const
+void mtd::GraphicsPipeline::setMultisampling(vk::PipelineMultisampleStateCreateInfo& multisampleInfo) const
 {
 	multisampleInfo.flags = vk::PipelineMultisampleStateCreateFlags();
 	multisampleInfo.rasterizationSamples = vk::SampleCountFlagBits::e1;
@@ -305,7 +305,7 @@ void mtd::Pipeline::setMultisampling(vk::PipelineMultisampleStateCreateInfo& mul
 }
 
 // Sets the depth stencil create info
-void mtd::Pipeline::setDepthStencil(vk::PipelineDepthStencilStateCreateInfo& depthStencilInfo) const
+void mtd::GraphicsPipeline::setDepthStencil(vk::PipelineDepthStencilStateCreateInfo& depthStencilInfo) const
 {
 	depthStencilInfo.flags = vk::PipelineDepthStencilStateCreateFlags();
 	depthStencilInfo.depthTestEnable = vk::True;

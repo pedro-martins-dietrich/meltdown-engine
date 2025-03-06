@@ -86,7 +86,7 @@ void mtd::Engine::run(const std::function<void(double)>& onUpdateCallback)
 			swapchain,
 			imGuiHandler,
 			framebuffers,
-			pipelines,
+			graphicsPipelines,
 			framebufferPipelines,
 			rayTracingPipelines,
 			scene,
@@ -115,12 +115,12 @@ void mtd::Engine::loadScene(const char* sceneFile)
 	}
 	device.getDevice().waitIdle();
 	framebuffers.clear();
-	pipelines.clear();
+	graphicsPipelines.clear();
 	framebufferPipelines.clear();
 	rayTracingPipelines.clear();
 
 	std::vector<FramebufferInfo> framebufferInfos;
-	std::vector<PipelineInfo> pipelineInfos;
+	std::vector<GraphicsPipelineInfo> graphicsPipelineInfos;
 	std::vector<FramebufferPipelineInfo> framebufferPipelineInfos;
 	std::vector<RayTracingPipelineInfo> rayTracingPipelineInfos;
 
@@ -129,14 +129,14 @@ void mtd::Engine::loadScene(const char* sceneFile)
 		device,
 		sceneFile,
 		framebufferInfos,
-		pipelineInfos,
+		graphicsPipelineInfos,
 		framebufferPipelineInfos,
 		rayTracingPipelineInfos,
 		renderer.getRenderOrder()
 	);
 
-	createRenderResources(framebufferInfos, pipelineInfos, framebufferPipelineInfos, rayTracingPipelineInfos);
-	scene.allocateResources(pipelines, framebufferPipelines, rayTracingPipelines);
+	createRenderResources(framebufferInfos, graphicsPipelineInfos, framebufferPipelineInfos, rayTracingPipelineInfos);
+	scene.allocateResources(graphicsPipelines, framebufferPipelines, rayTracingPipelines);
 	configureDescriptors();
 
 	scene.start();
@@ -185,10 +185,10 @@ void mtd::Engine::updateDescriptors()
 	for(const auto& [key, data]: pendingDescriptorUpdates)
 	{
 		uint32_t pipelineIndex = key >> 32;
-		if(pipelineIndex >= pipelines.size()) continue;
+		if(pipelineIndex >= graphicsPipelines.size()) continue;
 
 		uint32_t binding = key & 0xFFFFFFFF;
-		pipelines[pipelineIndex].updateDescriptorData(binding, data);
+		graphicsPipelines[pipelineIndex].updateDescriptorData(binding, data);
 	}
 	pendingDescriptorUpdates.clear();
 }
@@ -227,7 +227,7 @@ void mtd::Engine::configureGlobalDescriptorSetHandler()
 void mtd::Engine::createRenderResources
 (
 	const std::vector<FramebufferInfo>& framebufferInfos,
-	const std::vector<PipelineInfo>& pipelineInfos,
+	const std::vector<GraphicsPipelineInfo>& graphicsPipelineInfos,
 	const std::vector<FramebufferPipelineInfo>& framebufferPipelineInfos,
 	const std::vector<RayTracingPipelineInfo>& rayTracingPipelineInfos
 )
@@ -236,16 +236,16 @@ void mtd::Engine::createRenderResources
 	for(const FramebufferInfo& framebufferInfo: framebufferInfos)
 		framebuffers.emplace_back(device, framebufferInfo, swapchain.getExtent());
 
-	pipelines.reserve(pipelineInfos.size());
-	for(const PipelineInfo& pipelineInfo: pipelineInfos)
+	graphicsPipelines.reserve(graphicsPipelineInfos.size());
+	for(const GraphicsPipelineInfo& graphicsPipelineInfo: graphicsPipelineInfos)
 	{
-		int32_t fbIndex = pipelineInfo.targetFramebufferIndex;
+		int32_t fbIndex = graphicsPipelineInfo.targetFramebufferIndex;
 		bool targetSwapchain = fbIndex == -1;
 
-		pipelines.emplace_back
+		graphicsPipelines.emplace_back
 		(
 			device.getDevice(),
-			pipelineInfo,
+			graphicsPipelineInfo,
 			globalDescriptorSetHandler->getLayout(),
 			targetSwapchain ? swapchain.getExtent() : framebuffers[fbIndex].getExtent(),
 			targetSwapchain ? swapchain.getRenderPass() : framebuffers[fbIndex].getRenderPass()
@@ -291,8 +291,8 @@ void mtd::Engine::configureDescriptors()
 
 	globalDescriptorSetHandler->writeDescriptorSet(0);
 
-	for(Pipeline& pipeline: pipelines)
-		pipeline.configureUserDescriptorData(device, scene.getDescriptorPool());
+	for(GraphicsPipeline& graphicsPipeline: graphicsPipelines)
+		graphicsPipeline.configureUserDescriptorData(device, scene.getDescriptorPool());
 	for(RayTracingPipeline& rtPipeline: rayTracingPipelines)
 	{
 		rtPipeline.configureUserDescriptorData(device, scene.getDescriptorPool());
@@ -315,13 +315,13 @@ void mtd::Engine::updateEngine()
 
 	for(Framebuffer& framebuffer: framebuffers)
 		framebuffer.resize(device, swapchain.getExtent());
-	for(Pipeline& pipeline: pipelines)
+	for(GraphicsPipeline& graphicsPipeline: graphicsPipelines)
 	{
-		int32_t fbIndex = pipeline.getTargetFramebuffer();
+		int32_t fbIndex = graphicsPipeline.getTargetFramebuffer();
 		if(fbIndex == -1)
-			pipeline.recreate(swapchain.getExtent(), swapchain.getRenderPass());
+			graphicsPipeline.recreate(swapchain.getExtent(), swapchain.getRenderPass());
 		else
-			pipeline.recreate(framebuffers[fbIndex].getExtent(), framebuffers[fbIndex].getRenderPass());
+			graphicsPipeline.recreate(framebuffers[fbIndex].getExtent(), framebuffers[fbIndex].getRenderPass());
 	}
 	for(RayTracingPipeline& rtPipeline: rayTracingPipelines)
 		rtPipeline.resize(device, swapchain.getExtent());

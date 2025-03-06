@@ -4,7 +4,6 @@
 
 #include "SceneLoader.hpp"
 #include "../Vulkan/Mesh/MeshManager.hpp"
-#include "../Vulkan/Pipeline/Pipeline.hpp"
 #include "../Vulkan/Pipeline/FramebufferPipeline.hpp"
 #include "../Vulkan/Descriptors/DescriptorPool.hpp"
 
@@ -31,7 +30,7 @@ namespace mtd
 				const Device& device,
 				const char* sceneFileName,
 				std::vector<FramebufferInfo>& framebufferInfos,
-				std::vector<PipelineInfo>& pipelineInfos,
+				std::vector<GraphicsPipelineInfo>& graphicsPipelineInfos,
 				std::vector<FramebufferPipelineInfo>& framebufferPipelineInfos,
 				std::vector<RayTracingPipelineInfo>& rayTracingPipelineInfos,
 				std::vector<RenderPassInfo>& renderOrder
@@ -40,7 +39,7 @@ namespace mtd
 			// Allocates resources and loads all mesh data
 			void allocateResources
 			(
-				std::vector<Pipeline>& pipelines,
+				std::vector<GraphicsPipeline>& graphicsPipelines,
 				std::vector<FramebufferPipeline>& framebufferPipelines,
 				std::vector<RayTracingPipeline>& rayTracingPipelines
 			);

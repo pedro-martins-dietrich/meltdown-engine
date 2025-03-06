@@ -21,7 +21,7 @@ void mtd::Renderer::render
 	const Swapchain& swapchain,
 	const ImGuiHandler& guiHandler,
 	const std::vector<Framebuffer>& framebuffers,
-	const std::vector<Pipeline>& pipelines,
+	const std::vector<GraphicsPipeline>& graphicsPipelines,
 	const std::vector<FramebufferPipeline>& framebufferPipelines,
 	const std::vector<RayTracingPipeline>& rayTracingPipelines,
 	const Scene& scene,
@@ -71,7 +71,7 @@ void mtd::Renderer::render
 	recordDrawCommands
 	(
 		framebuffers,
-		pipelines, framebufferPipelines, rayTracingPipelines,
+		graphicsPipelines, framebufferPipelines, rayTracingPipelines,
 		scene,
 		commandHandler,
 		drawInfo,
@@ -95,7 +95,7 @@ void mtd::Renderer::render
 void mtd::Renderer::recordDrawCommands
 (
 	const std::vector<Framebuffer>& framebuffers,
-	const std::vector<Pipeline>& pipelines,
+	const std::vector<GraphicsPipeline>& graphicsPipelines,
 	const std::vector<FramebufferPipeline>& framebufferPipelines,
 	const std::vector<RayTracingPipeline>& rayTracingPipelines,
 	const Scene& scene,
@@ -105,11 +105,15 @@ void mtd::Renderer::recordDrawCommands
 	const vk::detail::DispatchLoaderDynamic& dldi
 ) const
 {
-	assert(!(pipelines.empty() && framebufferPipelines.empty()) && "There must be at least one rendering pipeline.");
+	assert
+	(
+		!(graphicsPipelines.empty() && framebufferPipelines.empty()) &&
+		"There must be at least one rendering pipeline."
+	);
 
 	const vk::CommandBuffer& commandBuffer = commandHandler.getCommandBuffer();
 	const vk::PipelineLayout& firstPipelineLayout =
-		pipelines.empty() ? framebufferPipelines[0].getLayout() : pipelines[0].getLayout();
+		graphicsPipelines.empty() ? framebufferPipelines[0].getLayout() : graphicsPipelines[0].getLayout();
 
 	commandHandler.beginCommand();
 
@@ -188,16 +192,16 @@ void mtd::Renderer::recordDrawCommands
 
 		for(uint32_t pipelineIndex: renderPassInfo.pipelineIndices)
 		{
-			const Pipeline& pipeline = pipelines[pipelineIndex];
-			PROFILER_NEXT_STAGE(pipeline.getName().c_str());
+			const GraphicsPipeline& graphicsPipeline = graphicsPipelines[pipelineIndex];
+			PROFILER_NEXT_STAGE(graphicsPipeline.getName().c_str());
 			const MeshManager* pMeshManager = scene.getMeshManager(pipelineIndex);
 
 			if(pMeshManager->getMeshCount() == 0) continue;
 
-			pipeline.bind(commandBuffer);
+			graphicsPipeline.bind(commandBuffer);
 			pMeshManager->bindBuffers(commandBuffer);
 
-			pMeshManager->drawMesh(commandBuffer, pipeline);
+			pMeshManager->drawMesh(commandBuffer, graphicsPipeline);
 		}
 
 		if(toSwapchain)

@@ -59,7 +59,10 @@ void mtd::MultiMaterial3DMeshManager::bindBuffers(const vk::CommandBuffer& comma
 }
 
 // Draws the mesh specified by the index
-void mtd::MultiMaterial3DMeshManager::drawMesh(const vk::CommandBuffer& commandBuffer, const Pipeline& pipeline) const
+void mtd::MultiMaterial3DMeshManager::drawMesh
+(
+	const vk::CommandBuffer& commandBuffer, const GraphicsPipeline& graphicsPipeline
+) const
 {
 	uint32_t materialOffset = 0;
 	for(uint32_t meshIndex = 0; meshIndex < meshes.size(); meshIndex++)
@@ -68,7 +71,8 @@ void mtd::MultiMaterial3DMeshManager::drawMesh(const vk::CommandBuffer& commandB
 		mesh.bindInstanceBuffer(commandBuffer);
 		for(uint32_t submeshIndex = 0; submeshIndex < mesh.getSubmeshCount(); submeshIndex++)
 		{
-			pipeline.bindMeshDescriptors(commandBuffer, materialOffset + mesh.getSubmeshMaterialIndex(submeshIndex));
+			graphicsPipeline
+				.bindMeshDescriptors(commandBuffer, materialOffset + mesh.getSubmeshMaterialIndex(submeshIndex));
 			commandBuffer.drawIndexed
 			(
 				mesh.getSubmeshIndexCount(submeshIndex),

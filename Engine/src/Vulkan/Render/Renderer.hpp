@@ -30,7 +30,7 @@ namespace mtd
 				const Swapchain& swapchain,
 				const ImGuiHandler& guiHandler,
 				const std::vector<Framebuffer>& framebuffers,
-				const std::vector<Pipeline>& pipelines,
+				const std::vector<GraphicsPipeline>& graphicsPipelines,
 				const std::vector<FramebufferPipeline>& framebufferPipelines,
 				const std::vector<RayTracingPipeline>& rayTracingPipelines,
 				const Scene& scene,
@@ -50,7 +50,7 @@ namespace mtd
 			void recordDrawCommands
 			(
 				const std::vector<Framebuffer>& framebuffers,
-				const std::vector<Pipeline>& pipelines,
+				const std::vector<GraphicsPipeline>& graphicsPipelines,
 				const std::vector<FramebufferPipeline>& framebufferPipelines,
 				const std::vector<RayTracingPipeline>& rayTracingPipelines,
 				const Scene& scene,

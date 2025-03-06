@@ -14,7 +14,7 @@ void mtd::Scene::loadScene
 	const Device& device,
 	const char* sceneFileName,
 	std::vector<FramebufferInfo>& framebufferInfos,
-	std::vector<PipelineInfo>& pipelineInfos,
+	std::vector<GraphicsPipelineInfo>& graphicsPipelineInfos,
 	std::vector<FramebufferPipelineInfo>& framebufferPipelineInfos,
 	std::vector<RayTracingPipelineInfo>& rayTracingPipelineInfos,
 	std::vector<RenderPassInfo>& renderOrder
@@ -28,7 +28,7 @@ void mtd::Scene::loadScene
 		device,
 		sceneFileName,
 		framebufferInfos,
-		pipelineInfos,
+		graphicsPipelineInfos,
 		framebufferPipelineInfos,
 		rayTracingPipelineInfos,
 		renderOrder,
@@ -39,7 +39,7 @@ void mtd::Scene::loadScene
 // Allocates resources and loads all mesh data
 void mtd::Scene::allocateResources
 (
-	std::vector<Pipeline>& pipelines,
+	std::vector<GraphicsPipeline>& graphicsPipelines,
 	std::vector<FramebufferPipeline>& framebufferPipelines,
 	std::vector<RayTracingPipeline>& rayTracingPipelines
 )
@@ -55,7 +55,7 @@ void mtd::Scene::allocateResources
 	if(totalImageSamplerCount > 0)
 		totalDescriptorTypeCount[vk::DescriptorType::eCombinedImageSampler] = totalImageSamplerCount;
 
-	for(const Pipeline& pipeline: pipelines)
+	for(const GraphicsPipeline& pipeline: graphicsPipelines)
 	{
 		for(const auto& [type, count]: pipeline.getDescriptorTypeCount())
 			totalDescriptorTypeCount[type] += count;
@@ -83,12 +83,12 @@ void mtd::Scene::allocateResources
 
 	descriptorPool.createDescriptorPool(poolSizesInfo);
 
-	for(uint32_t i = 0; i < pipelines.size(); i++)
+	for(uint32_t i = 0; i < graphicsPipelines.size(); i++)
 	{
 		const std::unique_ptr<MeshManager>& pMeshManager = meshManagers[i];
 		if(pMeshManager->getMeshCount() == 0) continue;
 
-		DescriptorSetHandler& descriptorSetHandler = pipelines[i].getDescriptorSetHandler(0);
+		DescriptorSetHandler& descriptorSetHandler = graphicsPipelines[i].getDescriptorSetHandler(0);
 		descriptorSetHandler.defineDescriptorSetsAmount(pMeshManager->getMaterialCount());
 		descriptorPool.allocateDescriptorSet(descriptorSetHandler);
 

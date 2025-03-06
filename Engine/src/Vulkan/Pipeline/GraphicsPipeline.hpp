@@ -7,24 +7,24 @@
 
 namespace mtd
 {
-	// Vulkan graphics pipeline handler
-	class Pipeline
+	// Vulkan graphics (rasterization) pipeline handler
+	class GraphicsPipeline
 	{
 		public:
-			Pipeline
+			GraphicsPipeline
 			(
 				const vk::Device& device,
-				const PipelineInfo& info,
+				const GraphicsPipelineInfo& info,
 				const vk::DescriptorSetLayout& globalDescriptorSetLayout,
 				vk::Extent2D extent,
 				vk::RenderPass renderPass
 			);
-			~Pipeline();
+			~GraphicsPipeline();
 
-			Pipeline(const Pipeline&) = delete;
-			Pipeline& operator=(const Pipeline&) = delete;
+			GraphicsPipeline(const GraphicsPipeline&) = delete;
+			GraphicsPipeline& operator=(const GraphicsPipeline&) = delete;
 
-			Pipeline(Pipeline&& other) noexcept;
+			GraphicsPipeline(GraphicsPipeline&& other) noexcept;
 
 			// Getters
 			const vk::Pipeline& getPipeline() const { return pipeline; }
@@ -56,7 +56,7 @@ namespace mtd
 			vk::PipelineLayout pipelineLayout;
 
 			// Pipeline specific configurations
-			PipelineInfo info;
+			GraphicsPipelineInfo info;
 
 			// Shader modules used in the pipeline
 			std::vector<ShaderModule> shaders;

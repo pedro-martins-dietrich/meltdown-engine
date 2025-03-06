@@ -45,11 +45,14 @@ void mtd::DefaultMeshManager::bindBuffers(const vk::CommandBuffer& commandBuffer
 }
 
 // Draws the mesh specified by the index
-void mtd::DefaultMeshManager::drawMesh(const vk::CommandBuffer& commandBuffer, const Pipeline& pipeline) const
+void mtd::DefaultMeshManager::drawMesh
+(
+	const vk::CommandBuffer& commandBuffer, const GraphicsPipeline& graphicsPipeline
+) const
 {
 	for(uint32_t meshIndex = 0; meshIndex < meshes.size(); meshIndex++)
 	{
-		pipeline.bindMeshDescriptors(commandBuffer, meshIndex);
+		graphicsPipeline.bindMeshDescriptors(commandBuffer, meshIndex);
 
 		const DefaultMesh& mesh = meshes[meshIndex];
 		mesh.bindInstanceBuffer(commandBuffer);

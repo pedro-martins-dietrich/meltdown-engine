@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Mesh.hpp"
-#include "../Pipeline/Pipeline.hpp"
+#include "../Pipeline/GraphicsPipeline.hpp"
 
 namespace mtd
 {
@@ -37,7 +37,7 @@ namespace mtd
 			// Binds vertex and index buffers, if used
 			virtual void bindBuffers(const vk::CommandBuffer& commandBuffer) const = 0;
 			// Draws the mesh specified by the index
-			virtual void drawMesh(const vk::CommandBuffer& commandBuffer, const Pipeline& pipeline) const = 0;
+			virtual void drawMesh(const vk::CommandBuffer& commandBuffer, const GraphicsPipeline& pipeline) const = 0;
 
 		protected:
 			// Device reference

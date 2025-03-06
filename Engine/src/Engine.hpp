@@ -50,7 +50,7 @@ namespace mtd
 			ImGuiHandler imGuiHandler;
 
 			// Pipelines
-			std::vector<Pipeline> pipelines;
+			std::vector<GraphicsPipeline> graphicsPipelines;
 			std::vector<FramebufferPipeline> framebufferPipelines;
 			std::vector<RayTracingPipeline> rayTracingPipelines;
 
@@ -94,7 +94,7 @@ namespace mtd
 			void createRenderResources
 			(
 				const std::vector<FramebufferInfo>& framebufferInfos,
-				const std::vector<PipelineInfo>& pipelineInfos,
+				const std::vector<GraphicsPipelineInfo>& graphicsPipelineInfos,
 				const std::vector<FramebufferPipelineInfo>& framebufferPipelineInfos,
 				const std::vector<RayTracingPipelineInfo>& rayTracingPipelineInfos
 			);

@@ -44,7 +44,7 @@ namespace mtd
 	/*
 	* @brief Parameters to create a pipeline with custom shaders.
 	*/
-	struct PipelineInfo
+	struct GraphicsPipelineInfo
 	{
 		/* @brief Exhibition name for the pipeline. */
 		std::string pipelineName;
