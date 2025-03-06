@@ -3,7 +3,6 @@
 
 #include "Builders/DescriptorSetBuilder.hpp"
 #include "Builders/PipelineMapping.hpp"
-#include "../Image/Image.hpp"
 #include "../../Utils/Logger.hpp"
 
 mtd::RayTracingPipeline::RayTracingPipeline
@@ -14,6 +13,7 @@ mtd::RayTracingPipeline::RayTracingPipeline
 	vk::Extent2D swapchainExtent
 ) : device{mtdDevice.getDevice()},
 	info{info},
+	image{mtdDevice.getDevice()},
 	windowResolutionDependant{false},
 	sbtBuffer
 	{
@@ -30,16 +30,10 @@ mtd::RayTracingPipeline::RayTracingPipeline
 	createRayTracingPipeline(mtdDevice.getDLDI());
 	createShaderBindingTable(mtdDevice);
 	createStorageImage(mtdDevice, swapchainExtent);
-	createSampler();
 }
 
 mtd::RayTracingPipeline::~RayTracingPipeline()
 {
-	device.destroySampler(sampler);
-	device.destroyImageView(imageView);
-	device.freeMemory(imageMemory);
-	device.destroyImage(image);
-
 	device.destroyPipeline(pipeline);
 	device.destroyPipelineLayout(pipelineLayout);
 }
@@ -53,8 +47,6 @@ mtd::RayTracingPipeline::RayTracingPipeline(RayTracingPipeline&& other) noexcept
 	descriptorSetHandlers{std::move(other.descriptorSetHandlers)},
 	descriptorTypeCount{std::move(other.descriptorTypeCount)},
 	image{std::move(other.image)},
-	imageMemory{std::move(other.imageMemory)},
-	imageView{std::move(other.imageView)},
 	windowResolutionDependant{other.windowResolutionDependant},
 	sbtBuffer{std::move(other.sbtBuffer)},
 	rayGenRegionSBT{std::move(other.rayGenRegionSBT)},
@@ -64,9 +56,6 @@ mtd::RayTracingPipeline::RayTracingPipeline(RayTracingPipeline&& other) noexcept
 {
 	other.pipeline = nullptr;
 	other.pipelineLayout = nullptr;
-	other.image = nullptr;
-	other.imageMemory = nullptr;
-	other.imageView = nullptr;
 }
 
 // Binds the pipeline and performs the ray tracing
@@ -75,7 +64,7 @@ void mtd::RayTracingPipeline::traceRays
 	const vk::CommandBuffer& commandBuffer, const vk::detail::DispatchLoaderDynamic& dldi
 ) const
 {
-	Image::transitionImageLayout(image, commandBuffer, vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral);
+	image.transitionImageLayout(commandBuffer, vk::ImageLayout::eGeneral);
 
 	commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, pipeline);
 	commandBuffer.bindDescriptorSets
@@ -109,18 +98,15 @@ void mtd::RayTracingPipeline::traceRays
 		dldi
 	);
 
-	Image::transitionImageLayout
-	(
-		image, commandBuffer, vk::ImageLayout::eGeneral, vk::ImageLayout::eShaderReadOnlyOptimal
-	);
+	image.transitionImageLayout(commandBuffer, vk::ImageLayout::eShaderReadOnlyOptimal);
 }
 
 // Configures the render target image descriptor
 void mtd::RayTracingPipeline::configurePipelineDescriptorSet()
 {
 	vk::DescriptorImageInfo descriptorImageInfo{};
+	image.defineDescriptorImageInfo(&descriptorImageInfo);
 	descriptorImageInfo.imageLayout = vk::ImageLayout::eGeneral;
-	descriptorImageInfo.imageView = imageView;
 
 	descriptorSetHandlers[0].createImageDescriptorResources(0, 0, descriptorImageInfo);
 	descriptorSetHandlers[0].writeDescriptorSet(0);
@@ -167,9 +153,8 @@ void mtd::RayTracingPipeline::shareRenderTargetImageDescriptor
 ) const
 {
 	vk::DescriptorImageInfo descriptorImageInfo{};
+	image.defineDescriptorImageInfo(&descriptorImageInfo);
 	descriptorImageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-	descriptorImageInfo.imageView = imageView;
-	descriptorImageInfo.sampler = sampler;
 
 	descriptorSetHandler.createImageDescriptorResources(0, binding, descriptorImageInfo);
 }
@@ -179,11 +164,21 @@ void mtd::RayTracingPipeline::resize(const Device& mtdDevice, vk::Extent2D swapc
 {
 	if(!windowResolutionDependant) return;
 
-	device.destroyImageView(imageView);
-	device.freeMemory(imageMemory);
-	device.destroyImage(image);
+	if(info.windowResolutionRatio.x > 0.0f)
+		info.width = static_cast<uint32_t>(info.windowResolutionRatio.x * swapchainExtent.width);
+	if(info.windowResolutionRatio.y > 0.0f)
+		info.height = static_cast<uint32_t>(info.windowResolutionRatio.y * swapchainExtent.height);
 
-	createStorageImage(mtdDevice, swapchainExtent);
+	image.resize
+	(
+		mtdDevice,
+		{info.width, info.height},
+		vk::ImageTiling::eOptimal,
+		vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled,
+		vk::MemoryPropertyFlagBits::eDeviceLocal,
+		vk::ImageAspectFlagBits::eColor,
+		vk::ImageViewType::e2D
+	);
 	configurePipelineDescriptorSet();
 }
 
@@ -230,19 +225,16 @@ void mtd::RayTracingPipeline::createStorageImage(const Device& mtdDevice, vk::Ex
 		windowResolutionDependant = true;
 	}
 
-	vk::Format storageImageFormat = vk::Format::eR8G8B8A8Unorm;
-	Image::CreateImageBundle createImageBundle
-	{
-		device,
+	image.createImage
+	(
+		{info.width, info.height},
+		vk::Format::eR8G8B8A8Unorm,
 		vk::ImageTiling::eOptimal,
-		vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled,
-		storageImageFormat,
-		vk::ImageCreateFlags(),
-		FrameDimensions{info.width, info.height}
-	};
-	Image::createImage(createImageBundle, image);
-	Image::createImageMemory(mtdDevice, image, vk::MemoryPropertyFlagBits::eDeviceLocal, imageMemory);
-	Image::createImageView(device, image, storageImageFormat, vk::ImageAspectFlagBits::eColor, vk::ImageViewType::e2D, imageView);
+		vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled
+	);
+	image.createImageMemory(mtdDevice, vk::MemoryPropertyFlagBits::eDeviceLocal);
+	image.createImageView(vk::ImageAspectFlagBits::eColor, vk::ImageViewType::e2D);
+	image.createImageSampler(vk::Filter::eLinear);
 }
 
 // Creates the layout for the pipeline
@@ -359,30 +351,4 @@ void mtd::RayTracingPipeline::defineShaderGroups
 	shaderGroupCreateInfos[1].anyHitShader = vk::ShaderUnusedKHR;
 	shaderGroupCreateInfos[1].intersectionShader = vk::ShaderUnusedKHR;
 	shaderGroupCreateInfos[1].pShaderGroupCaptureReplayHandle = nullptr;
-}
-
-// Creates sampler to define how the render target image should be sampled
-void mtd::RayTracingPipeline::createSampler()
-{
-	vk::SamplerCreateInfo samplerCreateInfo{};
-	samplerCreateInfo.flags = vk::SamplerCreateFlags();
-	samplerCreateInfo.magFilter = vk::Filter::eNearest;
-	samplerCreateInfo.minFilter = vk::Filter::eNearest;
-	samplerCreateInfo.mipmapMode = vk::SamplerMipmapMode::eNearest;
-	samplerCreateInfo.addressModeU = vk::SamplerAddressMode::eRepeat;
-	samplerCreateInfo.addressModeV = vk::SamplerAddressMode::eRepeat;
-	samplerCreateInfo.addressModeW = vk::SamplerAddressMode::eRepeat;
-	samplerCreateInfo.mipLodBias = 0.0f;
-	samplerCreateInfo.anisotropyEnable = vk::False;
-	samplerCreateInfo.maxAnisotropy = 1.0f;
-	samplerCreateInfo.compareEnable = vk::False;
-	samplerCreateInfo.compareOp = vk::CompareOp::eAlways;
-	samplerCreateInfo.minLod = 0.0f;
-	samplerCreateInfo.maxLod = 0.0f;
-	samplerCreateInfo.borderColor = vk::BorderColor::eIntOpaqueBlack;
-	samplerCreateInfo.unnormalizedCoordinates = vk::False;
-
-	vk::Result result = device.createSampler(&samplerCreateInfo, nullptr, &sampler);
-	if(result != vk::Result::eSuccess)
-		LOG_ERROR("Failed to create ray tracing storage image sampler. Vulkan result: %d", result);
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ShaderModule.hpp"
+#include "../Image/Image.hpp"
 #include "../Descriptors/DescriptorPool.hpp"
 
 namespace mtd
@@ -69,11 +70,9 @@ namespace mtd
 			// Required descriptor count for each descriptor type of the current pipeline
 			std::unordered_map<vk::DescriptorType, uint32_t> descriptorTypeCount;
 
-			// Target image resources
-			vk::Image image;
-			vk::DeviceMemory imageMemory;
-			vk::ImageView imageView;
-			vk::Sampler sampler;
+			// Render storage image
+			Image image;
+			// Flag to recreate image on window resize
 			bool windowResolutionDependant;
 
 			// Shader Binding Table (SBT) buffer and the memory regions
@@ -105,8 +104,5 @@ namespace mtd
 
 			// Defines the shader groups
 			void defineShaderGroups(std::vector<vk::RayTracingShaderGroupCreateInfoKHR>& shaderGroupCreateInfos) const;
-
-			// Creates sampler to define how the render target image should be sampled
-			void createSampler();
 	};
 }

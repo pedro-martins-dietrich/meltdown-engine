@@ -1,7 +1,6 @@
 #include <pch.hpp>
 #include "Framebuffer.hpp"
 
-#include "../Image/Image.hpp"
 #include "../../Utils/Logger.hpp"
 
 mtd::Framebuffer::Framebuffer
@@ -21,13 +20,6 @@ mtd::Framebuffer::~Framebuffer()
 {
 	device.destroyFramebuffer(framebuffer);
 
-	for(AttachmentData& attachmentData: attachmentsData)
-	{
-		device.destroyImageView(attachmentData.imageView);
-		device.freeMemory(attachmentData.imageMemory);
-		device.destroyImage(attachmentData.image);
-	}
-
 	device.destroySampler(sampler);
 	device.destroyRenderPass(renderPass);
 }
@@ -38,7 +30,7 @@ mtd::Framebuffer::Framebuffer(Framebuffer&& other) noexcept
 	framebuffer{std::move(other.framebuffer)},
 	renderPass{std::move(other.renderPass)},
 	sampler{std::move(other.sampler)},
-	attachmentsData{std::move(other.attachmentsData)},
+	attachmentImages{std::move(other.attachmentImages)},
 	descriptorInfos{std::move(other.descriptorInfos)},
 	windowResolutionDependant{other.windowResolutionDependant}
 {
@@ -65,15 +57,15 @@ void mtd::Framebuffer::transitionAttachmentLayout
 	const vk::CommandBuffer& commandBuffer
 ) const
 {
-	assert(attachmentIndex < attachmentsData.size() && "Attachment index out of bounds.");
-	const AttachmentData& attachmentData = attachmentsData[attachmentIndex];
+	assert(attachmentIndex < attachmentImages.size() && "Attachment index out of bounds.");
+	const Image& attachmentImage = attachmentImages[attachmentIndex];
 
 	bool useDepth = static_cast<uint32_t>(info.framebufferAttachments) & 0x01U;
 
 	vk::PipelineStageFlags pipelineSrcStage = vk::PipelineStageFlagBits::eColorAttachmentOutput;
 	vk::PipelineStageFlags pipelineDstStage = vk::PipelineStageFlagBits::eFragmentShader;
 
-	if(useDepth && (attachmentIndex == (attachmentsData.size() - 1)))
+	if(useDepth && (attachmentIndex == (attachmentImages.size() - 1)))
 	{
 		if(toShaderReadOnly)
 		{
@@ -121,7 +113,7 @@ void mtd::Framebuffer::transitionAttachmentLayout
 
 	barrier.srcQueueFamilyIndex = vk::QueueFamilyIgnored;
 	barrier.dstQueueFamilyIndex = vk::QueueFamilyIgnored;
-	barrier.image = attachmentData.image;
+	barrier.image = attachmentImage.getImage();
 	barrier.subresourceRange.baseMipLevel = 0;
 	barrier.subresourceRange.levelCount = 1;
 	barrier.subresourceRange.baseArrayLayer = 0;
@@ -143,12 +135,7 @@ void mtd::Framebuffer::resize(const Device& mtdDevice, vk::Extent2D swapchainExt
 	if(!windowResolutionDependant) return;
 
 	device.destroyFramebuffer(framebuffer);
-	for(AttachmentData& attachmentData: attachmentsData)
-	{
-		device.destroyImageView(attachmentData.imageView);
-		device.freeMemory(attachmentData.imageMemory);
-		device.destroyImage(attachmentData.image);
-	}
+	attachmentImages.clear();
 
 	createAttachments(mtdDevice, swapchainExtent);
 	createFramebuffer();
@@ -245,37 +232,39 @@ void mtd::Framebuffer::createAttachments(const Device& mtdDevice, vk::Extent2D s
 	bool useDepth = static_cast<uint32_t>(info.framebufferAttachments) & 0x01U;
 	uint32_t totalAttachmentCount = useDepth ? (colorAttachmentCount + 1) : colorAttachmentCount;
 
-	attachmentsData.resize(totalAttachmentCount);
+	attachmentImages.reserve(totalAttachmentCount);
 	descriptorInfos.resize(totalAttachmentCount);
 
 	for(uint32_t i = 0; i < colorAttachmentCount; i++)
 	{
-		attachmentsData[i].format = vk::Format::eB8G8R8A8Unorm;
+		attachmentImages.emplace_back(device);
 		createAttachment
 		(
 			mtdDevice,
-			attachmentsData[i],
+			attachmentImages[i],
+			vk::Format::eB8G8R8A8Unorm,
 			vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
 			vk::ImageAspectFlagBits::eColor
 		);
-		descriptorInfos[i].sampler = sampler;
-		descriptorInfos[i].imageView = attachmentsData[i].imageView;
-		descriptorInfos[i].imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 	}
-
 	if(useDepth)
 	{
-		attachmentsData.back().format = vk::Format::eD32Sfloat;
+		attachmentImages.emplace_back(device);
 		createAttachment
 		(
 			mtdDevice,
-			attachmentsData.back(),
+			attachmentImages.back(),
+			vk::Format::eD32Sfloat,
 			vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled,
 			vk::ImageAspectFlagBits::eDepth
 		);
-		descriptorInfos.back().sampler = sampler;
-		descriptorInfos.back().imageView = attachmentsData.back().imageView;
-		descriptorInfos.back().imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+	}
+
+	for(uint32_t i = 0; i < descriptorInfos.size(); i++)
+	{
+		descriptorInfos[i].sampler = sampler;
+		descriptorInfos[i].imageView = attachmentImages[i].getImageView();
+		descriptorInfos[i].imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 	}
 }
 
@@ -283,45 +272,23 @@ void mtd::Framebuffer::createAttachments(const Device& mtdDevice, vk::Extent2D s
 void mtd::Framebuffer::createAttachment
 (
 	const Device& mtdDevice,
-	AttachmentData& attachmentData,
+	Image& attachmentImage,
+	vk::Format format,
 	vk::ImageUsageFlags usage,
 	vk::ImageAspectFlags aspect
 ) const
 {
-	Image::CreateImageBundle createImageBundle
-	{
-		device,
-		vk::ImageTiling::eOptimal,
-		usage,
-		attachmentData.format,
-		vk::ImageCreateFlags(),
-		{info.width, info.height}
-	};
-	Image::createImage(createImageBundle, attachmentData.image);
-	Image::createImageMemory
-	(
-		mtdDevice,
-		attachmentData.image,
-		vk::MemoryPropertyFlagBits::eDeviceLocal,
-		attachmentData.imageMemory
-	);
-	Image::createImageView
-	(
-		device,
-		attachmentData.image,
-		attachmentData.format,
-		aspect,
-		vk::ImageViewType::e2D,
-		attachmentData.imageView
-	);
+	attachmentImage.createImage({info.width, info.height}, format, vk::ImageTiling::eOptimal, usage);
+	attachmentImage.createImageMemory(mtdDevice, vk::MemoryPropertyFlagBits::eDeviceLocal);
+	attachmentImage.createImageView(aspect, vk::ImageViewType::e2D);
 }
 
 // Creates the Vulkan framebuffer object
 void mtd::Framebuffer::createFramebuffer()
 {
-	std::vector<vk::ImageView> attachments(attachmentsData.size());
-	for(uint32_t i = 0; i < attachmentsData.size(); i++)
-		attachments[i] = attachmentsData[i].imageView;
+	std::vector<vk::ImageView> attachments(attachmentImages.size());
+	for(uint32_t i = 0; i < attachmentImages.size(); i++)
+		attachments[i] = attachmentImages[i].getImageView();
 
 	vk::FramebufferCreateInfo framebufferCreateInfo{};
 	framebufferCreateInfo.flags = vk::FramebufferCreateFlags();
@@ -345,25 +312,14 @@ void mtd::Framebuffer::createFramebuffer()
 // Creates sampler to define how the attachments should be rendered
 void mtd::Framebuffer::createSampler()
 {
-	vk::Filter filter = vk::Filter::eLinear;
-	vk::SamplerMipmapMode mipmapMode = vk::SamplerMipmapMode::eLinear;
-	switch(info.samplingFilter)
-	{
-		case TextureSamplingFilterType::Nearest:
-			filter = vk::Filter::eNearest;
-			mipmapMode = vk::SamplerMipmapMode::eNearest;
-			break;
-		case TextureSamplingFilterType::Linear:
-			filter = vk::Filter::eLinear;
-			mipmapMode = vk::SamplerMipmapMode::eLinear;
-			break;
-	}
+	vk::Filter filter =
+		(info.samplingFilter == TextureSamplingFilterType::Nearest) ? vk::Filter::eNearest : vk::Filter::eLinear;
 
 	vk::SamplerCreateInfo samplerCreateInfo{};
 	samplerCreateInfo.flags = vk::SamplerCreateFlags();
 	samplerCreateInfo.magFilter = filter;
 	samplerCreateInfo.minFilter = filter;
-	samplerCreateInfo.mipmapMode = mipmapMode;
+	samplerCreateInfo.mipmapMode = vk::SamplerMipmapMode::eNearest;
 	samplerCreateInfo.addressModeU = vk::SamplerAddressMode::eRepeat;
 	samplerCreateInfo.addressModeV = vk::SamplerAddressMode::eRepeat;
 	samplerCreateInfo.addressModeW = vk::SamplerAddressMode::eRepeat;

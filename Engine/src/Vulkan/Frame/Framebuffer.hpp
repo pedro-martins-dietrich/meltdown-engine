@@ -2,6 +2,7 @@
 
 #include <meltdown/structs.hpp>
 
+#include "../Image/Image.hpp"
 #include "../Descriptors/DescriptorSetHandler.hpp"
 #include "../../Utils/EngineStructs.hpp"
 
@@ -51,7 +52,7 @@ namespace mtd
 			vk::Sampler sampler;
 
 			// Framebuffer attachments
-			std::vector<AttachmentData> attachmentsData;
+			std::vector<Image> attachmentImages;
 			// Image information to use attachment as a descriptor
 			std::vector<vk::DescriptorImageInfo> descriptorInfos;
 
@@ -68,11 +69,12 @@ namespace mtd
 
 			// Creates the attachment objects
 			void createAttachments(const Device& mtdDevice, vk::Extent2D swapchainExtent);
-			// Creates the data for a single attachment
+			// Creates the image for a single attachment
 			void createAttachment
 			(
 				const Device& mtdDevice,
-				AttachmentData& attachmentData,
+				Image& attachmentImage,
+				vk::Format format,
 				vk::ImageUsageFlags usage,
 				vk::ImageAspectFlags aspect
 			) const;

@@ -1,7 +1,7 @@
 #pragma once
 
+#include "../Image/Image.hpp"
 #include "../../Utils/EngineStructs.hpp"
-#include "../Command/CommandHandler.hpp"
 
 namespace mtd
 {
@@ -11,7 +11,7 @@ namespace mtd
 		public:
 			Frame
 			(
-				const Device& device,
+				const Device& mtdDevice,
 				const FrameDimensions& frameDimensions,
 				vk::Image image,
 				vk::Format format,
@@ -25,11 +25,9 @@ namespace mtd
 			Frame(Frame&& other) noexcept;
 
 			// Getters
-			vk::Format getDepthFormat() const { return depthBuffer.format; }
-			const vk::Fence& getInFlightFence() const
-				{ return synchronizationBundle.inFlightFence; }
-			const vk::Semaphore& getImageAvailableSemaphore() const
-				{ return synchronizationBundle.imageAvailable; }
+			vk::Format getDepthFormat() const { return depthBuffer.getFormat(); }
+			const vk::Fence& getInFlightFence() const { return synchronizationBundle.inFlightFence; }
+			const vk::Semaphore& getImageAvailableSemaphore() const { return synchronizationBundle.imageAvailable; }
 			const CommandHandler& getCommandHandler() const { return commandHandler; }
 
 			// Adds frame data to the draw info
@@ -39,15 +37,13 @@ namespace mtd
 			void createFramebuffer(const vk::RenderPass& renderPass);
 
 		private:
-			// Image data
-			vk::Image image;
-			// Image desctiption
-			vk::ImageView imageView;
 			// Frame storage
 			vk::Framebuffer framebuffer;
 
+			// Color buffer attachment data
+			Image colorBuffer;
 			// Depth buffer attachment data
-			AttachmentData depthBuffer;
+			Image depthBuffer;
 
 			// Frame index in the swapchain
 			uint32_t frameIndex;
@@ -64,7 +60,7 @@ namespace mtd
 			const vk::Device& device;
 
 			// Creates depth buffer data
-			void createDepthResources(const Device& device);
+			void createDepthResources(const Device& mtdDevice);
 
 			// Selects an image format with the specified features
 			vk::Format findSupportedFormat
@@ -73,6 +69,6 @@ namespace mtd
 				const std::vector<vk::Format>& candidates,
 				vk::ImageTiling tiling,
 				vk::FormatFeatureFlags features
-			);
+			) const;
 	};
 }

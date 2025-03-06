@@ -2,6 +2,7 @@
 
 #include <stb_image.h>
 
+#include "Image.hpp"
 #include "../Descriptors/DescriptorSetHandler.hpp"
 
 namespace mtd
@@ -19,7 +20,7 @@ namespace mtd
 				uint32_t swappableSetIndex,
 				uint32_t binding
 			);
-			~Texture();
+			~Texture() = default;
 
 			Texture(const Texture&) = delete;
 			Texture& operator=(const Texture&) = delete;
@@ -32,20 +33,12 @@ namespace mtd
 			stbi_uc* pixels;
 
 			// Vulkan image resources
-			vk::Image image;
-			vk::DeviceMemory imageMemory;
-			vk::ImageView imageView;
-			vk::Sampler sampler;
-
-			// Vulkan device reference
-			const vk::Device& device;
+			Image image;
 
 			// Loads texture from file
 			void loadFromFile(const Device& mtdDevice, const CommandHandler& commandHandler, const char* fileName);
 			// Sends the texture data to the GPU
-			void loadToGpu(const Device& mtdDevice, const CommandHandler& commandHandler) const;
-			// Creates sampler to define how the texture should be rendered
-			void createSampler();
+			void loadToGpu(const Device& mtdDevice, const CommandHandler& commandHandler);
 			// Configures the texture descriptor set
 			void createDescriptorResource
 			(
