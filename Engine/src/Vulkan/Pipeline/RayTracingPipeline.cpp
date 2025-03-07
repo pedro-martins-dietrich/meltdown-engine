@@ -11,8 +11,7 @@ mtd::RayTracingPipeline::RayTracingPipeline
 	const RayTracingPipelineInfo& info,
 	const vk::DescriptorSetLayout& globalDescriptorSetLayout,
 	vk::Extent2D swapchainExtent
-) : device{mtdDevice.getDevice()},
-	info{info},
+) : Pipeline{mtdDevice.getDevice(), info},
 	image{mtdDevice.getDevice()},
 	windowResolutionDependant{false},
 	sbtBuffer
@@ -32,20 +31,8 @@ mtd::RayTracingPipeline::RayTracingPipeline
 	createStorageImage(mtdDevice, swapchainExtent);
 }
 
-mtd::RayTracingPipeline::~RayTracingPipeline()
-{
-	device.destroyPipeline(pipeline);
-	device.destroyPipelineLayout(pipelineLayout);
-}
-
 mtd::RayTracingPipeline::RayTracingPipeline(RayTracingPipeline&& other) noexcept
-	: device{other.device},
-	info{std::move(other.info)},
-	pipeline{std::move(other.pipeline)},
-	pipelineLayout{std::move(other.pipelineLayout)},
-	shaders{std::move(other.shaders)},
-	descriptorSetHandlers{std::move(other.descriptorSetHandlers)},
-	descriptorTypeCount{std::move(other.descriptorTypeCount)},
+	: Pipeline{std::move(other)},
 	image{std::move(other.image)},
 	windowResolutionDependant{other.windowResolutionDependant},
 	sbtBuffer{std::move(other.sbtBuffer)},
@@ -53,10 +40,7 @@ mtd::RayTracingPipeline::RayTracingPipeline(RayTracingPipeline&& other) noexcept
 	missRegionSBT{std::move(other.missRegionSBT)},
 	hitRegionSBT{std::move(other.hitRegionSBT)},
 	callableRegionSBT{std::move(other.callableRegionSBT)}
-{
-	other.pipeline = nullptr;
-	other.pipelineLayout = nullptr;
-}
+{}
 
 // Binds the pipeline and performs the ray tracing
 void mtd::RayTracingPipeline::traceRays
@@ -110,40 +94,6 @@ void mtd::RayTracingPipeline::configurePipelineDescriptorSet()
 
 	descriptorSetHandlers[0].createImageDescriptorResources(0, 0, descriptorImageInfo);
 	descriptorSetHandlers[0].writeDescriptorSet(0);
-}
-
-// Allocates user descriptor set data in the descriptor pool
-void mtd::RayTracingPipeline::configureUserDescriptorData(const Device& mtdDevice, const DescriptorPool& pool)
-{
-	if(descriptorSetHandlers.size() < 2) return;
-
-	DescriptorSetHandler& descriptorSetHandler = descriptorSetHandlers[1];
-	descriptorSetHandler.defineDescriptorSetsAmount(1);
-	pool.allocateDescriptorSet(descriptorSetHandler);
-
-	for(uint32_t bindingIndex = 0; bindingIndex < info.descriptorSetInfo.size(); bindingIndex++)
-	{
-		const DescriptorInfo& bindingInfo = info.descriptorSetInfo[bindingIndex];
-		descriptorSetHandler.createDescriptorResources
-		(
-			mtdDevice,
-			bindingInfo.totalDescriptorSize,
-			PipelineMapping::mapBufferUsageFlags(bindingInfo.descriptorType),
-			0, bindingIndex
-		);
-	}
-	descriptorSetHandler.writeDescriptorSet(0);
-}
-
-// Updates the user descriptor data for the specified binding
-void mtd::RayTracingPipeline::updateDescriptorData(uint32_t binding, const void* data) const
-{
-	if(descriptorSetHandlers.size() < 2 || descriptorSetHandlers[1].getSetCount() <= binding) return;
-
-	descriptorSetHandlers[1].updateDescriptorData
-	(
-		0, binding, data, info.descriptorSetInfo[binding].totalDescriptorSize
-	);
 }
 
 // Configures the render target image as a descriptor for another descriptor set

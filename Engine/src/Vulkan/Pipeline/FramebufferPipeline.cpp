@@ -13,7 +13,7 @@ mtd::FramebufferPipeline::FramebufferPipeline
 	const vk::DescriptorSetLayout& globalDescriptorSetLayout,
 	vk::Extent2D extent,
 	vk::RenderPass renderPass
-) : device{device}, info{info}
+) : Pipeline{device, info}
 {
 	createDescriptorSetLayouts();
 	loadShaderModules();
@@ -21,24 +21,9 @@ mtd::FramebufferPipeline::FramebufferPipeline
 	createPipeline(extent, renderPass);
 }
 
-mtd::FramebufferPipeline::~FramebufferPipeline()
-{
-	device.destroyPipeline(pipeline);
-	device.destroyPipelineLayout(pipelineLayout);
-}
-
 mtd::FramebufferPipeline::FramebufferPipeline(FramebufferPipeline&& other) noexcept
-	: device{other.device},
-	info{std::move(other.info)},
-	pipeline{std::move(other.pipeline)},
-	pipelineLayout{std::move(other.pipelineLayout)},
-	shaders{std::move(other.shaders)},
-	descriptorSetHandlers{std::move(other.descriptorSetHandlers)},
-	descriptorTypeCount{std::move(other.descriptorTypeCount)}
-{
-	other.pipeline = nullptr;
-	other.pipelineLayout = nullptr;
-}
+	: Pipeline{std::move(other)}
+{}
 
 // Recreates the framebuffer pipeline
 void mtd::FramebufferPipeline::recreate(vk::Extent2D extent, vk::RenderPass renderPass)
@@ -70,40 +55,6 @@ void mtd::FramebufferPipeline::bind(const vk::CommandBuffer& commandBuffer) cons
 		2,
 		1, &(descriptorSetHandlers[1].getSet(0)),
 		0, nullptr
-	);
-}
-
-// Allocates user descriptor set data in the descriptor pool
-void mtd::FramebufferPipeline::configureUserDescriptorData(const Device& mtdDevice, const DescriptorPool& pool)
-{
-	if(descriptorSetHandlers.size() < 2) return;
-
-	DescriptorSetHandler& descriptorSetHandler = descriptorSetHandlers[1];
-	descriptorSetHandler.defineDescriptorSetsAmount(1);
-	pool.allocateDescriptorSet(descriptorSetHandler);
-
-	for(uint32_t bindingIndex = 0; bindingIndex < info.descriptorSetInfo.size(); bindingIndex++)
-	{
-		const DescriptorInfo& bindingInfo = info.descriptorSetInfo[bindingIndex];
-		descriptorSetHandler.createDescriptorResources
-		(
-			mtdDevice,
-			bindingInfo.totalDescriptorSize,
-			PipelineMapping::mapBufferUsageFlags(bindingInfo.descriptorType),
-			0, bindingIndex
-		);
-	}
-	descriptorSetHandler.writeDescriptorSet(0);
-}
-
-// Updates the user descriptor data for the specified binding
-void mtd::FramebufferPipeline::updateDescriptorData(uint32_t binding, const void* data) const
-{
-	if(descriptorSetHandlers.size() < 2 || descriptorSetHandlers[1].getSetCount() <= binding) return;
-
-	descriptorSetHandlers[1].updateDescriptorData
-	(
-		0, binding, data, info.descriptorSetInfo[binding].totalDescriptorSize
 	);
 }
 

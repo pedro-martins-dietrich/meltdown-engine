@@ -42,35 +42,6 @@ namespace mtd
 	};
 
 	/*
-	* @brief Parameters to create a pipeline with custom shaders.
-	*/
-	struct GraphicsPipelineInfo
-	{
-		/* @brief Exhibition name for the pipeline. */
-		std::string pipelineName;
-		/* @brief File path to the vertex shader, from the shaders folder. */
-		std::string vertexShaderPath;
-		/* @brief File path to the fragment shader, from the shaders folder. */
-		std::string fragmentShaderPath;
-		/* @brief Mesh type the pipeline will render. */
-		MeshType associatedMeshType;
-		/* @brief Framebuffer index where the pipeline will render to. Use -1 to render directly to the swapchain. */
-		int32_t targetFramebufferIndex = -1;
-		/* @brief Info about each binding for the user defined descriptor set (set = 2). */
-		std::vector<DescriptorInfo> descriptorSetInfo = {};
-		/* @brief Assembly method for the primitive mesh topology. */
-		ShaderPrimitiveTopology primitiveTopology = ShaderPrimitiveTopology::TriangleList;
-		/* @brief Orientation for the pipeline face culling. */
-		ShaderFaceCulling faceCulling = ShaderFaceCulling::None;
-		/* @brief Enables alpha blending for the pipeline. */
-		bool useTransparency = false;
-		/* @brief Types of materials attributes stored as floats used in the pipline. */
-		std::vector<MaterialFloatDataType> materialFloatDataTypes = {};
-		/* @brief Types of materials attributes stored as textures used in the pipline. */
-		std::vector<MaterialTextureType> materialTextureTypes = {};
-	};
-
-	/*
 	* @brief Parameters to create a custom framebuffer.
 	*/
 	struct FramebufferInfo
@@ -99,20 +70,52 @@ namespace mtd
 	};
 
 	/*
-	* @brief Parameters to create a render-to-framebuffer pipeline with custom shaders.
+	* @brief Base parameters to create any pipeline with custom shaders.
 	*/
-	struct FramebufferPipelineInfo
+	struct PipelineInfo
 	{
 		/* @brief Exhibition name for the pipeline. */
 		std::string pipelineName;
+		/* @brief Info about each binding for the user defined descriptor set (set = 2). */
+		std::vector<DescriptorInfo> descriptorSetInfo = {};
+	};
+
+	/*
+	* @brief Parameters to create a pipeline with custom shaders.
+	*/
+	struct GraphicsPipelineInfo : public PipelineInfo
+	{
+		/* @brief File path to the vertex shader, from the shaders folder. */
+		std::string vertexShaderPath;
+		/* @brief File path to the fragment shader, from the shaders folder. */
+		std::string fragmentShaderPath;
+		/* @brief Mesh type the pipeline will render. */
+		MeshType associatedMeshType;
+		/* @brief Framebuffer index where the pipeline will render to. Use -1 to render directly to the swapchain. */
+		int32_t targetFramebufferIndex = -1;
+		/* @brief Assembly method for the primitive mesh topology. */
+		ShaderPrimitiveTopology primitiveTopology = ShaderPrimitiveTopology::TriangleList;
+		/* @brief Orientation for the pipeline face culling. */
+		ShaderFaceCulling faceCulling = ShaderFaceCulling::None;
+		/* @brief Enables alpha blending for the pipeline. */
+		bool useTransparency = false;
+		/* @brief Types of materials attributes stored as floats used in the pipline. */
+		std::vector<MaterialFloatDataType> materialFloatDataTypes = {};
+		/* @brief Types of materials attributes stored as textures used in the pipline. */
+		std::vector<MaterialTextureType> materialTextureTypes = {};
+	};
+
+	/*
+	* @brief Parameters to create a render-to-framebuffer pipeline with custom shaders.
+	*/
+	struct FramebufferPipelineInfo : public PipelineInfo
+	{
 		/* @brief File path to the vertex shader, from the shaders folder. */
 		std::string vertexShaderPath;
 		/* @brief File path to the fragment shader, from the shaders folder. */
 		std::string fragmentShaderPath;
 		/* @brief Framebuffer index where the pipeline will render to. Use -1 to render to the swapchain. */
 		int32_t targetFramebufferIndex = -1;
-		/* @brief Info about each binding for the user defined descriptor set (set = 2). */
-		std::vector<DescriptorInfo> descriptorSetInfo = {};
 		/* @brief Framebuffer attachments used as input for the pipeline. */
 		std::vector<AttachmentIdentifier> inputAttachments = {};
 		/* @brief Ray tracing storage images used as input for the pipeline. */
@@ -124,16 +127,12 @@ namespace mtd
 	/*
 	* @brief Parameters to create a ray tracing pipeline with custom shaders.
 	*/
-	struct RayTracingPipelineInfo
+	struct RayTracingPipelineInfo : public PipelineInfo
 	{
-		/* @brief Exhibition name for the pipeline. */
-		std::string pipelineName;
 		/* @brief File path to the ray generation shader, from the shaders folder. */
 		std::string rayGenShaderPath;
 		/* @brief File path to the miss shader, from the shaders folder. */
 		std::string missShaderPath;
-		/* @brief Info about each binding for the user defined descriptor set (set = 2). */
-		std::vector<DescriptorInfo> descriptorSetInfo = {};
 		/* @brief Ratio between the storage image and window resolution. Use negative values for a fixed resolution. */
 		Vec2 windowResolutionRatio;
 		/* @brief Storage image horizontal resolution. Ignored when a positive `windowResolutionRatio.x` is set. */

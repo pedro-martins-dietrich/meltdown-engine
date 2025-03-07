@@ -1,13 +1,12 @@
 #pragma once
 
-#include "ShaderModule.hpp"
+#include "Pipeline.hpp"
 #include "../Image/Image.hpp"
-#include "../Descriptors/DescriptorPool.hpp"
 
 namespace mtd
 {
 	// Vulkan pipeline for ray trace based rendering
-	class RayTracingPipeline
+	class RayTracingPipeline : public Pipeline<RayTracingPipelineInfo>
 	{
 		public:
 			RayTracingPipeline
@@ -17,19 +16,9 @@ namespace mtd
 				const vk::DescriptorSetLayout& globalDescriptorSetLayout,
 				vk::Extent2D swapchainExtent
 			);
-			~RayTracingPipeline();
-
-			RayTracingPipeline(const RayTracingPipeline&) = delete;
-			RayTracingPipeline& operator=(const RayTracingPipeline&) = delete;
+			~RayTracingPipeline() = default;
 
 			RayTracingPipeline(RayTracingPipeline&& other) noexcept;
-
-			// Getters
-			const std::string& getName() const { return info.pipelineName; }
-			const vk::PipelineLayout& getLayout() const { return pipelineLayout; }
-			DescriptorSetHandler& getDescriptorSetHandler(uint32_t set) { return descriptorSetHandlers[set]; }
-			const std::unordered_map<vk::DescriptorType, uint32_t>& getDescriptorTypeCount() const
-				{ return descriptorTypeCount; }
 
 			// Binds the pipeline and performs the ray tracing
 			void traceRays
@@ -39,11 +28,6 @@ namespace mtd
 
 			// Configures the render target image descriptor
 			void configurePipelineDescriptorSet();
-
-			// Allocates user descriptor set data in the descriptor pool
-			void configureUserDescriptorData(const Device& mtdDevice, const DescriptorPool& pool);
-			// Updates the user descriptor data for the specified binding
-			void updateDescriptorData(uint32_t binding, const void* data) const;
 
 			// Configures the render target image as a descriptor for another descriptor set
 			void shareRenderTargetImageDescriptor
@@ -55,21 +39,6 @@ namespace mtd
 			void resize(const Device& mtdDevice, vk::Extent2D swapchainExtent);
 
 		private:
-			// Vulkan ray tracing pipeline
-			vk::Pipeline pipeline;
-			// Vulkan pipeline layout
-			vk::PipelineLayout pipelineLayout;
-
-			// Ray tracing pipeline specific configurations
-			RayTracingPipelineInfo info;
-
-			// Ray tracing shaders
-			std::vector<ShaderModule> shaders;
-			// Descriptor sets and their layouts
-			std::vector<DescriptorSetHandler> descriptorSetHandlers;
-			// Required descriptor count for each descriptor type of the current pipeline
-			std::unordered_map<vk::DescriptorType, uint32_t> descriptorTypeCount;
-
 			// Render storage image
 			Image image;
 			// Flag to recreate image on window resize
@@ -81,9 +50,6 @@ namespace mtd
 			vk::StridedDeviceAddressRegionKHR missRegionSBT;
 			vk::StridedDeviceAddressRegionKHR hitRegionSBT;
 			vk::StridedDeviceAddressRegionKHR callableRegionSBT;
-
-			// Vulkan device reference
-			const vk::Device& device;
 
 			// Loads the pipeline shader modules
 			void loadShaderModules();

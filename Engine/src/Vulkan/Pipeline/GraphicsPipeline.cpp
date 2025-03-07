@@ -14,7 +14,7 @@ mtd::GraphicsPipeline::GraphicsPipeline
 	const vk::DescriptorSetLayout& globalDescriptorSetLayout,
 	vk::Extent2D extent,
 	vk::RenderPass renderPass
-) : device{device}, info{info}
+) : Pipeline{device, info}
 {
 	createDescriptorSetLayouts();
 	loadShaderModules();
@@ -22,24 +22,9 @@ mtd::GraphicsPipeline::GraphicsPipeline
 	createPipeline(extent, renderPass);
 }
 
-mtd::GraphicsPipeline::~GraphicsPipeline()
-{
-	device.destroyPipeline(pipeline);
-	device.destroyPipelineLayout(pipelineLayout);
-}
-
 mtd::GraphicsPipeline::GraphicsPipeline(GraphicsPipeline&& other) noexcept
-	: device{other.device},
-	info{std::move(other.info)},
-	pipeline{std::move(other.pipeline)},
-	pipelineLayout{std::move(other.pipelineLayout)},
-	shaders{std::move(other.shaders)},
-	descriptorSetHandlers{std::move(other.descriptorSetHandlers)},
-	descriptorTypeCount{std::move(other.descriptorTypeCount)}
-{
-	other.pipeline = nullptr;
-	other.pipelineLayout = nullptr;
-}
+	: Pipeline{std::move(other)}
+{}
 
 // Recreates the pipeline
 void mtd::GraphicsPipeline::recreate(vk::Extent2D extent, vk::RenderPass renderPass)
@@ -75,40 +60,6 @@ void mtd::GraphicsPipeline::bindMeshDescriptors(const vk::CommandBuffer& command
 		1,
 		1, &(descriptorSetHandlers[0].getSet(index)),
 		0, nullptr
-	);
-}
-
-// Allocates user descriptor set data in the descriptor pool
-void mtd::GraphicsPipeline::configureUserDescriptorData(const Device& mtdDevice, const DescriptorPool& pool)
-{
-	if(descriptorSetHandlers.size() < 2) return;
-
-	DescriptorSetHandler& descriptorSetHandler = descriptorSetHandlers[1];
-	descriptorSetHandler.defineDescriptorSetsAmount(1);
-	pool.allocateDescriptorSet(descriptorSetHandler);
-
-	for(uint32_t binding = 0; binding < info.descriptorSetInfo.size(); binding++)
-	{
-		const DescriptorInfo& bindingInfo = info.descriptorSetInfo[binding];
-		descriptorSetHandler.createDescriptorResources
-		(
-			mtdDevice,
-			bindingInfo.totalDescriptorSize,
-			PipelineMapping::mapBufferUsageFlags(bindingInfo.descriptorType),
-			0, binding
-		);
-	}
-	descriptorSetHandler.writeDescriptorSet(0);
-}
-
-// Updates the user descriptor data for the specified binding
-void mtd::GraphicsPipeline::updateDescriptorData(uint32_t binding, const void* data) const
-{
-	if(descriptorSetHandlers.size() < 2 || descriptorSetHandlers[1].getSetCount() <= binding) return;
-
-	descriptorSetHandlers[1].updateDescriptorData
-	(
-		0, binding, data, info.descriptorSetInfo[binding].totalDescriptorSize
 	);
 }
 

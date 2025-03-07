@@ -227,12 +227,11 @@ void loadPipeline
 	(
 		mtd::GraphicsPipelineInfo
 		{
-			graphicsPipelineJson["name"],
+			{graphicsPipelineJson["name"], std::move(descriptorInfos)},
 			graphicsPipelineJson["vertex-shader"],
 			graphicsPipelineJson["fragment-shader"],
 			static_cast<mtd::MeshType>(graphicsPipelineJson["mesh-type"]),
 			targetFramebuffer,
-			std::move(descriptorInfos),
 			static_cast<mtd::ShaderPrimitiveTopology>(graphicsPipelineJson["shader-primitive-topology"]),
 			static_cast<mtd::ShaderFaceCulling>(graphicsPipelineJson["shader-face-culling"]),
 			graphicsPipelineJson["transparency"],
@@ -269,10 +268,9 @@ void loadRayTracingPipeline
 	(
 		mtd::RayTracingPipelineInfo
 		{
-			rtPipelineJson["name"],
+			{rtPipelineJson["name"], std::move(descriptorInfos)},
 			rtPipelineJson["ray-gen-shader"],
 			rtPipelineJson["miss-shader"],
-			std::move(descriptorInfos),
 			{
 				rtPipelineJson.value("resolution-ratio-horizontal", -1.0f),
 				rtPipelineJson.value("resolution-ratio-vertical", -1.0f)
@@ -325,11 +323,10 @@ void loadFramebufferPipeline
 	(
 		mtd::FramebufferPipelineInfo
 		{
-			fbPipelineJson["name"],
+			{fbPipelineJson["name"], std::move(descriptorInfos)},
 			fbPipelineJson["vertex-shader"],
 			fbPipelineJson["fragment-shader"],
 			targetFramebuffer,
-			std::move(descriptorInfos),
 			std::move(inputAttachments),
 			fbPipelineJson["ray-tracing-storage-images"],
 			fbPipelineJson["dependencies"]
