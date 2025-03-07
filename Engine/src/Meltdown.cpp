@@ -8,12 +8,17 @@ static mtd::Camera* pCamera = nullptr;
 mtd::MeltdownEngine::MeltdownEngine(const EngineInfo& applicationInfo)
 	: engine{std::make_unique<Engine>(applicationInfo)}
 {
-	pCamera = &(engine.get()->getCamera());
+	pCamera = &(engine->getCamera());
 }
 
 mtd::MeltdownEngine::~MeltdownEngine()
 {
 	pCamera = nullptr;
+}
+
+bool mtd::MeltdownEngine::isRayTracingEnabled() const
+{
+	return engine->isRayTracingEnabled();
 }
 
 void mtd::MeltdownEngine::setClearColor(const Vec4& color)

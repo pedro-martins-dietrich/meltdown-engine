@@ -10,7 +10,7 @@ namespace mtd
 	class Device
 	{
 		public:
-			Device(const VulkanInstance& vulkanInstance);
+			Device(const VulkanInstance& vulkanInstance, bool tryEnableRayTracing);
 			~Device();
 
 			Device(const Device&) = delete;
@@ -20,17 +20,21 @@ namespace mtd
 			const vk::Device& getDevice() const { return device; }
 			const vk::PhysicalDevice& getPhysicalDevice() const
 				{ return physicalDevice.getPhysicalDevice(); }
+			const vk::detail::DispatchLoaderDynamic& getDLDI() const { return *dldi; }
 
 			// Queue getters
 			const QueueFamilies& getQueueFamilies() const { return queueFamilies; }
 			const vk::Queue getGraphicsQueue() const
-			{
-				return device.getQueue(queueFamilies.getGraphicsFamilyIndex(), 0);
-			}
+				{ return device.getQueue(queueFamilies.getGraphicsFamilyIndex(), 0); }
 			const vk::Queue getPresentQueue() const
-			{
-				return device.getQueue(queueFamilies.getPresentFamilyIndex(), 0);
-			}
+				{ return device.getQueue(queueFamilies.getPresentFamilyIndex(), 0); }
+
+			// Checks if hardware ray tracing is enabled
+			bool isRayTracingEnabled() const { return rayTracingEnabled; }
+
+			// Acquires the physical device ray tracing properties
+			const vk::PhysicalDeviceRayTracingPipelinePropertiesKHR& fetchRayTracingProperties() const
+				{ return physicalDevice.fetchRayTracingProperties(); }
 
 		private:
 			// Vulkan logical device
@@ -39,5 +43,17 @@ namespace mtd
 			PhysicalDevice physicalDevice;
 			// Queue family handler
 			QueueFamilies queueFamilies;
+
+			// Dispatch loader dynamic instance
+			std::unique_ptr<vk::detail::DispatchLoaderDynamic> dldi;
+
+			// Ray tracing hardware support status
+			bool rayTracingEnabled;
+
+			// Configures the Vulkan queues
+			void configureQueues(std::vector<vk::DeviceQueueCreateInfo>& deviceQueueCreateInfos) const;
+
+			// Selects the Vulkan extensions to be used
+			void selectExtensions(std::vector<const char*>& extensions) const;
 	};
 }

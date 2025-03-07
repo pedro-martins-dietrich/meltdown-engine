@@ -94,14 +94,16 @@ void mtd::DescriptorSetHandler::writeDescriptorSet(uint32_t swappableSetIndex)
 	writeOps.resize(resourcesList[swappableSetIndex].size());
 	for(uint32_t binding = 0; binding < resourcesList[swappableSetIndex].size(); binding++)
 	{
-		vk::DescriptorImageInfo* pImageInfo =
-			descriptorTypes[binding] == vk::DescriptorType::eCombinedImageSampler
-			? &resourcesList[swappableSetIndex][binding].descriptorImageInfo
-			: nullptr;
-		vk::DescriptorBufferInfo* pBufferInfo =
-			descriptorTypes[binding] == vk::DescriptorType::eCombinedImageSampler
-			? nullptr
-			: &resourcesList[swappableSetIndex][binding].descriptorBufferInfo;
+		vk::DescriptorImageInfo* pImageInfo = nullptr;
+		vk::DescriptorBufferInfo* pBufferInfo = nullptr;
+		if
+		(
+			descriptorTypes[binding] == vk::DescriptorType::eCombinedImageSampler ||
+			descriptorTypes[binding] == vk::DescriptorType::eStorageImage
+		)
+			pImageInfo = &(resourcesList[swappableSetIndex][binding].descriptorImageInfo);
+		else
+			pBufferInfo = &(resourcesList[swappableSetIndex][binding].descriptorBufferInfo);
 
 		writeOps[binding].dstSet = descriptorSets[swappableSetIndex];
 		writeOps[binding].dstBinding = binding;

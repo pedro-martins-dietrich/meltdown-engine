@@ -26,7 +26,10 @@ namespace mtd
 			// Binds vertex and index buffers
 			virtual void bindBuffers(const vk::CommandBuffer& commandBuffer) const override;
 			// Draws the mesh specified by the index
-			virtual void drawMesh(const vk::CommandBuffer& commandBuffer, const Pipeline& pipeline) const override;
+			virtual void drawMesh
+			(
+				const vk::CommandBuffer& commandBuffer, const GraphicsPipeline& graphicsPipeline
+			) const override;
 
 		private:
 			// Vertex and index data of all meshes in the VRAM

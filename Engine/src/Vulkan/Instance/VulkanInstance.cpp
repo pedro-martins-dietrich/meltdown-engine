@@ -104,8 +104,8 @@ uint32_t mtd::VulkanInstance::checkVulkanVersion() const
 // Checks if required extensions and layers are available
 bool mtd::VulkanInstance::supports
 (
-	std::vector<const char*> requiredExtensions,
-	std::vector<const char*> requiredLayers
+	const std::vector<const char*>& requiredExtensions,
+	const std::vector<const char*>& requiredLayers
 )
 {
 	std::vector<vk::ExtensionProperties> supportedExtensions = vk::enumerateInstanceExtensionProperties();

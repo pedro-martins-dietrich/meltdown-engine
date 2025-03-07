@@ -26,7 +26,7 @@ namespace mtd
 			// Vulkan instance
 			vk::Instance instance;
 
-			// Dispatch loader dynamic instance
+			// Dispatch loader dynamic with only instance functions
 			std::unique_ptr<vk::detail::DispatchLoaderDynamic> dispatchLoader;
 			// Vulkan debug messenger (it depends on the validation layer)
 			vk::DebugUtilsMessengerEXT debugMessenger;
@@ -39,8 +39,8 @@ namespace mtd
 			// Checks if required extensions and layers are available
 			bool supports
 			(
-				std::vector<const char*> requiredExtensions,
-				std::vector<const char*> requiredLayers
+				const std::vector<const char*>& requiredExtensions,
+				const std::vector<const char*>& requiredLayers
 			);
 	};
 }

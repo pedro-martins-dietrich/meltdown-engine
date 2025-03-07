@@ -1,5 +1,5 @@
 {
-	"scene-loader-version": "0.1.6",
+	"scene-loader-version": "0.1.7",
 	"camera":
 	{
 		"orthographic": false,
@@ -57,6 +57,7 @@
 			"material-texture-types": [0]
 		}
 	],
+	"ray-tracing-pipelines": [],
 	"framebuffer-pipelines":
 	[
 		{
@@ -72,6 +73,7 @@
 					"attachment-index": 0
 				}
 			],
+			"ray-tracing-storage-images": [],
 			"dependencies": [0, 1]
 		}
 	],

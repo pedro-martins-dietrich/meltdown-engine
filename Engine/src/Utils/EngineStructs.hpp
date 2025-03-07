@@ -44,15 +44,6 @@ namespace mtd
 		vk::PresentModeKHR presentMode;
 	};
 
-	// Data associated with a Vulkan attachment
-	struct AttachmentData
-	{
-		vk::Image image;
-		vk::ImageView imageView;
-		vk::DeviceMemory imageMemory;
-		vk::Format format = vk::Format::eUndefined;
-	};
-
 	// Information about the pipelines that targets a framebuffer
 	struct RenderPassInfo
 	{

@@ -2,15 +2,11 @@
 
 #include <condition_variable>
 
-#include "Vulkan/Pipeline/FramebufferPipeline.hpp"
-#include "Vulkan/Descriptors/DescriptorPool.hpp"
 #include "Vulkan/ImGui/ImGuiHandler.hpp"
-#include "Vulkan/Frame/Framebuffer.hpp"
 #include "Vulkan/Render/Renderer.hpp"
 #include "GUIs/SettingsGui.hpp"
 #include "GUIs/ProfilerGui.hpp"
 #include "Camera/Camera.hpp"
-#include "Scene/Scene.hpp"
 
 // Meltdown (mtd) engine namespace
 namespace mtd
@@ -25,8 +21,9 @@ namespace mtd
 			Engine(const Engine&) = delete;
 			Engine& operator=(const Engine&) = delete;
 
-			// Getter
+			// Getters
 			Camera& getCamera() { return camera; }
+			bool isRayTracingEnabled() const { return device.isRayTracingEnabled(); }
 
 			// Configures the clear color for the framebuffers
 			void setClearColor(const Vec4& color);
@@ -46,13 +43,16 @@ namespace mtd
 			Device device;
 			Swapchain swapchain;
 			std::vector<Framebuffer> framebuffers;
-			std::vector<Pipeline> pipelines;
-			std::vector<FramebufferPipeline> framebufferPipelines;
 			std::unique_ptr<DescriptorSetHandler> globalDescriptorSetHandler;
 			CommandHandler commandHandler;
 			Camera camera;
 			Renderer renderer;
 			ImGuiHandler imGuiHandler;
+
+			// Pipelines
+			std::vector<GraphicsPipeline> graphicsPipelines;
+			std::vector<FramebufferPipeline> framebufferPipelines;
+			std::vector<RayTracingPipeline> rayTracingPipelines;
 
 			// GUIs
 			SettingsGui settingsGui;
@@ -94,8 +94,9 @@ namespace mtd
 			void createRenderResources
 			(
 				const std::vector<FramebufferInfo>& framebufferInfos,
-				const std::vector<PipelineInfo>& pipelineInfos,
-				const std::vector<FramebufferPipelineInfo>& framebufferPipelineInfos
+				const std::vector<GraphicsPipelineInfo>& graphicsPipelineInfos,
+				const std::vector<FramebufferPipelineInfo>& framebufferPipelineInfos,
+				const std::vector<RayTracingPipelineInfo>& rayTracingPipelineInfos
 			);
 			// Sets up the descriptor pools and sets
 			void configureDescriptors();

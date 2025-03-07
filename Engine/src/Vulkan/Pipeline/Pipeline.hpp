@@ -1,69 +1,95 @@
 #pragma once
 
-#include <meltdown/structs.hpp>
-
 #include "ShaderModule.hpp"
 #include "../Descriptors/DescriptorPool.hpp"
 
+#include "Builders/PipelineMapping.hpp"
+
 namespace mtd
 {
-	// Vulkan graphics pipeline handler
+	// General Vulkan pipeline handler
+	template<typename PipelineInfoType = PipelineInfo>
 	class Pipeline
 	{
-		public:
-			Pipeline
-			(
-				const vk::Device& device,
-				const PipelineInfo& info,
-				const vk::DescriptorSetLayout& globalDescriptorSetLayout,
-				vk::Extent2D extent,
-				vk::RenderPass renderPass
-			);
-			~Pipeline();
+		static_assert
+		(
+			std::is_base_of_v<PipelineInfo, PipelineInfoType>, "PipelineInfoType must be derived from PipelineInfo."
+		);
 
+		public:
+			Pipeline(const vk::Device& device, const PipelineInfoType& info)
+				: device{device}, pipeline{nullptr}, pipelineLayout{nullptr}, info{info}
+			{}
+
+			~Pipeline()
+			{
+				device.destroyPipeline(pipeline);
+				device.destroyPipelineLayout(pipelineLayout);
+			}
+			
 			Pipeline(const Pipeline&) = delete;
 			Pipeline& operator=(const Pipeline&) = delete;
 
-			Pipeline(Pipeline&& other) noexcept;
+			Pipeline(Pipeline&& other) noexcept
+				: device{other.device},
+				pipeline{std::move(other.pipeline)},
+				pipelineLayout{std::move(other.pipelineLayout)},
+				shaders{std::move(other.shaders)},
+				descriptorSetHandlers{std::move(other.descriptorSetHandlers)},
+				descriptorTypeCount{std::move(other.descriptorTypeCount)},
+				info{std::move(other.info)}
+			{
+				other.pipeline = nullptr;
+				other.pipelineLayout = nullptr;
+			}
 
 			// Getters
 			const vk::Pipeline& getPipeline() const { return pipeline; }
 			const vk::PipelineLayout& getLayout() const { return pipelineLayout; }
 			const std::string& getName() const { return info.pipelineName; }
-			int32_t getTargetFramebuffer() const { return info.targetFramebufferIndex; }
-			MeshType getAssociatedMeshType() const { return info.associatedMeshType; }
 			DescriptorSetHandler& getDescriptorSetHandler(uint32_t set) { return descriptorSetHandlers[set]; }
 			const std::unordered_map<vk::DescriptorType, uint32_t>& getDescriptorTypeCount() const
 				{ return descriptorTypeCount; }
 
-			// Recreates the pipeline
-			void recreate
-			(
-				vk::Extent2D extent,
-				vk::RenderPass renderPass,
-				const vk::DescriptorSetLayout& globalDescriptorSetLayout
-			);
-
 			// Allocates user descriptor set data in the descriptor pool
-			void configureUserDescriptorData(const Device& mtdDevice, const DescriptorPool& pool);
+			void configureUserDescriptorData(const Device& mtdDevice, const DescriptorPool& pool)
+			{
+				if(descriptorSetHandlers.size() < 2) return;
+
+				DescriptorSetHandler& descriptorSetHandler = descriptorSetHandlers[1];
+				descriptorSetHandler.defineDescriptorSetsAmount(1);
+				pool.allocateDescriptorSet(descriptorSetHandler);
+
+				for(uint32_t binding = 0; binding < info.descriptorSetInfo.size(); binding++)
+				{
+					const DescriptorInfo& bindingInfo = info.descriptorSetInfo[binding];
+					descriptorSetHandler.createDescriptorResources
+					(
+						mtdDevice,
+						bindingInfo.totalDescriptorSize,
+						PipelineMapping::mapBufferUsageFlags(bindingInfo.descriptorType),
+						0, binding
+					);
+				}
+				descriptorSetHandler.writeDescriptorSet(0);
+			}
+
 			// Updates the user descriptor data for the specified binding
-			void updateDescriptorData(uint32_t binding, const void* data) const;
+			void updateDescriptorData(uint32_t bindingIndex, const void* data) const
+			{
+				if(descriptorSetHandlers.size() < 2 || descriptorSetHandlers[1].getSetCount() <= bindingIndex) return;
 
-			// Binds the pipeline to the command buffer
-			void bind(const vk::CommandBuffer& commandBuffer) const;
-			// Binds per pipeline descriptors
-			void bindPipelineDescriptors(const vk::CommandBuffer& commandBuffer) const;
-			// Binds per mesh descriptors
-			void bindMeshDescriptors(const vk::CommandBuffer& commandBuffer, uint32_t index) const;
+				descriptorSetHandlers[1].updateDescriptorData
+				(
+					0, bindingIndex, data, info.descriptorSetInfo[bindingIndex].totalDescriptorSize
+				);
+			}
 
-		private:
+		protected:
 			// Vulkan graphics pipeline
 			vk::Pipeline pipeline;
 			// Pipeline layout
 			vk::PipelineLayout pipelineLayout;
-
-			// Pipeline specific configurations
-			PipelineInfo info;
 
 			// Shader modules used in the pipeline
 			std::vector<ShaderModule> shaders;
@@ -72,56 +98,10 @@ namespace mtd
 			// Required descriptor count for each descriptor type of the current pipeline
 			std::unordered_map<vk::DescriptorType, uint32_t> descriptorTypeCount;
 
+			// Pipeline specific configurations
+			PipelineInfoType info;
+
 			// Vulkan device reference
 			const vk::Device& device;
-
-			// Loads the pipeline shader modules
-			void loadShaderModules(const char* vertexShaderPath, const char* fragmentShaderPath);
-
-			// Creates the graphics pipeline
-			void createPipeline
-			(
-				vk::Extent2D extent,
-				vk::RenderPass renderPass,
-				const vk::DescriptorSetLayout& globalDescriptorSetLayout
-			);
-
-			// Configures the descriptor set handlers to be used
-			void createDescriptorSetLayouts();
-
-			// Sets the input assembly create info
-			void setInputAssembly(vk::PipelineInputAssemblyStateCreateInfo& inputAssemblyInfo) const;
-			// Sets the vertex shader stage create info
-			void setVertexShader
-			(
-				std::vector<vk::PipelineShaderStageCreateInfo>& shaderStageInfos,
-				const ShaderModule& vertexShaderModule
-			) const;
-			// Sets the viewport create info
-			void setViewport
-			(
-				vk::PipelineViewportStateCreateInfo& viewportInfo,
-				vk::Viewport& viewport,
-				vk::Rect2D& scissor,
-				vk::Extent2D extent
-			) const;
-			// Sets the rasterization create info
-			void setRasterizer(vk::PipelineRasterizationStateCreateInfo& rasterizationInfo) const;
-			// Sets the fragment shader stage create info
-			void setFragmentShader
-			(
-				std::vector<vk::PipelineShaderStageCreateInfo>& shaderStageInfos,
-				const ShaderModule& fragmentShaderModule
-			) const;
-			// Sets the multisample create info
-			void setMultisampling(vk::PipelineMultisampleStateCreateInfo& multisampleInfo) const;
-			// Sets the depth stencil create info
-			void setDepthStencil(vk::PipelineDepthStencilStateCreateInfo& depthStencilInfo) const;
-
-			// Creates the layout for the pipeline
-			void createPipelineLayout(const vk::DescriptorSetLayout& globalDescriptorSetLayout);
-
-			// Clears pipeline objects
-			void destroy();
 	};
 }

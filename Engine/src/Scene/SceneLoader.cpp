@@ -11,7 +11,7 @@
 #include "../Utils/FileHandler.hpp"
 #include "../Utils/Logger.hpp"
 
-static constexpr const char* sceneLoaderVersion = "0.1.6";
+static constexpr const char* sceneLoaderVersion = "0.1.7";
 
 static void loadCamera(const nlohmann::json& cameraJson);
 static void loadFramebuffer
@@ -22,8 +22,13 @@ static void loadFramebuffer
 static void loadPipeline
 (
 	const nlohmann::json& pipelineJson,
-	std::vector<mtd::PipelineInfo>& pipelineInfos,
+	std::vector<mtd::GraphicsPipelineInfo>& graphicsPipelineInfos,
 	std::vector<mtd::RenderPassInfo>& renderOrder
+);
+static void loadRayTracingPipeline
+(
+	const nlohmann::json& rayTracingPipelineJson,
+	std::vector<mtd::RayTracingPipelineInfo>& rayTracingPipelineInfos
 );
 static void loadFramebufferPipeline
 (
@@ -36,21 +41,21 @@ static void loadDefaultMeshes
 (
 	const mtd::Device& device,
 	const nlohmann::json& meshListJson,
-	const mtd::PipelineInfo& pipelineInfo,
+	const mtd::GraphicsPipelineInfo& graphicsPipelineInfo,
 	std::vector<std::unique_ptr<mtd::MeshManager>>& meshManagers
 );
 static void loadMultiMaterial3DMeshes
 (
 	const mtd::Device& device,
 	const nlohmann::json& meshListJson,
-	const mtd::PipelineInfo& pipelineInfo,
+	const mtd::GraphicsPipelineInfo& graphicsPipelineInfo,
 	std::vector<std::unique_ptr<mtd::MeshManager>>& meshManagers
 );
 static void loadBillboards
 (
 	const mtd::Device& device,
 	const nlohmann::json& billboardListJson,
-	const mtd::PipelineInfo& pipelineInfo,
+	const mtd::GraphicsPipelineInfo& graphicsPipelineInfo,
 	std::vector<std::unique_ptr<mtd::MeshManager>>& meshManagers
 );
 
@@ -60,8 +65,9 @@ void mtd::SceneLoader::load
 	const Device& device,
 	const char* fileName,
 	std::vector<FramebufferInfo>& framebufferInfos,
-	std::vector<PipelineInfo>& pipelineInfos,
+	std::vector<GraphicsPipelineInfo>& graphicsPipelineInfos,
 	std::vector<FramebufferPipelineInfo>& framebufferPipelineInfos,
+	std::vector<RayTracingPipelineInfo>& rayTracingPipelineInfos,
 	std::vector<RenderPassInfo>& renderOrder,
 	std::vector<std::unique_ptr<MeshManager>>& meshManagers
 )
@@ -85,14 +91,16 @@ void mtd::SceneLoader::load
 	const nlohmann::json& framebuffersJson = sceneJson["framebuffers"];
 	const nlohmann::json& pipelinesJson = sceneJson["pipelines"];
 	const nlohmann::json& fbPipelinesJson = sceneJson["framebuffer-pipelines"];
+	const nlohmann::json& rayTracingPipelinesJson = sceneJson["ray-tracing-pipelines"];
 	const nlohmann::json& meshesJson = sceneJson["meshes"];
 
 	if(pipelinesJson.size() != meshesJson.size())
 		LOG_ERROR("The number of pipelines and mesh managers should be the same.");
 	
 	framebufferInfos.reserve(framebuffersJson.size());
-	pipelineInfos.reserve(pipelinesJson.size());
-	framebufferInfos.reserve(fbPipelinesJson.size());
+	graphicsPipelineInfos.reserve(pipelinesJson.size());
+	rayTracingPipelineInfos.reserve(rayTracingPipelinesJson.size());
+	framebufferPipelineInfos.reserve(fbPipelinesJson.size());
 	renderOrder.reserve(framebuffersJson.size() + 1);
 	meshManagers.reserve(meshesJson.size());
 
@@ -104,25 +112,27 @@ void mtd::SceneLoader::load
 	renderOrder.emplace_back(-1);
 
 	for(const nlohmann::json& pipelineJson: pipelinesJson)
-		loadPipeline(pipelineJson, pipelineInfos, renderOrder);
+		loadPipeline(pipelineJson, graphicsPipelineInfos, renderOrder);
+	for(const nlohmann::json& rtPipelineJson: rayTracingPipelinesJson)
+		loadRayTracingPipeline(rtPipelineJson, rayTracingPipelineInfos);
 	for(const nlohmann::json& fbPipelineJson: fbPipelinesJson)
 		loadFramebufferPipeline(fbPipelineJson, framebufferPipelineInfos, renderOrder);
 
 	for(uint32_t i = 0; i < meshesJson.size(); i++)
 	{
-		switch(pipelineInfos[i].associatedMeshType)
+		switch(graphicsPipelineInfos[i].associatedMeshType)
 		{
 			case MeshType::Default3D:
-				loadDefaultMeshes(device, meshesJson[i], pipelineInfos[i], meshManagers);
+				loadDefaultMeshes(device, meshesJson[i], graphicsPipelineInfos[i], meshManagers);
 				break;
 			case MeshType::MultiMaterial3D:
-				loadMultiMaterial3DMeshes(device, meshesJson[i], pipelineInfos[i], meshManagers);
+				loadMultiMaterial3DMeshes(device, meshesJson[i], graphicsPipelineInfos[i], meshManagers);
 				break;
 			case MeshType::Billboard:
-				loadBillboards(device, meshesJson[i], pipelineInfos[i], meshManagers);
+				loadBillboards(device, meshesJson[i], graphicsPipelineInfos[i], meshManagers);
 				break;
 			default:
-				LOG_ERROR("Unknown mesh type (%d) for mesh at index %d.", pipelineInfos[i].associatedMeshType, i);
+				LOG_ERROR("Unknown type (%d) for mesh at index %d.", graphicsPipelineInfos[i].associatedMeshType, i);
 		}
 	}
 
@@ -173,17 +183,17 @@ void loadFramebuffer
 	);
 }
 
-// Fetches the pipeline info from the scene file
+// Fetches the pipeline infos from the scene file
 void loadPipeline
 (
-	const nlohmann::json& pipelineJson,
-	std::vector<mtd::PipelineInfo>& pipelineInfos,
+	const nlohmann::json& graphicsPipelineJson,
+	std::vector<mtd::GraphicsPipelineInfo>& graphicsPipelineInfos,
 	std::vector<mtd::RenderPassInfo>& renderOrder
 )
 {
 	std::vector<mtd::DescriptorInfo> descriptorInfos;
-	descriptorInfos.reserve(pipelineJson["descriptor-set-info"].size());
-	for(const nlohmann::json& descriptorInfoJson: pipelineJson["descriptor-set-info"])
+	descriptorInfos.reserve(graphicsPipelineJson["descriptor-set-info"].size());
+	for(const nlohmann::json& descriptorInfoJson: graphicsPipelineJson["descriptor-set-info"])
 	{
 		descriptorInfos.emplace_back
 		(
@@ -198,36 +208,75 @@ void loadPipeline
 	}
 
 	std::vector<mtd::MaterialFloatDataType> floatDataTypes;
-	floatDataTypes.reserve(pipelineJson["material-float-data-types"].size());
-	for(const nlohmann::json& floatDataType: pipelineJson["material-float-data-types"])
+	floatDataTypes.reserve(graphicsPipelineJson["material-float-data-types"].size());
+	for(const nlohmann::json& floatDataType: graphicsPipelineJson["material-float-data-types"])
 		floatDataTypes.emplace_back(static_cast<mtd::MaterialFloatDataType>(floatDataType));
 
 	std::vector<mtd::MaterialTextureType> textureTypes;
-	textureTypes.reserve(pipelineJson["material-texture-types"].size());
-	for(const nlohmann::json& textureType: pipelineJson["material-texture-types"])
+	textureTypes.reserve(graphicsPipelineJson["material-texture-types"].size());
+	for(const nlohmann::json& textureType: graphicsPipelineJson["material-texture-types"])
 		textureTypes.emplace_back(static_cast<mtd::MaterialTextureType>(textureType));
 
-	int32_t targetFramebuffer = pipelineJson["target-framebuffer"];
+	int32_t targetFramebuffer = graphicsPipelineJson["target-framebuffer"];
 	if(targetFramebuffer == -1)
-		renderOrder.back().pipelineIndices.emplace_back(static_cast<uint32_t>(pipelineInfos.size()));
+		renderOrder.back().pipelineIndices.emplace_back(static_cast<uint32_t>(graphicsPipelineInfos.size()));
 	else
-		renderOrder[targetFramebuffer].pipelineIndices.emplace_back(static_cast<uint32_t>(pipelineInfos.size()));
+		renderOrder[targetFramebuffer].pipelineIndices.emplace_back(static_cast<uint32_t>(graphicsPipelineInfos.size()));
 
-	pipelineInfos.emplace_back
+	graphicsPipelineInfos.emplace_back
 	(
-		mtd::PipelineInfo
+		mtd::GraphicsPipelineInfo
 		{
-			pipelineJson["name"],
-			pipelineJson["vertex-shader"],
-			pipelineJson["fragment-shader"],
-			static_cast<mtd::MeshType>(pipelineJson["mesh-type"]),
+			{graphicsPipelineJson["name"], std::move(descriptorInfos)},
+			graphicsPipelineJson["vertex-shader"],
+			graphicsPipelineJson["fragment-shader"],
+			static_cast<mtd::MeshType>(graphicsPipelineJson["mesh-type"]),
 			targetFramebuffer,
-			std::move(descriptorInfos),
-			static_cast<mtd::ShaderPrimitiveTopology>(pipelineJson["shader-primitive-topology"]),
-			static_cast<mtd::ShaderFaceCulling>(pipelineJson["shader-face-culling"]),
-			pipelineJson["transparency"],
+			static_cast<mtd::ShaderPrimitiveTopology>(graphicsPipelineJson["shader-primitive-topology"]),
+			static_cast<mtd::ShaderFaceCulling>(graphicsPipelineJson["shader-face-culling"]),
+			graphicsPipelineJson["transparency"],
 			std::move(floatDataTypes),
 			std::move(textureTypes)
+		}
+	);
+}
+
+// Fetches the ray tracing pipeline infos from the scene file
+void loadRayTracingPipeline
+(
+	const nlohmann::json& rtPipelineJson,
+	std::vector<mtd::RayTracingPipelineInfo>& rayTracingPipelineInfos
+)
+{
+	std::vector<mtd::DescriptorInfo> descriptorInfos;
+	descriptorInfos.reserve(rtPipelineJson["descriptor-set-info"].size());
+	for(const nlohmann::json& descriptorInfoJson: rtPipelineJson["descriptor-set-info"])
+	{
+		descriptorInfos.emplace_back
+		(
+			mtd::DescriptorInfo
+			{
+				static_cast<mtd::DescriptorType>(descriptorInfoJson["descriptor-type"]),
+				static_cast<mtd::ShaderStage>(descriptorInfoJson["shader-stage"]),
+				descriptorInfoJson["total-descriptor-size"],
+				descriptorInfoJson["descriptor-count"]
+			}
+		);
+	}
+
+	rayTracingPipelineInfos.emplace_back
+	(
+		mtd::RayTracingPipelineInfo
+		{
+			{rtPipelineJson["name"], std::move(descriptorInfos)},
+			rtPipelineJson["ray-gen-shader"],
+			rtPipelineJson["miss-shader"],
+			{
+				rtPipelineJson.value("resolution-ratio-horizontal", -1.0f),
+				rtPipelineJson.value("resolution-ratio-vertical", -1.0f)
+			},
+			rtPipelineJson.value("fixed-horizontal-resolution", 1280U),
+			rtPipelineJson.value("fixed-vertical-resolution", 720U)
 		}
 	);
 }
@@ -274,12 +323,12 @@ void loadFramebufferPipeline
 	(
 		mtd::FramebufferPipelineInfo
 		{
-			fbPipelineJson["name"],
+			{fbPipelineJson["name"], std::move(descriptorInfos)},
 			fbPipelineJson["vertex-shader"],
 			fbPipelineJson["fragment-shader"],
 			targetFramebuffer,
-			std::move(descriptorInfos),
 			std::move(inputAttachments),
+			fbPipelineJson["ray-tracing-storage-images"],
 			fbPipelineJson["dependencies"]
 		}
 	);
@@ -290,12 +339,15 @@ void loadDefaultMeshes
 (
 	const mtd::Device& device,
 	const nlohmann::json& meshListJson,
-	const mtd::PipelineInfo& pipelineInfo,
+	const mtd::GraphicsPipelineInfo& graphicsPipelineInfo,
 	std::vector<std::unique_ptr<mtd::MeshManager>>& meshManagers
 )
 {
 	meshManagers.emplace_back(std::make_unique<mtd::DefaultMeshManager>(device));
-	mtd::MaterialInfo materialInfo{pipelineInfo.materialFloatDataTypes, pipelineInfo.materialTextureTypes};
+	mtd::MaterialInfo materialInfo
+	{
+		graphicsPipelineInfo.materialFloatDataTypes, graphicsPipelineInfo.materialTextureTypes
+	};
 
 	for(uint32_t i = 0; i < meshListJson.size(); i++)
 	{
@@ -317,12 +369,15 @@ void loadMultiMaterial3DMeshes
 (
 	const mtd::Device& device,
 	const nlohmann::json& meshListJson,
-	const mtd::PipelineInfo& pipelineInfo,
+	const mtd::GraphicsPipelineInfo& graphicsPipelineInfo,
 	std::vector<std::unique_ptr<mtd::MeshManager>>& meshManagers
 )
 {
 	meshManagers.emplace_back(std::make_unique<mtd::MultiMaterial3DMeshManager>(device));
-	mtd::MaterialInfo materialInfo{pipelineInfo.materialFloatDataTypes, pipelineInfo.materialTextureTypes};
+	mtd::MaterialInfo materialInfo
+	{
+		graphicsPipelineInfo.materialFloatDataTypes, graphicsPipelineInfo.materialTextureTypes
+	};
 
 	for(uint32_t i = 0; i < meshListJson.size(); i++)
 	{
@@ -344,12 +399,15 @@ void loadBillboards
 (
 	const mtd::Device& device,
 	const nlohmann::json& billboardListJson,
-	const mtd::PipelineInfo& pipelineInfo,
+	const mtd::GraphicsPipelineInfo& graphicsPipelineInfo,
 	std::vector<std::unique_ptr<mtd::MeshManager>>& meshManagers
 )
 {
 	meshManagers.emplace_back(std::make_unique<mtd::BillboardManager>(device));
-	mtd::MaterialInfo materialInfo{pipelineInfo.materialFloatDataTypes, pipelineInfo.materialTextureTypes};
+	mtd::MaterialInfo materialInfo
+	{
+		graphicsPipelineInfo.materialFloatDataTypes, graphicsPipelineInfo.materialTextureTypes
+	};
 
 	for(uint32_t i = 0; i < billboardListJson.size(); i++)
 	{

@@ -1,6 +1,7 @@
 #include <pch.hpp>
 #include "Renderer.hpp"
 
+#include "../Image/Image.hpp"
 #include "../../Utils/Logger.hpp"
 #include "../../Utils/Profiler.hpp"
 
@@ -20,8 +21,9 @@ void mtd::Renderer::render
 	const Swapchain& swapchain,
 	const ImGuiHandler& guiHandler,
 	const std::vector<Framebuffer>& framebuffers,
-	const std::vector<Pipeline>& pipelines,
+	const std::vector<GraphicsPipeline>& graphicsPipelines,
 	const std::vector<FramebufferPipeline>& framebufferPipelines,
+	const std::vector<RayTracingPipeline>& rayTracingPipelines,
 	const Scene& scene,
 	DrawInfo& drawInfo,
 	bool& shouldUpdateEngine
@@ -68,7 +70,13 @@ void mtd::Renderer::render
 
 	recordDrawCommands
 	(
-		framebuffers, pipelines, framebufferPipelines, scene, commandHandler, drawInfo, guiHandler
+		framebuffers,
+		graphicsPipelines, framebufferPipelines, rayTracingPipelines,
+		scene,
+		commandHandler,
+		drawInfo,
+		guiHandler,
+		mtdDevice.getDLDI()
 	);
 	commandHandler.submitDrawCommandBuffer(*(drawInfo.syncBundle));
 
@@ -87,19 +95,25 @@ void mtd::Renderer::render
 void mtd::Renderer::recordDrawCommands
 (
 	const std::vector<Framebuffer>& framebuffers,
-	const std::vector<Pipeline>& pipelines,
+	const std::vector<GraphicsPipeline>& graphicsPipelines,
 	const std::vector<FramebufferPipeline>& framebufferPipelines,
+	const std::vector<RayTracingPipeline>& rayTracingPipelines,
 	const Scene& scene,
 	const CommandHandler& commandHandler,
 	const DrawInfo& drawInfo,
-	const ImGuiHandler& guiHandler
+	const ImGuiHandler& guiHandler,
+	const vk::detail::DispatchLoaderDynamic& dldi
 ) const
 {
-	assert(!(pipelines.empty() && framebufferPipelines.empty()) && "There must be at least one pipeline to render.");
+	assert
+	(
+		!(graphicsPipelines.empty() && framebufferPipelines.empty()) &&
+		"There must be at least one rendering pipeline."
+	);
 
 	const vk::CommandBuffer& commandBuffer = commandHandler.getCommandBuffer();
 	const vk::PipelineLayout& firstPipelineLayout =
-		pipelines.empty() ? framebufferPipelines[0].getLayout() : pipelines[0].getLayout();
+		graphicsPipelines.empty() ? framebufferPipelines[0].getLayout() : graphicsPipelines[0].getLayout();
 
 	commandHandler.beginCommand();
 
@@ -111,6 +125,17 @@ void mtd::Renderer::recordDrawCommands
 		1, &(drawInfo.globalDescriptorSet),
 		0, nullptr
 	);
+	if(rayTracingPipelines.size() > 0)
+	{
+		commandBuffer.bindDescriptorSets
+		(
+			vk::PipelineBindPoint::eRayTracingKHR,
+			rayTracingPipelines[0].getLayout(),
+			0,
+			1, &(drawInfo.globalDescriptorSet),
+			0, nullptr
+		);
+	}
 
 	std::vector<vk::ClearValue> clearValues;
 	clearValues.push_back(clearColor);
@@ -118,6 +143,12 @@ void mtd::Renderer::recordDrawCommands
 
 	vk::Rect2D renderArea{};
 	renderArea.offset = vk::Offset2D{0, 0};
+
+	for(const RayTracingPipeline& rayTracingPipeline: rayTracingPipelines)
+	{
+		PROFILER_NEXT_STAGE(rayTracingPipeline.getName().c_str());
+		rayTracingPipeline.traceRays(commandBuffer, dldi);
+	}
 
 	for(const RenderPassInfo& renderPassInfo: renderOrder)
 	{
@@ -156,23 +187,21 @@ void mtd::Renderer::recordDrawCommands
 			PROFILER_NEXT_STAGE(fbPipeline.getName().c_str());
 
 			fbPipeline.bind(commandBuffer);
-			fbPipeline.bindPipelineDescriptors(commandBuffer);
 			commandBuffer.draw(3, 1, 0, 0);
 		}
 
 		for(uint32_t pipelineIndex: renderPassInfo.pipelineIndices)
 		{
-			const Pipeline& pipeline = pipelines[pipelineIndex];
-			PROFILER_NEXT_STAGE(pipeline.getName().c_str());
+			const GraphicsPipeline& graphicsPipeline = graphicsPipelines[pipelineIndex];
+			PROFILER_NEXT_STAGE(graphicsPipeline.getName().c_str());
 			const MeshManager* pMeshManager = scene.getMeshManager(pipelineIndex);
 
 			if(pMeshManager->getMeshCount() == 0) continue;
 
-			pipeline.bind(commandBuffer);
-			pipeline.bindPipelineDescriptors(commandBuffer);
+			graphicsPipeline.bind(commandBuffer);
 			pMeshManager->bindBuffers(commandBuffer);
 
-			pMeshManager->drawMesh(commandBuffer, pipeline);
+			pMeshManager->drawMesh(commandBuffer, graphicsPipeline);
 		}
 
 		if(toSwapchain)

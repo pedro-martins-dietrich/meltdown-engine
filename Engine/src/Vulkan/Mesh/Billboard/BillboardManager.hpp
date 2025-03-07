@@ -28,6 +28,9 @@ namespace mtd
 			// There is no buffer common to all billboards to be binded
 			virtual void bindBuffers(const vk::CommandBuffer& commandBuffer) const override;
 			// Draws the mesh specified by the index
-			virtual void drawMesh(const vk::CommandBuffer& commandBuffer, const Pipeline& pipeline) const override;
+			virtual void drawMesh
+			(
+				const vk::CommandBuffer& commandBuffer, const GraphicsPipeline& graphicsPipeline
+			) const override;
 	};
 }

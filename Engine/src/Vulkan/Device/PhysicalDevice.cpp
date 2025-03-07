@@ -29,7 +29,44 @@ mtd::PhysicalDevice::PhysicalDevice(const vk::Instance& vulkanInstance) : physic
 		return;
 	}
 
-	LOG_INFO("Selected physical device: %s.\n", physicalDevice.getProperties().deviceName);
+	properties.pNext = &rayTracingProperties;
+	physicalDevice.getProperties2(&properties);
+
+	LOG_INFO("Selected physical device: %s.\n", properties.properties.deviceName.data());
+}
+
+// Verifies if the hardware supports ray tracing
+bool mtd::PhysicalDevice::isRayTracingCompatible() const
+{
+	constexpr std::array<const char*, 4> rayTracingExtensions =
+	{
+		vk::KHRRayTracingPipelineExtensionName,
+		vk::KHRAccelerationStructureExtensionName,
+		vk::KHRDeferredHostOperationsExtensionName,
+		vk::KHRBufferDeviceAddressExtensionName
+	};
+	const std::vector<vk::ExtensionProperties> availableExtensions =
+		physicalDevice.enumerateDeviceExtensionProperties();
+
+	for(const char* extension: rayTracingExtensions)
+	{
+		bool found = false;
+		for(const vk::ExtensionProperties& availableExtension: availableExtensions)
+		{
+			if(!strcmp(availableExtension.extensionName.data(), extension))
+			{
+				found = true;
+				LOG_VERBOSE("Vulkan extension \"%s\" is supported.", extension);
+				break;
+			}
+		}
+		if(!found)
+		{
+			LOG_VERBOSE("Vulkan extension \"%s\" is not supported by the hardware.", extension);
+			return false;
+		}
+	}
+	return true;
 }
 
 // Selects a physical with the specified type
@@ -56,7 +93,7 @@ bool mtd::PhysicalDevice::isDeviceSuitable(const vk::PhysicalDevice& availableDe
 
 	for(const vk::ExtensionProperties& availableExtension: availableExtensions)
 	{
-		if(!strcmp(availableExtension.extensionName, VK_KHR_SWAPCHAIN_EXTENSION_NAME))
+		if(!strcmp(availableExtension.extensionName.data(), vk::KHRSwapchainExtensionName))
 			return true;
 	}
 

@@ -13,8 +13,9 @@ namespace mtd::SceneLoader
 		const Device& device,
 		const char* fileName,
 		std::vector<FramebufferInfo>& framebufferInfos,
-		std::vector<PipelineInfo>& pipelineInfos,
+		std::vector<GraphicsPipelineInfo>& graphicsPipelineInfos,
 		std::vector<FramebufferPipelineInfo>& framebufferPipelineInfos,
+		std::vector<RayTracingPipelineInfo>& rayTracingPipelineInfos,
 		std::vector<RenderPassInfo>& renderOrder,
 		std::vector<std::unique_ptr<MeshManager>>& meshManagers
 	);

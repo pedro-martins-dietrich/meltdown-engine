@@ -14,8 +14,9 @@ void mtd::Scene::loadScene
 	const Device& device,
 	const char* sceneFileName,
 	std::vector<FramebufferInfo>& framebufferInfos,
-	std::vector<PipelineInfo>& pipelineInfos,
+	std::vector<GraphicsPipelineInfo>& graphicsPipelineInfos,
 	std::vector<FramebufferPipelineInfo>& framebufferPipelineInfos,
+	std::vector<RayTracingPipelineInfo>& rayTracingPipelineInfos,
 	std::vector<RenderPassInfo>& renderOrder
 )
 {
@@ -27,8 +28,9 @@ void mtd::Scene::loadScene
 		device,
 		sceneFileName,
 		framebufferInfos,
-		pipelineInfos,
+		graphicsPipelineInfos,
 		framebufferPipelineInfos,
+		rayTracingPipelineInfos,
 		renderOrder,
 		meshManagers
 	);
@@ -37,7 +39,9 @@ void mtd::Scene::loadScene
 // Allocates resources and loads all mesh data
 void mtd::Scene::allocateResources
 (
-	std::vector<Pipeline>& pipelines, std::vector<FramebufferPipeline>& framebufferPipelines
+	std::vector<GraphicsPipeline>& graphicsPipelines,
+	std::vector<FramebufferPipeline>& framebufferPipelines,
+	std::vector<RayTracingPipeline>& rayTracingPipelines
 )
 {
 	descriptorPool.clear();
@@ -47,11 +51,11 @@ void mtd::Scene::allocateResources
 
 	uint32_t totalImageSamplerCount = getTotalTextureCount();
 	for(const FramebufferPipeline& fbPipeline: framebufferPipelines)
-		totalImageSamplerCount += fbPipeline.getAttachmentIdentifiers().size();
+		totalImageSamplerCount += fbPipeline.getImageDescriptorsCount();
 	if(totalImageSamplerCount > 0)
 		totalDescriptorTypeCount[vk::DescriptorType::eCombinedImageSampler] = totalImageSamplerCount;
 
-	for(const Pipeline& pipeline: pipelines)
+	for(const GraphicsPipeline& pipeline: graphicsPipelines)
 	{
 		for(const auto& [type, count]: pipeline.getDescriptorTypeCount())
 			totalDescriptorTypeCount[type] += count;
@@ -60,6 +64,12 @@ void mtd::Scene::allocateResources
 	{
 		for(const auto& [type, count]: fbPipeline.getDescriptorTypeCount())
 			totalDescriptorTypeCount[type] += count;
+	}
+	for(const RayTracingPipeline& rtPipeline: rayTracingPipelines)
+	{
+		for(const auto& [type, count]: rtPipeline.getDescriptorTypeCount())
+			totalDescriptorTypeCount[type] += count;
+		totalDescriptorTypeCount[vk::DescriptorType::eStorageImage]++;
 	}
 
 	std::vector<PoolSizeData> poolSizesInfo{totalDescriptorTypeCount.size()};
@@ -73,17 +83,18 @@ void mtd::Scene::allocateResources
 
 	descriptorPool.createDescriptorPool(poolSizesInfo);
 
-	for(uint32_t i = 0; i < pipelines.size(); i++)
+	for(uint32_t i = 0; i < graphicsPipelines.size(); i++)
 	{
 		const std::unique_ptr<MeshManager>& pMeshManager = meshManagers[i];
 		if(pMeshManager->getMeshCount() == 0) continue;
 
-		DescriptorSetHandler& descriptorSetHandler = pipelines[i].getDescriptorSetHandler(0);
+		DescriptorSetHandler& descriptorSetHandler = graphicsPipelines[i].getDescriptorSetHandler(0);
 		descriptorSetHandler.defineDescriptorSetsAmount(pMeshManager->getMaterialCount());
 		descriptorPool.allocateDescriptorSet(descriptorSetHandler);
 
 		pMeshManager->loadMeshes(descriptorSetHandler);
 	}
+	LOG_INFO("Meshes loaded to the GPU.\n");
 
 	for(FramebufferPipeline& fbPipeline: framebufferPipelines)
 	{
@@ -92,7 +103,12 @@ void mtd::Scene::allocateResources
 		descriptorPool.allocateDescriptorSet(descriptorSetHandler);
 	}
 
-	LOG_INFO("Meshes loaded to the GPU.\n");
+	for(RayTracingPipeline& rtPipeline: rayTracingPipelines)
+	{
+		DescriptorSetHandler& descriptorSetHandler = rtPipeline.getDescriptorSetHandler(0);
+		descriptorSetHandler.defineDescriptorSetsAmount(1);
+		descriptorPool.allocateDescriptorSet(descriptorSetHandler);
+	}
 }
 
 // Executes starting code on scene

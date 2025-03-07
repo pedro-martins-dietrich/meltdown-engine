@@ -1,0 +1,69 @@
+#version 460
+#extension GL_EXT_ray_tracing : enable
+
+layout(set = 0, binding = 0) uniform CameraMatrices
+{
+	mat4 projection;
+	mat4 view;
+	mat4 projectionView;
+} camera;
+
+layout(set = 1, binding = 0, rgba8) uniform image2D storageImage;
+
+struct Ray
+{
+	vec3 origin;
+	vec3 direction;
+};
+
+struct Sphere
+{
+	vec3 position;
+	float radius;
+};
+
+const Sphere sphere =
+{
+	vec3(0.0f, 0.0f, 2.0f),
+	1.0f
+};
+
+bool intersectSphere(Ray ray, out vec3 hitPoint)
+{
+	vec3 relativeRayOrigin = ray.origin - sphere.position;
+	float b = 2.0f * dot(relativeRayOrigin, ray.direction);
+	float c = dot(relativeRayOrigin, relativeRayOrigin) - (sphere.radius * sphere.radius);
+	float discriminant = b * b - 4.0f * c;
+
+	if(discriminant < 0.0f) return false;
+
+	float t = -0.5f * (b + sqrt(discriminant));
+	if(t < 0.0f) return false;
+
+	hitPoint = ray.origin + t * ray.direction;
+	return true;
+}
+
+void main()
+{
+	vec2 pixelCoord = gl_LaunchIDEXT.xy;
+	vec2 uv = 2.0f * (pixelCoord / gl_LaunchSizeEXT.xy) - 1.0f;
+
+	mat4 invView = inverse(camera.view);
+	vec4 farPoint = inverse(camera.projection) * vec4(uv, 1.0f, 1.0f);
+
+	Ray ray;
+	ray.origin = invView[3].xyz;
+	ray.direction = normalize((invView * (farPoint / farPoint.w)).xyz - ray.origin);
+
+	vec3 hitPoint;
+	vec3 color = vec3(0.0f, 0.0f, 0.0f);
+
+	if(intersectSphere(ray, hitPoint))
+	{
+		vec3 normal = normalize(hitPoint - sphere.position);
+		color = 0.5f * normal + 0.5f;
+	}
+
+	imageStore(storageImage, ivec2(pixelCoord), vec4(color, 1.0f));
+}

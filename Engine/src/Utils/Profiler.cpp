@@ -49,3 +49,10 @@ void mtd::Profiler::endFrame()
 	profiledData = currentFrameData;
 	lastStage = nullptr;
 }
+
+// Clears the unordered map of frame stages
+void mtd::Profiler::clearStages()
+{
+	currentFrameData.stageTimes.clear();
+	profiledData.stageTimes.clear();
+}

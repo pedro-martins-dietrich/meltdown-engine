@@ -1,0 +1,41 @@
+{
+	"scene-loader-version": "0.1.7",
+	"camera":
+	{
+		"orthographic": false,
+		"fov": 75.0,
+		"near-plane": 0.01,
+		"far-plane": 1000.0,
+		"view-width": 10.0,
+		"position": [0.0, 0.0, -4.0],
+		"yaw": 0.0,
+		"pitch": 0.0
+	},
+	"framebuffers": [],
+	"pipelines": [],
+	"ray-tracing-pipelines":
+	[
+		{
+			"name": "Ray Tracing Pipeline",
+			"ray-gen-shader": "ray-tracing.rgen.spv",
+			"miss-shader": "ray-tracing.rmiss.spv",
+			"descriptor-set-info": [],
+			"resolution-ratio-horizontal": 1.0,
+			"resolution-ratio-vertical": 1.0
+		}
+	],
+	"framebuffer-pipelines":
+	[
+		{
+			"name": "Framebuffer Pipeline",
+			"vertex-shader": "framebuffer.vert.spv",
+			"fragment-shader": "framebuffer.frag.spv",
+			"target-framebuffer": -1,
+			"descriptor-set-info": [],
+			"input-attachments": [],
+			"ray-tracing-storage-images": [0],
+			"dependencies": []
+		}
+	],
+	"meshes": []
+}

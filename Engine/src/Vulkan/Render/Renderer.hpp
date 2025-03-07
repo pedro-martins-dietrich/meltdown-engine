@@ -2,7 +2,6 @@
 
 #include "../Frame/Swapchain.hpp"
 #include "../Frame/Framebuffer.hpp"
-#include "../Pipeline/FramebufferPipeline.hpp"
 #include "../ImGui/ImGuiHandler.hpp"
 #include "../../Scene/Scene.hpp"
 
@@ -31,8 +30,9 @@ namespace mtd
 				const Swapchain& swapchain,
 				const ImGuiHandler& guiHandler,
 				const std::vector<Framebuffer>& framebuffers,
-				const std::vector<Pipeline>& pipelines,
+				const std::vector<GraphicsPipeline>& graphicsPipelines,
 				const std::vector<FramebufferPipeline>& framebufferPipelines,
+				const std::vector<RayTracingPipeline>& rayTracingPipelines,
 				const Scene& scene,
 				DrawInfo& drawInfo,
 				bool& shouldUpdateEngine
@@ -50,12 +50,14 @@ namespace mtd
 			void recordDrawCommands
 			(
 				const std::vector<Framebuffer>& framebuffers,
-				const std::vector<Pipeline>& pipelines,
+				const std::vector<GraphicsPipeline>& graphicsPipelines,
 				const std::vector<FramebufferPipeline>& framebufferPipelines,
+				const std::vector<RayTracingPipeline>& rayTracingPipelines,
 				const Scene& scene,
 				const CommandHandler& commandHandler,
 				const DrawInfo& drawInfo,
-				const ImGuiHandler& guiHandler
+				const ImGuiHandler& guiHandler,
+				const vk::detail::DispatchLoaderDynamic& dldi
 			) const;
 
 			// Presents frame to screen when ready
