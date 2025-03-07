@@ -21,6 +21,9 @@ namespace mtd::Profiler
 	void nextStage(const char* stage);
 	// Ends the last frame stage and also calculates the total frame duration
 	void endFrame();
+
+	// Clears the unordered map of frame stages
+	void clearStages();
 }
 
 #ifdef MTD_DEBUG

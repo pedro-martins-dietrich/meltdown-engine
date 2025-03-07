@@ -118,6 +118,7 @@ void mtd::Engine::loadScene(const char* sceneFile)
 	graphicsPipelines.clear();
 	framebufferPipelines.clear();
 	rayTracingPipelines.clear();
+	Profiler::clearStages();
 
 	std::vector<FramebufferInfo> framebufferInfos;
 	std::vector<GraphicsPipelineInfo> graphicsPipelineInfos;
