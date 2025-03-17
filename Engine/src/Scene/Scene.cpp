@@ -5,8 +5,7 @@
 #include "../Vulkan/Mesh/MeshManager.hpp"
 
 mtd::Scene::Scene(const Device& device) : descriptorPool{device.getDevice()}
-{
-}
+{}
 
 // Loads scene from file
 void mtd::Scene::loadScene
@@ -70,6 +69,7 @@ void mtd::Scene::allocateResources
 		for(const auto& [type, count]: rtPipeline.getDescriptorTypeCount())
 			totalDescriptorTypeCount[type] += count;
 		totalDescriptorTypeCount[vk::DescriptorType::eStorageImage]++;
+		totalDescriptorTypeCount[vk::DescriptorType::eStorageBuffer] += 2;
 	}
 
 	std::vector<PoolSizeData> poolSizesInfo{totalDescriptorTypeCount.size()};
@@ -94,21 +94,21 @@ void mtd::Scene::allocateResources
 
 		pMeshManager->loadMeshes(descriptorSetHandler);
 	}
-	LOG_INFO("Meshes loaded to the GPU.\n");
-
 	for(FramebufferPipeline& fbPipeline: framebufferPipelines)
 	{
 		DescriptorSetHandler& descriptorSetHandler = fbPipeline.getDescriptorSetHandler(0);
 		descriptorSetHandler.defineDescriptorSetsAmount(1);
 		descriptorPool.allocateDescriptorSet(descriptorSetHandler);
 	}
-
-	for(RayTracingPipeline& rtPipeline: rayTracingPipelines)
+	for(uint32_t i = 0; i < rayTracingPipelines.size(); i++)
 	{
-		DescriptorSetHandler& descriptorSetHandler = rtPipeline.getDescriptorSetHandler(0);
+		DescriptorSetHandler& descriptorSetHandler = rayTracingPipelines[i].getDescriptorSetHandler(0);
 		descriptorSetHandler.defineDescriptorSetsAmount(1);
 		descriptorPool.allocateDescriptorSet(descriptorSetHandler);
+
+		meshManagers[graphicsPipelines.size() + i]->loadMeshes(descriptorSetHandler);
 	}
+	LOG_INFO("Meshes loaded to the GPU.\n");
 }
 
 // Executes starting code on scene

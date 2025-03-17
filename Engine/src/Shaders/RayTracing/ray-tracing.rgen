@@ -8,7 +8,22 @@ layout(set = 0, binding = 0) uniform CameraMatrices
 	mat4 projectionView;
 } camera;
 
+struct Vertex
+{
+	vec3 position;
+	vec2 textureUV;
+	vec3 normal;
+};
+
 layout(set = 1, binding = 0, rgba8) uniform image2D storageImage;
+layout(set = 1, binding = 1) buffer VertexBuffer
+{
+	Vertex vertices[];
+};
+layout(set = 1, binding = 2) buffer IndexBuffer
+{
+	uint indices[];
+};
 
 struct Ray
 {
@@ -28,7 +43,7 @@ const Sphere sphere =
 	1.0f
 };
 
-bool intersectSphere(Ray ray, out vec3 hitPoint)
+bool intersectSphere(Ray ray, out float hitDistance)
 {
 	vec3 relativeRayOrigin = ray.origin - sphere.position;
 	float b = 2.0f * dot(relativeRayOrigin, ray.direction);
@@ -40,7 +55,36 @@ bool intersectSphere(Ray ray, out vec3 hitPoint)
 	float t = -0.5f * (b + sqrt(discriminant));
 	if(t < 0.0f) return false;
 
-	hitPoint = ray.origin + t * ray.direction;
+	hitDistance = t;
+	return true;
+}
+
+bool intersectTriangle(Ray ray, out float hitDistance)
+{
+	Vertex v0 = vertices[indices[0]];
+	Vertex v1 = vertices[indices[1]];
+	Vertex v2 = vertices[indices[2]];
+
+	vec3 edge1 = v1.position - v0.position;
+	vec3 edge2 = v2.position - v0.position;
+
+	vec3 hVector = cross(ray.direction, edge2);
+	float det = dot(edge1, hVector);
+	if(abs(det) < 1e-6) return false;
+
+	float invDet = 1.0f / det;
+	vec3 relativeRayOrigin = ray.origin - v0.position;
+	float u = invDet * dot(relativeRayOrigin, hVector);
+	if(u < 0.0f || u > 1.0f) return false;
+
+	vec3 qVector = cross(relativeRayOrigin, edge1);
+	float v = invDet * dot(ray.direction, qVector);
+	if(v < 0.0f || u + v > 1.0f) return false;
+
+	float t = invDet * dot(edge2, qVector);
+	if(t < 1e-6) return false;
+
+	hitDistance = t;
 	return true;
 }
 
@@ -56,13 +100,22 @@ void main()
 	ray.origin = invView[3].xyz;
 	ray.direction = normalize((invView * (farPoint / farPoint.w)).xyz - ray.origin);
 
-	vec3 hitPoint;
+	float t1 = -1.0f;
+	float t2 = -1.0f;
 	vec3 color = vec3(0.0f, 0.0f, 0.0f);
 
-	if(intersectSphere(ray, hitPoint))
+	bool hit1 = intersectSphere(ray, t1);
+	bool hit2 = intersectTriangle(ray, t2);
+
+	if(hit1 && (!hit2 || t1 < t2))
 	{
+		vec3 hitPoint = ray.origin + t1 * ray.direction;
 		vec3 normal = normalize(hitPoint - sphere.position);
 		color = 0.5f * normal + 0.5f;
+	}
+	else if(hit2)
+	{
+		color = vec3(0.1f, 0.2f, 1.0f);
 	}
 
 	imageStore(storageImage, ivec2(pixelCoord), vec4(color, 1.0f));

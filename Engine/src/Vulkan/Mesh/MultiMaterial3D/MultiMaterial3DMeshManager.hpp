@@ -2,7 +2,6 @@
 
 #include "MultiMaterial3DMesh.hpp"
 #include "../BaseMeshManager.hpp"
-#include "../../Device/GpuBuffer.hpp"
 
 namespace mtd
 {
@@ -25,7 +24,7 @@ namespace mtd
 
 			// Binds vertex and index buffers
 			virtual void bindBuffers(const vk::CommandBuffer& commandBuffer) const override;
-			// Draws the mesh specified by the index
+			// Draws the meshes using a rasterization pipeline
 			virtual void drawMesh
 			(
 				const vk::CommandBuffer& commandBuffer, const GraphicsPipeline& graphicsPipeline

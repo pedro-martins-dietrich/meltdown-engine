@@ -1,15 +1,12 @@
 #include <pch.hpp>
 #include "DefaultMeshManager.hpp"
 
-#include "../../../Utils/Logger.hpp"
-
 mtd::DefaultMeshManager::DefaultMeshManager(const Device& device)
 	: BaseMeshManager{device},
 	currentIndexOffset{0},
 	vertexBuffer{device, vk::BufferUsageFlagBits::eVertexBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal},
 	indexBuffer{device, vk::BufferUsageFlagBits::eIndexBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal}
-{
-}
+{}
 
 uint32_t mtd::DefaultMeshManager::getTextureCount() const
 {
@@ -44,7 +41,7 @@ void mtd::DefaultMeshManager::bindBuffers(const vk::CommandBuffer& commandBuffer
 	commandBuffer.bindIndexBuffer(indexBuffer.getBuffer(), 0, vk::IndexType::eUint32);
 }
 
-// Draws the mesh specified by the index
+// Draws the meshes using a rasterization pipeline
 void mtd::DefaultMeshManager::drawMesh
 (
 	const vk::CommandBuffer& commandBuffer, const GraphicsPipeline& graphicsPipeline

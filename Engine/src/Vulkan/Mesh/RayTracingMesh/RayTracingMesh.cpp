@@ -1,9 +1,9 @@
 #include <pch.hpp>
-#include "MultiMaterial3DMesh.hpp"
+#include "RayTracingMesh.hpp"
 
 #include "../ObjMeshLoader.hpp"
 
-mtd::MultiMaterial3DMesh::MultiMaterial3DMesh
+mtd::RayTracingMesh::RayTracingMesh
 (
 	const Device& device,
 	uint32_t index,
@@ -16,7 +16,7 @@ mtd::MultiMaterial3DMesh::MultiMaterial3DMesh
 	ObjMeshLoader::loadMultiMaterial3DMesh(fileName, vertices, indices, submeshInfos, materials, materialInfo);
 }
 
-mtd::MultiMaterial3DMesh::MultiMaterial3DMesh(MultiMaterial3DMesh&& other) noexcept
+mtd::RayTracingMesh::RayTracingMesh(RayTracingMesh&& other) noexcept
 	: Mesh{std::move(other)},
 	vertices{std::move(other.vertices)},
 	indices{std::move(other.indices)},
@@ -25,13 +25,13 @@ mtd::MultiMaterial3DMesh::MultiMaterial3DMesh(MultiMaterial3DMesh&& other) noexc
 	nextMeshIndexOffset{other.nextMeshIndexOffset}
 {}
 
-uint32_t mtd::MultiMaterial3DMesh::getTextureCount() const
+uint32_t mtd::RayTracingMesh::getTextureCount() const
 {
 	if(materials.empty()) return 0;
 	return static_cast<uint32_t>(materials[0].getTextureCount() * materials.size());
 }
 
-uint32_t mtd::MultiMaterial3DMesh::getSubmeshIndexCount(uint32_t submeshIndex) const
+uint32_t mtd::RayTracingMesh::getSubmeshIndexCount(uint32_t submeshIndex) const
 {
 	if(submeshIndex + 1 < submeshInfos.size())
 		return submeshInfos[submeshIndex + 1].indexOffset - submeshInfos[submeshIndex].indexOffset;
@@ -41,7 +41,7 @@ uint32_t mtd::MultiMaterial3DMesh::getSubmeshIndexCount(uint32_t submeshIndex) c
 }
 
 // Sets all sub-mesh index offsets in the lump
-void mtd::MultiMaterial3DMesh::setIndexOffset(uint32_t offset)
+void mtd::RayTracingMesh::setIndexOffset(uint32_t offset)
 {
 	for(SubmeshData& submeshInfo: submeshInfos)
 		submeshInfo.indexOffset += offset;
@@ -50,14 +50,14 @@ void mtd::MultiMaterial3DMesh::setIndexOffset(uint32_t offset)
 }
 
 // Checks if the used material has float data attributes
-bool mtd::MultiMaterial3DMesh::hasMaterialFloatData() const
+bool mtd::RayTracingMesh::hasMaterialFloatData() const
 {
 	if(materials.empty()) return false;
 	return materials[0].hasFloatData();
 }
 
 // Loads mesh materials
-void mtd::MultiMaterial3DMesh::loadMaterials
+void mtd::RayTracingMesh::loadMaterials
 (
 	const Device& device,
 	const CommandHandler& commandHandler,

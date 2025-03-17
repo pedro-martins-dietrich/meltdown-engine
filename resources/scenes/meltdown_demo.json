@@ -1,5 +1,5 @@
 {
-	"scene-loader-version": "0.1.7",
+	"scene-loader-version": "0.1.8",
 	"camera":
 	{
 		"orthographic": false,
@@ -20,7 +20,7 @@
 			"resolution-ratio-vertical": 1.0
 		}
 	],
-	"pipelines":
+	"rasterization-pipelines":
 	[
 		{
 			"name": "Default Pipeline",
