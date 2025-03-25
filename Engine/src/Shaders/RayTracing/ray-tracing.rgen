@@ -1,5 +1,6 @@
 #version 460
-#extension GL_EXT_ray_tracing : enable
+#extension GL_EXT_ray_tracing : require
+#extension GL_EXT_shader_16bit_storage : require
 
 layout(set = 0, binding = 0) uniform CameraMatrices
 {
@@ -12,7 +13,6 @@ struct Vertex
 {
 	vec3 position;
 	vec2 textureUV;
-	vec3 normal;
 };
 
 layout(set = 1, binding = 0, rgba8) uniform image2D storageImage;
@@ -24,6 +24,14 @@ layout(set = 1, binding = 2) buffer IndexBuffer
 {
 	uint indices[];
 };
+layout(set = 1, binding = 3) buffer MaterialIndexBuffer
+{
+	uint16_t materialIDs[];
+};
+layout(set = 1, binding = 4) uniform MaterialData
+{
+	vec4 diffuseColor;
+} materialData;
 
 struct Ray
 {
@@ -31,40 +39,17 @@ struct Ray
 	vec3 direction;
 };
 
-struct Sphere
+const vec3 colors[5] =
 {
-	vec3 position;
-	float radius;
+	vec3(0.0f, 0.3f, 0.0f),
+	vec3(1.0f, 1.0f, 1.0f),
+	vec3(0.5f, 0.5f, 0.5f),
+	vec3(0.45f, 0.0f, 0.0f),
+	vec3(0.8f, 0.75f, 0.6f)
 };
 
-const Sphere sphere =
+bool intersectTriangle(Ray ray, Vertex v0, Vertex v1, Vertex v2, out float hitDistance)
 {
-	vec3(0.0f, 0.0f, 2.0f),
-	1.0f
-};
-
-bool intersectSphere(Ray ray, out float hitDistance)
-{
-	vec3 relativeRayOrigin = ray.origin - sphere.position;
-	float b = 2.0f * dot(relativeRayOrigin, ray.direction);
-	float c = dot(relativeRayOrigin, relativeRayOrigin) - (sphere.radius * sphere.radius);
-	float discriminant = b * b - 4.0f * c;
-
-	if(discriminant < 0.0f) return false;
-
-	float t = -0.5f * (b + sqrt(discriminant));
-	if(t < 0.0f) return false;
-
-	hitDistance = t;
-	return true;
-}
-
-bool intersectTriangle(Ray ray, out float hitDistance)
-{
-	Vertex v0 = vertices[indices[0]];
-	Vertex v1 = vertices[indices[1]];
-	Vertex v2 = vertices[indices[2]];
-
 	vec3 edge1 = v1.position - v0.position;
 	vec3 edge2 = v2.position - v0.position;
 
@@ -75,11 +60,11 @@ bool intersectTriangle(Ray ray, out float hitDistance)
 	float invDet = 1.0f / det;
 	vec3 relativeRayOrigin = ray.origin - v0.position;
 	float u = invDet * dot(relativeRayOrigin, hVector);
-	if(u < 0.0f || u > 1.0f) return false;
+	if(u < -1e-6 || u - 1.0f > 1e-6) return false;
 
 	vec3 qVector = cross(relativeRayOrigin, edge1);
 	float v = invDet * dot(ray.direction, qVector);
-	if(v < 0.0f || u + v > 1.0f) return false;
+	if(v < -1e-6 || u + v - 1.0f > 1e-6) return false;
 
 	float t = invDet * dot(edge2, qVector);
 	if(t < 1e-6) return false;
@@ -100,22 +85,22 @@ void main()
 	ray.origin = invView[3].xyz;
 	ray.direction = normalize((invView * (farPoint / farPoint.w)).xyz - ray.origin);
 
-	float t1 = -1.0f;
-	float t2 = -1.0f;
 	vec3 color = vec3(0.0f, 0.0f, 0.0f);
+	float closestHit = 1e9;
 
-	bool hit1 = intersectSphere(ray, t1);
-	bool hit2 = intersectTriangle(ray, t2);
+	int triangleCount = indices.length() / 3;
+	for(int i = 0; i < triangleCount; i++)
+	{
+		Vertex v0 = vertices[indices[3 * i]];
+		Vertex v1 = vertices[indices[3 * i + 1]];
+		Vertex v2 = vertices[indices[3 * i + 2]];
 
-	if(hit1 && (!hit2 || t1 < t2))
-	{
-		vec3 hitPoint = ray.origin + t1 * ray.direction;
-		vec3 normal = normalize(hitPoint - sphere.position);
-		color = 0.5f * normal + 0.5f;
-	}
-	else if(hit2)
-	{
-		color = vec3(0.1f, 0.2f, 1.0f);
+		float hitDistance = 1e10;
+		if(intersectTriangle(ray, v0, v1, v2, hitDistance) && hitDistance < closestHit)
+		{
+			closestHit = hitDistance;
+			color = colors[uint(materialIDs[i])];
+		}
 	}
 
 	imageStore(storageImage, ivec2(pixelCoord), vec4(color, 1.0f));

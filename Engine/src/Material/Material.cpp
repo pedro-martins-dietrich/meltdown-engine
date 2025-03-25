@@ -23,8 +23,7 @@ mtd::Material::Material(Material&& other) noexcept
 	texturePaths{other.texturePaths},
 	floatAttributes{other.floatAttributes},
 	textures{std::move(other.textures)}
-{
-}
+{}
 
 // Inserts a float attribute data
 void mtd::Material::addFloatData(MaterialFloatDataType floatDataType, const float* data)
@@ -47,11 +46,12 @@ void mtd::Material::loadMaterial
 	const Device& device,
 	const CommandHandler& commandHandler,
 	DescriptorSetHandler& descriptorSetHandler,
-	uint32_t swappableSetIndex
+	uint32_t swappableSetIndex,
+	uint32_t bindingOffset
 )
 {
-	loadFloatData(device, descriptorSetHandler, swappableSetIndex);
-	loadTextures(device, commandHandler, descriptorSetHandler, swappableSetIndex);
+	loadFloatData(device, descriptorSetHandler, swappableSetIndex, bindingOffset);
+	loadTextures(device, commandHandler, descriptorSetHandler, swappableSetIndex, bindingOffset);
 }
 
 // Loads all float attributes to the GPU
@@ -59,7 +59,8 @@ void mtd::Material::loadFloatData
 (
 	const Device& device,
 	DescriptorSetHandler& descriptorSetHandler,
-	uint32_t swappableSetIndex
+	uint32_t swappableSetIndex,
+	uint32_t bindingOffset
 ) const
 {
 	if(floatAttributeTypes.empty()) return;
@@ -68,11 +69,11 @@ void mtd::Material::loadFloatData
 
 	descriptorSetHandler.createDescriptorResources
 	(
-		device, dataSize, vk::BufferUsageFlagBits::eUniformBuffer, swappableSetIndex, 0
+		device, dataSize, vk::BufferUsageFlagBits::eUniformBuffer, swappableSetIndex, bindingOffset
 	);
-	descriptorSetHandler.updateDescriptorData(swappableSetIndex, 0, floatAttributes.data(), dataSize);
+	descriptorSetHandler.updateDescriptorData(swappableSetIndex, bindingOffset, floatAttributes.data(), dataSize);
 
-	if(textureTypes.empty())
+	if(textureTypes.empty() && bindingOffset == 0)
 		descriptorSetHandler.writeDescriptorSet(swappableSetIndex);
 }
 
@@ -82,7 +83,8 @@ void mtd::Material::loadTextures
 	const Device& device,
 	const CommandHandler& commandHandler,
 	DescriptorSetHandler& descriptorSetHandler,
-	uint32_t swappableSetIndex
+	uint32_t swappableSetIndex,
+	uint32_t bindingOffset
 )
 {
 	for(MaterialTextureType textureType: textureTypes)
@@ -94,7 +96,7 @@ void mtd::Material::loadTextures
 		}
 
 		const char* texturePath = texturePaths.at(textureType).c_str();
-		uint32_t binding = floatAttributeTypes.empty() ? 0 : 1;
+		uint32_t binding = bindingOffset + (floatAttributeTypes.empty() ? 0 : 1);
 		textures.emplace_back(device, texturePath, commandHandler, descriptorSetHandler, swappableSetIndex, binding);
 	}
 }

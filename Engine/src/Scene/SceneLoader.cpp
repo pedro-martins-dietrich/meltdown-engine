@@ -462,7 +462,7 @@ void loadRayTracingMeshes
 )
 {
 	meshManagers.emplace_back(std::make_unique<mtd::RayTracingMeshManager>(device));
-	mtd::MaterialInfo materialInfo{{}, {}};
+	mtd::MaterialInfo materialInfo{rtPipelineInfo.materialFloatDataTypes, rtPipelineInfo.materialTextureTypes};
 
 	for(uint32_t i = 0; i < rtMeshListJson.size(); i++)
 	{

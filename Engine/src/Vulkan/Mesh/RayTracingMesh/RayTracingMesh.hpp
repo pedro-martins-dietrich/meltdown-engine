@@ -25,17 +25,9 @@ namespace mtd
 			// Getters
 			const std::vector<Vertex>& getVertices() const { return vertices; }
 			const std::vector<uint32_t>& getIndices() const { return indices; }
+			const std::vector<uint16_t>& getMaterialIndices() const { return materialIndices; }
 			uint32_t getMaterialCount() const { return static_cast<uint32_t>(materials.size()); }
 			uint32_t getTextureCount() const;
-			uint32_t getSubmeshCount() const { return static_cast<uint32_t>(submeshInfos.size()); }
-			uint32_t getSubmeshIndexOffset(uint32_t submeshIndex) const
-				{ return submeshInfos[submeshIndex].indexOffset; }
-			uint32_t getSubmeshMaterialIndex(uint32_t submeshIndex) const
-				{ return submeshInfos[submeshIndex].materialID; }
-			uint32_t getSubmeshIndexCount(uint32_t submeshIndex) const;
-
-			// Sets all sub-mesh index offsets in the lump
-			void setIndexOffset(uint32_t offset);
 
 			// Checks if the used material has float data attributes
 			bool hasMaterialFloatData() const;
@@ -49,12 +41,14 @@ namespace mtd
 				uint32_t initialMaterialIndex
 			);
 
+			// Deletes all mesh data on this object
+			void clearMeshData();
+
 		private:
 			// Mesh data
 			std::vector<Vertex> vertices;
 			std::vector<uint32_t> indices;
-			std::vector<SubmeshData> submeshInfos;
-			uint32_t nextMeshIndexOffset;
+			std::vector<uint16_t> materialIndices;
 
 			// Mesh materials
 			std::vector<Material> materials;

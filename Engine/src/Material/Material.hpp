@@ -33,7 +33,8 @@ namespace mtd
 				const Device& device,
 				const CommandHandler& commandHandler,
 				DescriptorSetHandler& descriptorSetHandler,
-				uint32_t swappableSetIndex
+				uint32_t swappableSetIndex,
+				uint32_t bindingOffset = 0
 			);
 
 		private:
@@ -55,7 +56,8 @@ namespace mtd
 			(
 				const Device& device,
 				DescriptorSetHandler& descriptorSetHandler,
-				uint32_t swappableSetIndex
+				uint32_t swappableSetIndex,
+				uint32_t bindingOffset
 			) const;
 			// Loads all material textures
 			void loadTextures
@@ -63,7 +65,8 @@ namespace mtd
 				const Device& device,
 				const CommandHandler& commandHandler,
 				DescriptorSetHandler& descriptorSetHandler,
-				uint32_t swappableSetIndex
+				uint32_t swappableSetIndex,
+				uint32_t bindingOffset
 			);
 
 			// Finds the dimension (amount of floats) of each material float data type

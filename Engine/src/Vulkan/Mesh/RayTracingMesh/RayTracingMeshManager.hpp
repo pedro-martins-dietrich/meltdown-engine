@@ -44,13 +44,17 @@ namespace mtd
 			// Vertex and index data of all meshes in the VRAM
 			GpuBuffer vertexBuffer;
 			GpuBuffer indexBuffer;
+			GpuBuffer materialIndexBuffer;
 
 			// Lumps of data containing all vertices and indices from all meshes
 			std::vector<Vertex> vertexLump;
 			std::vector<uint32_t> indexLump;
+			// Material index buffer data, with the material ID for each triangle
+			std::vector<uint16_t> materialIndexLump;
 
-			// Index offset counter
+			// Index offset counters
 			uint32_t currentIndexOffset;
+			uint32_t currentMaterialIndexOffset;
 
 			// Stores a mesh in the lump of data
 			void loadMeshToLump(RayTracingMesh& mesh);

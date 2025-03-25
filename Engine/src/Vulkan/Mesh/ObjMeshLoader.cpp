@@ -27,8 +27,8 @@ static void loadMaterials
 	const mtd::MaterialInfo& materialInfo
 );
 
-// Parses each triangle of a face
-static void readFaceData(const std::vector<std::string>& words, ObjData& data);
+// Parses each triangle of a face, returning the number of triangles
+static size_t readFaceData(const std::vector<std::string>& words, ObjData& data);
 // Parses a vertex
 static void readVertex(const std::string& vertexDescription, ObjData& data);
 
@@ -111,6 +111,55 @@ void mtd::ObjMeshLoader::loadMultiMaterial3DMesh
 			readFaceData(words, data);
 		else if(!words[0].compare("usemtl"))
 			submeshInfos.emplace_back(static_cast<uint32_t>(data.indices.size()), materialIDs[words[1]]);
+	}
+	file.close();
+
+	LOG_VERBOSE("Mesh \"%s\" loaded.", fileName);
+}
+
+// Loads a 3D mesh for ray tracing from file
+void mtd::ObjMeshLoader::loadRayTracingMesh
+(
+	const char* fileName,
+	std::vector<Vertex>& vertices,
+	std::vector<uint32_t>& indices,
+	std::vector<uint16_t>& materialIndices,
+	std::vector<Material>& meshMaterials,
+	const MaterialInfo& materialInfo
+)
+{
+	std::string objMeshPath{MTD_RESOURCES_PATH};
+	objMeshPath.append("meshes/");
+	objMeshPath.append(fileName);
+
+	std::unordered_map<std::string, uint32_t> materialIDs;
+	loadMaterials(objMeshPath, meshMaterials, materialIDs, materialInfo);
+
+	std::string line;
+	std::vector<std::string> words;
+	uint16_t currentMaterialID = 0;
+
+	ObjData data{vertices, indices};
+
+	std::ifstream file;
+	file.open(objMeshPath);
+	while(std::getline(file, line))
+	{
+		StringParser::split(line, " ", words);
+
+		if(!words[0].compare("v"))
+			data.positions.emplace_back(std::stof(words[1]), std::stof(words[2]), std::stof(words[3]));
+		else if(!words[0].compare("vt"))
+			data.textureCoordinates.emplace_back(std::stof(words[1]), std::stof(words[2]));
+		else if(!words[0].compare("vn"))
+			data.normals.emplace_back(std::stof(words[1]), std::stof(words[2]), std::stof(words[3]));
+		else if(!words[0].compare("f"))
+		{
+			const size_t triangleCount = readFaceData(words, data);
+			materialIndices.insert(materialIndices.cend(), triangleCount, currentMaterialID);
+		}
+		else if(!words[0].compare("usemtl"))
+			currentMaterialID = materialIDs[words[1]];
 	}
 	file.close();
 
@@ -202,8 +251,8 @@ void loadMaterials
 	file.close();
 }
 
-// Parses each triangle of a face
-void readFaceData(const std::vector<std::string>& words, ObjData& data)
+// Parses each triangle of a face, returning the number of triangles
+size_t readFaceData(const std::vector<std::string>& words, ObjData& data)
 {
 	size_t triangleCount = words.size() - 3;
 	for(size_t i = 0; i < triangleCount; i++)
@@ -212,6 +261,7 @@ void readFaceData(const std::vector<std::string>& words, ObjData& data)
 		readVertex(words[2 + i], data);
 		readVertex(words[3 + i], data);
 	}
+	return triangleCount;
 }
 
 // Parses a vertex

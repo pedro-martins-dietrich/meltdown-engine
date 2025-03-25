@@ -20,8 +20,11 @@ mtd::Device::Device(const VulkanInstance& vulkanInstance, bool tryEnableRayTraci
 	std::vector<const char*> extensions;
 	selectExtensions(extensions);
 
+	vk::PhysicalDevice16BitStorageFeatures sixteenBitStorageFeatures{};
+	sixteenBitStorageFeatures.storageBuffer16BitAccess = vk::True;
 	vk::PhysicalDeviceBufferDeviceAddressFeaturesKHR bufferDeviceAddressFeatures{};
 	bufferDeviceAddressFeatures.bufferDeviceAddress = vk::True;
+	bufferDeviceAddressFeatures.pNext = &sixteenBitStorageFeatures;
 	vk::PhysicalDeviceAccelerationStructureFeaturesKHR accelerationFeatures{};
 	accelerationFeatures.accelerationStructure = vk::True;
 	accelerationFeatures.pNext = &bufferDeviceAddressFeatures;

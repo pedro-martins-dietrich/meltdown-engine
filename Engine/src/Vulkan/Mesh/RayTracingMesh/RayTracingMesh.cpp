@@ -11,42 +11,23 @@ mtd::RayTracingMesh::RayTracingMesh
 	const char* fileName,
 	const MaterialInfo& materialInfo,
 	const std::vector<Mat4x4>& preTransforms
-) : Mesh{device, index, id, preTransforms, 1}, nextMeshIndexOffset{0}
+) : Mesh{device, index, id, preTransforms, 1}
 {
-	ObjMeshLoader::loadMultiMaterial3DMesh(fileName, vertices, indices, submeshInfos, materials, materialInfo);
+	ObjMeshLoader::loadRayTracingMesh(fileName, vertices, indices, materialIndices, materials, materialInfo);
 }
 
 mtd::RayTracingMesh::RayTracingMesh(RayTracingMesh&& other) noexcept
 	: Mesh{std::move(other)},
 	vertices{std::move(other.vertices)},
 	indices{std::move(other.indices)},
-	materials{std::move(other.materials)},
-	submeshInfos{std::move(other.submeshInfos)},
-	nextMeshIndexOffset{other.nextMeshIndexOffset}
+	materialIndices{std::move(other.materialIndices)},
+	materials{std::move(other.materials)}
 {}
 
 uint32_t mtd::RayTracingMesh::getTextureCount() const
 {
 	if(materials.empty()) return 0;
 	return static_cast<uint32_t>(materials[0].getTextureCount() * materials.size());
-}
-
-uint32_t mtd::RayTracingMesh::getSubmeshIndexCount(uint32_t submeshIndex) const
-{
-	if(submeshIndex + 1 < submeshInfos.size())
-		return submeshInfos[submeshIndex + 1].indexOffset - submeshInfos[submeshIndex].indexOffset;
-	if(submeshIndex + 1 == submeshInfos.size())
-		return nextMeshIndexOffset - submeshInfos[submeshIndex].indexOffset;
-	return 0;
-}
-
-// Sets all sub-mesh index offsets in the lump
-void mtd::RayTracingMesh::setIndexOffset(uint32_t offset)
-{
-	for(SubmeshData& submeshInfo: submeshInfos)
-		submeshInfo.indexOffset += offset;
-
-	nextMeshIndexOffset = indices.size() + offset;
 }
 
 // Checks if the used material has float data attributes
@@ -66,5 +47,13 @@ void mtd::RayTracingMesh::loadMaterials
 )
 {
 	for(uint32_t i = 0; i < materials.size(); i++)
-		materials[i].loadMaterial(device, commandHandler, descriptorSetHandler, initialMaterialIndex + i);
+		materials[i].loadMaterial(device, commandHandler, descriptorSetHandler, 0, 4);
+}
+
+// Deletes all mesh data on this object
+void mtd::RayTracingMesh::clearMeshData()
+{
+	vertices.clear();
+	indices.clear();
+	materialIndices.clear();
 }

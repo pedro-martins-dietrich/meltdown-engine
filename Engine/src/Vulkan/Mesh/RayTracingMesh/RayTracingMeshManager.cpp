@@ -4,8 +4,10 @@
 mtd::RayTracingMeshManager::RayTracingMeshManager(const Device& device)
 	: BaseMeshManager{device},
 	currentIndexOffset{0},
+	currentMaterialIndexOffset{0},
 	vertexBuffer{device, vk::BufferUsageFlagBits::eStorageBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal},
-	indexBuffer{device, vk::BufferUsageFlagBits::eStorageBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal}
+	indexBuffer{device, vk::BufferUsageFlagBits::eStorageBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal},
+	materialIndexBuffer{device, vk::BufferUsageFlagBits::eStorageBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal}
 {}
 
 uint32_t mtd::RayTracingMeshManager::getMaterialCount() const
@@ -48,15 +50,12 @@ void mtd::RayTracingMeshManager::loadMeshes(DescriptorSetHandler& meshDescriptor
 
 	meshDescriptorSetHandler.assignExternalResourcesToDescriptor(0, 1, vertexBuffer);
 	meshDescriptorSetHandler.assignExternalResourcesToDescriptor(0, 2, indexBuffer);
+	meshDescriptorSetHandler.assignExternalResourcesToDescriptor(0, 3, materialIndexBuffer);
 }
 
 // Binds vertex and index buffers
 void mtd::RayTracingMeshManager::bindBuffers(const vk::CommandBuffer& commandBuffer) const
-{
-	vk::DeviceSize offset = 0;
-	commandBuffer.bindVertexBuffers(0, 1, &(vertexBuffer.getBuffer()), &offset);
-	commandBuffer.bindIndexBuffer(indexBuffer.getBuffer(), 0, vk::IndexType::eUint32);
-}
+{}
 
 // Draws the meshes using a rasterization pipeline
 void mtd::RayTracingMeshManager::drawMesh
@@ -81,16 +80,21 @@ void mtd::RayTracingMeshManager::loadMeshToLump(RayTracingMesh& mesh)
 {
 	const std::vector<Vertex>& vertices = mesh.getVertices();
 	const std::vector<uint32_t>& indices = mesh.getIndices();
-
-	mesh.setIndexOffset(static_cast<uint32_t>(indexLump.size()));
+	const std::vector<uint16_t>& materialIndices = mesh.getMaterialIndices();
 
 	vertexLump.insert(vertexLump.end(), vertices.begin(), vertices.end());
 
-	indexLump.reserve(indices.size());
+	indexLump.reserve(indexLump.size() + indices.size());
 	for(uint32_t index: indices)
 		indexLump.push_back(index + currentIndexOffset);
-
 	currentIndexOffset += vertices.size();
+
+	materialIndexLump.reserve(materialIndexLump.size() + materialIndices.size());
+	for(uint16_t materialID: materialIndices)
+		materialIndexLump.push_back(materialID + currentMaterialIndexOffset);
+	currentMaterialIndexOffset += mesh.getMaterialCount();
+
+	mesh.clearMeshData();
 }
 
 // Loads the lumps into the VRAM and clears them
@@ -98,11 +102,14 @@ void mtd::RayTracingMeshManager::loadMeshesToGPU(const CommandHandler& commandHa
 {
 	vertexBuffer.createDeviceLocal(commandHandler, sizeof(Vertex) * vertexLump.size(), vertexLump.data());
 	indexBuffer.createDeviceLocal(commandHandler, sizeof(uint32_t) * indexLump.size(), indexLump.data());
+	materialIndexBuffer
+		.createDeviceLocal(commandHandler, sizeof(uint16_t) * materialIndexLump.size(), materialIndexLump.data());
 
 	for(RayTracingMesh& mesh: meshes)
 		mesh.createInstanceBuffer();
 
 	vertexLump.clear();
 	indexLump.clear();
+	materialIndexLump.clear();
 	currentIndexOffset = 0;
 }

@@ -145,7 +145,12 @@ void mtd::RayTracingPipeline::createDescriptorSetLayouts()
 {
 	descriptorSetHandlers.reserve(info.descriptorSetInfo.size() == 0 ? 1 : 2);
 
-	std::vector<vk::DescriptorSetLayoutBinding> layoutBindings(3);
+	bool hasFloatData = !info.materialFloatDataTypes.empty();
+	bool hasTextures = !info.materialTextureTypes.empty();
+
+	uint32_t materialBindingCount = static_cast<uint32_t>(hasFloatData) + static_cast<uint32_t>(hasTextures);
+
+	std::vector<vk::DescriptorSetLayoutBinding> layoutBindings(4 + materialBindingCount);
 	layoutBindings[0].binding = 0;
 	layoutBindings[0].descriptorType = vk::DescriptorType::eStorageImage;
 	layoutBindings[0].descriptorCount = 1;
@@ -163,6 +168,33 @@ void mtd::RayTracingPipeline::createDescriptorSetLayouts()
 	layoutBindings[2].descriptorCount = 1;
 	layoutBindings[2].stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
 	layoutBindings[2].pImmutableSamplers = nullptr;
+
+	layoutBindings[3].binding = 3;
+	layoutBindings[3].descriptorType = vk::DescriptorType::eStorageBuffer;
+	layoutBindings[3].descriptorCount = 1;
+	layoutBindings[3].stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
+	layoutBindings[3].pImmutableSamplers = nullptr;
+
+	uint32_t bindingIndex = 4;
+
+	if(hasFloatData)
+	{
+		layoutBindings[bindingIndex].binding = bindingIndex;
+		layoutBindings[bindingIndex].descriptorType = vk::DescriptorType::eUniformBuffer;
+		layoutBindings[bindingIndex].descriptorCount = 1;
+		layoutBindings[bindingIndex].stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
+		layoutBindings[bindingIndex].pImmutableSamplers = nullptr;
+
+		bindingIndex++;
+	}
+	if(hasTextures)
+	{
+		layoutBindings[bindingIndex].binding = bindingIndex;
+		layoutBindings[bindingIndex].descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		layoutBindings[bindingIndex].descriptorCount = static_cast<uint32_t>(info.materialTextureTypes.size());
+		layoutBindings[bindingIndex].stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
+		layoutBindings[bindingIndex].pImmutableSamplers = nullptr;
+	}
 
 	descriptorSetHandlers.emplace_back(device, layoutBindings);
 
