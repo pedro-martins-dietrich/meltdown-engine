@@ -23,8 +23,7 @@ mtd::MultiMaterial3DMesh::MultiMaterial3DMesh(MultiMaterial3DMesh&& other) noexc
 	materials{std::move(other.materials)},
 	submeshInfos{std::move(other.submeshInfos)},
 	nextMeshIndexOffset{other.nextMeshIndexOffset}
-{
-}
+{}
 
 uint32_t mtd::MultiMaterial3DMesh::getTextureCount() const
 {

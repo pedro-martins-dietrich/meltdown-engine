@@ -99,9 +99,9 @@ namespace mtd
 		ShaderFaceCulling faceCulling = ShaderFaceCulling::None;
 		/* @brief Enables alpha blending for the pipeline. */
 		bool useTransparency = false;
-		/* @brief Types of materials attributes stored as floats used in the pipline. */
+		/* @brief Types of materials attributes stored as floats used in the pipeline. */
 		std::vector<MaterialFloatDataType> materialFloatDataTypes = {};
-		/* @brief Types of materials attributes stored as textures used in the pipline. */
+		/* @brief Types of materials attributes stored as textures used in the pipeline. */
 		std::vector<MaterialTextureType> materialTextureTypes = {};
 	};
 
@@ -139,5 +139,9 @@ namespace mtd
 		uint32_t width;
 		/* @brief Storage image vertical resolution. Ignored when a positive `windowResolutionRatio.y` is set. */
 		uint32_t height;
+		/* @brief Types of materials attributes stored as floats used in the pipeline. */
+		std::vector<MaterialFloatDataType> materialFloatDataTypes = {};
+		/* @brief Types of materials attributes stored as textures used in the pipeline. */
+		std::vector<MaterialTextureType> materialTextureTypes = {};
 	};
 }

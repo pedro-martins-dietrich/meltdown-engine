@@ -2,6 +2,7 @@
 
 #include "Mesh.hpp"
 #include "../Pipeline/GraphicsPipeline.hpp"
+#include "../Pipeline/RayTracingPipeline.hpp"
 
 namespace mtd
 {
@@ -36,13 +37,14 @@ namespace mtd
 
 			// Binds vertex and index buffers, if used
 			virtual void bindBuffers(const vk::CommandBuffer& commandBuffer) const = 0;
-			// Draws the mesh specified by the index
+			// Draws the meshes using a rasterization pipeline
 			virtual void drawMesh(const vk::CommandBuffer& commandBuffer, const GraphicsPipeline& pipeline) const = 0;
 
 		protected:
-			// Device reference
-			const Device& device;
 			// Mesh manager command handler
 			CommandHandler commandHandler;
+
+			// Device reference
+			const Device& device;
 	};
 }

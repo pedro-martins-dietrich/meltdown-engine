@@ -1,5 +1,5 @@
 {
-	"scene-loader-version": "0.1.7",
+	"scene-loader-version": "0.1.8",
 	"camera":
 	{
 		"orthographic": false,
@@ -7,12 +7,12 @@
 		"near-plane": 0.01,
 		"far-plane": 1000.0,
 		"view-width": 10.0,
-		"position": [0.0, 0.0, -4.0],
+		"position": [0.0, -2.0, -5.0],
 		"yaw": 0.0,
 		"pitch": 0.0
 	},
 	"framebuffers": [],
-	"pipelines": [],
+	"rasterization-pipelines": [],
 	"ray-tracing-pipelines":
 	[
 		{
@@ -21,7 +21,9 @@
 			"miss-shader": "ray-tracing.rmiss.spv",
 			"descriptor-set-info": [],
 			"resolution-ratio-horizontal": 1.0,
-			"resolution-ratio-vertical": 1.0
+			"resolution-ratio-vertical": 1.0,
+			"material-float-data-types": [0],
+			"material-texture-types": []
 		}
 	],
 	"framebuffer-pipelines":
@@ -37,5 +39,21 @@
 			"dependencies": []
 		}
 	],
-	"meshes": []
+	"meshes":
+	[
+		[
+			{
+				"file": "meltdown_box/meltdown_box.obj",
+				"pre-transforms":
+				[
+					[
+						1.0, 0.0, 0.0, 0.0,
+						0.0, 1.0, 0.0, 0.0,
+						0.0, 0.0, 1.0, 0.0,
+						0.0, 0.0, 1.0, 1.0
+					]
+				]
+			}
+		]
+	]
 }

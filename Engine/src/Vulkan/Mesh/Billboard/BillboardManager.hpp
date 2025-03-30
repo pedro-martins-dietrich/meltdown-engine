@@ -1,7 +1,5 @@
 #pragma once
 
-#include <memory>
-
 #include "Billboard.hpp"
 #include "../BaseMeshManager.hpp"
 #include "../../Image/Texture.hpp"
@@ -27,7 +25,7 @@ namespace mtd
 
 			// There is no buffer common to all billboards to be binded
 			virtual void bindBuffers(const vk::CommandBuffer& commandBuffer) const override;
-			// Draws the mesh specified by the index
+			// Draws the meshes using a rasterization pipeline
 			virtual void drawMesh
 			(
 				const vk::CommandBuffer& commandBuffer, const GraphicsPipeline& graphicsPipeline

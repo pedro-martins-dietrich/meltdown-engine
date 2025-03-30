@@ -7,7 +7,7 @@ mtd::DescriptorSetHandler::DescriptorSetHandler
 (
 	const vk::Device& device,
 	const std::vector<vk::DescriptorSetLayoutBinding>& setLayoutBindings
-) : device{device}
+) : device{device}, descriptorSetLayout{nullptr}
 {
 	createDescriptorSetLayout(setLayoutBindings);
 }
@@ -84,6 +84,25 @@ void mtd::DescriptorSetHandler::createImageDescriptorResources
 	);
 
 	resourcesList[swappableSetIndex][binding].descriptorImageInfo = descriptorImageInfo;
+}
+
+// Assigns an external GPU buffer as a descriptor
+void mtd::DescriptorSetHandler::assignExternalResourcesToDescriptor
+(
+	uint32_t swappableSetIndex, uint32_t binding, const GpuBuffer& buffer
+)
+{
+	assert
+	(
+		swappableSetIndex < resourcesList.size() &&
+		binding < resourcesList[swappableSetIndex].size() &&
+		"Descriptor out of bounds for resource assignment."
+	);
+
+	vk::DescriptorBufferInfo& descriptorBufferInfo = resourcesList[swappableSetIndex][binding].descriptorBufferInfo;
+	descriptorBufferInfo.buffer = buffer.getBuffer();
+	descriptorBufferInfo.offset = 0UL;
+	descriptorBufferInfo.range = buffer.getSize();
 }
 
 // Updates the descriptor set write data

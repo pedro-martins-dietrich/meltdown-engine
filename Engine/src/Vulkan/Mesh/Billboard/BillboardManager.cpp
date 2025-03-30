@@ -1,11 +1,8 @@
 #include <pch.hpp>
 #include "BillboardManager.hpp"
 
-#include "../../../Utils/Logger.hpp"
-
 mtd::BillboardManager::BillboardManager(const Device& device) : BaseMeshManager{device}
-{
-}
+{}
 
 uint32_t mtd::BillboardManager::getTextureCount() const
 {
@@ -29,16 +26,13 @@ void mtd::BillboardManager::loadMeshes(DescriptorSetHandler& textureDescriptorSe
 		meshes[i].createInstanceBuffer();
 		meshIndexMap[meshes[i].getModelID()] = i;
 	}
-
-	LOG_VERBOSE("Billboards loaded.");
 }
 
 // There is no buffer common to all billboards to be binded
 void mtd::BillboardManager::bindBuffers(const vk::CommandBuffer& commandBuffer) const
-{
-}
+{}
 
-// Draws the mesh specified by the index
+// Draws the meshes using a rasterization pipeline
 void mtd::BillboardManager::drawMesh
 (
 	const vk::CommandBuffer& commandBuffer, const GraphicsPipeline& graphicsPipeline

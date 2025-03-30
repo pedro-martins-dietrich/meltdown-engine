@@ -31,9 +31,9 @@ namespace mtd
 			// Getters
 			const vk::DescriptorSetLayout& getLayout() const { return descriptorSetLayout; }
 			uint32_t getSetCount() const { return static_cast<uint32_t>(descriptorSets.size()); }
+			std::vector<vk::DescriptorSet>& getSets() { return descriptorSets; }
 			vk::DescriptorSet& getSet(uint32_t swappableSet) { return descriptorSets[swappableSet]; }
 			const vk::DescriptorSet& getSet(uint32_t swappableSet) const { return descriptorSets[swappableSet]; }
-			std::vector<vk::DescriptorSet>& getSets() { return descriptorSets; }
 			vk::DescriptorType getDescriptorType(uint32_t binding) const { return descriptorTypes[binding]; }
 
 			// Defines how many descriptor sets can be associated with the descriptor set layout
@@ -54,6 +54,11 @@ namespace mtd
 				uint32_t swappableSetIndex,
 				uint32_t binding,
 				const vk::DescriptorImageInfo& descriptorImageInfo
+			);
+			// Assigns an external GPU buffer as a descriptor
+			void assignExternalResourcesToDescriptor
+			(
+				uint32_t swappableSetIndex, uint32_t binding, const GpuBuffer& buffer
 			);
 
 			// Updates the descriptor set write data

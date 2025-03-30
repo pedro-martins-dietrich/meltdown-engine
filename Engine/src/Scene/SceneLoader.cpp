@@ -8,10 +8,11 @@
 #include "../Vulkan/Mesh/DefaultMesh/DefaultMeshManager.hpp"
 #include "../Vulkan/Mesh/Billboard/BillboardManager.hpp"
 #include "../Vulkan/Mesh/MultiMaterial3D/MultiMaterial3DMeshManager.hpp"
+#include "../Vulkan/Mesh/RayTracingMesh/RayTracingMeshManager.hpp"
 #include "../Utils/FileHandler.hpp"
 #include "../Utils/Logger.hpp"
 
-static constexpr const char* sceneLoaderVersion = "0.1.7";
+static constexpr const char* sceneLoaderVersion = "0.1.8";
 
 static void loadCamera(const nlohmann::json& cameraJson);
 static void loadFramebuffer
@@ -58,6 +59,13 @@ static void loadBillboards
 	const mtd::GraphicsPipelineInfo& graphicsPipelineInfo,
 	std::vector<std::unique_ptr<mtd::MeshManager>>& meshManagers
 );
+static void loadRayTracingMeshes
+(
+	const mtd::Device& device,
+	const nlohmann::json& rtMeshListJson,
+	const mtd::RayTracingPipelineInfo& rtPipelineInfo,
+	std::vector<std::unique_ptr<mtd::MeshManager>>& meshManagers
+);
 
 // Loads the meshes from a Meltdown scene file
 void mtd::SceneLoader::load
@@ -89,17 +97,17 @@ void mtd::SceneLoader::load
 	loadCamera(sceneJson["camera"]);
 
 	const nlohmann::json& framebuffersJson = sceneJson["framebuffers"];
-	const nlohmann::json& pipelinesJson = sceneJson["pipelines"];
+	const nlohmann::json& rasterPipelinesJson = sceneJson["rasterization-pipelines"];
 	const nlohmann::json& fbPipelinesJson = sceneJson["framebuffer-pipelines"];
-	const nlohmann::json& rayTracingPipelinesJson = sceneJson["ray-tracing-pipelines"];
+	const nlohmann::json& rtPipelinesJson = sceneJson["ray-tracing-pipelines"];
 	const nlohmann::json& meshesJson = sceneJson["meshes"];
 
-	if(pipelinesJson.size() != meshesJson.size())
+	if((rasterPipelinesJson.size() + rtPipelinesJson.size()) != meshesJson.size())
 		LOG_ERROR("The number of pipelines and mesh managers should be the same.");
 	
 	framebufferInfos.reserve(framebuffersJson.size());
-	graphicsPipelineInfos.reserve(pipelinesJson.size());
-	rayTracingPipelineInfos.reserve(rayTracingPipelinesJson.size());
+	graphicsPipelineInfos.reserve(rasterPipelinesJson.size());
+	rayTracingPipelineInfos.reserve(rtPipelinesJson.size());
 	framebufferPipelineInfos.reserve(fbPipelinesJson.size());
 	renderOrder.reserve(framebuffersJson.size() + 1);
 	meshManagers.reserve(meshesJson.size());
@@ -111,15 +119,22 @@ void mtd::SceneLoader::load
 	}
 	renderOrder.emplace_back(-1);
 
-	for(const nlohmann::json& pipelineJson: pipelinesJson)
-		loadPipeline(pipelineJson, graphicsPipelineInfos, renderOrder);
-	for(const nlohmann::json& rtPipelineJson: rayTracingPipelinesJson)
+	for(const nlohmann::json& rasterPipelineJson: rasterPipelinesJson)
+		loadPipeline(rasterPipelineJson, graphicsPipelineInfos, renderOrder);
+	for(const nlohmann::json& rtPipelineJson: rtPipelinesJson)
 		loadRayTracingPipeline(rtPipelineJson, rayTracingPipelineInfos);
 	for(const nlohmann::json& fbPipelineJson: fbPipelinesJson)
 		loadFramebufferPipeline(fbPipelineJson, framebufferPipelineInfos, renderOrder);
 
 	for(uint32_t i = 0; i < meshesJson.size(); i++)
 	{
+		if(i >= graphicsPipelineInfos.size())
+		{
+			uint32_t rtPipelineIndex = i - rasterPipelinesJson.size();
+			loadRayTracingMeshes(device, meshesJson[i], rayTracingPipelineInfos[rtPipelineIndex], meshManagers);
+			continue;
+		}
+
 		switch(graphicsPipelineInfos[i].associatedMeshType)
 		{
 			case MeshType::Default3D:
@@ -264,6 +279,16 @@ void loadRayTracingPipeline
 		);
 	}
 
+	std::vector<mtd::MaterialFloatDataType> floatDataTypes;
+	floatDataTypes.reserve(rtPipelineJson["material-float-data-types"].size());
+	for(const nlohmann::json& floatDataType: rtPipelineJson["material-float-data-types"])
+		floatDataTypes.emplace_back(static_cast<mtd::MaterialFloatDataType>(floatDataType));
+
+	std::vector<mtd::MaterialTextureType> textureTypes;
+	textureTypes.reserve(rtPipelineJson["material-texture-types"].size());
+	for(const nlohmann::json& textureType: rtPipelineJson["material-texture-types"])
+		textureTypes.emplace_back(static_cast<mtd::MaterialTextureType>(textureType));
+
 	rayTracingPipelineInfos.emplace_back
 	(
 		mtd::RayTracingPipelineInfo
@@ -276,7 +301,9 @@ void loadRayTracingPipeline
 				rtPipelineJson.value("resolution-ratio-vertical", -1.0f)
 			},
 			rtPipelineJson.value("fixed-horizontal-resolution", 1280U),
-			rtPipelineJson.value("fixed-vertical-resolution", 720U)
+			rtPipelineJson.value("fixed-vertical-resolution", 720U),
+			std::move(floatDataTypes),
+			std::move(textureTypes)
 		}
 	);
 }
@@ -422,5 +449,32 @@ void loadBillboards
 		std::vector<mtd::Billboard>& billboards =
 			dynamic_cast<mtd::BillboardManager*>(meshManagers.back().get())->getMeshes();
 		billboards.emplace_back(device, i, id.c_str(), texturePath.c_str(), materialInfo, *pPreTransforms);
+	}
+}
+
+// Fetches ray tracing meshes from the scene file
+void loadRayTracingMeshes
+(
+	const mtd::Device& device,
+	const nlohmann::json& rtMeshListJson,
+	const mtd::RayTracingPipelineInfo& rtPipelineInfo,
+	std::vector<std::unique_ptr<mtd::MeshManager>>& meshManagers
+)
+{
+	meshManagers.emplace_back(std::make_unique<mtd::RayTracingMeshManager>(device));
+	mtd::MaterialInfo materialInfo{rtPipelineInfo.materialFloatDataTypes, rtPipelineInfo.materialTextureTypes};
+
+	for(uint32_t i = 0; i < rtMeshListJson.size(); i++)
+	{
+		const std::string& id = rtMeshListJson[i].value("model-id", "");
+		const std::string& file = rtMeshListJson[i]["file"];
+
+		const std::vector<std::array<float, 16>>& preTransforms = rtMeshListJson[i]["pre-transforms"];
+		const std::vector<mtd::Mat4x4>* pPreTransforms =
+			reinterpret_cast<const std::vector<mtd::Mat4x4>*>(&preTransforms);
+
+		std::vector<mtd::RayTracingMesh>& meshes =
+			dynamic_cast<mtd::RayTracingMeshManager*>(meshManagers.back().get())->getMeshes();
+		meshes.emplace_back(device, i, id.c_str(), file.c_str(), materialInfo, *pPreTransforms);
 	}
 }

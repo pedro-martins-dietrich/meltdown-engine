@@ -1,15 +1,12 @@
 #include <pch.hpp>
 #include "MultiMaterial3DMeshManager.hpp"
 
-#include "../../../Utils/Logger.hpp"
-
 mtd::MultiMaterial3DMeshManager::MultiMaterial3DMeshManager(const Device& device)
 	: BaseMeshManager{device},
 	currentIndexOffset{0},
 	vertexBuffer{device, vk::BufferUsageFlagBits::eVertexBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal},
 	indexBuffer{device, vk::BufferUsageFlagBits::eIndexBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal}
-{
-}
+{}
 
 uint32_t mtd::MultiMaterial3DMeshManager::getMaterialCount() const
 {
@@ -58,7 +55,7 @@ void mtd::MultiMaterial3DMeshManager::bindBuffers(const vk::CommandBuffer& comma
 	commandBuffer.bindIndexBuffer(indexBuffer.getBuffer(), 0, vk::IndexType::eUint32);
 }
 
-// Draws the mesh specified by the index
+// Draws the meshes using a rasterization pipeline
 void mtd::MultiMaterial3DMeshManager::drawMesh
 (
 	const vk::CommandBuffer& commandBuffer, const GraphicsPipeline& graphicsPipeline
