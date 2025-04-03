@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../Mesh.hpp"
-#include "../../../Material/Material.hpp"
+#include "../../../Material/MaterialLump.hpp"
 
 namespace mtd
 {
@@ -15,7 +15,7 @@ namespace mtd
 				uint32_t index,
 				const char* id,
 				const char* fileName,
-				const MaterialInfo& materialInfo,
+				MaterialLump& materialLump,
 				const std::vector<Mat4x4>& preTransforms
 			);
 			~RayTracingMesh() = default;
@@ -26,20 +26,7 @@ namespace mtd
 			const std::vector<Vertex>& getVertices() const { return vertices; }
 			const std::vector<uint32_t>& getIndices() const { return indices; }
 			const std::vector<uint16_t>& getMaterialIndices() const { return materialIndices; }
-			uint32_t getMaterialCount() const { return static_cast<uint32_t>(materials.size()); }
-			uint32_t getTextureCount() const;
-
-			// Checks if the used material has float data attributes
-			bool hasMaterialFloatData() const;
-
-			// Loads mesh materials
-			void loadMaterials
-			(
-				const Device& device,
-				const CommandHandler& commandHandler,
-				DescriptorSetHandler& descriptorSetHandler,
-				uint32_t initialMaterialIndex
-			);
+			uint32_t getMaterialCount() const { return materialCount; }
 
 			// Deletes all mesh data on this object
 			void clearMeshData();
@@ -50,7 +37,7 @@ namespace mtd
 			std::vector<uint32_t> indices;
 			std::vector<uint16_t> materialIndices;
 
-			// Mesh materials
-			std::vector<Material> materials;
+			// Mesh material count
+			uint32_t materialCount;
 	};
 }

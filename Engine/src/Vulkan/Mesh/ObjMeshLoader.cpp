@@ -124,16 +124,20 @@ void mtd::ObjMeshLoader::loadRayTracingMesh
 	std::vector<Vertex>& vertices,
 	std::vector<uint32_t>& indices,
 	std::vector<uint16_t>& materialIndices,
-	std::vector<Material>& meshMaterials,
-	const MaterialInfo& materialInfo
+	MaterialLump& materialLump
 )
 {
 	std::string objMeshPath{MTD_RESOURCES_PATH};
 	objMeshPath.append("meshes/");
 	objMeshPath.append(fileName);
 
+	std::vector<Material> materials;
 	std::unordered_map<std::string, uint32_t> materialIDs;
-	loadMaterials(objMeshPath, meshMaterials, materialIDs, materialInfo);
+	loadMaterials(objMeshPath, materials, materialIDs, materialLump.getMaterialInfo());
+
+	for(const Material& material: materials)
+		materialLump.addMaterial(material.getFloatAttributesData(), material.getFloatAttributesSize());
+	materials.clear();
 
 	std::string line;
 	std::vector<std::string> words;

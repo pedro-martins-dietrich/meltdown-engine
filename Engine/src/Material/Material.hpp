@@ -16,7 +16,9 @@ namespace mtd
 
 			Material(Material&& other) noexcept;
 
-			// Getter
+			// Getters
+			const float* getFloatAttributesData() const { return floatAttributes.data(); }
+			size_t getFloatAttributesSize() const { return floatAttributes.size(); }
 			uint32_t getTextureCount() const { return static_cast<uint32_t>(textureTypes.size()); }
 
 			// Checks if the material has float data attributes
