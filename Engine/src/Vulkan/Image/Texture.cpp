@@ -6,6 +6,12 @@
 
 #include "../../Utils/Logger.hpp"
 
+mtd::Texture::Texture(const Device& mtdDevice, const char* fileName)
+	: width{0}, height{0}, channels{0}, pixels{nullptr}, image{mtdDevice.getDevice()}
+{
+	loadFromFile(mtdDevice, fileName);
+}
+
 mtd::Texture::Texture
 (
 	const Device& mtdDevice,
@@ -14,9 +20,10 @@ mtd::Texture::Texture
 	DescriptorSetHandler& descriptorSetHandler,
 	uint32_t swappableSetIndex,
 	uint32_t binding
-) : width{0}, height{0}, channels{0}, image{mtdDevice.getDevice()}
+) : width{0}, height{0}, channels{0}, pixels{nullptr}, image{mtdDevice.getDevice()}
 {
-	loadFromFile(mtdDevice, commandHandler, fileName);
+	loadFromFile(mtdDevice, fileName);
+	loadToGpu(mtdDevice, commandHandler);
 	createDescriptorResource(descriptorSetHandler, swappableSetIndex, binding);
 }
 
@@ -28,33 +35,18 @@ mtd::Texture::Texture(Texture&& other) noexcept
 	other.pixels = nullptr;
 }
 
-// Loads texture from file
-void mtd::Texture::loadFromFile(const Device& mtdDevice, const CommandHandler& commandHandler, const char* fileName)
+vk::DescriptorImageInfo mtd::Texture::getDescriptorImageInfo() const
 {
-	stbi_set_flip_vertically_on_load(true);
-	pixels = stbi_load(fileName, &width, &height, &channels, STBI_rgb_alpha);
-	if(!pixels)
-		LOG_ERROR("Failed to load texture \"%s\".", fileName);
-
-	image.createImage
-	(
-		{static_cast<uint32_t>(width), static_cast<uint32_t>(height)},
-		vk::Format::eR8G8B8A8Unorm,
-		vk::ImageTiling::eOptimal,
-		vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled
-	);
-	image.createImageMemory(mtdDevice, vk::MemoryPropertyFlagBits::eDeviceLocal);
-
-	loadToGpu(mtdDevice, commandHandler);
-	free(pixels);
-
-	image.createImageView(vk::ImageAspectFlagBits::eColor, vk::ImageViewType::e2D);
-	image.createImageSampler(vk::Filter::eNearest);
+	vk::DescriptorImageInfo descriptorImageInfo{};
+	image.defineDescriptorImageInfo(&descriptorImageInfo);
+	return descriptorImageInfo;
 }
 
 // Sends the texture data to the GPU
 void mtd::Texture::loadToGpu(const Device& mtdDevice, const CommandHandler& commandHandler)
 {
+	assert(pixels != nullptr && "The image must be loaded from file before loading to the GPU.");
+
 	const vk::DeviceSize imageSize = static_cast<vk::DeviceSize>(width * height * 4);
 	GpuBuffer stagingBuffer
 	{
@@ -74,6 +66,28 @@ void mtd::Texture::loadToGpu(const Device& mtdDevice, const CommandHandler& comm
 	commandBuffer = commandHandler.beginSingleTimeCommand();
 	image.transitionImageLayout(commandBuffer, vk::ImageLayout::eShaderReadOnlyOptimal);
 	commandHandler.endSingleTimeCommand(commandBuffer);
+
+	free(pixels);
+	image.createImageView(vk::ImageAspectFlagBits::eColor, vk::ImageViewType::e2D);
+	image.createImageSampler(vk::Filter::eNearest);
+}
+
+// Loads texture from file
+void mtd::Texture::loadFromFile(const Device& mtdDevice, const char* fileName)
+{
+	stbi_set_flip_vertically_on_load(true);
+	pixels = stbi_load(fileName, &width, &height, &channels, STBI_rgb_alpha);
+	if(!pixels)
+		LOG_ERROR("Failed to load texture \"%s\".", fileName);
+
+	image.createImage
+	(
+		{static_cast<uint32_t>(width), static_cast<uint32_t>(height)},
+		vk::Format::eR8G8B8A8Unorm,
+		vk::ImageTiling::eOptimal,
+		vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled
+	);
+	image.createImageMemory(mtdDevice, vk::MemoryPropertyFlagBits::eDeviceLocal);
 }
 
 // Configures the texture descriptor set

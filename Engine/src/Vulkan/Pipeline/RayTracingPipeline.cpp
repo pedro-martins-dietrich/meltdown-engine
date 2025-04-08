@@ -5,6 +5,8 @@
 #include "Builders/PipelineMapping.hpp"
 #include "../../Utils/Logger.hpp"
 
+static constexpr uint32_t MAX_TEXTURE_COUNT = 1024U;
+
 mtd::RayTracingPipeline::RayTracingPipeline
 (
 	const Device& mtdDevice,
@@ -145,24 +147,48 @@ void mtd::RayTracingPipeline::createDescriptorSetLayouts()
 {
 	descriptorSetHandlers.reserve(info.descriptorSetInfo.size() == 0 ? 1 : 2);
 
-	const uint32_t bindingCount = 5U;
+	const uint32_t bindingCount = info.materialTextureTypes.empty() ? 5U : 6U;
+	uint32_t bindingIndex = 0U;
 	std::vector<vk::DescriptorSetLayoutBinding> layoutBindings(bindingCount);
-	layoutBindings[0].binding = 0;
-	layoutBindings[0].descriptorType = vk::DescriptorType::eStorageImage;
-	layoutBindings[0].descriptorCount = 1;
-	layoutBindings[0].stageFlags = vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eMissKHR;
-	layoutBindings[0].pImmutableSamplers = nullptr;
+	layoutBindings[bindingIndex].binding = bindingIndex;
+	layoutBindings[bindingIndex].descriptorType = vk::DescriptorType::eStorageImage;
+	layoutBindings[bindingIndex].descriptorCount = 1U;
+	layoutBindings[bindingIndex].stageFlags = vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eMissKHR;
+	layoutBindings[bindingIndex].pImmutableSamplers = nullptr;
 
-	for(uint32_t i = 1; i < bindingCount; i++)
+	bindingIndex++;
+
+	while(bindingIndex < 5U)
 	{
-		layoutBindings[i].binding = i;
-		layoutBindings[i].descriptorType = vk::DescriptorType::eStorageBuffer;
-		layoutBindings[i].descriptorCount = 1;
-		layoutBindings[i].stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
-		layoutBindings[i].pImmutableSamplers = nullptr;
+		layoutBindings[bindingIndex].binding = bindingIndex;
+		layoutBindings[bindingIndex].descriptorType = vk::DescriptorType::eStorageBuffer;
+		layoutBindings[bindingIndex].descriptorCount = 1U;
+		layoutBindings[bindingIndex].stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
+		layoutBindings[bindingIndex].pImmutableSamplers = nullptr;
+
+		bindingIndex++;
 	}
 
-	descriptorSetHandlers.emplace_back(device, layoutBindings);
+	vk::DescriptorSetLayoutBindingFlagsCreateInfo descriptorSetLayoutBindingsCreateInfo{};
+	const vk::DescriptorSetLayoutBindingFlagsCreateInfo* pDescriptorSetLayoutBindingsCreateInfo = nullptr;
+	std::array<vk::DescriptorBindingFlags, 6> bindingFlags;
+	if(!info.materialTextureTypes.empty())
+	{
+		layoutBindings[bindingIndex].binding = bindingIndex;
+		layoutBindings[bindingIndex].descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		layoutBindings[bindingIndex].descriptorCount = MAX_TEXTURE_COUNT;
+		layoutBindings[bindingIndex].stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
+		layoutBindings[bindingIndex].pImmutableSamplers = nullptr;
+
+		bindingFlags[5] = vk::DescriptorBindingFlagBits::eVariableDescriptorCount |
+			vk::DescriptorBindingFlagBits::ePartiallyBound;
+		
+		descriptorSetLayoutBindingsCreateInfo.bindingCount = bindingCount;
+		descriptorSetLayoutBindingsCreateInfo.pBindingFlags = bindingFlags.data();
+		pDescriptorSetLayoutBindingsCreateInfo = &descriptorSetLayoutBindingsCreateInfo;
+	}
+
+	descriptorSetHandlers.emplace_back(device, layoutBindings, pDescriptorSetLayoutBindingsCreateInfo);
 
 	if(info.descriptorSetInfo.size() == 0) return;
 	layoutBindings.clear();

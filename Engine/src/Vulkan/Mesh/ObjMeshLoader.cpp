@@ -136,7 +136,11 @@ void mtd::ObjMeshLoader::loadRayTracingMesh
 	loadMaterials(objMeshPath, materials, materialIDs, materialLump.getMaterialInfo());
 
 	for(const Material& material: materials)
-		materialLump.addMaterial(material.getFloatAttributesData(), material.getFloatAttributesSize());
+	{
+		std::vector<std::string> texturePaths;
+		material.fetchTexturePaths(texturePaths);
+		materialLump.addMaterial(material.getFloatAttributesData(), material.getFloatAttributesSize(), texturePaths);
+	}
 	materials.clear();
 
 	std::string line;

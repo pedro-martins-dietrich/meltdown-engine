@@ -20,8 +20,14 @@ mtd::Device::Device(const VulkanInstance& vulkanInstance, bool tryEnableRayTraci
 	std::vector<const char*> extensions;
 	selectExtensions(extensions);
 
+	vk::PhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures{};
+	descriptorIndexingFeatures.runtimeDescriptorArray = vk::True;
+	descriptorIndexingFeatures.descriptorBindingPartiallyBound = vk::True;
+	descriptorIndexingFeatures.descriptorBindingVariableDescriptorCount = vk::True;
+	descriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing = vk::True;
 	vk::PhysicalDevice16BitStorageFeatures sixteenBitStorageFeatures{};
 	sixteenBitStorageFeatures.storageBuffer16BitAccess = vk::True;
+	sixteenBitStorageFeatures.pNext = &descriptorIndexingFeatures;
 	vk::PhysicalDeviceBufferDeviceAddressFeaturesKHR bufferDeviceAddressFeatures{};
 	bufferDeviceAddressFeatures.bufferDeviceAddress = vk::True;
 	bufferDeviceAddressFeatures.pNext = &sixteenBitStorageFeatures;
@@ -37,8 +43,18 @@ mtd::Device::Device(const VulkanInstance& vulkanInstance, bool tryEnableRayTraci
 	physicalDeviceFeatures2.pNext = &rayTracingFeatures;
 
 	physicalDevice.getPhysicalDevice().getFeatures2(&physicalDeviceFeatures2);
-	if(!(rayTracingFeatures.rayTracingPipeline && accelerationFeatures.accelerationStructure))
+	if
+	(
+		!rayTracingFeatures.rayTracingPipeline ||
+		!accelerationFeatures.accelerationStructure ||
+		!bufferDeviceAddressFeatures.bufferDeviceAddress ||
+		!sixteenBitStorageFeatures.storageBuffer16BitAccess ||
+		!descriptorIndexingFeatures.runtimeDescriptorArray
+	)
+	{
 		rayTracingEnabled = false;
+		LOG_WARNING("Required ray tracing features not available on the current device.");
+	}
 
 	vk::DeviceCreateInfo deviceCreateInfo{};
 	deviceCreateInfo.flags = vk::DeviceCreateFlags();
@@ -103,7 +119,8 @@ void mtd::Device::selectExtensions(std::vector<const char*>& extensions) const
 			vk::KHRRayTracingPipelineExtensionName,
 			vk::KHRAccelerationStructureExtensionName,
 			vk::KHRDeferredHostOperationsExtensionName,
-			vk::KHRBufferDeviceAddressExtensionName
+			vk::KHRBufferDeviceAddressExtensionName,
+			vk::EXTDescriptorIndexingExtensionName
 		};
 	}
 	else

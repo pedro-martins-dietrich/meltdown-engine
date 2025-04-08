@@ -24,7 +24,9 @@ void mtd::RayTracingMeshManager::loadMeshes(DescriptorSetHandler& meshDescriptor
 	meshDescriptorSetHandler.assignExternalResourcesToDescriptor(0, 1, vertexBuffer);
 	meshDescriptorSetHandler.assignExternalResourcesToDescriptor(0, 2, indexBuffer);
 	meshDescriptorSetHandler.assignExternalResourcesToDescriptor(0, 3, materialIndexBuffer);
-	materialLump.assignBufferToDescriptor(meshDescriptorSetHandler, 0, 4);
+	materialLump.assignFloatDataBufferToDescriptor(meshDescriptorSetHandler, 0, 4);
+	if(meshDescriptorSetHandler.getBindingCount() == 6)
+		materialLump.assignTexturesToDescriptor(meshDescriptorSetHandler, 0, 5);
 }
 
 // Creates a new ray tracing mesh

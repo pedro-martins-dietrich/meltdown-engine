@@ -21,6 +21,9 @@ namespace mtd
 			size_t getFloatAttributesSize() const { return floatAttributes.size(); }
 			uint32_t getTextureCount() const { return static_cast<uint32_t>(textureTypes.size()); }
 
+			// Fetches the texture paths for the material
+			void fetchTexturePaths(std::vector<std::string>& textureFilePaths) const;
+
 			// Checks if the material has float data attributes
 			bool hasFloatData() const { return !floatAttributeTypes.empty(); }
 

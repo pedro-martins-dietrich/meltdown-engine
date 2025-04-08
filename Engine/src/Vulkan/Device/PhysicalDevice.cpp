@@ -38,12 +38,13 @@ mtd::PhysicalDevice::PhysicalDevice(const vk::Instance& vulkanInstance) : physic
 // Verifies if the hardware supports ray tracing
 bool mtd::PhysicalDevice::isRayTracingCompatible() const
 {
-	constexpr std::array<const char*, 4> rayTracingExtensions =
+	constexpr std::array<const char*, 5> rayTracingExtensions =
 	{
 		vk::KHRRayTracingPipelineExtensionName,
 		vk::KHRAccelerationStructureExtensionName,
 		vk::KHRDeferredHostOperationsExtensionName,
-		vk::KHRBufferDeviceAddressExtensionName
+		vk::KHRBufferDeviceAddressExtensionName,
+		vk::EXTDescriptorIndexingExtensionName
 	};
 	const std::vector<vk::ExtensionProperties> availableExtensions =
 		physicalDevice.enumerateDeviceExtensionProperties();

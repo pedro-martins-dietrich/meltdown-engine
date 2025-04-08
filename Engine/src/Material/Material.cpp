@@ -25,6 +25,13 @@ mtd::Material::Material(Material&& other) noexcept
 	textures{std::move(other.textures)}
 {}
 
+// Fetches the texture paths for the material
+void mtd::Material::fetchTexturePaths(std::vector<std::string>& textureFilePaths) const
+{
+	for(const auto& [textureType, texturePath]: texturePaths)
+		textureFilePaths.emplace_back(texturePath.c_str());
+}
+
 // Inserts a float attribute data
 void mtd::Material::addFloatData(MaterialFloatDataType floatDataType, const float* data)
 {
