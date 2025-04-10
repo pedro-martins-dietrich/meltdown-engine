@@ -6,8 +6,18 @@
 
 #include "../../Utils/Logger.hpp"
 
+static constexpr std::array<uint32_t, 256> missingTexture = []() constexpr
+{
+	std::array<uint32_t, 256> texture{};
+	for(size_t i = 0; i < 256; i++)
+		texture[i] = (i % 2 ^ (i >> 4) % 2) ? 0xFF000000 : 0xFFFF00FF;
+	return texture;
+}();
+
 mtd::Texture::Texture(const Device& mtdDevice, const char* fileName)
-	: width{0}, height{0}, channels{0}, pixels{nullptr}, image{mtdDevice.getDevice()}
+	: width{0}, height{0}, channels{0},
+	pixels{nullptr}, image{mtdDevice.getDevice()},
+	isPlaceholderTexture{false}
 {
 	loadFromFile(mtdDevice, fileName);
 }
@@ -20,7 +30,9 @@ mtd::Texture::Texture
 	DescriptorSetHandler& descriptorSetHandler,
 	uint32_t swappableSetIndex,
 	uint32_t binding
-) : width{0}, height{0}, channels{0}, pixels{nullptr}, image{mtdDevice.getDevice()}
+) : width{0}, height{0}, channels{0},
+	pixels{nullptr}, image{mtdDevice.getDevice()},
+	isPlaceholderTexture{false}
 {
 	loadFromFile(mtdDevice, fileName);
 	loadToGpu(mtdDevice, commandHandler);
@@ -29,8 +41,8 @@ mtd::Texture::Texture
 
 mtd::Texture::Texture(Texture&& other) noexcept
 	: width{other.width}, height{other.height}, channels{other.channels},
-	pixels{other.pixels},
-	image{std::move(other.image)}
+	pixels{other.pixels}, image{std::move(other.image)},
+	isPlaceholderTexture{other.isPlaceholderTexture}
 {
 	other.pixels = nullptr;
 }
@@ -67,7 +79,9 @@ void mtd::Texture::loadToGpu(const Device& mtdDevice, const CommandHandler& comm
 	image.transitionImageLayout(commandBuffer, vk::ImageLayout::eShaderReadOnlyOptimal);
 	commandHandler.endSingleTimeCommand(commandBuffer);
 
-	free(pixels);
+	if(!isPlaceholderTexture)
+		free(pixels);
+
 	image.createImageView(vk::ImageAspectFlagBits::eColor, vk::ImageViewType::e2D);
 	image.createImageSampler(vk::Filter::eNearest);
 }
@@ -78,7 +92,16 @@ void mtd::Texture::loadFromFile(const Device& mtdDevice, const char* fileName)
 	stbi_set_flip_vertically_on_load(true);
 	pixels = stbi_load(fileName, &width, &height, &channels, STBI_rgb_alpha);
 	if(!pixels)
-		LOG_ERROR("Failed to load texture \"%s\".", fileName);
+	{
+		LOG_WARNING("Failed to load texture \"%s\".", fileName);
+
+		width = 16;
+		height = 16;
+		channels = 4;
+
+		pixels = (stbi_uc*) missingTexture.data();
+		isPlaceholderTexture = true;
+	}
 
 	image.createImage
 	(

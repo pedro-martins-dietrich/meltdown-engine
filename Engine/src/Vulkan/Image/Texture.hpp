@@ -41,6 +41,8 @@ namespace mtd
 
 			// Vulkan image resources
 			Image image;
+			// Indicates if the texture has failed to load properly
+			bool isPlaceholderTexture;
 
 			// Loads texture from file
 			void loadFromFile(const Device& mtdDevice, const char* fileName);
