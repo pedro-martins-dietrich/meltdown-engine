@@ -32,7 +32,11 @@ namespace mtd
 			);
 
 			// Allocates a descriptor set in the pool
-			void allocateDescriptorSet(DescriptorSetHandler& descriptorSetHandler) const;
+			void allocateDescriptorSet
+			(
+				DescriptorSetHandler& descriptorSetHandler,
+				const void* pExtraAllocateInfo = nullptr
+			) const;
 
 			// Clears the descriptor pool and its sets
 			void clear();

@@ -5,8 +5,7 @@
 
 mtd::DescriptorPool::DescriptorPool(const vk::Device& device)
 	: device{device}, isClear{true}
-{
-}
+{}
 
 mtd::DescriptorPool::~DescriptorPool()
 {
@@ -36,27 +35,27 @@ void mtd::DescriptorPool::createDescriptorPool
 	descriptorPoolCreateInfo.pPoolSizes = poolSizes.data();
 
 	isClear = false;
-	vk::Result result =
-		device.createDescriptorPool(&descriptorPoolCreateInfo, nullptr, &descriptorPool);
+	vk::Result result = device.createDescriptorPool(&descriptorPoolCreateInfo, nullptr, &descriptorPool);
 	if(result != vk::Result::eSuccess)
 		LOG_ERROR("Failed to create descriptor pool. Vulkan result: %d", result);
 }
 
 // Allocates descriptor sets in the pool
-void mtd::DescriptorPool::allocateDescriptorSet(DescriptorSetHandler& descriptorSetHandler) const
+void mtd::DescriptorPool::allocateDescriptorSet
+(
+	DescriptorSetHandler& descriptorSetHandler,
+	const void* pExtraAllocateInfo
+) const
 {
-	std::vector<vk::DescriptorSetLayout> layouts
-	{
-		descriptorSetHandler.getSetCount(), descriptorSetHandler.getLayout()
-	};
+	std::vector<vk::DescriptorSetLayout> layouts{descriptorSetHandler.getSetCount(), descriptorSetHandler.getLayout()};
 
 	vk::DescriptorSetAllocateInfo setAllocateInfo{};
 	setAllocateInfo.descriptorPool = descriptorPool;
 	setAllocateInfo.descriptorSetCount = descriptorSetHandler.getSetCount();
 	setAllocateInfo.pSetLayouts = layouts.data();
+	setAllocateInfo.pNext = pExtraAllocateInfo;
 
-	vk::Result result =
-		device.allocateDescriptorSets(&setAllocateInfo, descriptorSetHandler.getSets().data());
+	vk::Result result = device.allocateDescriptorSets(&setAllocateInfo, descriptorSetHandler.getSets().data());
 	if(result != vk::Result::eSuccess)
 		LOG_ERROR("Failed to allocate descriptor set. Vulkan result: %d", result);
 }

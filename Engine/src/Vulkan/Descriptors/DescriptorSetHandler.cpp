@@ -6,10 +6,11 @@
 mtd::DescriptorSetHandler::DescriptorSetHandler
 (
 	const vk::Device& device,
-	const std::vector<vk::DescriptorSetLayoutBinding>& setLayoutBindings
+	const std::vector<vk::DescriptorSetLayoutBinding>& setLayoutBindings,
+	const vk::DescriptorSetLayoutBindingFlagsCreateInfo* pFlags
 ) : device{device}, descriptorSetLayout{nullptr}
 {
-	createDescriptorSetLayout(setLayoutBindings);
+	createDescriptorSetLayout(setLayoutBindings, pFlags);
 }
 
 mtd::DescriptorSetHandler::~DescriptorSetHandler()
@@ -83,7 +84,25 @@ void mtd::DescriptorSetHandler::createImageDescriptorResources
 		"Descriptor out of bounds for image resource creation."
 	);
 
-	resourcesList[swappableSetIndex][binding].descriptorImageInfo = descriptorImageInfo;
+	resourcesList[swappableSetIndex][binding].descriptorImagesInfo = {descriptorImageInfo};
+}
+
+// Creates the resources for a vector of images descriptor
+void mtd::DescriptorSetHandler::createImagesDescriptorResources
+(
+	uint32_t swappableSetIndex,
+	uint32_t binding,
+	std::vector<vk::DescriptorImageInfo>& descriptorImagesInfo
+)
+{
+	assert
+	(
+		swappableSetIndex < resourcesList.size() &&
+		binding < resourcesList[swappableSetIndex].size() &&
+		"Descriptor out of bounds for image resource creation."
+	);
+
+	resourcesList[swappableSetIndex][binding].descriptorImagesInfo = std::move(descriptorImagesInfo);
 }
 
 // Assigns an external GPU buffer as a descriptor
@@ -110,24 +129,34 @@ void mtd::DescriptorSetHandler::writeDescriptorSet(uint32_t swappableSetIndex)
 {
 	assert(swappableSetIndex < resourcesList.size() && "Swappable descriptor set not available to write data.");
 
-	writeOps.resize(resourcesList[swappableSetIndex].size());
-	for(uint32_t binding = 0; binding < resourcesList[swappableSetIndex].size(); binding++)
+	const std::vector<DescriptorResources>& setResourcesList = resourcesList[swappableSetIndex];
+
+	writeOps.resize(setResourcesList.size());
+	for(uint32_t binding = 0; binding < setResourcesList.size(); binding++)
 	{
-		vk::DescriptorImageInfo* pImageInfo = nullptr;
-		vk::DescriptorBufferInfo* pBufferInfo = nullptr;
+		const DescriptorResources& bindingResources = setResourcesList[binding];
+		uint32_t descriptorCount = 1U;
+
+		const vk::DescriptorImageInfo* pImageInfo = nullptr;
+		const vk::DescriptorBufferInfo* pBufferInfo = nullptr;
 		if
 		(
 			descriptorTypes[binding] == vk::DescriptorType::eCombinedImageSampler ||
 			descriptorTypes[binding] == vk::DescriptorType::eStorageImage
 		)
-			pImageInfo = &(resourcesList[swappableSetIndex][binding].descriptorImageInfo);
+		{
+			pImageInfo = bindingResources.descriptorImagesInfo.data();
+			descriptorCount = static_cast<uint32_t>(bindingResources.descriptorImagesInfo.size());
+		}
 		else
-			pBufferInfo = &(resourcesList[swappableSetIndex][binding].descriptorBufferInfo);
+		{
+			pBufferInfo = &(bindingResources.descriptorBufferInfo);
+		}
 
 		writeOps[binding].dstSet = descriptorSets[swappableSetIndex];
 		writeOps[binding].dstBinding = binding;
 		writeOps[binding].dstArrayElement = 0;
-		writeOps[binding].descriptorCount = 1;
+		writeOps[binding].descriptorCount = descriptorCount;
 		writeOps[binding].descriptorType = descriptorTypes[binding];
 		writeOps[binding].pImageInfo = pImageInfo;
 		writeOps[binding].pBufferInfo = pBufferInfo;
@@ -155,7 +184,11 @@ void mtd::DescriptorSetHandler::updateDescriptorData
 }
 
 // Creates a descriptor set layout
-void mtd::DescriptorSetHandler::createDescriptorSetLayout(const std::vector<vk::DescriptorSetLayoutBinding>& bindings)
+void mtd::DescriptorSetHandler::createDescriptorSetLayout
+(
+	const std::vector<vk::DescriptorSetLayoutBinding>& bindings,
+	const vk::DescriptorSetLayoutBindingFlagsCreateInfo* pFlags
+)
 {
 	descriptorTypes.resize(bindings.size());
 	for(uint32_t i = 0; i < bindings.size(); i++)
@@ -165,6 +198,7 @@ void mtd::DescriptorSetHandler::createDescriptorSetLayout(const std::vector<vk::
 	layoutCreateInfo.flags = vk::DescriptorSetLayoutCreateFlags();
 	layoutCreateInfo.bindingCount = static_cast<uint32_t>(bindings.size());
 	layoutCreateInfo.pBindings = bindings.data();
+	layoutCreateInfo.pNext = pFlags;
 
 	vk::Result result = device.createDescriptorSetLayout(&layoutCreateInfo, nullptr, &descriptorSetLayout);
 	if(result != vk::Result::eSuccess)

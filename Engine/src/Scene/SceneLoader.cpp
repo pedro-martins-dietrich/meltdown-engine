@@ -461,8 +461,10 @@ void loadRayTracingMeshes
 	std::vector<std::unique_ptr<mtd::MeshManager>>& meshManagers
 )
 {
-	meshManagers.emplace_back(std::make_unique<mtd::RayTracingMeshManager>(device));
 	mtd::MaterialInfo materialInfo{rtPipelineInfo.materialFloatDataTypes, rtPipelineInfo.materialTextureTypes};
+	meshManagers.emplace_back(std::make_unique<mtd::RayTracingMeshManager>(device, materialInfo));
+
+	mtd::RayTracingMeshManager* pMeshManager = dynamic_cast<mtd::RayTracingMeshManager*>(meshManagers.back().get());
 
 	for(uint32_t i = 0; i < rtMeshListJson.size(); i++)
 	{
@@ -473,8 +475,6 @@ void loadRayTracingMeshes
 		const std::vector<mtd::Mat4x4>* pPreTransforms =
 			reinterpret_cast<const std::vector<mtd::Mat4x4>*>(&preTransforms);
 
-		std::vector<mtd::RayTracingMesh>& meshes =
-			dynamic_cast<mtd::RayTracingMeshManager*>(meshManagers.back().get())->getMeshes();
-		meshes.emplace_back(device, i, id.c_str(), file.c_str(), materialInfo, *pPreTransforms);
+		pMeshManager->createNewMesh(i, id.c_str(), file.c_str(), *pPreTransforms);
 	}
 }

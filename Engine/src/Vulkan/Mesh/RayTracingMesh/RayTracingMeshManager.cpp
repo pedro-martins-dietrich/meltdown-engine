@@ -1,49 +1,22 @@
 #include <pch.hpp>
 #include "RayTracingMeshManager.hpp"
 
-mtd::RayTracingMeshManager::RayTracingMeshManager(const Device& device)
+mtd::RayTracingMeshManager::RayTracingMeshManager(const Device& device, const MaterialInfo& materialInfo)
 	: BaseMeshManager{device},
 	currentIndexOffset{0},
 	currentMaterialIndexOffset{0},
 	vertexBuffer{device, vk::BufferUsageFlagBits::eStorageBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal},
 	indexBuffer{device, vk::BufferUsageFlagBits::eStorageBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal},
-	materialIndexBuffer{device, vk::BufferUsageFlagBits::eStorageBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal}
+	materialIndexBuffer{device, vk::BufferUsageFlagBits::eStorageBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal},
+	materialLump{device, materialInfo}
 {}
-
-uint32_t mtd::RayTracingMeshManager::getMaterialCount() const
-{
-	uint32_t totalMaterialCount = 0;
-	for(const RayTracingMesh& mesh: meshes)
-		totalMaterialCount += mesh.getMaterialCount();
-	return totalMaterialCount;
-}
-
-uint32_t mtd::RayTracingMeshManager::getTextureCount() const
-{
-	uint32_t totalTextureCount = 0;
-	for(const RayTracingMesh& mesh: meshes)
-		totalTextureCount += mesh.getTextureCount();
-	return totalTextureCount;
-}
-
-// Checks if the material type for the stored meshes has float data
-bool mtd::RayTracingMeshManager::hasMaterialFloatData() const
-{
-	if(meshes.empty()) return false;
-	return meshes[0].hasMaterialFloatData();
-}
 
 // Loads the materials and groups the meshes into a lump, then passes the data to the GPU
 void mtd::RayTracingMeshManager::loadMeshes(DescriptorSetHandler& meshDescriptorSetHandler)
 {
-	uint32_t currentMaterialCount = 0;
 	for(uint32_t i = 0; i < meshes.size(); i++)
 	{
 		loadMeshToLump(meshes[i]);
-
-		meshes[i].loadMaterials(device, commandHandler, meshDescriptorSetHandler, currentMaterialCount);
-		currentMaterialCount += meshes[i].getMaterialCount();
-
 		meshIndexMap[meshes[i].getModelID()] = i;
 	}
 	loadMeshesToGPU(commandHandler);
@@ -51,18 +24,19 @@ void mtd::RayTracingMeshManager::loadMeshes(DescriptorSetHandler& meshDescriptor
 	meshDescriptorSetHandler.assignExternalResourcesToDescriptor(0, 1, vertexBuffer);
 	meshDescriptorSetHandler.assignExternalResourcesToDescriptor(0, 2, indexBuffer);
 	meshDescriptorSetHandler.assignExternalResourcesToDescriptor(0, 3, materialIndexBuffer);
+	materialLump.assignFloatDataBufferToDescriptor(meshDescriptorSetHandler, 0, 4);
+	if(meshDescriptorSetHandler.getBindingCount() == 6)
+		materialLump.assignTexturesToDescriptor(meshDescriptorSetHandler, 0, 5);
 }
 
-// Binds vertex and index buffers
-void mtd::RayTracingMeshManager::bindBuffers(const vk::CommandBuffer& commandBuffer) const
-{}
-
-// Draws the meshes using a rasterization pipeline
-void mtd::RayTracingMeshManager::drawMesh
+// Creates a new ray tracing mesh
+void mtd::RayTracingMeshManager::createNewMesh
 (
-	const vk::CommandBuffer& commandBuffer, const GraphicsPipeline& graphicsPipeline
-) const
-{}
+	uint32_t index, const char* id, const char* file, const std::vector<Mat4x4>& preTransforms
+)
+{
+	meshes.emplace_back(device, index, id, file, materialLump, preTransforms);
+}
 
 // Draws the meshes using a ray tracing pipeline
 void mtd::RayTracingMeshManager::rayTraceMesh
@@ -98,12 +72,15 @@ void mtd::RayTracingMeshManager::loadMeshToLump(RayTracingMesh& mesh)
 }
 
 // Loads the lumps into the VRAM and clears them
-void mtd::RayTracingMeshManager::loadMeshesToGPU(const CommandHandler& commandHandler)
+void mtd::RayTracingMeshManager::loadMeshesToGPU(const CommandHandler& traceRaysCommandHandler)
 {
-	vertexBuffer.createDeviceLocal(commandHandler, sizeof(Vertex) * vertexLump.size(), vertexLump.data());
-	indexBuffer.createDeviceLocal(commandHandler, sizeof(uint32_t) * indexLump.size(), indexLump.data());
-	materialIndexBuffer
-		.createDeviceLocal(commandHandler, sizeof(uint16_t) * materialIndexLump.size(), materialIndexLump.data());
+	vertexBuffer.createDeviceLocal(traceRaysCommandHandler, sizeof(Vertex) * vertexLump.size(), vertexLump.data());
+	indexBuffer.createDeviceLocal(traceRaysCommandHandler, sizeof(uint32_t) * indexLump.size(), indexLump.data());
+	materialIndexBuffer.createDeviceLocal
+	(
+		traceRaysCommandHandler, sizeof(uint16_t) * materialIndexLump.size(), materialIndexLump.data()
+	);
+	materialLump.loadMaterialsToGPU(traceRaysCommandHandler);
 
 	for(RayTracingMesh& mesh: meshes)
 		mesh.createInstanceBuffer();

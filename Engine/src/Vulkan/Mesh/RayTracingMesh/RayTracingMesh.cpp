@@ -9,11 +9,13 @@ mtd::RayTracingMesh::RayTracingMesh
 	uint32_t index,
 	const char* id,
 	const char* fileName,
-	const MaterialInfo& materialInfo,
+	MaterialLump& materialLump,
 	const std::vector<Mat4x4>& preTransforms
-) : Mesh{device, index, id, preTransforms, 1}
+) : Mesh{device, index, id, preTransforms, 1}, materialCount{0U}
 {
-	ObjMeshLoader::loadRayTracingMesh(fileName, vertices, indices, materialIndices, materials, materialInfo);
+	uint32_t materialOffset = materialLump.getMaterialCount();
+	ObjMeshLoader::loadRayTracingMesh(fileName, vertices, indices, materialIndices, materialLump);
+	materialCount = materialLump.getMaterialCount() - materialOffset;
 }
 
 mtd::RayTracingMesh::RayTracingMesh(RayTracingMesh&& other) noexcept
@@ -21,34 +23,8 @@ mtd::RayTracingMesh::RayTracingMesh(RayTracingMesh&& other) noexcept
 	vertices{std::move(other.vertices)},
 	indices{std::move(other.indices)},
 	materialIndices{std::move(other.materialIndices)},
-	materials{std::move(other.materials)}
+	materialCount{other.materialCount}
 {}
-
-uint32_t mtd::RayTracingMesh::getTextureCount() const
-{
-	if(materials.empty()) return 0;
-	return static_cast<uint32_t>(materials[0].getTextureCount() * materials.size());
-}
-
-// Checks if the used material has float data attributes
-bool mtd::RayTracingMesh::hasMaterialFloatData() const
-{
-	if(materials.empty()) return false;
-	return materials[0].hasFloatData();
-}
-
-// Loads mesh materials
-void mtd::RayTracingMesh::loadMaterials
-(
-	const Device& device,
-	const CommandHandler& commandHandler,
-	DescriptorSetHandler& descriptorSetHandler,
-	uint32_t initialMaterialIndex
-)
-{
-	for(uint32_t i = 0; i < materials.size(); i++)
-		materials[i].loadMaterial(device, commandHandler, descriptorSetHandler, 0, 4);
-}
 
 // Deletes all mesh data on this object
 void mtd::RayTracingMesh::clearMeshData()

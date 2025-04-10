@@ -81,7 +81,7 @@ void mtd::Scene::allocateResources
 		i++;
 	}
 
-	descriptorPool.createDescriptorPool(poolSizesInfo);
+	descriptorPool.createDescriptorPool(poolSizesInfo, vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet);
 
 	for(uint32_t i = 0; i < graphicsPipelines.size(); i++)
 	{
@@ -104,7 +104,11 @@ void mtd::Scene::allocateResources
 	{
 		DescriptorSetHandler& descriptorSetHandler = rayTracingPipelines[i].getDescriptorSetHandler(0);
 		descriptorSetHandler.defineDescriptorSetsAmount(1);
-		descriptorPool.allocateDescriptorSet(descriptorSetHandler);
+
+		vk::DescriptorSetVariableDescriptorCountAllocateInfo variableCountInfo{};
+		variableCountInfo.descriptorSetCount = 1U;
+		variableCountInfo.pDescriptorCounts = &totalImageSamplerCount;
+		descriptorPool.allocateDescriptorSet(descriptorSetHandler, &variableCountInfo);
 
 		meshManagers[graphicsPipelines.size() + i]->loadMeshes(descriptorSetHandler);
 	}

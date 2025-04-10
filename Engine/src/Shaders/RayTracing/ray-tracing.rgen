@@ -1,6 +1,17 @@
 #version 460
-#extension GL_EXT_ray_tracing : require
-#extension GL_EXT_shader_16bit_storage : require
+#extension GL_EXT_ray_tracing : enable
+#extension GL_EXT_shader_16bit_storage : enable
+
+struct Vertex
+{
+	vec3 position;
+	vec2 textureUV;
+};
+
+struct MaterialFloatAttributes
+{
+	vec4 diffuse;
+};
 
 layout(set = 0, binding = 0) uniform CameraMatrices
 {
@@ -8,12 +19,6 @@ layout(set = 0, binding = 0) uniform CameraMatrices
 	mat4 view;
 	mat4 projectionView;
 } camera;
-
-struct Vertex
-{
-	vec3 position;
-	vec2 textureUV;
-};
 
 layout(set = 1, binding = 0, rgba8) uniform image2D storageImage;
 layout(set = 1, binding = 1) buffer VertexBuffer
@@ -28,24 +33,15 @@ layout(set = 1, binding = 3) buffer MaterialIndexBuffer
 {
 	uint16_t materialIDs[];
 };
-layout(set = 1, binding = 4) uniform MaterialData
+layout(set = 1, binding = 4) buffer MaterialsFloatBuffer
 {
-	vec4 diffuseColor;
-} materialData;
+	MaterialFloatAttributes materialFloatAttributes[];
+};
 
 struct Ray
 {
 	vec3 origin;
 	vec3 direction;
-};
-
-const vec3 colors[5] =
-{
-	vec3(0.0f, 0.3f, 0.0f),
-	vec3(1.0f, 1.0f, 1.0f),
-	vec3(0.5f, 0.5f, 0.5f),
-	vec3(0.45f, 0.0f, 0.0f),
-	vec3(0.8f, 0.75f, 0.6f)
 };
 
 bool intersectTriangle(Ray ray, Vertex v0, Vertex v1, Vertex v2, out float hitDistance)
@@ -85,7 +81,7 @@ void main()
 	ray.origin = invView[3].xyz;
 	ray.direction = normalize((invView * (farPoint / farPoint.w)).xyz - ray.origin);
 
-	vec3 color = vec3(0.0f, 0.0f, 0.0f);
+	vec4 color = vec4(0.0f, 0.0f, 0.0f, 1.0f);
 	float closestHit = 1e9;
 
 	int triangleCount = indices.length() / 3;
@@ -99,9 +95,9 @@ void main()
 		if(intersectTriangle(ray, v0, v1, v2, hitDistance) && hitDistance < closestHit)
 		{
 			closestHit = hitDistance;
-			color = colors[uint(materialIDs[i])];
+			color = materialFloatAttributes[uint(materialIDs[i])].diffuse;
 		}
 	}
 
-	imageStore(storageImage, ivec2(pixelCoord), vec4(color, 1.0f));
+	imageStore(storageImage, ivec2(pixelCoord), color);
 }

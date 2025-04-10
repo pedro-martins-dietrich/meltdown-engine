@@ -9,17 +9,18 @@ namespace mtd
 	{
 		std::unique_ptr<GpuBuffer> descriptorBuffer;
 		vk::DescriptorBufferInfo descriptorBufferInfo;
-		vk::DescriptorImageInfo descriptorImageInfo;
+		std::vector<vk::DescriptorImageInfo> descriptorImagesInfo;
 	};
 
 	// Handles the data to be sent to the GPU through descriptors
 	class DescriptorSetHandler
 	{
 		public:
-			DescriptorSetHandler
-			(
-				const vk::Device& device,
-				const std::vector<vk::DescriptorSetLayoutBinding>& setLayoutBindings
+		DescriptorSetHandler
+		(
+			const vk::Device& device,
+			const std::vector<vk::DescriptorSetLayoutBinding>& setLayoutBindings,
+			const vk::DescriptorSetLayoutBindingFlagsCreateInfo* pFlags = nullptr
 			);
 			~DescriptorSetHandler();
 
@@ -31,6 +32,7 @@ namespace mtd
 			// Getters
 			const vk::DescriptorSetLayout& getLayout() const { return descriptorSetLayout; }
 			uint32_t getSetCount() const { return static_cast<uint32_t>(descriptorSets.size()); }
+			uint32_t getBindingCount() const { return static_cast<uint32_t>(descriptorTypes.size()); }
 			std::vector<vk::DescriptorSet>& getSets() { return descriptorSets; }
 			vk::DescriptorSet& getSet(uint32_t swappableSet) { return descriptorSets[swappableSet]; }
 			const vk::DescriptorSet& getSet(uint32_t swappableSet) const { return descriptorSets[swappableSet]; }
@@ -54,6 +56,13 @@ namespace mtd
 				uint32_t swappableSetIndex,
 				uint32_t binding,
 				const vk::DescriptorImageInfo& descriptorImageInfo
+			);
+			// Creates the resources for a vector of images descriptor
+			void createImagesDescriptorResources
+			(
+				uint32_t swappableSetIndex,
+				uint32_t binding,
+				std::vector<vk::DescriptorImageInfo>& descriptorImagesInfo
 			);
 			// Assigns an external GPU buffer as a descriptor
 			void assignExternalResourcesToDescriptor
@@ -88,6 +97,10 @@ namespace mtd
 			const vk::Device& device;
 
 			// Creates a descriptor set layout
-			void createDescriptorSetLayout(const std::vector<vk::DescriptorSetLayoutBinding>& bindings);
+			void createDescriptorSetLayout
+			(
+				const std::vector<vk::DescriptorSetLayoutBinding>& bindings,
+				const vk::DescriptorSetLayoutBindingFlagsCreateInfo* pFlags
+			);
 	};
 }

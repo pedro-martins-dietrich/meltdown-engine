@@ -5,6 +5,8 @@
 #include "Builders/PipelineMapping.hpp"
 #include "../../Utils/Logger.hpp"
 
+static constexpr uint32_t MAX_TEXTURE_COUNT = 1024U;
+
 mtd::RayTracingPipeline::RayTracingPipeline
 (
 	const Device& mtdDevice,
@@ -145,58 +147,48 @@ void mtd::RayTracingPipeline::createDescriptorSetLayouts()
 {
 	descriptorSetHandlers.reserve(info.descriptorSetInfo.size() == 0 ? 1 : 2);
 
-	bool hasFloatData = !info.materialFloatDataTypes.empty();
-	bool hasTextures = !info.materialTextureTypes.empty();
+	const uint32_t bindingCount = info.materialTextureTypes.empty() ? 5U : 6U;
+	uint32_t bindingIndex = 0U;
+	std::vector<vk::DescriptorSetLayoutBinding> layoutBindings(bindingCount);
+	layoutBindings[bindingIndex].binding = bindingIndex;
+	layoutBindings[bindingIndex].descriptorType = vk::DescriptorType::eStorageImage;
+	layoutBindings[bindingIndex].descriptorCount = 1U;
+	layoutBindings[bindingIndex].stageFlags = vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eMissKHR;
+	layoutBindings[bindingIndex].pImmutableSamplers = nullptr;
 
-	uint32_t materialBindingCount = static_cast<uint32_t>(hasFloatData) + static_cast<uint32_t>(hasTextures);
+	bindingIndex++;
 
-	std::vector<vk::DescriptorSetLayoutBinding> layoutBindings(4 + materialBindingCount);
-	layoutBindings[0].binding = 0;
-	layoutBindings[0].descriptorType = vk::DescriptorType::eStorageImage;
-	layoutBindings[0].descriptorCount = 1;
-	layoutBindings[0].stageFlags = vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eMissKHR;
-	layoutBindings[0].pImmutableSamplers = nullptr;
-
-	layoutBindings[1].binding = 1;
-	layoutBindings[1].descriptorType = vk::DescriptorType::eStorageBuffer;
-	layoutBindings[1].descriptorCount = 1;
-	layoutBindings[1].stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
-	layoutBindings[1].pImmutableSamplers = nullptr;
-
-	layoutBindings[2].binding = 2;
-	layoutBindings[2].descriptorType = vk::DescriptorType::eStorageBuffer;
-	layoutBindings[2].descriptorCount = 1;
-	layoutBindings[2].stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
-	layoutBindings[2].pImmutableSamplers = nullptr;
-
-	layoutBindings[3].binding = 3;
-	layoutBindings[3].descriptorType = vk::DescriptorType::eStorageBuffer;
-	layoutBindings[3].descriptorCount = 1;
-	layoutBindings[3].stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
-	layoutBindings[3].pImmutableSamplers = nullptr;
-
-	uint32_t bindingIndex = 4;
-
-	if(hasFloatData)
+	while(bindingIndex < 5U)
 	{
 		layoutBindings[bindingIndex].binding = bindingIndex;
-		layoutBindings[bindingIndex].descriptorType = vk::DescriptorType::eUniformBuffer;
-		layoutBindings[bindingIndex].descriptorCount = 1;
+		layoutBindings[bindingIndex].descriptorType = vk::DescriptorType::eStorageBuffer;
+		layoutBindings[bindingIndex].descriptorCount = 1U;
 		layoutBindings[bindingIndex].stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
 		layoutBindings[bindingIndex].pImmutableSamplers = nullptr;
 
 		bindingIndex++;
 	}
-	if(hasTextures)
+
+	vk::DescriptorSetLayoutBindingFlagsCreateInfo descriptorSetLayoutBindingsCreateInfo{};
+	const vk::DescriptorSetLayoutBindingFlagsCreateInfo* pDescriptorSetLayoutBindingsCreateInfo = nullptr;
+	std::array<vk::DescriptorBindingFlags, 6> bindingFlags;
+	if(!info.materialTextureTypes.empty())
 	{
 		layoutBindings[bindingIndex].binding = bindingIndex;
 		layoutBindings[bindingIndex].descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		layoutBindings[bindingIndex].descriptorCount = static_cast<uint32_t>(info.materialTextureTypes.size());
+		layoutBindings[bindingIndex].descriptorCount = MAX_TEXTURE_COUNT;
 		layoutBindings[bindingIndex].stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
 		layoutBindings[bindingIndex].pImmutableSamplers = nullptr;
+
+		bindingFlags[5] = vk::DescriptorBindingFlagBits::eVariableDescriptorCount |
+			vk::DescriptorBindingFlagBits::ePartiallyBound;
+		
+		descriptorSetLayoutBindingsCreateInfo.bindingCount = bindingCount;
+		descriptorSetLayoutBindingsCreateInfo.pBindingFlags = bindingFlags.data();
+		pDescriptorSetLayoutBindingsCreateInfo = &descriptorSetLayoutBindingsCreateInfo;
 	}
 
-	descriptorSetHandlers.emplace_back(device, layoutBindings);
+	descriptorSetHandlers.emplace_back(device, layoutBindings, pDescriptorSetLayoutBindingsCreateInfo);
 
 	if(info.descriptorSetInfo.size() == 0) return;
 	layoutBindings.clear();
