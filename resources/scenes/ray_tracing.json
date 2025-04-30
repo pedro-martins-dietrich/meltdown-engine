@@ -18,6 +18,7 @@
 		{
 			"name": "Ray Tracing Pipeline",
 			"ray-gen-shader": "ray-tracing.rgen.spv",
+			"closest-hit-shader": "ray-tracing.rchit.spv",
 			"miss-shader": "ray-tracing.rmiss.spv",
 			"descriptor-set-info": [],
 			"resolution-ratio-horizontal": 1.0,

@@ -295,6 +295,7 @@ void loadRayTracingPipeline
 		{
 			{rtPipelineJson["name"], std::move(descriptorInfos)},
 			rtPipelineJson["ray-gen-shader"],
+			rtPipelineJson["closest-hit-shader"],
 			rtPipelineJson["miss-shader"],
 			{
 				rtPipelineJson.value("resolution-ratio-horizontal", -1.0f),

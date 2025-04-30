@@ -37,7 +37,7 @@ namespace mtd
 			void resizeBuffer(const CommandHandler& commandHandler, vk::DeviceSize newSize);
 
 			// Copies data to the buffer
-			void copyMemoryToBuffer(vk::DeviceSize copySize, const void* srcData);
+			void copyMemoryToBuffer(vk::DeviceSize copySize, const void* srcData, vk::DeviceSize bufferOffset = 0);
 
 		private:
 			// Vulkan buffer handles

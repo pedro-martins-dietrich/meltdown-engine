@@ -10,7 +10,7 @@ namespace mtd
 	{
 		public:
 			RayTracingMeshManager(const Device& device, const MaterialInfo& materialInfo);
-			~RayTracingMeshManager() = default;
+			~RayTracingMeshManager();
 
 			// Getters
 			virtual uint32_t getMaterialCount() const override { return materialLump.getMaterialCount(); }
@@ -47,6 +47,11 @@ namespace mtd
 			) const;
 
 		private:
+			// Acceleration structure
+			vk::AccelerationStructureKHR accelerationStructure;
+			vk::WriteDescriptorSetAccelerationStructureKHR accelerationStructureWriteOp;
+			GpuBuffer accelerationStructureBuffer;
+
 			// Vertex and index data of all meshes in the VRAM
 			GpuBuffer vertexBuffer;
 			GpuBuffer indexBuffer;
@@ -64,6 +69,9 @@ namespace mtd
 			// Index offset counters
 			uint32_t currentIndexOffset;
 			uint32_t currentMaterialIndexOffset;
+
+			// Creates the acceleration structure
+			void createAccelerationStructure();
 
 			// Stores a mesh in the lump of data
 			void loadMeshToLump(RayTracingMesh& mesh);

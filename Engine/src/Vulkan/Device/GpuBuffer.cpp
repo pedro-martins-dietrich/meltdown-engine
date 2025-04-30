@@ -121,12 +121,15 @@ void mtd::GpuBuffer::resizeBuffer(const CommandHandler& commandHandler, vk::Devi
 }
 
 // Copies data to the buffer
-void mtd::GpuBuffer::copyMemoryToBuffer(vk::DeviceSize copySize, const void* srcData)
+void mtd::GpuBuffer::copyMemoryToBuffer(vk::DeviceSize copySize, const void* srcData, vk::DeviceSize bufferOffset)
 {
-	if(copySize > size)
-		copySize = size;
+	if(copySize > size - bufferOffset)
+	{
+		copySize = size - bufferOffset;
+		LOG_WARNING("Copy size exceeded the available GPU buffer size.");
+	}
 
-	void* memoryLocation = device.getDevice().mapMemory(bufferMemory, 0, copySize);
+	void* memoryLocation = device.getDevice().mapMemory(bufferMemory, bufferOffset, copySize);
 	memcpy(memoryLocation, srcData, copySize);
 	device.getDevice().unmapMemory(bufferMemory);
 }

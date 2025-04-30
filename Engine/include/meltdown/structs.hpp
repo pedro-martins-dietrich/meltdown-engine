@@ -131,6 +131,8 @@ namespace mtd
 	{
 		/* @brief File path to the ray generation shader, from the shaders folder. */
 		std::string rayGenShaderPath;
+		/* @brief File path to the closest hit shader, from the shaders folder. */
+		std::string closestHitShaderPath;
 		/* @brief File path to the miss shader, from the shaders folder. */
 		std::string missShaderPath;
 		/* @brief Ratio between the storage image and window resolution. Use negative values for a fixed resolution. */

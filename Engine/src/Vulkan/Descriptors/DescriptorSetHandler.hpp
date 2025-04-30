@@ -10,6 +10,7 @@ namespace mtd
 		std::unique_ptr<GpuBuffer> descriptorBuffer;
 		vk::DescriptorBufferInfo descriptorBufferInfo;
 		std::vector<vk::DescriptorImageInfo> descriptorImagesInfo;
+		const void* pNext = nullptr;
 	};
 
 	// Handles the data to be sent to the GPU through descriptors
@@ -67,7 +68,7 @@ namespace mtd
 			// Assigns an external GPU buffer as a descriptor
 			void assignExternalResourcesToDescriptor
 			(
-				uint32_t swappableSetIndex, uint32_t binding, const GpuBuffer& buffer
+				uint32_t swappableSetIndex, uint32_t binding, const GpuBuffer& buffer, const void* pNext = nullptr
 			);
 
 			// Updates the descriptor set write data
