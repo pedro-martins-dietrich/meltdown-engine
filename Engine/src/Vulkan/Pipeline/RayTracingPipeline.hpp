@@ -20,6 +20,9 @@ namespace mtd
 
 			RayTracingPipeline(RayTracingPipeline&& other) noexcept;
 
+			// Setters
+			void setSamplesPerPixel(uint32_t spp) const { shaderRenderingInfo.samplesPerPixel = spp; }
+
 			// Binds the pipeline and performs the ray tracing
 			void traceRays
 			(
@@ -38,6 +41,9 @@ namespace mtd
 			// Resizes the render target image if needed
 			void resize(const Device& mtdDevice, vk::Extent2D swapchainExtent);
 
+			// Resets the image render target frame accumulation
+			void resetAccumulation() const { shaderRenderingInfo.accumulatedFrames = 0U; }
+
 		private:
 			// Render storage image
 			Image image;
@@ -50,6 +56,9 @@ namespace mtd
 			vk::StridedDeviceAddressRegionKHR missRegionSBT;
 			vk::StridedDeviceAddressRegionKHR hitRegionSBT;
 			vk::StridedDeviceAddressRegionKHR callableRegionSBT;
+
+			// Push constant data for the ray tracing shaders
+			mutable RayTracingRenderData shaderRenderingInfo;
 
 			// Loads the pipeline shader modules
 			void loadShaderModules();

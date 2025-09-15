@@ -1,14 +1,33 @@
 #include <pch.hpp>
 #include "RayTracingMeshManager.hpp"
 
+#include "../../../Utils/Logger.hpp"
+
 mtd::RayTracingMeshManager::RayTracingMeshManager(const Device& device, const MaterialInfo& materialInfo)
 	: BaseMeshManager{device},
-	currentIndexOffset{0},
-	currentMaterialIndexOffset{0},
-	vertexBuffer{device, vk::BufferUsageFlagBits::eStorageBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal},
-	indexBuffer{device, vk::BufferUsageFlagBits::eStorageBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal},
+	accelerationStructureWriteOp{},
+	vertexBuffer
+	{
+		device,
+		vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress |
+			vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR,
+		vk::MemoryPropertyFlagBits::eDeviceLocal
+	},
+	indexBuffer
+	{
+		device,
+		vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress |
+			vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR,
+		vk::MemoryPropertyFlagBits::eDeviceLocal
+	},
+	blas{device},
+	tlas{device},
 	materialIndexBuffer{device, vk::BufferUsageFlagBits::eStorageBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal},
-	materialLump{device, materialInfo}
+	materialLump{device, materialInfo},
+	vertexCount{0},
+	triangleCount{0},
+	currentIndexOffset{0},
+	currentMaterialIndexOffset{0}
 {}
 
 // Loads the materials and groups the meshes into a lump, then passes the data to the GPU
@@ -21,12 +40,16 @@ void mtd::RayTracingMeshManager::loadMeshes(DescriptorSetHandler& meshDescriptor
 	}
 	loadMeshesToGPU(commandHandler);
 
-	meshDescriptorSetHandler.assignExternalResourcesToDescriptor(0, 1, vertexBuffer);
-	meshDescriptorSetHandler.assignExternalResourcesToDescriptor(0, 2, indexBuffer);
-	meshDescriptorSetHandler.assignExternalResourcesToDescriptor(0, 3, materialIndexBuffer);
-	materialLump.assignFloatDataBufferToDescriptor(meshDescriptorSetHandler, 0, 4);
-	if(meshDescriptorSetHandler.getBindingCount() == 6)
-		materialLump.assignTexturesToDescriptor(meshDescriptorSetHandler, 0, 5);
+	createAccelerationStructure();
+
+	meshDescriptorSetHandler
+		.assignExternalResourcesToDescriptor(0, 0, tlas.getBuffer(), &accelerationStructureWriteOp);
+	meshDescriptorSetHandler.assignExternalResourcesToDescriptor(0, 2, vertexBuffer);
+	meshDescriptorSetHandler.assignExternalResourcesToDescriptor(0, 3, indexBuffer);
+	meshDescriptorSetHandler.assignExternalResourcesToDescriptor(0, 4, materialIndexBuffer);
+	materialLump.assignFloatDataBufferToDescriptor(meshDescriptorSetHandler, 0, 5);
+	if(meshDescriptorSetHandler.getBindingCount() == 7)
+		materialLump.assignTexturesToDescriptor(meshDescriptorSetHandler, 0, 6);
 }
 
 // Creates a new ray tracing mesh
@@ -47,6 +70,22 @@ void mtd::RayTracingMeshManager::rayTraceMesh
 ) const
 {
 	rayTracingPipeline.traceRays(commandBuffer, dldi);
+}
+
+// Creates the acceleration structure
+void mtd::RayTracingMeshManager::createAccelerationStructure()
+{
+	blas.createBLAS
+	(
+		commandHandler, vertexBuffer.getBufferAddress(), vertexCount, indexBuffer.getBufferAddress(), triangleCount
+	);
+
+	GpuBuffer instanceBuffer = blas.createInstanceBuffer();
+
+	tlas.createTLAS(commandHandler, instanceBuffer.getBufferAddress());
+
+	accelerationStructureWriteOp.accelerationStructureCount = 1U;
+	accelerationStructureWriteOp.pAccelerationStructures = &tlas.getAccelerationStructure();
 }
 
 // Stores a mesh in the lump of data
@@ -84,6 +123,9 @@ void mtd::RayTracingMeshManager::loadMeshesToGPU(const CommandHandler& traceRays
 
 	for(RayTracingMesh& mesh: meshes)
 		mesh.createInstanceBuffer();
+
+	vertexCount = vertexLump.size();
+	triangleCount = indexLump.size() / 3;
 
 	vertexLump.clear();
 	indexLump.clear();

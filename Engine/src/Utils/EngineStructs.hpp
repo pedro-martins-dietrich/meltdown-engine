@@ -102,4 +102,13 @@ namespace mtd
 		const vk::Framebuffer* framebuffer;
 		const SynchronizationBundle* syncBundle;
 	};
+
+	// Ray tracing push constant struct
+	struct RayTracingRenderData
+	{
+		uint32_t maxRecursionDepth = 1U;
+		uint32_t samplesPerPixel = 1U;
+		uint32_t accumulatedFrames = 0U;
+		uint32_t randomSeed = 0U;
+	};
 }

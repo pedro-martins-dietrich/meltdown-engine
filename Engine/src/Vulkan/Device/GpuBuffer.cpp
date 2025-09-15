@@ -5,8 +5,7 @@
 
 mtd::GpuBuffer::GpuBuffer(const Device& device, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags memoryProperties)
 	: device{device}, size{0}, usage{usage}, memoryProperties{memoryProperties}, buffer{nullptr}, bufferMemory{nullptr}
-{
-}
+{}
 
 mtd::GpuBuffer::GpuBuffer
 (
@@ -53,6 +52,14 @@ mtd::GpuBuffer::GpuBuffer(GpuBuffer&& other) noexcept
 {
 	other.buffer = nullptr;
 	other.bufferMemory = nullptr;
+}
+
+vk::DeviceAddress mtd::GpuBuffer::getBufferAddress() const
+{
+	assert(bufferMemory != nullptr && size != 0 && "Invalid buffer address.");
+
+	vk::BufferDeviceAddressInfo addressInfo{buffer};
+	return device.getDevice().getBufferAddress(addressInfo);
 }
 
 // Initializes the buffer
@@ -121,12 +128,15 @@ void mtd::GpuBuffer::resizeBuffer(const CommandHandler& commandHandler, vk::Devi
 }
 
 // Copies data to the buffer
-void mtd::GpuBuffer::copyMemoryToBuffer(vk::DeviceSize copySize, const void* srcData)
+void mtd::GpuBuffer::copyMemoryToBuffer(vk::DeviceSize copySize, const void* srcData, vk::DeviceSize bufferOffset)
 {
-	if(copySize > size)
-		copySize = size;
+	if(copySize > size - bufferOffset)
+	{
+		copySize = size - bufferOffset;
+		LOG_WARNING("Copy size exceeded the available GPU buffer size.");
+	}
 
-	void* memoryLocation = device.getDevice().mapMemory(bufferMemory, 0, copySize);
+	void* memoryLocation = device.getDevice().mapMemory(bufferMemory, bufferOffset, copySize);
 	memcpy(memoryLocation, srcData, copySize);
 	device.getDevice().unmapMemory(bufferMemory);
 }

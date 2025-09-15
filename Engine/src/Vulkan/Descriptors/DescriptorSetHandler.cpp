@@ -108,7 +108,7 @@ void mtd::DescriptorSetHandler::createImagesDescriptorResources
 // Assigns an external GPU buffer as a descriptor
 void mtd::DescriptorSetHandler::assignExternalResourcesToDescriptor
 (
-	uint32_t swappableSetIndex, uint32_t binding, const GpuBuffer& buffer
+	uint32_t swappableSetIndex, uint32_t binding, const GpuBuffer& buffer, const void* pNext
 )
 {
 	assert
@@ -122,6 +122,8 @@ void mtd::DescriptorSetHandler::assignExternalResourcesToDescriptor
 	descriptorBufferInfo.buffer = buffer.getBuffer();
 	descriptorBufferInfo.offset = 0UL;
 	descriptorBufferInfo.range = buffer.getSize();
+
+	resourcesList[swappableSetIndex][binding].pNext = pNext;
 }
 
 // Updates the descriptor set write data
@@ -161,6 +163,7 @@ void mtd::DescriptorSetHandler::writeDescriptorSet(uint32_t swappableSetIndex)
 		writeOps[binding].pImageInfo = pImageInfo;
 		writeOps[binding].pBufferInfo = pBufferInfo;
 		writeOps[binding].pTexelBufferView = nullptr;
+		writeOps[binding].pNext = bindingResources.pNext;
 	}
 
 	device.updateDescriptorSets(static_cast<uint32_t>(writeOps.size()), writeOps.data(), 0, nullptr);

@@ -27,6 +27,7 @@ namespace mtd
 			const vk::Buffer& getBuffer() const { return buffer; }
 			const vk::DeviceMemory& getBufferMemory() const { return bufferMemory; }
 			vk::DeviceSize getSize() const { return size; }
+			vk::DeviceAddress getBufferAddress() const;
 
 			// Initializes the buffer
 			void create(vk::DeviceSize dataSize);
@@ -37,7 +38,7 @@ namespace mtd
 			void resizeBuffer(const CommandHandler& commandHandler, vk::DeviceSize newSize);
 
 			// Copies data to the buffer
-			void copyMemoryToBuffer(vk::DeviceSize copySize, const void* srcData);
+			void copyMemoryToBuffer(vk::DeviceSize copySize, const void* srcData, vk::DeviceSize bufferOffset = 0);
 
 		private:
 			// Vulkan buffer handles
