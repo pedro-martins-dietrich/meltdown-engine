@@ -27,6 +27,7 @@ namespace mtd
 			const vk::Buffer& getBuffer() const { return buffer; }
 			const vk::DeviceMemory& getBufferMemory() const { return bufferMemory; }
 			vk::DeviceSize getSize() const { return size; }
+			vk::DeviceAddress getBufferAddress() const;
 
 			// Initializes the buffer
 			void create(vk::DeviceSize dataSize);

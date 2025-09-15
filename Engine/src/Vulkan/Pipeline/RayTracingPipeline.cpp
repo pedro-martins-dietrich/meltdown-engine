@@ -22,7 +22,8 @@ mtd::RayTracingPipeline::RayTracingPipeline
 		vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddress |
 			vk::BufferUsageFlagBits::eTransferDst,
 		vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-	}
+	},
+	shaderRenderingInfo{4U, 8U, 0U, 0U}
 {
 	loadShaderModules();
 	createDescriptorSetLayouts();
@@ -73,6 +74,14 @@ void mtd::RayTracingPipeline::traceRays
 		);
 	}
 
+	shaderRenderingInfo.randomSeed = rand();
+	commandBuffer.pushConstants
+	(
+		pipelineLayout,
+		vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eClosestHitKHR,
+		0, sizeof(RayTracingRenderData), &shaderRenderingInfo
+	);
+
 	commandBuffer.traceRaysKHR
 	(
 		rayGenRegionSBT,
@@ -84,6 +93,8 @@ void mtd::RayTracingPipeline::traceRays
 	);
 
 	image.transitionImageLayout(commandBuffer, vk::ImageLayout::eShaderReadOnlyOptimal);
+
+	shaderRenderingInfo.accumulatedFrames++;
 }
 
 // Configures the render target image descriptor
@@ -131,6 +142,8 @@ void mtd::RayTracingPipeline::resize(const Device& mtdDevice, vk::Extent2D swapc
 		vk::ImageViewType::e2D
 	);
 	configurePipelineDescriptorSet();
+
+	resetAccumulation();
 }
 
 // Loads the pipeline shader modules
@@ -154,7 +167,8 @@ void mtd::RayTracingPipeline::createDescriptorSetLayouts()
 	layoutBindings[bindingIndex].binding = bindingIndex;
 	layoutBindings[bindingIndex].descriptorType = vk::DescriptorType::eAccelerationStructureKHR;
 	layoutBindings[bindingIndex].descriptorCount = 1U;
-	layoutBindings[bindingIndex].stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
+	layoutBindings[bindingIndex].stageFlags =
+		vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eClosestHitKHR;
 	layoutBindings[bindingIndex].pImmutableSamplers = nullptr;
 	bindingIndex++;
 
@@ -170,7 +184,7 @@ void mtd::RayTracingPipeline::createDescriptorSetLayouts()
 		layoutBindings[bindingIndex].binding = bindingIndex;
 		layoutBindings[bindingIndex].descriptorType = vk::DescriptorType::eStorageBuffer;
 		layoutBindings[bindingIndex].descriptorCount = 1U;
-		layoutBindings[bindingIndex].stageFlags = vk::ShaderStageFlagBits::eMissKHR;
+		layoutBindings[bindingIndex].stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
 		layoutBindings[bindingIndex].pImmutableSamplers = nullptr;
 
 		bindingIndex++;
@@ -184,7 +198,7 @@ void mtd::RayTracingPipeline::createDescriptorSetLayouts()
 		layoutBindings[bindingIndex].binding = bindingIndex;
 		layoutBindings[bindingIndex].descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		layoutBindings[bindingIndex].descriptorCount = MAX_TEXTURE_COUNT;
-		layoutBindings[bindingIndex].stageFlags = vk::ShaderStageFlagBits::eMissKHR;
+		layoutBindings[bindingIndex].stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
 		layoutBindings[bindingIndex].pImmutableSamplers = nullptr;
 
 		bindingFlags.back() = vk::DescriptorBindingFlagBits::eVariableDescriptorCount |
@@ -237,12 +251,17 @@ void mtd::RayTracingPipeline::createPipelineLayout(const vk::DescriptorSetLayout
 	for(const DescriptorSetHandler& descriptorSetHandler: descriptorSetHandlers)
 		descriptorSetLayouts.push_back(descriptorSetHandler.getLayout());
 
+	vk::PushConstantRange pushConstantRange{};
+	pushConstantRange.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eClosestHitKHR;
+	pushConstantRange.offset = 0;
+	pushConstantRange.size = sizeof(RayTracingRenderData);
+
 	vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
 	pipelineLayoutCreateInfo.flags = vk::PipelineLayoutCreateFlags();
 	pipelineLayoutCreateInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
 	pipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayouts.data();
-	pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
-	pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
+	pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
+	pipelineLayoutCreateInfo.pPushConstantRanges = &pushConstantRange;
 
 	vk::Result result = device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &pipelineLayout);
 	if(result != vk::Result::eSuccess)
@@ -270,7 +289,7 @@ void mtd::RayTracingPipeline::createRayTracingPipeline(const vk::detail::Dispatc
 	pipelineCreateInfo.pStages = shaderStageInfos.data();
 	pipelineCreateInfo.groupCount = static_cast<uint32_t>(shaderGroupCreateInfos.size());
 	pipelineCreateInfo.pGroups = shaderGroupCreateInfos.data();
-	pipelineCreateInfo.maxPipelineRayRecursionDepth = 1;
+	pipelineCreateInfo.maxPipelineRayRecursionDepth = shaderRenderingInfo.maxRecursionDepth;
 	pipelineCreateInfo.pLibraryInfo = nullptr;
 	pipelineCreateInfo.pLibraryInterface = nullptr;
 	pipelineCreateInfo.pDynamicState = nullptr;
@@ -317,9 +336,7 @@ void mtd::RayTracingPipeline::createShaderBindingTable(const Device& mtdDevice)
 
 	const vk::DeviceSize sbtSize = shaders.size() * baseSizeAligned;
 	sbtBuffer.create(sbtSize);
-
-	vk::BufferDeviceAddressInfo bufferAddressInfo{sbtBuffer.getBuffer()};
-	vk::DeviceAddress sbtAddress = device.getBufferAddress(bufferAddressInfo);
+	vk::DeviceAddress sbtAddress = sbtBuffer.getBufferAddress();
 
 	rayGenRegionSBT.deviceAddress = sbtAddress;
 	rayGenRegionSBT.stride = baseSizeAligned;

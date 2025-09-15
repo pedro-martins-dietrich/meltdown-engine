@@ -7,7 +7,24 @@ struct Ray
 	vec3 direction;
 };
 
-layout(location = 0) rayPayloadEXT vec4 payload;
+struct Payload
+{
+	vec3 light;
+	vec3 throughput;
+	uint recursionDepth;
+	uint randomState;
+};
+
+
+layout(location = 0) rayPayloadEXT Payload payload;
+
+layout(push_constant) uniform PushConstant
+{
+	uint maxRecursionDepth;
+	uint samplesPerPixel;
+	uint accumulatedFrames;
+	uint randomSeed;
+} renderingInfo;
 
 layout(set = 0, binding = 0) uniform CameraMatrices
 {
@@ -19,29 +36,47 @@ layout(set = 0, binding = 0) uniform CameraMatrices
 layout(set = 1, binding = 0) uniform accelerationStructureEXT accelerationStructure;
 layout(set = 1, binding = 1, rgba8) uniform image2D storageImage;
 
+
 void main()
 {
 	vec2 pixelCoord = gl_LaunchIDEXT.xy;
 	vec2 uv = 2.0f * (pixelCoord / gl_LaunchSizeEXT.xy) - 1.0f;
 
-	mat4 invView = inverse(camera.view);
+	mat4 inverseView = inverse(camera.view);
 	vec4 farPoint = inverse(camera.projection) * vec4(uv, 1.0f, 1.0f);
 
 	Ray ray;
-	ray.origin = invView[3].xyz;
-	ray.direction = normalize((invView * (farPoint / farPoint.w)).xyz - ray.origin);
+	ray.origin = inverseView[3].xyz;
+	ray.direction = normalize((inverseView * (farPoint / farPoint.w)).xyz - ray.origin);
 
-	traceRayEXT
-	(
-		accelerationStructure,
-		gl_RayFlagsOpaqueEXT,
-		0xFF,
-		0, 0,
-		0,
-		ray.origin, 0.001f,
-		ray.direction, 10000.0f,
-		0
-	);
+	payload.randomState = renderingInfo.randomSeed + gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x;
 
-	imageStore(storageImage, ivec2(pixelCoord), payload);
+	vec3 accumulatedLight = vec3(0.0f);
+	for(uint sampleIndex = 0; sampleIndex < renderingInfo.samplesPerPixel; sampleIndex++)
+	{
+		payload.light = vec3(0.0f);
+		payload.throughput = vec3(1.0f);
+		payload.recursionDepth = 0;
+
+		traceRayEXT
+		(
+			accelerationStructure,
+			gl_RayFlagsOpaqueEXT,
+			0xFF,
+			0, 0,
+			0,
+			ray.origin, 0.001f,
+			ray.direction, 10000.0f,
+			0
+		);
+
+		accumulatedLight += payload.light;
+	}
+	accumulatedLight /= renderingInfo.samplesPerPixel;
+
+	uint frameCount = min(renderingInfo.accumulatedFrames, 2U);
+	vec3 previousColor = imageLoad(storageImage, ivec2(pixelCoord)).xyz;
+	accumulatedLight = (accumulatedLight + frameCount * previousColor) / (frameCount + 1);
+
+	imageStore(storageImage, ivec2(pixelCoord), vec4(accumulatedLight, 1.0f));
 }

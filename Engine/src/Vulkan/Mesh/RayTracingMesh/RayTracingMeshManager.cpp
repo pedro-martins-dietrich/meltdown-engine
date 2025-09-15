@@ -5,29 +5,30 @@
 
 mtd::RayTracingMeshManager::RayTracingMeshManager(const Device& device, const MaterialInfo& materialInfo)
 	: BaseMeshManager{device},
-	currentIndexOffset{0},
-	currentMaterialIndexOffset{0},
-	accelerationStructure{nullptr},
 	accelerationStructureWriteOp{},
-	accelerationStructureBuffer
+	vertexBuffer
 	{
 		device,
-		1024,
-		vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR | vk::BufferUsageFlagBits::eShaderDeviceAddress,
+		vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress |
+			vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR,
 		vk::MemoryPropertyFlagBits::eDeviceLocal
 	},
-	vertexBuffer{device, vk::BufferUsageFlagBits::eStorageBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal},
-	indexBuffer{device, vk::BufferUsageFlagBits::eStorageBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal},
+	indexBuffer
+	{
+		device,
+		vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress |
+			vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR,
+		vk::MemoryPropertyFlagBits::eDeviceLocal
+	},
+	blas{device},
+	tlas{device},
 	materialIndexBuffer{device, vk::BufferUsageFlagBits::eStorageBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal},
-	materialLump{device, materialInfo}
-{
-	createAccelerationStructure();
-}
-
-mtd::RayTracingMeshManager::~RayTracingMeshManager()
-{
-	device.getDevice().destroyAccelerationStructureKHR(accelerationStructure, nullptr, device.getDLDI());
-}
+	materialLump{device, materialInfo},
+	vertexCount{0},
+	triangleCount{0},
+	currentIndexOffset{0},
+	currentMaterialIndexOffset{0}
+{}
 
 // Loads the materials and groups the meshes into a lump, then passes the data to the GPU
 void mtd::RayTracingMeshManager::loadMeshes(DescriptorSetHandler& meshDescriptorSetHandler)
@@ -39,8 +40,10 @@ void mtd::RayTracingMeshManager::loadMeshes(DescriptorSetHandler& meshDescriptor
 	}
 	loadMeshesToGPU(commandHandler);
 
+	createAccelerationStructure();
+
 	meshDescriptorSetHandler
-		.assignExternalResourcesToDescriptor(0, 0, accelerationStructureBuffer, &accelerationStructureWriteOp);
+		.assignExternalResourcesToDescriptor(0, 0, tlas.getBuffer(), &accelerationStructureWriteOp);
 	meshDescriptorSetHandler.assignExternalResourcesToDescriptor(0, 2, vertexBuffer);
 	meshDescriptorSetHandler.assignExternalResourcesToDescriptor(0, 3, indexBuffer);
 	meshDescriptorSetHandler.assignExternalResourcesToDescriptor(0, 4, materialIndexBuffer);
@@ -72,21 +75,17 @@ void mtd::RayTracingMeshManager::rayTraceMesh
 // Creates the acceleration structure
 void mtd::RayTracingMeshManager::createAccelerationStructure()
 {
-	vk::AccelerationStructureCreateInfoKHR asCreateInfo{};
-	asCreateInfo.createFlags = vk::AccelerationStructureCreateFlagsKHR();
-	asCreateInfo.buffer = accelerationStructureBuffer.getBuffer();
-	asCreateInfo.offset = 0;
-	asCreateInfo.size = accelerationStructureBuffer.getSize();
-	asCreateInfo.type = vk::AccelerationStructureTypeKHR::eTopLevel;
-	asCreateInfo.deviceAddress = 0;
+	blas.createBLAS
+	(
+		commandHandler, vertexBuffer.getBufferAddress(), vertexCount, indexBuffer.getBufferAddress(), triangleCount
+	);
 
-	vk::Result result = device.getDevice()
-		.createAccelerationStructureKHR(&asCreateInfo, nullptr, &accelerationStructure, device.getDLDI());
-	if(result != vk::Result::eSuccess)
-		LOG_ERROR("Failed to create acceleration structure. Vulkan result: %d", result);
+	GpuBuffer instanceBuffer = blas.createInstanceBuffer();
 
-	accelerationStructureWriteOp.accelerationStructureCount = 1;
-	accelerationStructureWriteOp.pAccelerationStructures = &accelerationStructure;
+	tlas.createTLAS(commandHandler, instanceBuffer.getBufferAddress());
+
+	accelerationStructureWriteOp.accelerationStructureCount = 1U;
+	accelerationStructureWriteOp.pAccelerationStructures = &tlas.getAccelerationStructure();
 }
 
 // Stores a mesh in the lump of data
@@ -124,6 +123,9 @@ void mtd::RayTracingMeshManager::loadMeshesToGPU(const CommandHandler& traceRays
 
 	for(RayTracingMesh& mesh: meshes)
 		mesh.createInstanceBuffer();
+
+	vertexCount = vertexLump.size();
+	triangleCount = indexLump.size() / 3;
 
 	vertexLump.clear();
 	indexLump.clear();

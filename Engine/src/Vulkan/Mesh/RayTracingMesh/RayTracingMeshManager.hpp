@@ -3,14 +3,16 @@
 #include "RayTracingMesh.hpp"
 #include "../BaseMeshManager.hpp"
 #include "../../Pipeline/RayTracingPipeline.hpp"
+#include "../../AccelerationStructure/AccelerationStructure.hpp"
 
 namespace mtd
 {
+	// Handles data from all ray tracing meshes
 	class RayTracingMeshManager : public BaseMeshManager<RayTracingMesh>
 	{
 		public:
 			RayTracingMeshManager(const Device& device, const MaterialInfo& materialInfo);
-			~RayTracingMeshManager();
+			~RayTracingMeshManager() = default;
 
 			// Getters
 			virtual uint32_t getMaterialCount() const override { return materialLump.getMaterialCount(); }
@@ -47,10 +49,10 @@ namespace mtd
 			) const;
 
 		private:
-			// Acceleration structure
-			vk::AccelerationStructureKHR accelerationStructure;
+			// Acceleration structures
+			AccelerationStructure blas;
+			AccelerationStructure tlas;
 			vk::WriteDescriptorSetAccelerationStructureKHR accelerationStructureWriteOp;
-			GpuBuffer accelerationStructureBuffer;
 
 			// Vertex and index data of all meshes in the VRAM
 			GpuBuffer vertexBuffer;
@@ -65,6 +67,10 @@ namespace mtd
 
 			// Mesh manager materials
 			MaterialLump materialLump;
+
+			// Resource counters
+			uint32_t vertexCount;
+			uint32_t triangleCount;
 
 			// Index offset counters
 			uint32_t currentIndexOffset;

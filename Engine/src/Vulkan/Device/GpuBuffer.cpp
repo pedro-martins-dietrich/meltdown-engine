@@ -5,8 +5,7 @@
 
 mtd::GpuBuffer::GpuBuffer(const Device& device, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags memoryProperties)
 	: device{device}, size{0}, usage{usage}, memoryProperties{memoryProperties}, buffer{nullptr}, bufferMemory{nullptr}
-{
-}
+{}
 
 mtd::GpuBuffer::GpuBuffer
 (
@@ -53,6 +52,14 @@ mtd::GpuBuffer::GpuBuffer(GpuBuffer&& other) noexcept
 {
 	other.buffer = nullptr;
 	other.bufferMemory = nullptr;
+}
+
+vk::DeviceAddress mtd::GpuBuffer::getBufferAddress() const
+{
+	assert(bufferMemory != nullptr && size != 0 && "Invalid buffer address.");
+
+	vk::BufferDeviceAddressInfo addressInfo{buffer};
+	return device.getDevice().getBufferAddress(addressInfo);
 }
 
 // Initializes the buffer
