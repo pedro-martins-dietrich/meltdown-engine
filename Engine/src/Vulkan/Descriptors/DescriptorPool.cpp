@@ -4,7 +4,7 @@
 #include "../../Utils/Logger.hpp"
 
 mtd::DescriptorPool::DescriptorPool(const vk::Device& device)
-	: device{device}, isClear{true}
+	: device{device}, descriptorPool{nullptr}, isClear{true}
 {}
 
 mtd::DescriptorPool::~DescriptorPool()

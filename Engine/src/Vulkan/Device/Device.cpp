@@ -95,7 +95,7 @@ void mtd::Device::configureQueues(std::vector<vk::DeviceQueueCreateInfo>& device
 	if(queueFamilies.getGraphicsFamilyIndex() != queueFamilies.getPresentFamilyIndex())
 		uniqueQueueFamilyIndices.push_back(queueFamilies.getPresentFamilyIndex());
 
-	float queuePriority = 1.0f;
+	static constexpr float queuePriority = 1.0f;
 	for(uint32_t uniqueQueueFamilyIndex: uniqueQueueFamilyIndices)
 	{
 		deviceQueueCreateInfos.emplace_back
