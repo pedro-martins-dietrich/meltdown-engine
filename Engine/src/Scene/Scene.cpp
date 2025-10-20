@@ -68,8 +68,9 @@ void mtd::Scene::allocateResources
 	{
 		for(const auto& [type, count]: rtPipeline.getDescriptorTypeCount())
 			totalDescriptorTypeCount[type] += count;
+		totalDescriptorTypeCount[vk::DescriptorType::eAccelerationStructureKHR]++;
 		totalDescriptorTypeCount[vk::DescriptorType::eStorageImage]++;
-		totalDescriptorTypeCount[vk::DescriptorType::eStorageBuffer] += 2;
+		totalDescriptorTypeCount[vk::DescriptorType::eStorageBuffer] += 4;
 	}
 
 	std::vector<PoolSizeData> poolSizesInfo{totalDescriptorTypeCount.size()};
