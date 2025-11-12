@@ -13,6 +13,7 @@ mtd::Material::Material(const MaterialInfo& materialInfo)
 		floatAttributeOffsets[floatDataType] = offset;
 		offset += mapFloatDataTypeDimension(floatDataType);
 	}
+	offset += offset % 4;
 	floatAttributes.resize(offset);
 }
 
@@ -115,6 +116,14 @@ uint32_t mtd::Material::mapFloatDataTypeDimension(MaterialFloatDataType floatDat
 	{
 		case MaterialFloatDataType::DiffuseColor:
 			return 4;
+		case MaterialFloatDataType::Emission:
+			return 3;
+		case MaterialFloatDataType::IndexOfRefraction:
+			return 1;
+		case MaterialFloatDataType::Roughness:
+			return 1;
+		case MaterialFloatDataType::Metallic:
+			return 1;
 		default:
 			assert(false && "No size has been specified for the requested float data type.");
 	}

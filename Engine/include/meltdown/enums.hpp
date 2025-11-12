@@ -36,7 +36,11 @@ namespace mtd
 	*/
 	enum class MaterialFloatDataType
 	{
-		DiffuseColor
+		DiffuseColor,
+		Emission,
+		IndexOfRefraction,
+		Roughness,
+		Metallic
 	};
 
 	/*

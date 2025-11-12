@@ -207,6 +207,26 @@ void loadMaterial(std::string filePath, mtd::Material& material)
 			diffuseTexturePath.append(words[1]);
 			material.addTexturePath(mtd::MaterialTextureType::DiffuseMap, std::move(diffuseTexturePath));
 		}
+		else if(!words[0].compare("Ke"))
+		{
+			mtd::Vec3 emission{std::stof(words[1]), std::stof(words[2]), std::stof(words[3])};
+			material.addFloatData(mtd::MaterialFloatDataType::Emission, reinterpret_cast<float*>(&emission));
+		}
+		else if(!words[0].compare("Ni"))
+		{
+			float indexOfRefraction = std::stof(words[1]);
+			material.addFloatData(mtd::MaterialFloatDataType::IndexOfRefraction, &indexOfRefraction);
+		}
+		else if(!words[0].compare("Pr"))
+		{
+			float roughness = std::stof(words[1]);
+			material.addFloatData(mtd::MaterialFloatDataType::Roughness, &roughness);
+		}
+		else if(!words[0].compare("Pm"))
+		{
+			float metallic = std::stof(words[1]);
+			material.addFloatData(mtd::MaterialFloatDataType::Metallic, &metallic);
+		}
 	}
 	file.close();
 }
@@ -254,6 +274,28 @@ void loadMaterials
 			diffuseTexturePath.append(words[1]);
 			materials[currentMaterialID]
 				.addTexturePath(mtd::MaterialTextureType::DiffuseMap, std::move(diffuseTexturePath));
+		}
+		else if(!words[0].compare("Ke"))
+		{
+			mtd::Vec3 emission{std::stof(words[1]), std::stof(words[2]), std::stof(words[3])};
+			materials[currentMaterialID]
+				.addFloatData(mtd::MaterialFloatDataType::Emission, reinterpret_cast<float*>(&emission));
+		}
+		else if(!words[0].compare("Ni"))
+		{
+			float indexOfRefraction = std::stof(words[1]);
+			materials[currentMaterialID]
+				.addFloatData(mtd::MaterialFloatDataType::IndexOfRefraction, &indexOfRefraction);
+		}
+		else if(!words[0].compare("Pr"))
+		{
+			float roughness = std::stof(words[1]);
+			materials[currentMaterialID].addFloatData(mtd::MaterialFloatDataType::Roughness, &roughness);
+		}
+		else if(!words[0].compare("Pm"))
+		{
+			float metallic = std::stof(words[1]);
+			materials[currentMaterialID].addFloatData(mtd::MaterialFloatDataType::Metallic, &metallic);
 		}
 	}
 	file.close();
