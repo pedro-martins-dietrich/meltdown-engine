@@ -19,11 +19,17 @@ struct Vertex
 struct MaterialFloatAttributes
 {
 	vec4 diffuse;
+	vec4 emissionAndIoR;
+	float roughness;
+	float metallic;
 };
 
 
 const float PI = 3.14159265359f;
 const float TWO_PI = 6.28318530718f;
+const float INV_PI = 0.31830988618f;
+
+const vec3 F0 = vec3(0.04f);
 
 
 hitAttributeEXT vec2 attributes;
@@ -72,15 +78,62 @@ float randomFloat(inout uint seed)
 
 vec3 unitSphereSample(inout uint randomState)
 {
-	float theta = randomFloat(randomState) * TWO_PI;
-	float phi = (randomFloat(randomState) - 0.5f) * PI;
+	float z = 2 * randomFloat(randomState) - 1.0f;
+	float r = sqrt(1.0f - z * z);
+	float phi = TWO_PI * randomFloat(randomState);
 
-	return vec3(cos(phi) * cos(theta), -sin(phi), cos(phi) * sin(theta));
+	return vec3(r * cos(phi), r * sin(phi), z);
+}
+
+float ggxNormalDistributionFunction(float normalDotHalfway, float alphaSquared)
+{
+	float c = normalDotHalfway * normalDotHalfway * (alphaSquared - 1.0f) + 1.0f;
+
+	return clamp(alphaSquared / (PI * c * c), 0.0f, 1.0f);
+}
+
+vec3 fresnelReflectanceSchlick(float cosTheta, in vec3 f0)
+{
+	return f0 + (vec3(1.0f) - f0) * pow(1.0f - cosTheta, 5U);
+}
+
+float geometryFactorSchlickGGX(float normalDotRay, float halfAlpha)
+{
+	return normalDotRay / (normalDotRay * (1.0f - halfAlpha) + halfAlpha);
+}
+
+float geometryTermSmith(in vec3 inRay, in vec3 outRay, in vec3 normal, float roughness)
+{
+	float k = 0.5f * roughness + 0.5f;
+	k *= 0.5f * k;
+
+	return geometryFactorSchlickGGX(dot(normal, inRay), k)
+		* geometryFactorSchlickGGX(dot(normal, outRay), k);
+}
+
+vec3 microfacetBRDF(in vec3 inRay, in vec3 outRay, in vec3 normal, in MaterialFloatAttributes material)
+{
+	vec3 halfwayVector = normalize(inRay + outRay);
+	float alpha = max(1e-6, material.roughness * material.roughness);
+
+	vec3 baseColor = material.diffuse.rgb;
+
+	float normalDistribution = ggxNormalDistributionFunction(dot(normal, halfwayVector), alpha * alpha);
+	vec3 fresnel = fresnelReflectanceSchlick(dot(inRay, halfwayVector), mix(F0, baseColor, material.metallic));
+	float geometryTerm = geometryTermSmith(inRay, outRay, normal, material.roughness);
+
+	vec3 diffuseColor = baseColor * (vec3(1.0f) - fresnel) * (1.0f - material.metallic) * INV_PI;
+
+	vec3 specularColor = (normalDistribution * fresnel * geometryTerm)
+		/ (4.0f * dot(normal, inRay) * dot(normal, outRay));
+
+	return diffuseColor + specularColor;
 }
 
 void main()
 {
 	payload.recursionDepth++;
+	if(payload.recursionDepth >= renderingInfo.maxRecursionDepth) return;
 
 	vec3 v0 = vertices[indices[3 * gl_PrimitiveID]].position;
 	vec3 v1 = vertices[indices[3 * gl_PrimitiveID + 1]].position;
@@ -92,16 +145,19 @@ void main()
 	normal = normalize((gl_HitKindEXT == gl_HitKindFrontFacingTriangleEXT) ? normal : -normal);
 	vec3 hitPoint = v0 + attributes.x * e1 + attributes.y * e2;
 
-	vec3 newDirection = unitSphereSample(payload.randomState);
-	newDirection = normalize(newDirection + normal);
-
 	MaterialFloatAttributes material = materialFloatAttributes[uint(materialIDs[gl_PrimitiveID])];
-	float emissivity = 0.0f;
 
-	payload.light += emissivity * payload.throughput;
-	payload.throughput *= material.diffuse.xyz;
+	vec3 diffuseDirection = unitSphereSample(payload.randomState);
+	if(dot(normal, diffuseDirection) <= 0.0f)
+		diffuseDirection = -diffuseDirection;
+	vec3 specularReflection = reflect(gl_WorldRayDirectionEXT, normal);
+	vec3 newDirection = normalize(mix(specularReflection, diffuseDirection, material.roughness));
 
-	if(payload.recursionDepth >= renderingInfo.maxRecursionDepth) return;
+	vec3 valueBRDF = microfacetBRDF(-gl_WorldRayDirectionEXT, newDirection, normal, material);
+
+	payload.light += material.emissionAndIoR.xyz * payload.throughput;
+	payload.throughput *= valueBRDF * dot(newDirection, normal);
+
 	traceRayEXT
 	(
 		accelerationStructure,
