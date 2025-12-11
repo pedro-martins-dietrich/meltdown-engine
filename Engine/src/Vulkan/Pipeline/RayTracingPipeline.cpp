@@ -2,7 +2,6 @@
 #include "RayTracingPipeline.hpp"
 
 #include "Builders/DescriptorSetBuilder.hpp"
-#include "Builders/PipelineMapping.hpp"
 #include "../../Utils/Logger.hpp"
 
 static constexpr uint32_t MAX_TEXTURE_COUNT = 1024U;
@@ -23,7 +22,7 @@ mtd::RayTracingPipeline::RayTracingPipeline
 			vk::BufferUsageFlagBits::eTransferDst,
 		vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
 	},
-	shaderRenderingInfo{4U, 8U, 0U, 0U}
+	shaderRenderingInfo{2U, 4U, 1U, 0U, 0U}
 {
 	loadShaderModules();
 	createDescriptorSetLayouts();
