@@ -106,8 +106,9 @@ namespace mtd
 	// Ray tracing push constant struct
 	struct RayTracingRenderData
 	{
-		uint32_t maxRecursionDepth = 1U;
 		uint32_t samplesPerPixel = 1U;
+		uint32_t maxRecursionDepth = 4U;
+		uint32_t maxScatterRayCount = 4U;
 		uint32_t accumulatedFrames = 0U;
 		uint32_t randomSeed = 0U;
 	};

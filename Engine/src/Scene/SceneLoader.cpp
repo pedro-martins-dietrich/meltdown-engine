@@ -12,7 +12,7 @@
 #include "../Utils/FileHandler.hpp"
 #include "../Utils/Logger.hpp"
 
-static constexpr const char* sceneLoaderVersion = "0.1.8";
+static constexpr const char* sceneLoaderVersion = "0.1.9";
 
 static void loadCamera(const nlohmann::json& cameraJson);
 static void loadFramebuffer

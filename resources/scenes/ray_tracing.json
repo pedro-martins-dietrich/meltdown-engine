@@ -1,5 +1,5 @@
 {
-	"scene-loader-version": "0.1.8",
+	"scene-loader-version": "0.1.9",
 	"camera":
 	{
 		"orthographic": false,
@@ -23,7 +23,7 @@
 			"descriptor-set-info": [],
 			"resolution-ratio-horizontal": 1.0,
 			"resolution-ratio-vertical": 1.0,
-			"material-float-data-types": [0],
+			"material-float-data-types": [0, 1, 2, 3, 4],
 			"material-texture-types": []
 		}
 	],

@@ -2,6 +2,7 @@
 #extension GL_EXT_ray_tracing : enable
 #extension GL_EXT_shader_16bit_storage : enable
 
+
 struct Payload
 {
 	vec3 light;
@@ -19,11 +20,17 @@ struct Vertex
 struct MaterialFloatAttributes
 {
 	vec4 diffuse;
+	vec4 emissionAndIoR;
+	float roughness;
+	float metallic;
 };
 
 
 const float PI = 3.14159265359f;
 const float TWO_PI = 6.28318530718f;
+const float INV_PI = 0.31830988618f;
+
+const vec3 F0 = vec3(0.04f);
 
 
 hitAttributeEXT vec2 attributes;
@@ -32,8 +39,9 @@ layout(location = 0) rayPayloadInEXT Payload payload;
 
 layout(push_constant) uniform PushConstant
 {
-	uint maxRecursionDepth;
 	uint samplesPerPixel;
+	uint maxRecursionDepth;
+	uint maxScatterRayCount;
 	uint accumulatedFrames;
 	uint randomSeed;
 } renderingInfo;
@@ -72,45 +80,134 @@ float randomFloat(inout uint seed)
 
 vec3 unitSphereSample(inout uint randomState)
 {
-	float theta = randomFloat(randomState) * TWO_PI;
-	float phi = (randomFloat(randomState) - 0.5f) * PI;
+	float z = 2 * randomFloat(randomState) - 1.0f;
+	float r = sqrt(1.0f - z * z);
+	float phi = TWO_PI * randomFloat(randomState);
 
-	return vec3(cos(phi) * cos(theta), -sin(phi), cos(phi) * sin(theta));
+	return vec3(r * cos(phi), r * sin(phi), z);
 }
 
-void main()
+void getTriangleHitInfo(out vec3 normal, out vec3 hitPoint)
 {
-	payload.recursionDepth++;
-
 	vec3 v0 = vertices[indices[3 * gl_PrimitiveID]].position;
 	vec3 v1 = vertices[indices[3 * gl_PrimitiveID + 1]].position;
 	vec3 v2 = vertices[indices[3 * gl_PrimitiveID + 2]].position;
 	vec3 e1 = v1 - v0;
 	vec3 e2 = v2 - v0;
 
-	vec3 normal = cross(e1, e2);
+	normal = cross(e1, e2);
 	normal = normalize((gl_HitKindEXT == gl_HitKindFrontFacingTriangleEXT) ? normal : -normal);
-	vec3 hitPoint = v0 + attributes.x * e1 + attributes.y * e2;
+	hitPoint = v0 + attributes.x * e1 + attributes.y * e2;
+}
 
-	vec3 newDirection = unitSphereSample(payload.randomState);
-	newDirection = normalize(newDirection + normal);
+uint computeBounceRaysCount(float scatteringFactor)
+{
+	float baseCount = mix(1.0f, renderingInfo.maxScatterRayCount, scatteringFactor);
+	return uint(round(baseCount));
+}
+
+float ggxNormalDistributionFunction(float normalDotHalfway, float alphaSquared)
+{
+	float c = normalDotHalfway * normalDotHalfway * (alphaSquared - 1.0f) + 1.0f;
+
+	return alphaSquared / (PI * c * c);
+}
+
+vec3 fresnelReflectanceSchlick(float cosTheta, vec3 f0)
+{
+	return f0 + (vec3(1.0f) - f0) * pow(1.0f - cosTheta, 5.0f);
+}
+
+float geometryFactorSchlickGGX(float normalDotRay, float halfAlpha)
+{
+	return normalDotRay / (normalDotRay * (1.0f - halfAlpha) + halfAlpha);
+}
+
+float geometryTermSmith(vec3 inRay, vec3 outRay, vec3 normal, float roughness)
+{
+	float k = 0.5f * roughness + 0.5f;
+	k = 0.5f * k * k;
+
+	return geometryFactorSchlickGGX(dot(normal, inRay), k)
+		* geometryFactorSchlickGGX(dot(normal, outRay), k);
+}
+
+vec3 microfacetBRDF(vec3 inRay, vec3 outRay, vec3 normal, MaterialFloatAttributes material)
+{
+	vec3 halfwayVector = normalize(inRay + outRay);
+	float alpha = max(material.roughness * material.roughness, 1e-6f);
+
+	float normalDotIn = max(dot(normal, inRay), 1e-6f);
+	float normalDotOut = max(dot(normal, outRay), 1e-6f);
+	float normalDotHalfway = max(dot(normal, halfwayVector), 1e-6f);
+	float halfwayDotIn = max(dot(halfwayVector, inRay), 1e-6f);
+
+	vec3 baseColor = material.diffuse.rgb;
+
+	float normalDistribution = ggxNormalDistributionFunction(normalDotHalfway, alpha * alpha);
+	vec3 fresnel = fresnelReflectanceSchlick(halfwayDotIn, mix(F0, baseColor, material.metallic));
+	float geometryTerm = geometryTermSmith(inRay, outRay, normal, material.roughness);
+
+	vec3 diffuseColor = baseColor * (vec3(1.0f) - fresnel) * (1.0f - material.metallic) * INV_PI;
+
+	vec3 specularColor = (normalDistribution * fresnel * geometryTerm)
+		/ (4.0f * normalDotIn * normalDotOut);
+
+	return diffuseColor + specularColor;
+}
+
+void main()
+{
+	payload.recursionDepth++;
+	if(payload.recursionDepth >= renderingInfo.maxRecursionDepth)
+	{
+		payload.throughput = vec3(0.0f);
+		return;
+	}
+
+	vec3 normal, hitPoint;
+	getTriangleHitInfo(normal, hitPoint);
 
 	MaterialFloatAttributes material = materialFloatAttributes[uint(materialIDs[gl_PrimitiveID])];
-	float emissivity = 0.0f;
+	float scatteringFactor = 1.0f - material.metallic * (1.0f - material.roughness);
+	scatteringFactor = clamp(scatteringFactor, 0.0015f, 1.0f);
+	vec3 perfectReflectionDirection = reflect(gl_WorldRayDirectionEXT, normal);
 
-	payload.light += emissivity * payload.throughput;
-	payload.throughput *= material.diffuse.xyz;
+	Payload savedPayload = payload;
 
-	if(payload.recursionDepth >= renderingInfo.maxRecursionDepth) return;
-	traceRayEXT
-	(
-		accelerationStructure,
-		gl_RayFlagsOpaqueEXT,
-		0xFF,
-		0, 0,
-		0,
-		hitPoint, 0.001f,
-		newDirection, 10000.0f,
-		0
-	);
+	uint bounceCount = computeBounceRaysCount(scatteringFactor);
+	vec3 accumulatedLight = vec3(0.0f);
+	for(uint bounceIndex = 0; bounceIndex < bounceCount; bounceIndex++)
+	{
+		vec3 randomDirection = unitSphereSample(payload.randomState);
+		if(dot(normal, randomDirection) <= 0.0f)
+			randomDirection = -randomDirection;
+
+		vec3 bounceDirection = normalize(mix(perfectReflectionDirection, randomDirection, scatteringFactor));
+
+		payload.light = vec3(0.0f);
+
+		vec3 valueBRDF = microfacetBRDF(-gl_WorldRayDirectionEXT, bounceDirection, normal, material);
+		payload.throughput *= valueBRDF * dot(bounceDirection, normal);
+
+		traceRayEXT
+		(
+			accelerationStructure,
+			gl_RayFlagsOpaqueEXT,
+			0xFF,
+			0, 0,
+			0,
+			hitPoint, 1e-3f,
+			bounceDirection, 1e6f,
+			0
+		);
+
+		accumulatedLight += payload.light * payload.throughput;
+
+		payload.throughput = savedPayload.throughput;
+		payload.recursionDepth = savedPayload.recursionDepth;
+	}
+
+	payload.light += (accumulatedLight / float(bounceCount))
+		+ (payload.throughput * material.emissionAndIoR.rgb);
 }

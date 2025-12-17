@@ -1,6 +1,7 @@
 #version 460
 #extension GL_EXT_ray_tracing : enable
 
+
 struct Ray
 {
 	vec3 origin;
@@ -20,8 +21,9 @@ layout(location = 0) rayPayloadEXT Payload payload;
 
 layout(push_constant) uniform PushConstant
 {
-	uint maxRecursionDepth;
 	uint samplesPerPixel;
+	uint maxRecursionDepth;
+	uint maxScatterRayCount;
 	uint accumulatedFrames;
 	uint randomSeed;
 } renderingInfo;
@@ -36,6 +38,11 @@ layout(set = 0, binding = 0) uniform CameraMatrices
 layout(set = 1, binding = 0) uniform accelerationStructureEXT accelerationStructure;
 layout(set = 1, binding = 1, rgba8) uniform image2D storageImage;
 
+
+void reinhardToneMapping(inout vec3 color)
+{
+	color /= vec3(1.0f) + color;
+}
 
 void main()
 {
@@ -72,7 +79,9 @@ void main()
 
 		accumulatedLight += payload.light;
 	}
-	accumulatedLight /= renderingInfo.samplesPerPixel;
+	accumulatedLight /= float(renderingInfo.samplesPerPixel);
+
+	reinhardToneMapping(accumulatedLight);
 
 	uint frameCount = min(renderingInfo.accumulatedFrames, 2U);
 	vec3 previousColor = imageLoad(storageImage, ivec2(pixelCoord)).xyz;
