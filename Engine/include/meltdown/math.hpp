@@ -14,8 +14,8 @@ namespace mtd
 		float x;
 		float y;
 
-		float& operator[](int i);
-		float operator[](int i) const;
+		float& operator[](size_t i);
+		float operator[](size_t i) const;
 
 		Vec2 operator+(const Vec2& other) const;
 		Vec2& operator+=(const Vec2& other);
@@ -87,8 +87,8 @@ namespace mtd
 			};
 		};
 
-		float& operator[](int i);
-		float operator[](int i) const;
+		float& operator[](size_t i);
+		float operator[](size_t i) const;
 
 		Vec3 operator+(const Vec3& other) const;
 		Vec3& operator+=(const Vec3& other);
@@ -179,8 +179,8 @@ namespace mtd
 			};
 		};
 
-		float& operator[](int i);
-		float operator[](int i) const;
+		float& operator[](size_t i);
+		float operator[](size_t i) const;
 
 		Vec4 operator+(const Vec4& other) const;
 		Vec4& operator+=(const Vec4& other);
@@ -253,6 +253,43 @@ namespace mtd
 		* @return The normalized 4D vector.
 		*/
 		Vec4 normalized() const;
+	};
+
+	/*
+	* @brief Representation of a 2D vector of unsigned integers.
+	*/
+	struct UIntVec2
+	{
+		uint32_t x;
+		uint32_t y;
+
+		uint32_t& operator[](size_t i);
+		uint32_t operator[](size_t i) const;
+
+		UIntVec2 operator+(UIntVec2 other) const;
+		UIntVec2& operator+=(UIntVec2 other);
+
+		UIntVec2 operator-() const;
+		UIntVec2 operator-(UIntVec2 other) const;
+		UIntVec2& operator-=(UIntVec2 other);
+
+		UIntVec2 operator*(uint32_t scalar) const;
+		UIntVec2 operator*(UIntVec2 other) const;
+		UIntVec2& operator*=(uint32_t scalar);
+		UIntVec2& operator*=(UIntVec2 other);
+
+		UIntVec2 operator/(uint32_t scalar) const;
+		UIntVec2& operator/=(uint32_t scalar);
+
+		friend std::ostream& operator<<(std::ostream& os, const UIntVec2& uv2);
+
+		/*
+		* @brief Builds a 2D unsigned integer vector by specifying both values.
+		*
+		* @param x Value for the first element.
+		* @param y Value for the second element.
+		*/
+		constexpr UIntVec2(uint32_t x, uint32_t y): x{x}, y{y} {}
 	};
 
 	/*
@@ -339,8 +376,8 @@ namespace mtd
 		Vec4 z;
 		Vec4 w;
 
-		Vec4& operator[](int i);
-		const Vec4& operator[](int i) const;
+		Vec4& operator[](size_t i);
+		const Vec4& operator[](size_t i) const;
 
 		Mat4x4 operator*(float scalar) const;
 		Mat4x4 operator*(const Mat4x4& other) const;
@@ -396,5 +433,6 @@ namespace mtd
 	Vec2 operator*(float scalar, const Vec2& vec);
 	Vec3 operator*(float scalar, const Vec3& vec);
 	Vec4 operator*(float scalar, const Vec4& vec);
+	UIntVec2 operator*(uint32_t scalar, UIntVec2 vec);
 	Mat4x4 operator*(float scalar, const Mat4x4& mat);
 }

@@ -1,13 +1,15 @@
 #include <pch.hpp>
 #include <meltdown/math.hpp>
 
-float& mtd::Vec3::operator[](int i)
+float& mtd::Vec3::operator[](size_t i)
 {
+	assert(i < 3UL && "Vec3 index out of bounds.");
 	return (&x)[i];
 }
 
-float mtd::Vec3::operator[](int i) const
+float mtd::Vec3::operator[](size_t i) const
 {
+	assert(i < 3UL && "Vec3 index out of bounds.");
 	return (&x)[i];
 }
 
