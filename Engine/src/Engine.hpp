@@ -2,8 +2,11 @@
 
 #include <condition_variable>
 
+#include <meltdown/window.hpp>
+
 #include "Vulkan/ImGui/ImGuiHandler.hpp"
 #include "Vulkan/Render/Renderer.hpp"
+#include "Vulkan/Frame/Surface.hpp"
 #include "GUIs/SettingsGui.hpp"
 #include "GUIs/ProfilerGui.hpp"
 #include "Camera/Camera.hpp"
@@ -15,7 +18,7 @@ namespace mtd
 	class Engine
 	{
 		public:
-			Engine(const EngineInfo& info);
+			Engine(const EngineInfo& info, Window& window);
 			~Engine();
 
 			Engine(const Engine&) = delete;
@@ -31,15 +34,15 @@ namespace mtd
 			void setVSync(bool enableVSync);
 
 			// Begins the engine main loop
-			void run(const std::function<void(double)>& onUpdateCallback);
+			void run(Window& window, const std::function<void(double)>& onUpdateCallback);
 
 			// Loads a new scene, clearing the previous if necessary
 			void loadScene(const char* sceneFile);
 
 		private:
 			// Engine handler objects
-			Window window;
 			VulkanInstance vulkanInstance;
+			Surface surface;
 			Device device;
 			Swapchain swapchain;
 			std::vector<Framebuffer> framebuffers;
@@ -102,6 +105,6 @@ namespace mtd
 			void configureDescriptors();
 
 			// Recreates swapchain and pipeline to apply new settings
-			void updateEngine();
+			void updateEngine(WindowHandler* const pWindowHandler);
 	};
 }

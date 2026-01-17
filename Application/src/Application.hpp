@@ -1,5 +1,7 @@
 #pragma once
 
+#include <meltdown/window.hpp>
+
 #include "CameraController.hpp"
 
 // Main class responsible to interact with the engine
@@ -16,6 +18,8 @@ class Application
 		void run();
 
 	private:
+		// Window to be provided to the engine
+		mtd::Window window;
 		// Instance of the Meltdown Engine
 		mtd::MeltdownEngine meltdownEngine;
 

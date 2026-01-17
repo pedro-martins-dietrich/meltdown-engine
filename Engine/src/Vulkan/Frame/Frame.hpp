@@ -12,7 +12,7 @@ namespace mtd
 			Frame
 			(
 				const Device& mtdDevice,
-				const FrameDimensions& frameDimensions,
+				const UIntVec2& frameDimensions,
 				vk::Image image,
 				vk::Format format,
 				uint32_t frameIndex
@@ -48,7 +48,7 @@ namespace mtd
 			// Frame index in the swapchain
 			uint32_t frameIndex;
 			// Frame dimensions
-			FrameDimensions frameDimensions;
+			UIntVec2 frameDimensions;
 
 			// Vulkan command handler
 			CommandHandler commandHandler;

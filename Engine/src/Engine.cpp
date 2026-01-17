@@ -6,11 +6,11 @@
 #include "Input/InputHandler.hpp"
 #include "Event/EventManager.hpp"
 
-mtd::Engine::Engine(const EngineInfo& info)
-	: window{WindowInfo{1280, 720, 640, 360}, info.appName},
-	vulkanInstance{info, window},
-	device{vulkanInstance, info.enableRayTracing},
-	swapchain{device, window.getDimensions(), vulkanInstance.getSurface()},
+mtd::Engine::Engine(const EngineInfo& info, Window& window)
+	: vulkanInstance{info},
+	surface{vulkanInstance.getInstance(), window.windowHandler.get()},
+	device{vulkanInstance.getInstance(), surface.getSurface(), info.enableRayTracing},
+	swapchain{device, surface.getSurface(), window.getDimensions()},
 	commandHandler{device},
 	camera{window.getAspectRatio()},
 	scene{device},
@@ -24,9 +24,9 @@ mtd::Engine::Engine(const EngineInfo& info)
 	configureEventCallbacks();
 	configureGlobalDescriptorSetHandler();
 
+	window.windowHandler->initImGuiForGLFW();
 	imGuiHandler.init
 	(
-		window,
 		vulkanInstance.getInstance(),
 		device,
 		swapchain.getRenderPass(),
@@ -47,21 +47,19 @@ mtd::Engine::~Engine()
 	LOG_INFO("Engine shut down.");
 }
 
-// Configures the clear color for the framebuffers
 void mtd::Engine::setClearColor(const Vec4& color)
 {
 	renderer.setClearColor(color);
 }
 
-// Configures V-Sync
 void mtd::Engine::setVSync(bool enableVSync)
 {
 	shouldUpdateEngine = swapchain.setVSync(enableVSync);
 }
 
-// Begins the engine main loop
-void mtd::Engine::run(const std::function<void(double)>& onUpdateCallback)
+void mtd::Engine::run(Window& window, const std::function<void(double)>& onUpdateCallback)
 {
+	WindowHandler* const pWindowHandler = window.windowHandler.get();
 	DrawInfo drawInfo
 	{
 		swapchain.getRenderPass(),
@@ -69,7 +67,7 @@ void mtd::Engine::run(const std::function<void(double)>& onUpdateCallback)
 		globalDescriptorSetHandler->getSet(0)
 	};
 
-	running.store(window.keepOpen());
+	running.store(pWindowHandler->keepOpen());
 	std::thread updateThread{&Engine::updateLoop, this, onUpdateCallback};
 
 	while(running.load())
@@ -96,9 +94,9 @@ void mtd::Engine::run(const std::function<void(double)>& onUpdateCallback)
 
 		PROFILER_NEXT_STAGE("Update engine");
 		if(shouldUpdateEngine)
-			updateEngine();
+			updateEngine(pWindowHandler);
 
-		running.store(window.keepOpen());
+		running.store(pWindowHandler->keepOpen());
 		PROFILER_END_FRAME();
 	}
 
@@ -106,7 +104,6 @@ void mtd::Engine::run(const std::function<void(double)>& onUpdateCallback)
 		updateThread.join();
 }
 
-// Loads a new scene, clearing the previous if necessary
 void mtd::Engine::loadScene(const char* sceneFile)
 {
 	{
@@ -147,7 +144,6 @@ void mtd::Engine::loadScene(const char* sceneFile)
 	sceneLoadCV.notify_all();
 }
 
-// Runs the update loop (update thread)
 void mtd::Engine::updateLoop(const std::function<void(double)>& onUpdateCallback)
 {
 	using ChronoClock = std::chrono::steady_clock;
@@ -177,7 +173,6 @@ void mtd::Engine::updateLoop(const std::function<void(double)>& onUpdateCallback
 	}
 }
 
-// Applies all the pending updates for the descriptors
 void mtd::Engine::updateDescriptors()
 {
 	globalDescriptorSetHandler->updateDescriptorData(0, 0, camera.fetchUpdatedMatrices(), sizeof(CameraMatrices));
@@ -194,7 +189,6 @@ void mtd::Engine::updateDescriptors()
 	pendingDescriptorUpdates.clear();
 }
 
-// Sets up event callback functions
 void mtd::Engine::configureEventCallbacks()
 {
 	changeSceneCallbackHandle = EventManager::addCallback([this](const ChangeSceneEvent& event)
@@ -210,7 +204,6 @@ void mtd::Engine::configureEventCallbacks()
 	});
 }
 
-// Sets up descriptor set shared across pipelines
 void mtd::Engine::configureGlobalDescriptorSetHandler()
 {
 	std::vector<vk::DescriptorSetLayoutBinding> bindings(1);
@@ -224,7 +217,6 @@ void mtd::Engine::configureGlobalDescriptorSetHandler()
 	globalDescriptorSetHandler = std::make_unique<DescriptorSetHandler>(device.getDevice(), bindings);
 }
 
-// Creates the framebuffers and pipelines to be used in the scene
 void mtd::Engine::createRenderResources
 (
 	const std::vector<FramebufferInfo>& framebufferInfos,
@@ -280,7 +272,6 @@ void mtd::Engine::createRenderResources
 	}
 }
 
-// Sets up the descriptors
 void mtd::Engine::configureDescriptors()
 {
 	globalDescriptorSetHandler->defineDescriptorSetsAmount(1);
@@ -306,13 +297,12 @@ void mtd::Engine::configureDescriptors()
 	}
 }
 
-// Recreates swapchain and pipeline to apply new settings
-void mtd::Engine::updateEngine()
+void mtd::Engine::updateEngine(WindowHandler* const pWindowHandler)
 {
-	window.waitForValidWindowSize();
+	pWindowHandler->waitForValidWindowSize();
 	device.getDevice().waitIdle();
 
-	swapchain.recreate(device, window.getDimensions(), vulkanInstance.getSurface());
+	swapchain.recreate(device, surface.getSurface(), pWindowHandler->getDimensions());
 
 	for(Framebuffer& framebuffer: framebuffers)
 		framebuffer.resize(device, swapchain.getExtent());
@@ -332,7 +322,7 @@ void mtd::Engine::updateEngine()
 		fbPipeline.updateInputImagesDescriptors(framebuffers, rayTracingPipelines);
 	}
 
-	camera.setAspectRatio(window.getAspectRatio());
+	camera.setAspectRatio(pWindowHandler->getAspectRatio());
 
 	shouldUpdateEngine = false;
 }

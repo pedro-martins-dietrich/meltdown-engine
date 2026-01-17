@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 #include <meltdown/enums.hpp>
 #include <meltdown/math.hpp>
@@ -24,6 +25,23 @@ namespace mtd
 		uint32_t appVersionPatch = 0;
 		/* @brief Flag to enable ray tracing if the hardware supports it. */
 		bool enableRayTracing = false;
+	};
+
+	/*
+	* @brief Information to create a window.
+	*/
+	struct WindowInfo
+	{
+		/* @brief Window horizontal resolution. */
+		uint32_t width;
+		/* @brief Window vertical resolution. */
+		uint32_t height;
+		/* @brief Window horizontal position in the screen. */
+		int32_t posX;
+		/* @brief Window vertical position in the screen. */
+		int32_t posY;
+		/* @brief Title shown in the window titlebar. */
+		std::string title;
 	};
 
 	/*

@@ -22,12 +22,12 @@ namespace mtd
 			vk::Format getFormat() const { return format; }
 
 			// Setter
-			void setVulkanImage(vk::Image newImage, vk::Format newFormat, FrameDimensions newDimensions);
+			void setVulkanImage(vk::Image newImage, vk::Format newFormat, UIntVec2 newDimensions);
 
 			// Creates the Vulkan image
 			void createImage
 			(
-				FrameDimensions imageDimensions,
+				UIntVec2 imageDimensions,
 				vk::Format imageFormat,
 				vk::ImageTiling tiling,
 				vk::ImageUsageFlags usage,
@@ -44,7 +44,7 @@ namespace mtd
 			void resize
 			(
 				const Device& mtdDevice,
-				FrameDimensions newDimensions,
+				UIntVec2 newDimensions,
 				vk::ImageTiling tiling,
 				vk::ImageUsageFlags usage,
 				vk::MemoryPropertyFlags memoryProperties,
@@ -79,7 +79,7 @@ namespace mtd
 			// Image GPU memory layout
 			mutable vk::ImageLayout layout;
 			// Image resolution
-			FrameDimensions dimensions;
+			UIntVec2 dimensions;
 
 			// Vulkan device reference
 			const vk::Device& device;

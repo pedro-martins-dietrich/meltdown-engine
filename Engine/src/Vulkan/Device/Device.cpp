@@ -3,10 +3,10 @@
 
 #include "../../Utils/Logger.hpp"
 
-mtd::Device::Device(const VulkanInstance& vulkanInstance, bool tryEnableRayTracing)
+mtd::Device::Device(const vk::Instance& vulkanInstance, const vk::SurfaceKHR surface, bool tryEnableRayTracing)
 	: device{nullptr},
-	physicalDevice{vulkanInstance.getInstance()},
-	queueFamilies{physicalDevice.getPhysicalDevice(), vulkanInstance.getSurface()},
+	physicalDevice{vulkanInstance},
+	queueFamilies{physicalDevice.getPhysicalDevice(), surface},
 	rayTracingEnabled{tryEnableRayTracing && physicalDevice.isRayTracingCompatible()}
 {
 	std::vector<vk::DeviceQueueCreateInfo> deviceQueueCreateInfos;
@@ -77,8 +77,7 @@ mtd::Device::Device(const VulkanInstance& vulkanInstance, bool tryEnableRayTraci
 
 	dldi = std::make_unique<vk::detail::DispatchLoaderDynamic>
 	(
-		vulkanInstance.getInstance(), vkGetInstanceProcAddr,
-		device, vkGetDeviceProcAddr
+		vulkanInstance, vkGetInstanceProcAddr, device, vkGetDeviceProcAddr
 	);
 }
 
@@ -87,7 +86,6 @@ mtd::Device::~Device()
 	device.destroy();
 }
 
-// Configure the Vulkan queues
 void mtd::Device::configureQueues(std::vector<vk::DeviceQueueCreateInfo>& deviceQueueCreateInfos) const
 {
 	std::vector<uint32_t> uniqueQueueFamilyIndices = {queueFamilies.getGraphicsFamilyIndex()};
@@ -108,7 +106,6 @@ void mtd::Device::configureQueues(std::vector<vk::DeviceQueueCreateInfo>& device
 	}
 }
 
-// Selects the Vulkan extensions to be used
 void mtd::Device::selectExtensions(std::vector<const char*>& extensions) const
 {
 	if(rayTracingEnabled)

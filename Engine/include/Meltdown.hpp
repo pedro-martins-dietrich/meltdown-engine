@@ -5,26 +5,7 @@
 #include <vector>
 
 #include <meltdown/enums.hpp>
-#include <meltdown/structs.hpp>
-#include <meltdown/math.hpp>
-
-#ifndef MTD_SHARED
-	#define MELTDOWN_API
-#elif defined(_WIN32)
-	#ifdef MTD_EXPORTS
-		#define MELTDOWN_API __declspec(dllexport)
-	#else
-		#define MELTDOWN_API __declspec(dllimport)
-	#endif
-#elif defined(__linux__) || defined(__APPLE__)
-	#ifdef MTD_EXPORTS
-		#define MELTDOWN_API __attribute__((visibility("default")))
-	#else
-		#define MELTDOWN_API
-	#endif
-#else
-	#define MELTDOWN_API
-#endif
+#include <meltdown/window.hpp>
 
 /*
 * @brief Namespace used by the Meltdown (mtd) Engine.
@@ -44,8 +25,9 @@ namespace mtd
 			* @brief Initializes the application window, Vulkan and other engine dependencies.
 			*
 			* @param info Information about the engine options and the application name and version.
+			* @param window Window targeted for rendering.
 			*/
-			MeltdownEngine(const EngineInfo& info);
+			MeltdownEngine(const EngineInfo& info, Window& window);
 			~MeltdownEngine();
 
 			MeltdownEngine(const MeltdownEngine&) = delete;
@@ -76,9 +58,10 @@ namespace mtd
 			/*
 			* @brief Begins the engine main loop, returning only when the window is closed.
 			*
+			* @param window Window targeted for rendering.
 			* @param onUpdateCallback Callback function called on every engine update.
 			*/
-			void run(const std::function<void(double)>& onUpdateCallback);
+			void run(Window& window, const std::function<void(double)>& onUpdateCallback);
 
 			/*
 			* @brief Loads a new scene to be rendered by the engine. It needs to be called before starting

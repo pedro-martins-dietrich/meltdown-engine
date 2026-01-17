@@ -10,7 +10,7 @@ namespace mtd
 	class Device
 	{
 		public:
-			Device(const VulkanInstance& vulkanInstance, bool tryEnableRayTracing);
+			Device(const vk::Instance& vulkanInstance, const vk::SurfaceKHR surface, bool tryEnableRayTracing);
 			~Device();
 
 			Device(const Device&) = delete;

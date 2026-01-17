@@ -1,11 +1,10 @@
 #pragma once
 
 #include "../Device/Device.hpp"
+#include "../../Utils/EngineStructs.hpp"
 
 namespace mtd
 {
-	class Gui;
-
 	// Handles Vulkan commands to the GPU
 	class CommandHandler
 	{

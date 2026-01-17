@@ -16,7 +16,8 @@ static constexpr std::array<const char*, 2> scenes
 };
 
 Application::Application()
-	: meltdownEngine{mtd::EngineInfo{"Meltdown Application", 1, 0, 0, true}},
+	: window{mtd::WindowInfo{1280, 720, 640, 360, "Meltdown"}},
+	meltdownEngine{mtd::EngineInfo{"Meltdown Application", 1, 0, 0, true}, window},
 	changeScene{false}
 {
 	mapActions();
@@ -38,23 +39,25 @@ Application::Application()
 	}
 }
 
-// Begins the engine main loop
 void Application::run()
 {
-	meltdownEngine.run([this](double deltaTime)
-	{
-		cameraController.update(deltaTime);
-		if(changeScene)
+	meltdownEngine.run
+	(
+		window,
+		[this](double deltaTime)
 		{
-			static uint32_t currentScene = 0U;
-			currentScene = (currentScene + 1U) % static_cast<uint32_t>(scenes.size());
-			mtd::EventManager::dispatch<mtd::ChangeSceneEvent>(scenes[currentScene]);
-			changeScene = false;
+			cameraController.update(deltaTime);
+			if(changeScene)
+			{
+				static uint32_t currentScene = 0U;
+				currentScene = (currentScene + 1U) % static_cast<uint32_t>(scenes.size());
+				mtd::EventManager::dispatch<mtd::ChangeSceneEvent>(scenes[currentScene]);
+				changeScene = false;
+			}
 		}
-	});
+	);
 }
 
-// Creates a mapping for all actions used by the app
 void Application::mapActions()
 {
 	using mtd::KeyCode;

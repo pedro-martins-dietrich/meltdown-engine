@@ -1,5 +1,7 @@
 #pragma once
 
+#include <meltdown/event.hpp>
+
 #include "../Descriptors/DescriptorPool.hpp"
 #include "../../GUIs/GuiWindow.hpp"
 
@@ -18,7 +20,6 @@ namespace mtd
 			// Initializes ImGui
 			void init
 			(
-				const Window& window,
 				const vk::Instance& instance,
 				const Device& device,
 				const vk::RenderPass& renderPass,
