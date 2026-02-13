@@ -41,6 +41,11 @@ void mtd::MeltdownEngine::loadScene(const char* sceneFile)
 	engine->loadScene(sceneFile);
 }
 
+void mtd::MeltdownEngine::addGuiWindow(GuiWindow* const pGuiWindow)
+{
+	engine->addGuiWindow(pGuiWindow);
+}
+
 const mtd::Vec3& mtd::CameraHandler::getPosition()
 {
 	return pCamera->getPosition();

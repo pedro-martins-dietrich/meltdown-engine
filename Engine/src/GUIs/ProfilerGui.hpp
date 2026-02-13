@@ -1,6 +1,8 @@
 #pragma once
 
-#include "GuiWindow.hpp"
+#include <imgui.h>
+
+#include <meltdown/gui.hpp>
 
 namespace mtd
 {
@@ -18,6 +20,10 @@ namespace mtd
 			virtual void renderGui() override;
 
 		private:
+			// Current size and position of the window
+			ImVec2 windowSize;
+			ImVec2 windowPos;
+
 			// Shows histogram with frame data
 			void profilerGraphic();
 	};

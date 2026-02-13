@@ -15,7 +15,6 @@ mtd::Engine::Engine(const EngineInfo& info, Window& window)
 	camera{window.getAspectRatio()},
 	scene{device},
 	imGuiHandler{device.getDevice()},
-	settingsGui{swapchain.getSettings(), camera, shouldUpdateEngine},
 	profilerGui{},
 	renderer{},
 	shouldUpdateEngine{false}, running{false},
@@ -30,9 +29,9 @@ mtd::Engine::Engine(const EngineInfo& info, Window& window)
 		vulkanInstance.getInstance(),
 		device,
 		swapchain.getRenderPass(),
-		swapchain.getSettings().frameCount
+		swapchain.getFrameCount()
 	);
-	imGuiHandler.addGuiWindow(&settingsGui);
+
 	#ifdef MTD_DEBUG
 		imGuiHandler.addGuiWindow(&profilerGui);
 	#endif
@@ -142,6 +141,11 @@ void mtd::Engine::loadScene(const char* sceneFile)
 	shouldLoadScene.store(false);
 	std::unique_lock sceneLoadLock{sceneLoadMutex};
 	sceneLoadCV.notify_all();
+}
+
+void mtd::Engine::addGuiWindow(GuiWindow* const pGuiWindow)
+{
+	imGuiHandler.addGuiWindow(pGuiWindow);
 }
 
 void mtd::Engine::updateLoop(const std::function<void(double)>& onUpdateCallback)

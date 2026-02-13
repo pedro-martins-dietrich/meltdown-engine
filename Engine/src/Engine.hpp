@@ -7,7 +7,6 @@
 #include "Vulkan/ImGui/ImGuiHandler.hpp"
 #include "Vulkan/Render/Renderer.hpp"
 #include "Vulkan/Frame/Surface.hpp"
-#include "GUIs/SettingsGui.hpp"
 #include "GUIs/ProfilerGui.hpp"
 #include "Camera/Camera.hpp"
 
@@ -39,6 +38,9 @@ namespace mtd
 			// Loads a new scene, clearing the previous if necessary
 			void loadScene(const char* sceneFile);
 
+			// Creates a new ImGui window
+			void addGuiWindow(GuiWindow* const pGuiWindow);
+
 		private:
 			// Engine handler objects
 			VulkanInstance vulkanInstance;
@@ -57,8 +59,7 @@ namespace mtd
 			std::vector<FramebufferPipeline> framebufferPipelines;
 			std::vector<RayTracingPipeline> rayTracingPipelines;
 
-			// GUIs
-			SettingsGui settingsGui;
+			// GUI
 			ProfilerGui profilerGui;
 
 			// Scene being currently rendered

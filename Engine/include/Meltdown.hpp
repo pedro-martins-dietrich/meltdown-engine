@@ -4,6 +4,7 @@
 #include <memory>
 #include <vector>
 
+#include <meltdown/gui.hpp>
 #include <meltdown/enums.hpp>
 #include <meltdown/window.hpp>
 
@@ -71,6 +72,13 @@ namespace mtd
 			* @param sceneFile Path to the file containing the new scene data.
 			*/
 			void loadScene(const char* sceneFile);
+
+			/*
+			* @brief Adds a new GUI window to be rendered by the engine.
+			*
+			* @param pGuiWindow Pointer to a `GuiWindow` instance.
+			*/
+			void addGuiWindow(GuiWindow* const pGuiWindow);
 
 		private:
 			std::unique_ptr<Engine> engine;

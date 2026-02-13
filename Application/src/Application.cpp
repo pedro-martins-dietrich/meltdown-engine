@@ -18,11 +18,14 @@ static constexpr std::array<const char*, 2> scenes
 Application::Application()
 	: window{mtd::WindowInfo{1280, 720, 640, 360, "Meltdown"}},
 	meltdownEngine{mtd::EngineInfo{"Meltdown Application", 1, 0, 0, true}, window},
+	cameraSettingsGui{},
 	changeScene{false}
 {
 	mapActions();
 	mtd::ModelHandler::registerModel<SpinningModel>("spinning");
 	mtd::ModelHandler::registerModel<RotatingModel>("rotating");
+
+	meltdownEngine.addGuiWindow(&cameraSettingsGui);
 
 	meltdownEngine.loadScene(scenes[0]);
 

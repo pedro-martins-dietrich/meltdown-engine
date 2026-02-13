@@ -1,9 +1,9 @@
 #pragma once
 
 #include <meltdown/event.hpp>
+#include <meltdown/gui.hpp>
 
 #include "../Descriptors/DescriptorPool.hpp"
-#include "../../GUIs/GuiWindow.hpp"
 
 namespace mtd
 {
@@ -27,7 +27,7 @@ namespace mtd
 			) const;
 
 			// Adds a GUI window to exhibit
-			void addGuiWindow(GuiWindow* pGuiWindow) { guiWindows.push_back(pGuiWindow); }
+			void addGuiWindow(GuiWindow* const pGuiWindow) { guiWindows.push_back(pGuiWindow); }
 
 			// Renders the GUI in the current frame
 			void renderGui(const vk::CommandBuffer& commandBuffer) const;

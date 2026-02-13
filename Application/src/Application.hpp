@@ -3,6 +3,7 @@
 #include <meltdown/window.hpp>
 
 #include "CameraController.hpp"
+#include "GUIs/CameraSettingsGui.hpp"
 
 // Main class responsible to interact with the engine
 class Application
@@ -25,6 +26,9 @@ class Application
 
 		// Controller for the camera
 		CameraController cameraController;
+
+		// GUI for the camera settings
+		CameraSettingsGui cameraSettingsGui;
 
 		// Change scene event handle
 		mtd::EventCallbackHandle changeSceneCallbackHandle;
