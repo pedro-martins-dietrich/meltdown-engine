@@ -5,7 +5,7 @@
 #include <vector>
 
 #include <meltdown/gui.hpp>
-#include <meltdown/enums.hpp>
+#include <meltdown/structs.hpp>
 #include <meltdown/window.hpp>
 
 /*
@@ -210,5 +210,18 @@ namespace mtd
 		* @param action The enumeration/ID to the action to be removed.
 		*/
 		void MELTDOWN_API unmapAction(uint32_t action);
+	}
+
+	/*
+	* @brief Handles performance metrics collection.
+	*/
+	namespace Profiler
+	{
+		/*
+		* @brief Retrieves the data collected from the last frame by the profiler.
+		*
+		* @return Profiled data from the last frame.
+		*/
+		const FrameData& getProfiledData();
 	}
 }

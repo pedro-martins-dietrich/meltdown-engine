@@ -7,7 +7,6 @@
 #include "Vulkan/ImGui/ImGuiHandler.hpp"
 #include "Vulkan/Render/Renderer.hpp"
 #include "Vulkan/Frame/Surface.hpp"
-#include "GUIs/ProfilerGui.hpp"
 #include "Camera/Camera.hpp"
 
 // Meltdown (mtd) engine namespace
@@ -58,9 +57,6 @@ namespace mtd
 			std::vector<GraphicsPipeline> graphicsPipelines;
 			std::vector<FramebufferPipeline> framebufferPipelines;
 			std::vector<RayTracingPipeline> rayTracingPipelines;
-
-			// GUI
-			ProfilerGui profilerGui;
 
 			// Scene being currently rendered
 			Scene scene;

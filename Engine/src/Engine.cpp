@@ -15,7 +15,6 @@ mtd::Engine::Engine(const EngineInfo& info, Window& window)
 	camera{window.getAspectRatio()},
 	scene{device},
 	imGuiHandler{device.getDevice()},
-	profilerGui{},
 	renderer{},
 	shouldUpdateEngine{false}, running{false},
 	shouldLoadScene{false}
@@ -31,10 +30,6 @@ mtd::Engine::Engine(const EngineInfo& info, Window& window)
 		swapchain.getRenderPass(),
 		swapchain.getFrameCount()
 	);
-
-	#ifdef MTD_DEBUG
-		imGuiHandler.addGuiWindow(&profilerGui);
-	#endif
 
 	LOG_INFO("Engine ready.\n");
 }

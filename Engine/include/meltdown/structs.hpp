@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include <meltdown/enums.hpp>
@@ -43,6 +44,23 @@ namespace mtd
 		/* @brief Title shown in the window titlebar. */
 		std::string title;
 	};
+
+	/*
+	* @brief Handles performance metrics collection.
+	*/
+	namespace Profiler
+	{
+		/*
+		* @brief Performance data for a single frame, measured in millisecods.
+		*/
+		struct FrameData
+		{
+			/* @brief Time taken to render the whole frame, in milliseconds. */
+			float totalFrameTime = 0.0f;
+			/* @brief Time taken for each stage of the frame, in milliseconds, indexed by the stage name. */
+			std::unordered_map<const char*, float> stageTimes;
+		};
+	}
 
 	/*
 	* @brief Information about how a descriptor set binding will be used.

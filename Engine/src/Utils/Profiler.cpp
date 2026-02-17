@@ -1,6 +1,8 @@
 #include <pch.hpp>
 #include "Profiler.hpp"
 
+#include <Meltdown.hpp>
+
 using ChronoClock = std::chrono::steady_clock;
 using ChronoTime = ChronoClock::time_point;
 using ChronoDuration = std::chrono::duration<float, std::milli>;
@@ -11,13 +13,11 @@ static const char* lastStage;
 static mtd::Profiler::FrameData currentFrameData;
 static mtd::Profiler::FrameData profiledData;
 
-// Retrieves the data collected by the profiler
 const mtd::Profiler::FrameData& mtd::Profiler::getProfiledData()
 {
 	return profiledData;
 }
 
-// Begins collecting data about the current frame. The first frame stage must be specified
 void mtd::Profiler::startFrame(const char* initialStage)
 {
 	lastStage = initialStage;
@@ -25,7 +25,6 @@ void mtd::Profiler::startFrame(const char* initialStage)
 	initialFrameTime = lastStageTime;
 }
 
-// Ends the last frame stage and starts the next, measuring the time taken
 void mtd::Profiler::nextStage(const char* stage)
 {
 	ChronoTime currentTime = ChronoClock::now();
@@ -36,7 +35,6 @@ void mtd::Profiler::nextStage(const char* stage)
 	lastStageTime = currentTime;
 }
 
-// Ends the last frame stage and also calculates the total frame duration
 void mtd::Profiler::endFrame()
 {
 	ChronoTime currentTime = ChronoClock::now();
@@ -50,7 +48,6 @@ void mtd::Profiler::endFrame()
 	lastStage = nullptr;
 }
 
-// Clears the unordered map of frame stages
 void mtd::Profiler::clearStages()
 {
 	currentFrameData.stageTimes.clear();

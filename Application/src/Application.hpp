@@ -4,6 +4,7 @@
 
 #include "CameraController.hpp"
 #include "GUIs/CameraSettingsGui.hpp"
+#include "GUIs/ProfilerGui.hpp"
 
 // Main class responsible to interact with the engine
 class Application
@@ -29,6 +30,8 @@ class Application
 
 		// GUI for the camera settings
 		CameraSettingsGui cameraSettingsGui;
+		// GUI for the frame profiler
+		ProfilerGui profilerGui;
 
 		// Change scene event handle
 		mtd::EventCallbackHandle changeSceneCallbackHandle;

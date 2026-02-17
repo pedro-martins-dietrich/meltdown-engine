@@ -1,14 +1,13 @@
-#include <pch.hpp>
 #include "ProfilerGui.hpp"
 
-#include "../Utils/Profiler.hpp"
+#include <Meltdown.hpp>
 
 #define HOVER_INFO_SIZE 64
 
-mtd::ProfilerGui::ProfilerGui() : windowSize{350.0f, 250.0f}, windowPos{20.0f, 450.0f}
+ProfilerGui::ProfilerGui(): windowSize{350.0f, 250.0f}, windowPos{20.0f, 450.0f}
 {}
 
-void mtd::ProfilerGui::renderGui()
+void ProfilerGui::renderGui()
 {
 	ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
 	ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);
@@ -19,9 +18,9 @@ void mtd::ProfilerGui::renderGui()
 	ImGui::End();
 }
 
-void mtd::ProfilerGui::profilerGraphic()
+void ProfilerGui::profilerGraphic()
 {
-	const Profiler::FrameData& profileData = Profiler::getProfiledData();
+	const mtd::Profiler::FrameData& profileData = mtd::Profiler::getProfiledData();
 	const uint32_t stageCount = profileData.stageTimes.size();
 
 	ImGui::Text("Total frame duration: %3.3f ms", profileData.totalFrameTime);
