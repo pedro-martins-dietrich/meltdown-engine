@@ -22,15 +22,6 @@ mtd::Engine::Engine(const EngineInfo& info, Window& window)
 	configureEventCallbacks();
 	configureGlobalDescriptorSetHandler();
 
-	window.windowHandler->initImGuiForGLFW();
-	imGuiHandler.init
-	(
-		vulkanInstance.getInstance(),
-		device,
-		swapchain.getRenderPass(),
-		swapchain.getFrameCount()
-	);
-
 	LOG_INFO("Engine ready.\n");
 }
 
@@ -136,6 +127,18 @@ void mtd::Engine::loadScene(const char* sceneFile)
 	shouldLoadScene.store(false);
 	std::unique_lock sceneLoadLock{sceneLoadMutex};
 	sceneLoadCV.notify_all();
+}
+
+void mtd::Engine::initializeGui(const Window& window)
+{
+	window.windowHandler->initImGuiForGLFW();
+	imGuiHandler.init
+	(
+		vulkanInstance.getInstance(),
+		device,
+		swapchain.getRenderPass(),
+		swapchain.getFrameCount()
+	);
 }
 
 void mtd::Engine::addGuiWindow(GuiWindow* const pGuiWindow)

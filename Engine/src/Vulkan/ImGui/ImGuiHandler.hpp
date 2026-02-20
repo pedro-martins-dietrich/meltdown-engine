@@ -1,6 +1,5 @@
 #pragma once
 
-#include <meltdown/event.hpp>
 #include <meltdown/gui.hpp>
 
 #include "../Descriptors/DescriptorPool.hpp"
@@ -24,7 +23,7 @@ namespace mtd
 				const Device& device,
 				const vk::RenderPass& renderPass,
 				uint32_t framesInFlight
-			) const;
+			);
 
 			// Adds a GUI window to exhibit
 			void addGuiWindow(GuiWindow* const pGuiWindow) { guiWindows.push_back(pGuiWindow); }
@@ -36,20 +35,15 @@ namespace mtd
 			// ImGui descriptor pool
 			DescriptorPool guiDescriptorPool;
 
-			// Exhibit GUI
-			bool showGui;
+			// Flag to check if ImGui has been initialized
+			bool initializedFlag;
 			// List of windows to be rendered
 			std::vector<GuiWindow*> guiWindows;
-
-			// Toggle GUI event callback
-			EventCallbackHandle toggleGuiCallbackHandle;
 
 			// Checks ImGui Vulkan results
 			static void checkVulkanResult(VkResult result);
 
 			// Creates the descriptor pool for ImGui
 			void createDescriptorPool();
-			// Configures the input logic for toggling the GUI
-			void setInputCallbacks();
 	};
 }

@@ -2,10 +2,18 @@
 
 #include <Meltdown.hpp>
 
+#include "../Actions.hpp"
+
 #define HOVER_INFO_SIZE 64
 
 ProfilerGui::ProfilerGui(): windowSize{350.0f, 250.0f}, windowPos{20.0f, 450.0f}
-{}
+{
+	toggleGuiCallbackHandle = mtd::EventManager::addCallback([this](const mtd::ActionStartEvent& event)
+	{
+		if(event.getAction() == Actions::ToggleProfilerGui)
+			showWindow = !showWindow;
+	});
+}
 
 void ProfilerGui::renderGui()
 {

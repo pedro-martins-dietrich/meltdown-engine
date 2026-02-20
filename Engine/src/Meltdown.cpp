@@ -41,6 +41,11 @@ void mtd::MeltdownEngine::loadScene(const char* sceneFile)
 	engine->loadScene(sceneFile);
 }
 
+void mtd::MeltdownEngine::initializeGui(const Window& window)
+{
+	engine->initializeGui(window);
+}
+
 void mtd::MeltdownEngine::addGuiWindow(GuiWindow* const pGuiWindow)
 {
 	engine->addGuiWindow(pGuiWindow);

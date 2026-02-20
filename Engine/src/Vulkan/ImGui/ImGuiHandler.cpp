@@ -7,7 +7,7 @@
 #include "../../Utils/Logger.hpp"
 
 mtd::ImGuiHandler::ImGuiHandler(const vk::Device& vulkanDevice)
-	: guiDescriptorPool{vulkanDevice}, showGui{false}
+	: guiDescriptorPool{vulkanDevice}, initializedFlag{false}
 {
 	ImGui::CreateContext();
 	ImGui::StyleColorsDark();
@@ -17,14 +17,15 @@ mtd::ImGuiHandler::ImGuiHandler(const vk::Device& vulkanDevice)
 	io.IniFilename = NULL;
 
 	createDescriptorPool();
-
-	setInputCallbacks();
 }
 
 mtd::ImGuiHandler::~ImGuiHandler()
 {
-	ImGui_ImplVulkan_Shutdown();
-	ImGui_ImplGlfw_Shutdown();
+	if(initializedFlag)
+	{
+		ImGui_ImplVulkan_Shutdown();
+		ImGui_ImplGlfw_Shutdown();
+	}
 	ImGui::DestroyContext();
 }
 
@@ -34,7 +35,7 @@ void mtd::ImGuiHandler::init
 	const Device& device,
 	const vk::RenderPass& renderPass,
 	uint32_t framesInFlight
-) const
+)
 {
 	ImGui_ImplVulkan_InitInfo imGuiInitInfo{};
 	imGuiInitInfo.Instance = instance;
@@ -56,11 +57,13 @@ void mtd::ImGuiHandler::init
 	imGuiInitInfo.MinAllocationSize = 0U;
 
 	ImGui_ImplVulkan_Init(&imGuiInitInfo);
+
+	initializedFlag = true;
 }
 
 void mtd::ImGuiHandler::renderGui(const vk::CommandBuffer& commandBuffer) const
 {
-	if(!showGui) return;
+	if(!initializedFlag || guiWindows.size() == 0) return;
 
 	ImGui_ImplVulkan_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
@@ -88,13 +91,4 @@ void mtd::ImGuiHandler::createDescriptorPool()
 	poolSizesInfo[0].descriptorType = vk::DescriptorType::eCombinedImageSampler;
 
 	guiDescriptorPool.createDescriptorPool(poolSizesInfo, vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet);
-}
-
-void mtd::ImGuiHandler::setInputCallbacks()
-{
-	toggleGuiCallbackHandle = EventManager::addCallback([this](const KeyPressEvent& event)
-	{
-		if(event.getKeyCode() == KeyCode::G && !event.isRepeating())
-			showGui = !showGui;
-	});
 }

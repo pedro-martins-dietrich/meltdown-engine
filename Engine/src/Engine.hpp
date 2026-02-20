@@ -37,6 +37,8 @@ namespace mtd
 			// Loads a new scene, clearing the previous if necessary
 			void loadScene(const char* sceneFile);
 
+			// Initializes the engine's GUI handler
+			void initializeGui(const Window& window);
 			// Creates a new ImGui window
 			void addGuiWindow(GuiWindow* const pGuiWindow);
 

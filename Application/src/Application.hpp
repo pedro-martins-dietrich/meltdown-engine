@@ -36,7 +36,4 @@ class Application
 		// Change scene event handle
 		mtd::EventCallbackHandle changeSceneCallbackHandle;
 		bool changeScene;
-
-		// Creates a mapping for all actions used by the app
-		void mapActions();
 };

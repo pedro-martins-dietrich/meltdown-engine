@@ -3,6 +3,8 @@
 #include <imgui.h>
 #include <Meltdown.hpp>
 
+#include "../Actions.hpp"
+
 CameraSettingsGui::CameraSettingsGui()
 	: windowSize{450.0f, 300.0f}, windowPos{20.0f, 120.0f},
 	orthographicMode{mtd::CameraHandler::isOrthographic()},
@@ -22,6 +24,12 @@ CameraSettingsGui::CameraSettingsGui()
 		orthographicMode = true;
 		viewWidth = event.getViewWidth();
 		farPlane = event.getFarPlane();
+	});
+
+	toggleGuiCallbackHandle = mtd::EventManager::addCallback([this](const mtd::ActionStartEvent& event)
+	{
+		if(event.getAction() == Actions::ToggleCameraSettingsGui)
+			showWindow = !showWindow;
 	});
 }
 

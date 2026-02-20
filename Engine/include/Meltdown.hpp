@@ -74,6 +74,12 @@ namespace mtd
 			void loadScene(const char* sceneFile);
 
 			/*
+			* @brief Enables GUIs to be rendered by the engine.
+			*
+			* @param window Window targeted for rendering.
+			*/
+			void initializeGui(const Window& window);
+			/*
 			* @brief Adds a new GUI window to be rendered by the engine.
 			*
 			* @param pGuiWindow Pointer to a `GuiWindow` instance.

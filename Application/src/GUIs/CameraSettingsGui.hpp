@@ -1,8 +1,8 @@
 #pragma once
 
 #include <imgui.h>
-#include <meltdown/gui.hpp>
 #include <meltdown/event.hpp>
+#include <meltdown/gui.hpp>
 
 // GUI for the engine's settings
 class CameraSettingsGui : public mtd::GuiWindow
@@ -33,6 +33,8 @@ class CameraSettingsGui : public mtd::GuiWindow
 		// Camera mode callback handles
 		mtd::EventCallbackHandle setPerspectiveCallbackHandle;
 		mtd::EventCallbackHandle setOrthographicCallbackHandle;
+		// Camera GUI callback handle
+		mtd::EventCallbackHandle toggleGuiCallbackHandle;
 
 		// Settings GUI
 		void cameraSettingsGui();
