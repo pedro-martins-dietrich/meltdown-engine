@@ -2,10 +2,11 @@
 
 #include <condition_variable>
 
+#include <meltdown/window.hpp>
+
 #include "Vulkan/ImGui/ImGuiHandler.hpp"
 #include "Vulkan/Render/Renderer.hpp"
-#include "GUIs/SettingsGui.hpp"
-#include "GUIs/ProfilerGui.hpp"
+#include "Vulkan/Frame/Surface.hpp"
 #include "Camera/Camera.hpp"
 
 // Meltdown (mtd) engine namespace
@@ -15,7 +16,7 @@ namespace mtd
 	class Engine
 	{
 		public:
-			Engine(const EngineInfo& info);
+			Engine(const EngineInfo& info, Window& window);
 			~Engine();
 
 			Engine(const Engine&) = delete;
@@ -31,15 +32,20 @@ namespace mtd
 			void setVSync(bool enableVSync);
 
 			// Begins the engine main loop
-			void run(const std::function<void(double)>& onUpdateCallback);
+			void run(Window& window, const std::function<void(double)>& onUpdateCallback);
 
 			// Loads a new scene, clearing the previous if necessary
 			void loadScene(const char* sceneFile);
 
+			// Initializes the engine's GUI handler
+			void initializeGui(const Window& window);
+			// Creates a new ImGui window
+			void addGuiWindow(GuiWindow* const pGuiWindow);
+
 		private:
 			// Engine handler objects
-			Window window;
 			VulkanInstance vulkanInstance;
+			Surface surface;
 			Device device;
 			Swapchain swapchain;
 			std::vector<Framebuffer> framebuffers;
@@ -53,10 +59,6 @@ namespace mtd
 			std::vector<GraphicsPipeline> graphicsPipelines;
 			std::vector<FramebufferPipeline> framebufferPipelines;
 			std::vector<RayTracingPipeline> rayTracingPipelines;
-
-			// GUIs
-			SettingsGui settingsGui;
-			ProfilerGui profilerGui;
 
 			// Scene being currently rendered
 			Scene scene;
@@ -102,6 +104,6 @@ namespace mtd
 			void configureDescriptors();
 
 			// Recreates swapchain and pipeline to apply new settings
-			void updateEngine();
+			void updateEngine(WindowHandler* const pWindowHandler);
 	};
 }

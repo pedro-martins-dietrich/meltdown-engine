@@ -12,8 +12,8 @@ namespace mtd
 			Swapchain
 			(
 				const Device& device,
-				const FrameDimensions& frameDimensions,
-				const vk::SurfaceKHR& surface
+				vk::SurfaceKHR surface,
+				UIntVec2 frameDimensions
 			);
 			~Swapchain();
 
@@ -26,15 +26,9 @@ namespace mtd
 			const vk::RenderPass& getRenderPass() const { return renderPass; }
 			const Frame& getFrame(uint32_t index) const { return frames[index]; }
 			uint32_t getFrameCount() const { return static_cast<uint32_t>(frames.size()); }
-			SwapchainSettings& getSettings() { return settings; }
 
 			// Recreates swapchain to handle resizes
-			void recreate
-			(
-				const Device& device,
-				const FrameDimensions& frameDimensions,
-				const vk::SurfaceKHR& surface
-			);
+			void recreate(const Device& device, const vk::SurfaceKHR& surface, const UIntVec2& frameDimensions);
 
 			// Enables or disables V-Sync
 			bool setVSync(bool enableVSync);
@@ -65,12 +59,7 @@ namespace mtd
 			// Retrieves swapchain features supported by the physical device
 			void getSupportedDetails(const vk::PhysicalDevice& physicalDevice, const vk::SurfaceKHR& surface);
 			// Creates the swapchain
-			void createSwapchain
-			(
-				const Device& device,
-				const FrameDimensions& frameDimensions,
-				const vk::SurfaceKHR& surface
-			);
+			void createSwapchain(const Device& device, const vk::SurfaceKHR& surface, const UIntVec2& frameDimensions);
 			// Creates render pass
 			void createRenderPass();
 			// Create framebuffers for each frame
@@ -81,7 +70,7 @@ namespace mtd
 			// Ensures a valid amount of frames to be stored in the buffer
 			void checkImageCount();
 			// Sets the frame dimensions to be used in the swapchain
-			void selectExtent(const FrameDimensions& frameDimensions);
+			void selectExtent(const UIntVec2& frameDimensions);
 			// Ensures the present mode to be used is valid
 			void checkPresentMode();
 
@@ -89,7 +78,7 @@ namespace mtd
 			bool isPresentModeAvailable(vk::PresentModeKHR presentMode) const;
 
 			// Creates all the swapchain frames
-			void setSwapchainFrames(const Device& device, const FrameDimensions& frameDimensions);
+			void setSwapchainFrames(const Device& device, const UIntVec2& frameDimensions);
 
 			// Destroys the swapchain
 			void destroy();

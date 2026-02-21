@@ -10,22 +10,6 @@
 
 namespace mtd
 {
-	// Information about the size and position of a window
-	struct WindowInfo
-	{
-		int width;
-		int height;
-		int posX;
-		int posY;
-	};
-
-	// Width and height of the frame
-	struct FrameDimensions
-	{
-		uint32_t width;
-		uint32_t height;
-	};
-
 	// Swapchain features supported by the device
 	struct SwapchainSupportedDetails
 	{

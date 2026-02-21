@@ -48,8 +48,8 @@ set(
     glfw
     glm::glm
     nlohmann_json::nlohmann_json
-    imgui::imgui
     Vulkan::Vulkan
+    PUBLIC imgui::imgui
 )
 
 # Sets resources directory

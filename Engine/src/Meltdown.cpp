@@ -5,8 +5,8 @@
 
 static mtd::Camera* pCamera = nullptr;
 
-mtd::MeltdownEngine::MeltdownEngine(const EngineInfo& applicationInfo)
-	: engine{std::make_unique<Engine>(applicationInfo)}
+mtd::MeltdownEngine::MeltdownEngine(const EngineInfo& applicationInfo, Window& window)
+	: engine{std::make_unique<Engine>(applicationInfo, window)}
 {
 	pCamera = &(engine->getCamera());
 }
@@ -31,14 +31,24 @@ void mtd::MeltdownEngine::setVSync(bool enableVSync)
 	engine->setVSync(enableVSync);
 }
 
-void mtd::MeltdownEngine::run(const std::function<void(double)>& onUpdateCallback)
+void mtd::MeltdownEngine::run(Window& window, const std::function<void(double)>& onUpdateCallback)
 {
-	engine->run(onUpdateCallback);
+	engine->run(window, onUpdateCallback);
 }
 
 void mtd::MeltdownEngine::loadScene(const char* sceneFile)
 {
 	engine->loadScene(sceneFile);
+}
+
+void mtd::MeltdownEngine::initializeGui(const Window& window)
+{
+	engine->initializeGui(window);
+}
+
+void mtd::MeltdownEngine::addGuiWindow(GuiWindow* const pGuiWindow)
+{
+	engine->addGuiWindow(pGuiWindow);
 }
 
 const mtd::Vec3& mtd::CameraHandler::getPosition()

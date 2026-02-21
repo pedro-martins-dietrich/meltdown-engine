@@ -1,10 +1,12 @@
 #include <pch.hpp>
 #include "VulkanInstance.hpp"
 
+#include <GLFW/glfw3.h>
+
 #include "DebugMessenger.hpp"
 #include "../../Utils/Logger.hpp"
 
-mtd::VulkanInstance::VulkanInstance(const EngineInfo& info, const Window& window)
+mtd::VulkanInstance::VulkanInstance(const EngineInfo& info) : instance{nullptr}
 {
 	uint32_t version = checkVulkanVersion();
 
@@ -48,14 +50,10 @@ mtd::VulkanInstance::VulkanInstance(const EngineInfo& info, const Window& window
 	#ifdef MTD_DEBUG
 		DebugMessenger::createDebugMessenger(instance, dispatchLoader.get(), &debugMessenger);
 	#endif
-
-	surface = window.createSurface(instance);
 }
 
 mtd::VulkanInstance::~VulkanInstance()
 {
-	instance.destroySurfaceKHR(surface);
-
 	#ifdef MTD_DEBUG
 		instance.destroyDebugUtilsMessengerEXT(debugMessenger, nullptr, *dispatchLoader);
 	#endif
@@ -63,7 +61,6 @@ mtd::VulkanInstance::~VulkanInstance()
 	instance.destroy();
 }
 
-// Verifies if Vulkan version is compatible with the engine
 uint32_t mtd::VulkanInstance::checkVulkanVersion() const
 {
 	uint32_t version = 0;
@@ -101,7 +98,6 @@ uint32_t mtd::VulkanInstance::checkVulkanVersion() const
 	return version;
 }
 
-// Checks if required extensions and layers are available
 bool mtd::VulkanInstance::supports
 (
 	const std::vector<const char*>& requiredExtensions,

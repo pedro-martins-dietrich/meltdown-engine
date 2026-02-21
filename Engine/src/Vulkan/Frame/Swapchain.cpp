@@ -6,14 +6,14 @@
 mtd::Swapchain::Swapchain
 (
 	const Device& device,
-	const FrameDimensions& frameDimensions,
-	const vk::SurfaceKHR& surface
-) : device{device.getDevice()}
+	vk::SurfaceKHR surface,
+	UIntVec2 frameDimensions
+): swapchain{nullptr}, device{device.getDevice()}
 {
 	configureDefaultSettings();
 	getSupportedDetails(device.getPhysicalDevice(), surface);
 	checkImageCount();
-	createSwapchain(device, frameDimensions, surface);
+	createSwapchain(device, surface, frameDimensions);
 	createRenderPass();
 }
 
@@ -22,23 +22,16 @@ mtd::Swapchain::~Swapchain()
 	destroy();
 }
 
-// Recreates swapchain to handle resizes
-void mtd::Swapchain::recreate
-(
-	const Device& device,
-	const FrameDimensions& frameDimensions,
-	const vk::SurfaceKHR& surface
-)
+void mtd::Swapchain::recreate(const Device& device, const vk::SurfaceKHR& surface, const UIntVec2& frameDimensions)
 {
 	destroy();
 
 	getSupportedDetails(device.getPhysicalDevice(), surface);
 	checkImageCount();
-	createSwapchain(device, frameDimensions, surface);
+	createSwapchain(device, surface, frameDimensions);
 	createRenderPass();
 }
 
-// Enables or disables V-Sync
 bool mtd::Swapchain::setVSync(bool enableVSync)
 {
 	if(enableVSync)
@@ -70,7 +63,6 @@ bool mtd::Swapchain::setVSync(bool enableVSync)
 	return false;
 }
 
-// Sets up default swapchain settings
 void mtd::Swapchain::configureDefaultSettings()
 {
 	settings.frameCount = 3;
@@ -80,23 +72,16 @@ void mtd::Swapchain::configureDefaultSettings()
 	settings.presentMode = vk::PresentModeKHR::eFifo;
 }
 
-// Retrieves swapchain features supported by the physical device
-void mtd::Swapchain::getSupportedDetails
-(
-	const vk::PhysicalDevice& physicalDevice, const vk::SurfaceKHR& surface
-)
+void mtd::Swapchain::getSupportedDetails(const vk::PhysicalDevice& physicalDevice, const vk::SurfaceKHR& surface)
 {
 	supportedDetails.capabilities = physicalDevice.getSurfaceCapabilitiesKHR(surface);
 	supportedDetails.formats = physicalDevice.getSurfaceFormatsKHR(surface);
 	supportedDetails.presentModes = physicalDevice.getSurfacePresentModesKHR(surface);
 }
 
-// Creates the swapchain
 void mtd::Swapchain::createSwapchain
 (
-	const Device& device,
-	const FrameDimensions& frameDimensions,
-	const vk::SurfaceKHR& surface
+	const Device& device, const vk::SurfaceKHR& surface, const UIntVec2& frameDimensions
 )
 {
 	checkSurfaceFormat();
@@ -138,7 +123,6 @@ void mtd::Swapchain::createSwapchain
 	LOG_INFO("Created swapchain.\n");
 }
 
-// Creates pipeline render pass
 void mtd::Swapchain::createRenderPass()
 {
 	vk::AttachmentDescription colorAttachmentDescription{};
@@ -208,14 +192,12 @@ void mtd::Swapchain::createRenderPass()
 	createFramebuffers();
 }
 
-// Create framebuffers for each frame
 void mtd::Swapchain::createFramebuffers()
 {
 	for(Frame& frame: frames)
 		frame.createFramebuffer(renderPass);
 }
 
-// Ensures the swapchain uses a valid surface format
 void mtd::Swapchain::checkSurfaceFormat()
 {
 	for(vk::SurfaceFormatKHR supportedFormat: supportedDetails.formats)
@@ -230,7 +212,6 @@ void mtd::Swapchain::checkSurfaceFormat()
 	settings.colorSpace = supportedDetails.formats[0].colorSpace;
 }
 
-// Ensures a valid amount of frames to be stored in the buffer
 void mtd::Swapchain::checkImageCount()
 {
 	if(supportedDetails.capabilities.maxImageCount == 0)
@@ -247,8 +228,7 @@ void mtd::Swapchain::checkImageCount()
 	);
 }
 
-// Sets the frame dimensions to be used in the swapchain
-void mtd::Swapchain::selectExtent(const FrameDimensions& frameDimensions)
+void mtd::Swapchain::selectExtent(const UIntVec2& frameDimensions)
 {
 	if(supportedDetails.capabilities.currentExtent.width != UINT32_MAX)
 	{
@@ -258,19 +238,18 @@ void mtd::Swapchain::selectExtent(const FrameDimensions& frameDimensions)
 
 	extent.width = std::clamp
 	(
-		frameDimensions.width,
+		frameDimensions.x,
 		supportedDetails.capabilities.minImageExtent.width,
 		supportedDetails.capabilities.maxImageExtent.width
 	);
 	extent.height = std::clamp
 	(
-		frameDimensions.height,
+		frameDimensions.y,
 		supportedDetails.capabilities.minImageExtent.height,
 		supportedDetails.capabilities.maxImageExtent.height
 	);
 }
 
-// Ensures the present mode to be used is valid
 void mtd::Swapchain::checkPresentMode()
 {
 	if(isPresentModeAvailable(settings.presentMode))
@@ -288,7 +267,6 @@ void mtd::Swapchain::checkPresentMode()
 	settings.presentMode = vk::PresentModeKHR::eFifo;
 }
 
-// Verifies if the hardware supports the present mode
 bool mtd::Swapchain::isPresentModeAvailable(vk::PresentModeKHR presentMode) const
 {
 	for(vk::PresentModeKHR supportedPresentMode: supportedDetails.presentModes)
@@ -296,11 +274,7 @@ bool mtd::Swapchain::isPresentModeAvailable(vk::PresentModeKHR presentMode) cons
 	return false;
 }
 
-// Creates all the swapchain frames
-void mtd::Swapchain::setSwapchainFrames
-(
-	const Device& device, const FrameDimensions& frameDimensions
-)
+void mtd::Swapchain::setSwapchainFrames(const Device& device, const UIntVec2& frameDimensions)
 {
 	std::vector<vk::Image> images = this->device.getSwapchainImagesKHR(swapchain);
 
@@ -310,7 +284,6 @@ void mtd::Swapchain::setSwapchainFrames
 		frames.emplace_back(device, frameDimensions, images[i], settings.colorFormat, i);
 }
 
-// Destroys the swapchain
 void mtd::Swapchain::destroy()
 {
 	device.destroyRenderPass(renderPass);

@@ -4,24 +4,23 @@
 #include <GLFW/glfw3.h>
 
 #include <meltdown/event.hpp>
-
-#include "../Utils/EngineStructs.hpp"
+#include <meltdown/structs.hpp>
 
 namespace mtd
 {
-	// GLFW window handler
-	class Window
+	// Class for handling window from the engine side
+	class WindowHandler
 	{
 		public:
-			Window(const WindowInfo& initialInfo, const char* windowName);
-			~Window();
+			WindowHandler(const WindowInfo& info);
+			~WindowHandler();
 
-			Window(const Window&) = delete;
-			Window& operator=(const Window&) = delete;
+			WindowHandler(const WindowHandler&) = delete;
+			WindowHandler& operator=(const WindowHandler&) = delete;
 
 			// Getters
-			FrameDimensions getDimensions() const;
 			float getAspectRatio() const { return aspectRatio; }
+			UIntVec2 getDimensions() const { return {info.width, info.height}; }
 
 			// Polls events and checks if window should be kept open
 			bool keepOpen();

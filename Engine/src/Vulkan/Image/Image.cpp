@@ -13,8 +13,7 @@ mtd::Image::Image(const vk::Device& device)
 	format{vk::Format::eUndefined},
 	layout{vk::ImageLayout::eUndefined},
 	dimensions{0U, 0U}
-{
-}
+{}
 
 mtd::Image::~Image()
 {
@@ -40,17 +39,16 @@ mtd::Image::Image(Image&& other) noexcept
 	other.sampler = nullptr;
 }
 
-void mtd::Image::setVulkanImage(vk::Image newImage, vk::Format newFormat, FrameDimensions newDimensions)
+void mtd::Image::setVulkanImage(vk::Image newImage, vk::Format newFormat, UIntVec2 newDimensions)
 {
 	image = newImage;
 	format = newFormat;
 	dimensions = newDimensions;
 }
 
-// Creates a Vulkan image
 void mtd::Image::createImage
 (
-	FrameDimensions imageDimensions,
+	UIntVec2 imageDimensions,
 	vk::Format imageFormat,
 	vk::ImageTiling tiling,
 	vk::ImageUsageFlags usage,
@@ -66,7 +64,7 @@ void mtd::Image::createImage
 	imageCreateInfo.flags = imageFlags;
 	imageCreateInfo.imageType = vk::ImageType::e2D;
 	imageCreateInfo.format = format;
-	imageCreateInfo.extent = vk::Extent3D{dimensions.width, dimensions.height, 1};
+	imageCreateInfo.extent = vk::Extent3D{dimensions.x, dimensions.y, 1};
 	imageCreateInfo.mipLevels = 1;
 	imageCreateInfo.arrayLayers = 1;
 	imageCreateInfo.samples = vk::SampleCountFlagBits::e1;
@@ -82,7 +80,6 @@ void mtd::Image::createImage
 		LOG_ERROR("Failed to create image. Vulkan result: %d", result);
 }
 
-// Allocates GPU memory for Vulkan image
 void mtd::Image::createImageMemory(const Device& mtdDevice, vk::MemoryPropertyFlags memoryProperties)
 {
 	assert(image != nullptr && "The image must be created before the image memory.");
@@ -109,7 +106,6 @@ void mtd::Image::createImageMemory(const Device& mtdDevice, vk::MemoryPropertyFl
 	device.bindImageMemory(image, imageMemory, 0);
 }
 
-// Creates a description for the Vulkan image
 void mtd::Image::createImageView(vk::ImageAspectFlags aspect, vk::ImageViewType viewType)
 {
 	assert(image != nullptr && "The image must be created before the image view.");
@@ -141,7 +137,6 @@ void mtd::Image::createImageView(vk::ImageAspectFlags aspect, vk::ImageViewType 
 		LOG_ERROR("Failed to create image view. Vulkan result: %d", result);
 }
 
-// Creates a sampler for the image
 void mtd::Image::createImageSampler(vk::Filter samplingFilter)
 {
 	assert(sampler == nullptr && "The Vulkan sampler has already been created.");
@@ -169,11 +164,10 @@ void mtd::Image::createImageSampler(vk::Filter samplingFilter)
 		LOG_ERROR("Failed to create texture sampler. Vulkan result: %d", result);
 }
 
-// Recreates the image, image memory and image view with a new resolution
 void mtd::Image::resize
 (
 	const Device& mtdDevice,
-	FrameDimensions newDimensions,
+	UIntVec2 newDimensions,
 	vk::ImageTiling tiling,
 	vk::ImageUsageFlags usage,
 	vk::MemoryPropertyFlags memoryProperties,
@@ -196,7 +190,6 @@ void mtd::Image::resize
 	createImageView(aspect, viewType);
 }
 
-// Defines the fields of the descriptor image info with the image data
 void mtd::Image::defineDescriptorImageInfo(vk::DescriptorImageInfo* descriptorImageInfo) const
 {
 	assert(image != nullptr && "The image view must be created before defining the descriptor image info.");
@@ -206,7 +199,6 @@ void mtd::Image::defineDescriptorImageInfo(vk::DescriptorImageInfo* descriptorIm
 	descriptorImageInfo->imageLayout = layout;
 }
 
-// Changes the Vulkan image layout
 void mtd::Image::transitionImageLayout(vk::CommandBuffer commandBuffer, vk::ImageLayout newLayout) const
 {
 	assert(image != nullptr && "The image must be created before transitioning it.");
@@ -271,7 +263,6 @@ void mtd::Image::transitionImageLayout(vk::CommandBuffer commandBuffer, vk::Imag
 	layout = newLayout;
 }
 
-// Copies buffer data to Vulkan image
 void mtd::Image::copyBufferToImage(const CommandHandler& commandHandler, vk::Buffer srcBuffer)
 {
 	assert(image != nullptr && "The image must be created before copying to it.");
@@ -288,7 +279,7 @@ void mtd::Image::copyBufferToImage(const CommandHandler& commandHandler, vk::Buf
 	bufferImageCopy.bufferImageHeight = 0;
 	bufferImageCopy.imageSubresource = subresource;
 	bufferImageCopy.imageOffset = vk::Offset3D{0, 0, 0};
-	bufferImageCopy.imageExtent = vk::Extent3D{dimensions.width, dimensions.height, 1};
+	bufferImageCopy.imageExtent = vk::Extent3D{dimensions.x, dimensions.y, 1};
 
 	vk::CommandBuffer commandBuffer = commandHandler.beginSingleTimeCommand();
 
@@ -303,7 +294,6 @@ void mtd::Image::copyBufferToImage(const CommandHandler& commandHandler, vk::Buf
 	commandHandler.endSingleTimeCommand(commandBuffer);
 }
 
-// Deletes all the image data
 void mtd::Image::destroy()
 {
 	device.destroySampler(sampler);

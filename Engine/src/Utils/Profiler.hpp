@@ -1,20 +1,8 @@
 #pragma once
 
-#include <unordered_map>
-
 // Gathers real-time performance information
 namespace mtd::Profiler
 {
-	// Information about the duration of each stage of the frame, as well as the total duration
-	struct FrameData
-	{
-		float totalFrameTime;
-		std::unordered_map<const char*, float> stageTimes;
-	};
-
-	// Retrieves the data collected by the profiler
-	const FrameData& getProfiledData();
-
 	// Begins collecting data about the current frame. The first frame stage must be specified
 	void startFrame(const char* initialStage);
 	// Ends the last frame stage and starts the next, measuring the time taken

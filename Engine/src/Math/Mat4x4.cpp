@@ -48,13 +48,15 @@ mtd::Mat4x4::Mat4x4(const Quaternion& quat)
 {
 }
 
-mtd::Vec4& mtd::Mat4x4::operator[](int i)
+mtd::Vec4& mtd::Mat4x4::operator[](size_t i)
 {
+	assert(i < 4UL && "Mat4x4 index out of bounds.");
 	return (&x)[i];
 }
 
-const mtd::Vec4& mtd::Mat4x4::operator[](int i) const
+const mtd::Vec4& mtd::Mat4x4::operator[](size_t i) const
 {
+	assert(i < 4UL && "Mat4x4 index out of bounds.");
 	return (&x)[i];
 }
 

@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cstdint>
+
+// Enumeration for all actions used by the application
 enum Actions : uint32_t
 {
 	Forward,
@@ -12,5 +15,10 @@ enum Actions : uint32_t
 	RollCCW,
 	Run,
 	Jump,
+	ToggleCameraSettingsGui,
+	ToggleProfilerGui,
 	ChangeScene
 };
+
+// Creates a mapping for all actions used by the application
+void mapActions();

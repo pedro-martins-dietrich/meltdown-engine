@@ -4,15 +4,13 @@
 
 #include <meltdown/structs.hpp>
 
-#include "../../Window/Window.hpp"
-
 namespace mtd
 {
 	// Vulkan instance handler
 	class VulkanInstance
 	{
 		public:
-			VulkanInstance(const EngineInfo& info, const Window& window);
+			VulkanInstance(const EngineInfo& info);
 			~VulkanInstance();
 
 			VulkanInstance(const VulkanInstance&) = delete;
@@ -20,7 +18,6 @@ namespace mtd
 
 			// Getters
 			const vk::Instance& getInstance() const { return instance; }
-			const vk::SurfaceKHR& getSurface() const { return surface; }
 
 		private:
 			// Vulkan instance
@@ -30,9 +27,6 @@ namespace mtd
 			std::unique_ptr<vk::detail::DispatchLoaderDynamic> dispatchLoader;
 			// Vulkan debug messenger (it depends on the validation layer)
 			vk::DebugUtilsMessengerEXT debugMessenger;
-
-			// Vulkan surface for GLFW window
-			vk::SurfaceKHR surface;
 
 			// Verifies if Vulkan version is compatible with the engine
 			uint32_t checkVulkanVersion() const;

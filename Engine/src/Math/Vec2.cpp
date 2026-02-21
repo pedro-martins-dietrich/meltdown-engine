@@ -1,13 +1,15 @@
 #include <pch.hpp>
 #include <meltdown/math.hpp>
 
-float& mtd::Vec2::operator[](int i)
+float& mtd::Vec2::operator[](size_t i)
 {
+	assert(i < 2UL && "Vec2 index out of bounds.");
 	return (&x)[i];
 }
 
-float mtd::Vec2::operator[](int i) const
+float mtd::Vec2::operator[](size_t i) const
 {
+	assert(i < 2UL && "Vec2 index out of bounds.");
 	return (&x)[i];
 }
 

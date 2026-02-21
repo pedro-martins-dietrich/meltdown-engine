@@ -7,7 +7,7 @@
 #include "../../Utils/Logger.hpp"
 
 mtd::ImGuiHandler::ImGuiHandler(const vk::Device& vulkanDevice)
-	: guiDescriptorPool{vulkanDevice}, showGui{false}
+	: guiDescriptorPool{vulkanDevice}, initializedFlag{false}
 {
 	ImGui::CreateContext();
 	ImGui::StyleColorsDark();
@@ -17,29 +17,26 @@ mtd::ImGuiHandler::ImGuiHandler(const vk::Device& vulkanDevice)
 	io.IniFilename = NULL;
 
 	createDescriptorPool();
-
-	setInputCallbacks();
 }
 
 mtd::ImGuiHandler::~ImGuiHandler()
 {
-	ImGui_ImplVulkan_Shutdown();
-	ImGui_ImplGlfw_Shutdown();
+	if(initializedFlag)
+	{
+		ImGui_ImplVulkan_Shutdown();
+		ImGui_ImplGlfw_Shutdown();
+	}
 	ImGui::DestroyContext();
 }
 
-// Initializes ImGui
 void mtd::ImGuiHandler::init
 (
-	const Window& window,
 	const vk::Instance& instance,
 	const Device& device,
 	const vk::RenderPass& renderPass,
 	uint32_t framesInFlight
-) const
+)
 {
-	window.initImGuiForGLFW();
-
 	ImGui_ImplVulkan_InitInfo imGuiInitInfo{};
 	imGuiInitInfo.Instance = instance;
 	imGuiInitInfo.PhysicalDevice = device.getPhysicalDevice();
@@ -60,32 +57,32 @@ void mtd::ImGuiHandler::init
 	imGuiInitInfo.MinAllocationSize = 0U;
 
 	ImGui_ImplVulkan_Init(&imGuiInitInfo);
+
+	initializedFlag = true;
 }
 
-// Renders the GUI in the current frame
 void mtd::ImGuiHandler::renderGui(const vk::CommandBuffer& commandBuffer) const
 {
-	if(!showGui) return;
+	if(!initializedFlag || guiWindows.size() == 0) return;
 
 	ImGui_ImplVulkan_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
 
 	for(GuiWindow* pGuiWindow: guiWindows)
-		pGuiWindow->renderGui();
+		if(pGuiWindow->isWindowActive())
+			pGuiWindow->renderGui();
 
 	ImGui::Render();
 	ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer, nullptr);
 }
 
-// Checks ImGui Vulkan results
 void mtd::ImGuiHandler::checkVulkanResult(VkResult result)
 {
 	if(result != VK_SUCCESS)
 		LOG_ERROR("[ImGui] Vulkan result: %d", result);
 }
 
-// Creates the descriptor pool for ImGui
 void mtd::ImGuiHandler::createDescriptorPool()
 {
 	std::vector<PoolSizeData> poolSizesInfo;
@@ -94,14 +91,4 @@ void mtd::ImGuiHandler::createDescriptorPool()
 	poolSizesInfo[0].descriptorType = vk::DescriptorType::eCombinedImageSampler;
 
 	guiDescriptorPool.createDescriptorPool(poolSizesInfo, vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet);
-}
-
-// Configures the input logic for the GUI
-void mtd::ImGuiHandler::setInputCallbacks()
-{
-	toggleGuiCallbackHandle = EventManager::addCallback([this](const KeyPressEvent& event)
-	{
-		if(event.getKeyCode() == KeyCode::G && !event.isRepeating())
-			showGui = !showGui;
-	});
 }

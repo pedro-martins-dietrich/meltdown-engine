@@ -1,19 +1,22 @@
-#include <pch.hpp>
 #include "ProfilerGui.hpp"
 
-#include "../Utils/Profiler.hpp"
+#include <Meltdown.hpp>
+
+#include "../Actions.hpp"
 
 #define HOVER_INFO_SIZE 64
 
-mtd::ProfilerGui::ProfilerGui()
-	: GuiWindow{ImVec2{350.0f, 250.0f}, ImVec2{20.0f, 450.0f}}
+ProfilerGui::ProfilerGui(): windowSize{350.0f, 250.0f}, windowPos{20.0f, 450.0f}
 {
+	toggleGuiCallbackHandle = mtd::EventManager::addCallback([this](const mtd::ActionStartEvent& event)
+	{
+		if(event.getAction() == Actions::ToggleProfilerGui)
+			showWindow = !showWindow;
+	});
 }
 
-void mtd::ProfilerGui::renderGui()
+void ProfilerGui::renderGui()
 {
-	if(!showWindow) return;
-
 	ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
 	ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);
 	ImGui::Begin("Frame Profiler", &showWindow);
@@ -23,13 +26,13 @@ void mtd::ProfilerGui::renderGui()
 	ImGui::End();
 }
 
-// Shows histogram with frame data
-void mtd::ProfilerGui::profilerGraphic()
+void ProfilerGui::profilerGraphic()
 {
-	const Profiler::FrameData& profileData = Profiler::getProfiledData();
-	uint32_t stageCount = profileData.stageTimes.size();
+	const mtd::Profiler::FrameData& profileData = mtd::Profiler::getProfiledData();
+	const uint32_t stageCount = profileData.stageTimes.size();
 
 	ImGui::Text("Total frame duration: %3.3f ms", profileData.totalFrameTime);
+	ImGui::Text("Framerate: %4.1f FPS", 1000.0f / profileData.totalFrameTime);
 
 	ImDrawList* drawList = ImGui::GetWindowDrawList();
 	ImVec2 canvasSize = ImGui::GetContentRegionAvail();

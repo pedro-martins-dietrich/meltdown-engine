@@ -1,6 +1,8 @@
 #pragma once
 
 #include <string>
+#include <unordered_map>
+#include <vector>
 
 #include <meltdown/enums.hpp>
 #include <meltdown/math.hpp>
@@ -25,6 +27,40 @@ namespace mtd
 		/* @brief Flag to enable ray tracing if the hardware supports it. */
 		bool enableRayTracing = false;
 	};
+
+	/*
+	* @brief Information to create a window.
+	*/
+	struct WindowInfo
+	{
+		/* @brief Window horizontal resolution. */
+		uint32_t width;
+		/* @brief Window vertical resolution. */
+		uint32_t height;
+		/* @brief Window horizontal position in the screen. */
+		int32_t posX;
+		/* @brief Window vertical position in the screen. */
+		int32_t posY;
+		/* @brief Title shown in the window titlebar. */
+		std::string title;
+	};
+
+	/*
+	* @brief Handles performance metrics collection.
+	*/
+	namespace Profiler
+	{
+		/*
+		* @brief Performance data for a single frame, measured in millisecods.
+		*/
+		struct FrameData
+		{
+			/* @brief Time taken to render the whole frame, in milliseconds. */
+			float totalFrameTime = 0.0f;
+			/* @brief Time taken for each stage of the frame, in milliseconds, indexed by the stage name. */
+			std::unordered_map<const char*, float> stageTimes;
+		};
+	}
 
 	/*
 	* @brief Information about how a descriptor set binding will be used.

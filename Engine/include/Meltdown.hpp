@@ -4,27 +4,9 @@
 #include <memory>
 #include <vector>
 
-#include <meltdown/enums.hpp>
+#include <meltdown/gui.hpp>
 #include <meltdown/structs.hpp>
-#include <meltdown/math.hpp>
-
-#ifndef MTD_SHARED
-	#define MELTDOWN_API
-#elif defined(_WIN32)
-	#ifdef MTD_EXPORTS
-		#define MELTDOWN_API __declspec(dllexport)
-	#else
-		#define MELTDOWN_API __declspec(dllimport)
-	#endif
-#elif defined(__linux__) || defined(__APPLE__)
-	#ifdef MTD_EXPORTS
-		#define MELTDOWN_API __attribute__((visibility("default")))
-	#else
-		#define MELTDOWN_API
-	#endif
-#else
-	#define MELTDOWN_API
-#endif
+#include <meltdown/window.hpp>
 
 /*
 * @brief Namespace used by the Meltdown (mtd) Engine.
@@ -44,8 +26,9 @@ namespace mtd
 			* @brief Initializes the application window, Vulkan and other engine dependencies.
 			*
 			* @param info Information about the engine options and the application name and version.
+			* @param window Window targeted for rendering.
 			*/
-			MeltdownEngine(const EngineInfo& info);
+			MeltdownEngine(const EngineInfo& info, Window& window);
 			~MeltdownEngine();
 
 			MeltdownEngine(const MeltdownEngine&) = delete;
@@ -76,9 +59,10 @@ namespace mtd
 			/*
 			* @brief Begins the engine main loop, returning only when the window is closed.
 			*
+			* @param window Window targeted for rendering.
 			* @param onUpdateCallback Callback function called on every engine update.
 			*/
-			void run(const std::function<void(double)>& onUpdateCallback);
+			void run(Window& window, const std::function<void(double)>& onUpdateCallback);
 
 			/*
 			* @brief Loads a new scene to be rendered by the engine. It needs to be called before starting
@@ -88,6 +72,19 @@ namespace mtd
 			* @param sceneFile Path to the file containing the new scene data.
 			*/
 			void loadScene(const char* sceneFile);
+
+			/*
+			* @brief Enables GUIs to be rendered by the engine.
+			*
+			* @param window Window targeted for rendering.
+			*/
+			void initializeGui(const Window& window);
+			/*
+			* @brief Adds a new GUI window to be rendered by the engine.
+			*
+			* @param pGuiWindow Pointer to a `GuiWindow` instance.
+			*/
+			void addGuiWindow(GuiWindow* const pGuiWindow);
 
 		private:
 			std::unique_ptr<Engine> engine;
@@ -219,5 +216,18 @@ namespace mtd
 		* @param action The enumeration/ID to the action to be removed.
 		*/
 		void MELTDOWN_API unmapAction(uint32_t action);
+	}
+
+	/*
+	* @brief Handles performance metrics collection.
+	*/
+	namespace Profiler
+	{
+		/*
+		* @brief Retrieves the data collected from the last frame by the profiler.
+		*
+		* @return Profiled data from the last frame.
+		*/
+		const FrameData& getProfiledData();
 	}
 }

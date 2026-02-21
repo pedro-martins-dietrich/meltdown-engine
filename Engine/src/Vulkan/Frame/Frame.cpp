@@ -7,7 +7,7 @@
 mtd::Frame::Frame
 (
 	const Device& mtdDevice,
-	const FrameDimensions& frameDimensions,
+	const UIntVec2& frameDimensions,
 	vk::Image image,
 	vk::Format format,
 	uint32_t frameIndex
@@ -57,14 +57,12 @@ mtd::Frame::Frame(Frame&& other) noexcept
 	other.synchronizationBundle.renderFinished = nullptr;
 }
 
-// Adds frame data to the draw info
 void mtd::Frame::fetchFrameDrawData(DrawInfo& drawInfo) const
 {
 	drawInfo.framebuffer = &framebuffer;
 	drawInfo.syncBundle = &synchronizationBundle;
 }
 
-// Set up framebuffer
 void mtd::Frame::createFramebuffer(const vk::RenderPass& renderPass)
 {
 	std::vector<vk::ImageView> attachments{colorBuffer.getImageView(), depthBuffer.getImageView()};
@@ -74,8 +72,8 @@ void mtd::Frame::createFramebuffer(const vk::RenderPass& renderPass)
 	framebufferCreateInfo.renderPass = renderPass;
 	framebufferCreateInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
 	framebufferCreateInfo.pAttachments = attachments.data();
-	framebufferCreateInfo.width = frameDimensions.width;
-	framebufferCreateInfo.height = frameDimensions.height;
+	framebufferCreateInfo.width = frameDimensions.x;
+	framebufferCreateInfo.height = frameDimensions.y;
 	framebufferCreateInfo.layers = 1;
 
 	vk::Result result = device.createFramebuffer(&framebufferCreateInfo, nullptr, &framebuffer);
@@ -88,7 +86,6 @@ void mtd::Frame::createFramebuffer(const vk::RenderPass& renderPass)
 	LOG_VERBOSE("Created framebuffer.");
 }
 
-// Creates depth buffer data
 void mtd::Frame::createDepthResources(const Device& mtdDevice)
 {
 	vk::Format depthBufferFormat = findSupportedFormat
@@ -107,7 +104,6 @@ void mtd::Frame::createDepthResources(const Device& mtdDevice)
 	depthBuffer.createImageView(vk::ImageAspectFlagBits::eDepth, vk::ImageViewType::e2D);
 }
 
-// Selects an image format with the specified features
 vk::Format mtd::Frame::findSupportedFormat
 (
 	const vk::PhysicalDevice& physicalDevice,

@@ -6,12 +6,13 @@ project(MeltdownApp)
 # Engine's application name
 set(MELTDOWN_APP meltdown_app)
 
-# Utilizar C++20
+# Defines language version to C++20
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Searches for the Meltdown Engine library
+# Searches for the Meltdown Engine library and others
 find_package(meltdown)
+find_package(imgui REQUIRED)
 
 # Gathers source files (.cpp) to be compiled
 file(GLOB_RECURSE APP_SRC_FILES "src/**.cpp")
@@ -25,7 +26,7 @@ else()
 endif()
 
 # Configures the Meltdown library
-target_link_libraries(${MELTDOWN_APP} PRIVATE meltdown)
+target_link_libraries(${MELTDOWN_APP} PRIVATE meltdown imgui::imgui)
 
 # Copies DLL files when necessary
 if(WIN32 AND MTD_SHARED_LIB)
