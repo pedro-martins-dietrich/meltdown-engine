@@ -45,8 +45,10 @@ namespace mtd
 			void resetAccumulation() const { shaderRenderingInfo.accumulatedFrames = 0U; }
 
 		private:
-			// Render storage image
-			Image image;
+			// Target image for display output
+			Image outputImage;
+			// Storage image for frame accumulation
+			Image accumulationImage;
 			// Flag to recreate image on window resize
 			bool windowResolutionDependant;
 
@@ -66,8 +68,8 @@ namespace mtd
 			// Configures the descriptor set handlers to be used
 			void createDescriptorSetLayouts();
 
-			// Creates the storage image for the ray trace rendering
-			void createStorageImage(const Device& mtdDevice, vk::Extent2D swapchainExtent);
+			// Creates the storage images for the ray trace rendering
+			void createStorageImages(const Device& mtdDevice, vk::Extent2D swapchainExtent);
 
 			// Creates the layout for the pipeline
 			void createPipelineLayout(const vk::DescriptorSetLayout& globalDescriptorSetLayout);

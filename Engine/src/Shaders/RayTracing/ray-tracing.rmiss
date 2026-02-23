@@ -1,14 +1,7 @@
 #version 460
 #extension GL_EXT_ray_tracing : enable
 
-
-struct Payload
-{
-	vec3 light;
-	vec3 throughput;
-	uint recursionDepth;
-	uint randomState;
-};
+#include "utils.glsl"
 
 
 layout(location = 0) rayPayloadInEXT Payload payload;

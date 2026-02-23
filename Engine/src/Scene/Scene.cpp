@@ -7,7 +7,6 @@
 mtd::Scene::Scene(const Device& device) : descriptorPool{device.getDevice()}
 {}
 
-// Loads scene from file
 void mtd::Scene::loadScene
 (
 	const Device& device,
@@ -35,7 +34,6 @@ void mtd::Scene::loadScene
 	);
 }
 
-// Allocates resources and loads all mesh data
 void mtd::Scene::allocateResources
 (
 	std::vector<GraphicsPipeline>& graphicsPipelines,
@@ -69,7 +67,7 @@ void mtd::Scene::allocateResources
 		for(const auto& [type, count]: rtPipeline.getDescriptorTypeCount())
 			totalDescriptorTypeCount[type] += count;
 		totalDescriptorTypeCount[vk::DescriptorType::eAccelerationStructureKHR]++;
-		totalDescriptorTypeCount[vk::DescriptorType::eStorageImage]++;
+		totalDescriptorTypeCount[vk::DescriptorType::eStorageImage] += 2;
 		totalDescriptorTypeCount[vk::DescriptorType::eStorageBuffer] += 4;
 	}
 
@@ -116,7 +114,6 @@ void mtd::Scene::allocateResources
 	LOG_INFO("Meshes loaded to the GPU.\n");
 }
 
-// Executes starting code on scene
 void mtd::Scene::start() const
 {
 	for(const std::unique_ptr<MeshManager>& pMeshManager: meshManagers)
@@ -126,7 +123,6 @@ void mtd::Scene::start() const
 	}
 }
 
-// Updates scene data
 void mtd::Scene::update(double frameTime) const
 {
 	for(const std::unique_ptr<MeshManager>& pMeshManager: meshManagers)
@@ -136,7 +132,6 @@ void mtd::Scene::update(double frameTime) const
 	}
 }
 
-// Sums the texture count from all mesh managers
 uint32_t mtd::Scene::getTotalTextureCount() const
 {
 	uint32_t count = 0;
@@ -146,7 +141,6 @@ uint32_t mtd::Scene::getTotalTextureCount() const
 	return count;
 }
 
-// Sums the amount of material float data descriptors
 uint32_t mtd::Scene::getMaterialFloatDataCount() const
 {
 	uint32_t count = 0;
