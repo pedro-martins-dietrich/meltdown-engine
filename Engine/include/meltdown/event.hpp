@@ -275,6 +275,18 @@ namespace mtd
 	};
 
 	/*
+	* @brief Event for resetting the frame accumulation in ray tracing rendering.
+	*/
+	class ResetFrameAccumulationEvent : public Event
+	{
+		public:
+			/*
+			* @brief Creates an event to reset the frame accumulation.
+			*/
+			ResetFrameAccumulationEvent();
+	};
+
+	/*
 	* @brief Event class for changing the current scene. Dispatching it will load the scene with
 	* the specified scene name.
 	*/

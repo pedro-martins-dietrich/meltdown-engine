@@ -1,8 +1,6 @@
 #include <pch.hpp>
 #include "RayTracingMeshManager.hpp"
 
-#include "../../../Utils/Logger.hpp"
-
 mtd::RayTracingMeshManager::RayTracingMeshManager(const Device& device, const MaterialInfo& materialInfo)
 	: BaseMeshManager{device},
 	accelerationStructureWriteOp{},
@@ -30,7 +28,6 @@ mtd::RayTracingMeshManager::RayTracingMeshManager(const Device& device, const Ma
 	currentMaterialIndexOffset{0}
 {}
 
-// Loads the materials and groups the meshes into a lump, then passes the data to the GPU
 void mtd::RayTracingMeshManager::loadMeshes(DescriptorSetHandler& meshDescriptorSetHandler)
 {
 	for(uint32_t i = 0; i < meshes.size(); i++)
@@ -44,15 +41,14 @@ void mtd::RayTracingMeshManager::loadMeshes(DescriptorSetHandler& meshDescriptor
 
 	meshDescriptorSetHandler
 		.assignExternalResourcesToDescriptor(0, 0, tlas.getBuffer(), &accelerationStructureWriteOp);
-	meshDescriptorSetHandler.assignExternalResourcesToDescriptor(0, 2, vertexBuffer);
-	meshDescriptorSetHandler.assignExternalResourcesToDescriptor(0, 3, indexBuffer);
-	meshDescriptorSetHandler.assignExternalResourcesToDescriptor(0, 4, materialIndexBuffer);
-	materialLump.assignFloatDataBufferToDescriptor(meshDescriptorSetHandler, 0, 5);
-	if(meshDescriptorSetHandler.getBindingCount() == 7)
-		materialLump.assignTexturesToDescriptor(meshDescriptorSetHandler, 0, 6);
+	meshDescriptorSetHandler.assignExternalResourcesToDescriptor(0, 3, vertexBuffer);
+	meshDescriptorSetHandler.assignExternalResourcesToDescriptor(0, 4, indexBuffer);
+	meshDescriptorSetHandler.assignExternalResourcesToDescriptor(0, 5, materialIndexBuffer);
+	materialLump.assignFloatDataBufferToDescriptor(meshDescriptorSetHandler, 0, 6);
+	if(meshDescriptorSetHandler.getBindingCount() == 8)
+		materialLump.assignTexturesToDescriptor(meshDescriptorSetHandler, 0, 7);
 }
 
-// Creates a new ray tracing mesh
 void mtd::RayTracingMeshManager::createNewMesh
 (
 	uint32_t index, const char* id, const char* file, const std::vector<Mat4x4>& preTransforms
@@ -61,7 +57,6 @@ void mtd::RayTracingMeshManager::createNewMesh
 	meshes.emplace_back(device, index, id, file, materialLump, preTransforms);
 }
 
-// Draws the meshes using a ray tracing pipeline
 void mtd::RayTracingMeshManager::rayTraceMesh
 (
 	const vk::CommandBuffer& commandBuffer,
@@ -72,7 +67,6 @@ void mtd::RayTracingMeshManager::rayTraceMesh
 	rayTracingPipeline.traceRays(commandBuffer, dldi);
 }
 
-// Creates the acceleration structure
 void mtd::RayTracingMeshManager::createAccelerationStructure()
 {
 	blas.createBLAS
@@ -88,7 +82,6 @@ void mtd::RayTracingMeshManager::createAccelerationStructure()
 	accelerationStructureWriteOp.pAccelerationStructures = &tlas.getAccelerationStructure();
 }
 
-// Stores a mesh in the lump of data
 void mtd::RayTracingMeshManager::loadMeshToLump(RayTracingMesh& mesh)
 {
 	const std::vector<Vertex>& vertices = mesh.getVertices();
@@ -110,7 +103,6 @@ void mtd::RayTracingMeshManager::loadMeshToLump(RayTracingMesh& mesh)
 	mesh.clearMeshData();
 }
 
-// Loads the lumps into the VRAM and clears them
 void mtd::RayTracingMeshManager::loadMeshesToGPU(const CommandHandler& traceRaysCommandHandler)
 {
 	vertexBuffer.createDeviceLocal(traceRaysCommandHandler, sizeof(Vertex) * vertexLump.size(), vertexLump.data());

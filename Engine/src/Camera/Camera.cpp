@@ -30,7 +30,6 @@ void mtd::Camera::setOrientation(float newYaw, float newPitch, float newRoll)
 	orientation = (yawQuat * Quaternion{1.0f, 0.0f, 0.0f, 0.0f} * pitchQuat * rollQuat).normalized();
 }
 
-// Rotates the camera orientation by the specified angles, in radians
 void mtd::Camera::rotate(float deltaYaw, float deltaPitch, float deltaRoll)
 {
 	Quaternion yawQuat{deltaYaw, {0.0f, 1.0f, 0.0f}};
@@ -39,14 +38,12 @@ void mtd::Camera::rotate(float deltaYaw, float deltaPitch, float deltaRoll)
 	orientation = (yawQuat * orientation * pitchQuat * rollQuat).normalized();
 }
 
-// Updates the camera matrices and returns a pointer to the matrices
 const void* mtd::Camera::fetchUpdatedMatrices()
 {
 	updateViewMatrix();
 	return &matrices;
 }
 
-// Updates the view matrix
 void mtd::Camera::updateViewMatrix()
 {
 	std::lock_guard matricesLock{matricesMutex};
@@ -58,7 +55,6 @@ void mtd::Camera::updateViewMatrix()
 	matrices.projectionView = matrices.projection * matrices.view;
 }
 
-// Updates the projection matrix
 void mtd::Camera::updateProjectionMatrix()
 {
 	std::lock_guard matricesLock{matricesMutex};
@@ -88,7 +84,6 @@ void mtd::Camera::updateProjectionMatrix()
 	matrices.projectionView = matrices.projection * matrices.view;
 }
 
-// Sets camera event callbacks
 void mtd::Camera::setEventCallbacks()
 {
 	setPerspectiveCameraCallbackHandle = EventManager::addCallback([this](const SetPerspectiveCameraEvent& event)

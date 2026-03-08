@@ -23,9 +23,8 @@ class CameraController
 
 		// Camera rotation data
 		mtd::Vec2 lastCursorPos;
-		const float sensitivityX;
-		const float sensitivityY;
-		float roll;
+		const mtd::Vec2 sensitivity;
+		float rollSpeed;
 
 		// Callback IDs
 		mtd::EventCallbackHandle actionStartCallbackHandle;

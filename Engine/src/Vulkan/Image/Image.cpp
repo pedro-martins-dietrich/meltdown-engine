@@ -203,6 +203,8 @@ void mtd::Image::transitionImageLayout(vk::CommandBuffer commandBuffer, vk::Imag
 {
 	assert(image != nullptr && "The image must be created before transitioning it.");
 
+	if(newLayout == layout) return;
+
 	vk::ImageSubresourceRange subresource{};
 	subresource.aspectMask = vk::ImageAspectFlagBits::eColor;
 	subresource.baseMipLevel = 0;

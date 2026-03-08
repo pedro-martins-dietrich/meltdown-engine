@@ -1,20 +1,7 @@
 #version 460
 #extension GL_EXT_ray_tracing : enable
 
-
-struct Ray
-{
-	vec3 origin;
-	vec3 direction;
-};
-
-struct Payload
-{
-	vec3 light;
-	vec3 throughput;
-	uint recursionDepth;
-	uint randomState;
-};
+#include "utils.glsl"
 
 
 layout(location = 0) rayPayloadEXT Payload payload;
@@ -36,7 +23,8 @@ layout(set = 0, binding = 0) uniform CameraMatrices
 } camera;
 
 layout(set = 1, binding = 0) uniform accelerationStructureEXT accelerationStructure;
-layout(set = 1, binding = 1, rgba8) uniform image2D storageImage;
+layout(set = 1, binding = 1, rgba8) uniform image2D outputImage;
+layout(set = 1, binding = 2, rgba32f) uniform image2D accumulationImage;
 
 
 void reinhardToneMapping(inout vec3 color)
@@ -47,23 +35,25 @@ void reinhardToneMapping(inout vec3 color)
 void main()
 {
 	vec2 pixelCoord = gl_LaunchIDEXT.xy;
-	vec2 uv = 2.0f * (pixelCoord / gl_LaunchSizeEXT.xy) - 1.0f;
-
+	vec2 inverseScreenSize = 2.0f / gl_LaunchSizeEXT.xy;
 	mat4 inverseView = inverse(camera.view);
-	vec4 farPoint = inverse(camera.projection) * vec4(uv, 1.0f, 1.0f);
+	mat4 inverseProjection = inverse(camera.projection);
+	vec3 sampledLight = vec3(0.0f);
 
 	Ray ray;
 	ray.origin = inverseView[3].xyz;
-	ray.direction = normalize((inverseView * (farPoint / farPoint.w)).xyz - ray.origin);
-
 	payload.randomState = renderingInfo.randomSeed + gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x;
 
-	vec3 accumulatedLight = vec3(0.0f);
 	for(uint sampleIndex = 0; sampleIndex < renderingInfo.samplesPerPixel; sampleIndex++)
 	{
 		payload.light = vec3(0.0f);
 		payload.throughput = vec3(1.0f);
 		payload.recursionDepth = 0;
+
+		vec2 jitter = vec2(randomFloat(payload.randomState), randomFloat(payload.randomState));
+		vec2 uv = inverseScreenSize * (pixelCoord + jitter) - 1.0f;
+		vec4 farPoint = inverseProjection * vec4(uv, 1.0f, 1.0f);
+		ray.direction = normalize((inverseView * (farPoint / farPoint.w)).xyz - ray.origin);
 
 		traceRayEXT
 		(
@@ -77,15 +67,14 @@ void main()
 			0
 		);
 
-		accumulatedLight += payload.light;
+		sampledLight += payload.light;
 	}
-	accumulatedLight /= float(renderingInfo.samplesPerPixel);
+	sampledLight /= float(renderingInfo.samplesPerPixel);
 
+	vec3 accumulatedLight = imageLoad(accumulationImage, ivec2(pixelCoord)).xyz;
+	accumulatedLight += (sampledLight - accumulatedLight) / (renderingInfo.accumulatedFrames + 1U);
+
+	imageStore(accumulationImage, ivec2(pixelCoord), vec4(accumulatedLight, 1.0f));
 	reinhardToneMapping(accumulatedLight);
-
-	uint frameCount = min(renderingInfo.accumulatedFrames, 2U);
-	vec3 previousColor = imageLoad(storageImage, ivec2(pixelCoord)).xyz;
-	accumulatedLight = (accumulatedLight + frameCount * previousColor) / (frameCount + 1);
-
-	imageStore(storageImage, ivec2(pixelCoord), vec4(accumulatedLight, 1.0f));
+	imageStore(outputImage, ivec2(pixelCoord), vec4(accumulatedLight, 1.0f));
 }

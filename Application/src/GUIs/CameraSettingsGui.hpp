@@ -29,6 +29,7 @@ class CameraSettingsGui : public mtd::GuiWindow
 		float yFOV;
 		float viewWidth;
 		bool updateCamera;
+		bool accumulateFrames;
 
 		// Camera mode callback handles
 		mtd::EventCallbackHandle setPerspectiveCallbackHandle;

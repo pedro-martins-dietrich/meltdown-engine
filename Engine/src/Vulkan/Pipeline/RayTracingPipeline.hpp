@@ -1,5 +1,7 @@
 #pragma once
 
+#include <meltdown/event.hpp>
+
 #include "Pipeline.hpp"
 #include "../Image/Image.hpp"
 
@@ -45,8 +47,10 @@ namespace mtd
 			void resetAccumulation() const { shaderRenderingInfo.accumulatedFrames = 0U; }
 
 		private:
-			// Render storage image
-			Image image;
+			// Target image for display output
+			Image outputImage;
+			// Storage image for frame accumulation
+			Image accumulationImage;
 			// Flag to recreate image on window resize
 			bool windowResolutionDependant;
 
@@ -60,14 +64,17 @@ namespace mtd
 			// Push constant data for the ray tracing shaders
 			mutable RayTracingRenderData shaderRenderingInfo;
 
+			// Event callback handle for resetting frame accumulation
+			EventCallbackHandle resetAccumulationCallbackHandle;
+
 			// Loads the pipeline shader modules
 			void loadShaderModules();
 
 			// Configures the descriptor set handlers to be used
 			void createDescriptorSetLayouts();
 
-			// Creates the storage image for the ray trace rendering
-			void createStorageImage(const Device& mtdDevice, vk::Extent2D swapchainExtent);
+			// Creates the storage images for the ray trace rendering
+			void createStorageImages(const Device& mtdDevice, vk::Extent2D swapchainExtent);
 
 			// Creates the layout for the pipeline
 			void createPipelineLayout(const vk::DescriptorSetLayout& globalDescriptorSetLayout);
@@ -79,5 +86,8 @@ namespace mtd
 
 			// Defines the shader groups
 			void defineShaderGroups(std::vector<vk::RayTracingShaderGroupCreateInfoKHR>& shaderGroupCreateInfos) const;
+
+			// Sets up the frame accumulation reset event callback
+			void setEventCallback();
 	};
 }

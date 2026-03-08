@@ -2,35 +2,7 @@
 #extension GL_EXT_ray_tracing : enable
 #extension GL_EXT_shader_16bit_storage : enable
 
-
-struct Payload
-{
-	vec3 light;
-	vec3 throughput;
-	uint recursionDepth;
-	uint randomState;
-};
-
-struct Vertex
-{
-	vec3 position;
-	vec2 textureUV;
-};
-
-struct MaterialFloatAttributes
-{
-	vec4 diffuse;
-	vec4 emissionAndIoR;
-	float roughness;
-	float metallic;
-};
-
-
-const float PI = 3.14159265359f;
-const float TWO_PI = 6.28318530718f;
-const float INV_PI = 0.31830988618f;
-
-const vec3 F0 = vec3(0.04f);
+#include "utils.glsl"
 
 
 hitAttributeEXT vec2 attributes;
@@ -47,36 +19,23 @@ layout(push_constant) uniform PushConstant
 } renderingInfo;
 
 layout(set = 1, binding = 0) uniform accelerationStructureEXT accelerationStructure;
-layout(set = 1, binding = 2) buffer VertexBuffer
+layout(set = 1, binding = 3) buffer VertexBuffer
 {
 	Vertex vertices[];
 };
-layout(set = 1, binding = 3) buffer IndexBuffer
+layout(set = 1, binding = 4) buffer IndexBuffer
 {
 	uint indices[];
 };
-layout(set = 1, binding = 4) buffer MaterialIndexBuffer
+layout(set = 1, binding = 5) buffer MaterialIndexBuffer
 {
 	uint16_t materialIDs[];
 };
-layout(set = 1, binding = 5) buffer MaterialsFloatBuffer
+layout(set = 1, binding = 6) buffer MaterialsFloatBuffer
 {
 	MaterialFloatAttributes materialFloatAttributes[];
 };
 
-
-uint pcgHash(uint inputValue)
-{
-	uint state = inputValue * 0x2C9277B5U + 0xAC564B05U;
-	uint word = ((state >> ((state >> 28U) + 4U)) ^ state) * 0x108EF2D9U;
-	return (word >> 22U) ^ word;
-}
-
-float randomFloat(inout uint seed)
-{
-	seed = pcgHash(seed);
-	return float(seed) / float(0xFFFFFFFFU);
-}
 
 vec3 unitSphereSample(inout uint randomState)
 {
@@ -108,9 +67,10 @@ uint computeBounceRaysCount(float scatteringFactor)
 
 float ggxNormalDistributionFunction(float normalDotHalfway, float alphaSquared)
 {
-	float c = normalDotHalfway * normalDotHalfway * (alphaSquared - 1.0f) + 1.0f;
+	float squaredNH = normalDotHalfway * normalDotHalfway;
+	float c = squaredNH * alphaSquared + (1.0f - squaredNH);
 
-	return alphaSquared / (PI * c * c);
+	return min(alphaSquared / (PI * c * c), 10.0f);
 }
 
 vec3 fresnelReflectanceSchlick(float cosTheta, vec3 f0)
