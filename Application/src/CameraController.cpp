@@ -8,14 +8,15 @@
 
 #include "Actions.hpp"
 
+constexpr float PITCH_LIMIT_RAD = 1.57f;
+
 CameraController::CameraController()
 	: inputVelocity{0.0f, 0.0f, 0.0f}, maxSpeed{1.0f},
-	lastCursorPos{0.0f, 0.0f}, sensitivityX{0.5f}, sensitivityY{0.5f}, roll{0.0f}
+	lastCursorPos{0.0f, 0.0f}, sensitivity{0.5f, 0.5f}, rollSpeed{0.0f}
 {
 	registerCallbacks();
 }
 
-// Updates the camera data every frame
 void CameraController::update(double deltaTime)
 {
 	mtd::Vec3 velocity{0.0f, 0.0f, 0.0f};
@@ -23,19 +24,34 @@ void CameraController::update(double deltaTime)
 	velocity += mtd::Vec3{0.0f, -1.0f, 0.0f} * inputVelocity.y;
 	velocity += mtd::CameraHandler::getViewDirection() * inputVelocity.z;
 
-	if(velocity.dot(velocity) > std::numeric_limits<float>::epsilon())
-		velocity = velocity.normalized() * maxSpeed;
+	bool cameraMoved = false;
 
-	mtd::CameraHandler::translate(deltaTime * velocity);
+	if(velocity.dot(velocity) > std::numeric_limits<float>::epsilon())
+	{
+		velocity = velocity.normalized() * maxSpeed;
+		mtd::CameraHandler::translate(deltaTime * velocity);
+		cameraMoved = true;
+	}
 
 	float currentPitch = std::asin(mtd::CameraHandler::getViewDirection().y);
-	float newPitch = std::clamp(currentPitch + sensitivityY * lastCursorPos.y, -1.57f, 1.57f);
+	float newPitch = std::clamp(currentPitch + sensitivity.y * lastCursorPos.y, -PITCH_LIMIT_RAD, PITCH_LIMIT_RAD);
+	float deltaPitch = newPitch - currentPitch;
 
-	mtd::CameraHandler::rotate(sensitivityX * lastCursorPos.x, newPitch - currentPitch, roll);
+	float deltaYaw = sensitivity.x * lastCursorPos.x;
+
+	if(std::abs(deltaYaw) > std::numeric_limits<float>::epsilon() ||
+		std::abs(deltaPitch) > std::numeric_limits<float>::epsilon() ||
+		std::abs(rollSpeed) > std::numeric_limits<float>::epsilon())
+	{
+		mtd::CameraHandler::rotate(deltaYaw, deltaPitch, rollSpeed);
+		cameraMoved = true;
+	}
+
+	if(cameraMoved)
+		mtd::EventManager::dispatch<mtd::ResetFrameAccumulationEvent>();
 	lastCursorPos = {0.0f, 0.0f};
 }
 
-// Registers action event callbacks for camera input
 void CameraController::registerCallbacks()
 {
 	actionStartCallbackHandle = mtd::EventManager::addCallback([this](const mtd::ActionStartEvent& event)
@@ -64,10 +80,10 @@ void CameraController::registerCallbacks()
 				maxSpeed = 2.0f;
 				break;
 			case Actions::RollCCW:
-				roll += 0.005f;
+				rollSpeed += 1e-5f;
 				break;
 			case Actions::RollCW:
-				roll -= 0.005f;
+				rollSpeed -= 1e-5f;
 				break;
 			default:
 				return;
@@ -100,10 +116,10 @@ void CameraController::registerCallbacks()
 				maxSpeed = 1.0f;
 				break;
 			case Actions::RollCCW:
-				roll -= 0.005f;
+				rollSpeed -= 1e-5f;
 				break;
 			case Actions::RollCW:
-				roll += 0.005f;
+				rollSpeed += 1e-5f;
 				break;
 			default:
 				return;

@@ -9,7 +9,8 @@ CameraSettingsGui::CameraSettingsGui()
 	: windowSize{450.0f, 300.0f}, windowPos{20.0f, 120.0f},
 	orthographicMode{mtd::CameraHandler::isOrthographic()},
 	nearPlane{mtd::CameraHandler::getNearPlane()}, farPlane{mtd::CameraHandler::getFarPlane()},
-	yFOV{mtd::CameraHandler::getFOV()}, viewWidth{mtd::CameraHandler::getViewWidth()}, updateCamera{false}
+	yFOV{mtd::CameraHandler::getFOV()}, viewWidth{mtd::CameraHandler::getViewWidth()},
+	updateCamera{false}, accumulateFrames{true}
 {
 	mtd::EventManager::addCallback([this](const mtd::SetPerspectiveCameraEvent& event)
 	{
@@ -31,6 +32,8 @@ CameraSettingsGui::CameraSettingsGui()
 		if(event.getAction() == Actions::ToggleCameraSettingsGui)
 			showWindow = !showWindow;
 	});
+
+	showWindow = false;
 }
 
 void CameraSettingsGui::renderGui()
@@ -72,6 +75,13 @@ void CameraSettingsGui::cameraSettingsGui()
 		updateCamera |= ImGui::InputFloat("Near plane", &nearPlane, 0.001f, 0.01f, "%.3f");
 		updateCamera |= ImGui::DragFloat("FOV", &yFOV, 0.1f, 0.1f, 175.0f, "%.1f");
 	}
+
+	ImGui::Separator();
+
+	ImGui::Checkbox("Accumulate frames (Ray Tracing)", &accumulateFrames);
+
+	if(!accumulateFrames || updateCamera)
+		mtd::EventManager::dispatch<mtd::ResetFrameAccumulationEvent>();
 
 	if(updateCamera)
 	{

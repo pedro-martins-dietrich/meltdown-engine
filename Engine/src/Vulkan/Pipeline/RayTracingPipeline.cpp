@@ -31,6 +31,7 @@ mtd::RayTracingPipeline::RayTracingPipeline
 	createRayTracingPipeline(mtdDevice.getDLDI());
 	createShaderBindingTable(mtdDevice);
 	createStorageImages(mtdDevice, swapchainExtent);
+	setEventCallback();
 }
 
 mtd::RayTracingPipeline::RayTracingPipeline(RayTracingPipeline&& other) noexcept
@@ -416,4 +417,12 @@ void mtd::RayTracingPipeline::defineShaderGroups
 	shaderGroupCreateInfos[2].anyHitShader = vk::ShaderUnusedKHR;
 	shaderGroupCreateInfos[2].intersectionShader = vk::ShaderUnusedKHR;
 	shaderGroupCreateInfos[2].pShaderGroupCaptureReplayHandle = nullptr;
+}
+
+void mtd::RayTracingPipeline::setEventCallback()
+{
+	resetAccumulationCallbackHandle = EventManager::addCallback([this](const ResetFrameAccumulationEvent& event)
+	{
+		resetAccumulation();
+	});
 }

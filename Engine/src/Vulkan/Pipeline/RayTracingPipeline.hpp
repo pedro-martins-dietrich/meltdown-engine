@@ -1,5 +1,7 @@
 #pragma once
 
+#include <meltdown/event.hpp>
+
 #include "Pipeline.hpp"
 #include "../Image/Image.hpp"
 
@@ -62,6 +64,9 @@ namespace mtd
 			// Push constant data for the ray tracing shaders
 			mutable RayTracingRenderData shaderRenderingInfo;
 
+			// Event callback handle for resetting frame accumulation
+			EventCallbackHandle resetAccumulationCallbackHandle;
+
 			// Loads the pipeline shader modules
 			void loadShaderModules();
 
@@ -81,5 +86,8 @@ namespace mtd
 
 			// Defines the shader groups
 			void defineShaderGroups(std::vector<vk::RayTracingShaderGroupCreateInfoKHR>& shaderGroupCreateInfos) const;
+
+			// Sets up the frame accumulation reset event callback
+			void setEventCallback();
 	};
 }
