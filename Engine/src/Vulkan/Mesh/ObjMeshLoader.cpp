@@ -2,37 +2,38 @@
 #include "ObjMeshLoader.hpp"
 
 #include "../../Utils/Logger.hpp"
-#include "../../Utils/FileHandler.hpp"
 #include "../../Utils/StringParser.hpp"
 
-// Data bundle for the .obj loader
-struct ObjData
+namespace mtd
 {
-	std::vector<mtd::Vertex>& vertices;
-	std::vector<uint32_t>& indices;
-	std::vector<mtd::Vec3> positions;
-	std::vector<mtd::Vec2> textureCoordinates;
-	std::vector<mtd::Vec3> normals;
-	std::unordered_map<std::string, uint32_t> history;
-};
+	// Data bundle for the .obj loader
+	struct ObjData
+	{
+		std::vector<Vertex>& vertices;
+		std::vector<uint32_t>& indices;
+		std::vector<Vec3> positions;
+		std::vector<Vec2> textureCoordinates;
+		std::vector<Vec3> normals;
+		std::unordered_map<std::string, uint32_t> history;
+	};
 
-// Loads a single material from a .mtl file
-static void loadMaterial(std::string filePath, mtd::Material& material);
-// Loads the materials from a .mtl file
-static void loadMaterials
-(
-	std::string filePath,
-	std::vector<mtd::Material>& materials,
-	std::unordered_map<std::string, uint32_t>& materialIDs,
-	const mtd::MaterialInfo& materialInfo
-);
+	// Loads a single material from a .mtl file
+	static void loadMaterial(std::string filePath, Material& material);
+	// Loads the materials from a .mtl file
+	static void loadMaterials
+	(
+		std::string filePath,
+		std::vector<Material>& materials,
+		std::unordered_map<std::string, uint32_t>& materialIDs,
+		const MaterialInfo& materialInfo
+	);
 
-// Parses each triangle of a face, returning the number of triangles
-static size_t readFaceData(const std::vector<std::string>& words, ObjData& data);
-// Parses a vertex
-static void readVertex(const std::string& vertexDescription, ObjData& data);
+	// Parses each triangle of a face, returning the number of triangles
+	static size_t readFaceData(const std::vector<std::string>& words, ObjData& data);
+	// Parses a vertex
+	static void readVertex(const std::string& vertexDescription, ObjData& data);
+}
 
-// Loads a default 3D mesh from an Wavefront file
 void mtd::ObjMeshLoader::loadDefault3DMesh
 (
 	const char* fileName,
@@ -72,7 +73,6 @@ void mtd::ObjMeshLoader::loadDefault3DMesh
 	LOG_VERBOSE("Mesh \"%s\" loaded.", fileName);
 }
 
-// Loads a mesh with multiple materials from an Wavefront file
 void mtd::ObjMeshLoader::loadMultiMaterial3DMesh
 (
 	const char* fileName,
@@ -117,31 +117,22 @@ void mtd::ObjMeshLoader::loadMultiMaterial3DMesh
 	LOG_VERBOSE("Mesh \"%s\" loaded.", fileName);
 }
 
-// Loads a 3D mesh for ray tracing from file
 void mtd::ObjMeshLoader::loadRayTracingMesh
 (
 	const char* fileName,
 	std::vector<Vertex>& vertices,
 	std::vector<uint32_t>& indices,
 	std::vector<uint16_t>& materialIndices,
-	MaterialLump& materialLump
+	std::vector<Material>& meshMaterials,
+	const MaterialInfo& materialInfo
 )
 {
 	std::string objMeshPath{MTD_RESOURCES_PATH};
 	objMeshPath.append("meshes/");
 	objMeshPath.append(fileName);
 
-	std::vector<Material> materials;
 	std::unordered_map<std::string, uint32_t> materialIDs;
-	loadMaterials(objMeshPath, materials, materialIDs, materialLump.getMaterialInfo());
-
-	for(const Material& material: materials)
-	{
-		std::vector<std::string> texturePaths;
-		material.fetchTexturePaths(texturePaths);
-		materialLump.addMaterial(material.getFloatAttributesData(), material.getFloatAttributesSize(), texturePaths);
-	}
-	materials.clear();
+	loadMaterials(objMeshPath, meshMaterials, materialIDs, materialInfo);
 
 	std::string line;
 	std::vector<std::string> words;
@@ -174,8 +165,7 @@ void mtd::ObjMeshLoader::loadRayTracingMesh
 	LOG_VERBOSE("Mesh \"%s\" loaded.", fileName);
 }
 
-// Loads a single material from a .mtl file
-void loadMaterial(std::string filePath, mtd::Material& material)
+void mtd::loadMaterial(std::string filePath, Material& material)
 {
 	filePath.replace(filePath.size() - 3, 3, "mtl");
 
@@ -188,7 +178,7 @@ void loadMaterial(std::string filePath, mtd::Material& material)
 	file.open(filePath);
 	while(std::getline(file, line))
 	{
-		mtd::StringParser::split(line, " ", words);
+		StringParser::split(line, " ", words);
 
 		if(!words[0].compare("newmtl"))
 		{
@@ -197,47 +187,46 @@ void loadMaterial(std::string filePath, mtd::Material& material)
 		}
 		else if(!words[0].compare("Kd"))
 		{
-			mtd::Vec4 color{std::stof(words[1]), std::stof(words[2]), std::stof(words[3]), 1.0f};
-			material.addFloatData(mtd::MaterialFloatDataType::DiffuseColor, reinterpret_cast<float*>(&color));
+			Vec4 color{std::stof(words[1]), std::stof(words[2]), std::stof(words[3]), 1.0f};
+			material.addFloatData(MaterialFloatDataType::DiffuseColor, reinterpret_cast<float*>(&color));
 		}
 		else if(!words[0].compare("map_Kd"))
 		{
-			std::string diffuseTexturePath{filePath};
-			diffuseTexturePath = diffuseTexturePath.substr(0, diffuseTexturePath.find_last_of("/\\") + 1);
+			std::string diffuseTexturePath{MTD_RESOURCES_PATH};
+			diffuseTexturePath.append("textures/");
 			diffuseTexturePath.append(words[1]);
-			material.addTexturePath(mtd::MaterialTextureType::DiffuseMap, std::move(diffuseTexturePath));
+			material.addTexturePath(MaterialTextureType::DiffuseMap, std::move(diffuseTexturePath));
 		}
 		else if(!words[0].compare("Ke"))
 		{
-			mtd::Vec3 emission{std::stof(words[1]), std::stof(words[2]), std::stof(words[3])};
-			material.addFloatData(mtd::MaterialFloatDataType::Emission, reinterpret_cast<float*>(&emission));
+			Vec3 emission{std::stof(words[1]), std::stof(words[2]), std::stof(words[3])};
+			material.addFloatData(MaterialFloatDataType::Emission, reinterpret_cast<float*>(&emission));
 		}
 		else if(!words[0].compare("Ni"))
 		{
 			float indexOfRefraction = std::stof(words[1]);
-			material.addFloatData(mtd::MaterialFloatDataType::IndexOfRefraction, &indexOfRefraction);
+			material.addFloatData(MaterialFloatDataType::IndexOfRefraction, &indexOfRefraction);
 		}
 		else if(!words[0].compare("Pr"))
 		{
 			float roughness = std::stof(words[1]);
-			material.addFloatData(mtd::MaterialFloatDataType::Roughness, &roughness);
+			material.addFloatData(MaterialFloatDataType::Roughness, &roughness);
 		}
 		else if(!words[0].compare("Pm"))
 		{
 			float metallic = std::stof(words[1]);
-			material.addFloatData(mtd::MaterialFloatDataType::Metallic, &metallic);
+			material.addFloatData(MaterialFloatDataType::Metallic, &metallic);
 		}
 	}
 	file.close();
 }
 
-// Loads the materials from a .mtl file
-void loadMaterials
+void mtd::loadMaterials
 (
 	std::string filePath,
-	std::vector<mtd::Material>& materials,
+	std::vector<Material>& materials,
 	std::unordered_map<std::string, uint32_t>& materialIDs,
-	const mtd::MaterialInfo& materialInfo
+	const MaterialInfo& materialInfo
 )
 {
 	filePath.replace(filePath.size() - 3, 3, "mtl");
@@ -252,7 +241,7 @@ void loadMaterials
 	file.open(filePath);
 	while(std::getline(file, line))
 	{
-		mtd::StringParser::split(line, " ", words);
+		StringParser::split(line, " ", words);
 
 		if(!words[0].compare("newmtl"))
 		{
@@ -263,46 +252,45 @@ void loadMaterials
 		}
 		else if(!words[0].compare("Kd"))
 		{
-			mtd::Vec4 color{std::stof(words[1]), std::stof(words[2]), std::stof(words[3]), 1.0f};
+			Vec4 color{std::stof(words[1]), std::stof(words[2]), std::stof(words[3]), 1.0f};
 			materials[currentMaterialID]
-				.addFloatData(mtd::MaterialFloatDataType::DiffuseColor, reinterpret_cast<float*>(&color));
+				.addFloatData(MaterialFloatDataType::DiffuseColor, reinterpret_cast<float*>(&color));
 		}
 		else if(!words[0].compare("map_Kd"))
 		{
-			std::string diffuseTexturePath{filePath};
-			diffuseTexturePath = diffuseTexturePath.substr(0, diffuseTexturePath.find_last_of("/\\") + 1);
+			std::string diffuseTexturePath{MTD_RESOURCES_PATH};
+			diffuseTexturePath.append("textures/");
 			diffuseTexturePath.append(words[1]);
 			materials[currentMaterialID]
-				.addTexturePath(mtd::MaterialTextureType::DiffuseMap, std::move(diffuseTexturePath));
+				.addTexturePath(MaterialTextureType::DiffuseMap, std::move(diffuseTexturePath));
 		}
 		else if(!words[0].compare("Ke"))
 		{
-			mtd::Vec3 emission{std::stof(words[1]), std::stof(words[2]), std::stof(words[3])};
+			Vec3 emission{std::stof(words[1]), std::stof(words[2]), std::stof(words[3])};
 			materials[currentMaterialID]
-				.addFloatData(mtd::MaterialFloatDataType::Emission, reinterpret_cast<float*>(&emission));
+				.addFloatData(MaterialFloatDataType::Emission, reinterpret_cast<float*>(&emission));
 		}
 		else if(!words[0].compare("Ni"))
 		{
 			float indexOfRefraction = std::stof(words[1]);
 			materials[currentMaterialID]
-				.addFloatData(mtd::MaterialFloatDataType::IndexOfRefraction, &indexOfRefraction);
+				.addFloatData(MaterialFloatDataType::IndexOfRefraction, &indexOfRefraction);
 		}
 		else if(!words[0].compare("Pr"))
 		{
 			float roughness = std::stof(words[1]);
-			materials[currentMaterialID].addFloatData(mtd::MaterialFloatDataType::Roughness, &roughness);
+			materials[currentMaterialID].addFloatData(MaterialFloatDataType::Roughness, &roughness);
 		}
 		else if(!words[0].compare("Pm"))
 		{
 			float metallic = std::stof(words[1]);
-			materials[currentMaterialID].addFloatData(mtd::MaterialFloatDataType::Metallic, &metallic);
+			materials[currentMaterialID].addFloatData(MaterialFloatDataType::Metallic, &metallic);
 		}
 	}
 	file.close();
 }
 
-// Parses each triangle of a face, returning the number of triangles
-size_t readFaceData(const std::vector<std::string>& words, ObjData& data)
+size_t mtd::readFaceData(const std::vector<std::string>& words, ObjData& data)
 {
 	size_t triangleCount = words.size() - 3;
 	for(size_t i = 0; i < triangleCount; i++)
@@ -314,8 +302,7 @@ size_t readFaceData(const std::vector<std::string>& words, ObjData& data)
 	return triangleCount;
 }
 
-// Parses a vertex
-void readVertex(const std::string& vertexDescription, ObjData& data)
+void mtd::readVertex(const std::string& vertexDescription, ObjData& data)
 {
 	if(data.history.contains(vertexDescription))
 	{
@@ -328,15 +315,15 @@ void readVertex(const std::string& vertexDescription, ObjData& data)
 	data.indices.push_back(index);
 
 	std::vector<std::string> fullVertexData;
-	mtd::StringParser::split(vertexDescription, "/", fullVertexData);
+	StringParser::split(vertexDescription, "/", fullVertexData);
 
-	mtd::Vec3 pos = data.positions[stol(fullVertexData[0]) - 1];
+	Vec3 pos = data.positions[stol(fullVertexData[0]) - 1];
 
-	mtd::Vec2 texCoord{0.0f, 0.0f};
+	Vec2 texCoord{0.0f, 0.0f};
 	if(fullVertexData.size() > 1 && fullVertexData[1].size() > 0)
 		texCoord = data.textureCoordinates[stol(fullVertexData[1]) - 1];
 
-	mtd::Vec3 normal{0.0f, 0.0f, -1.0f};
+	Vec3 normal{0.0f, 0.0f, -1.0f};
 	if(fullVertexData.size() > 2 && fullVertexData[2].size() > 0)
 		normal = data.normals[stol(fullVertexData[2]) - 1];
 

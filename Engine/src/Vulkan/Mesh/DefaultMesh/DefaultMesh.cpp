@@ -1,7 +1,9 @@
 #include <pch.hpp>
 #include "DefaultMesh.hpp"
 
-#include "../ObjMeshLoader.hpp"
+#include "../../../AssetIO/MeshIO.hpp"
+#include "../../../AssetIO/MaterialIO.hpp"
+#include "../../../Utils/StringParser.hpp"
 
 mtd::DefaultMesh::DefaultMesh
 (
@@ -13,7 +15,13 @@ mtd::DefaultMesh::DefaultMesh
 	const std::vector<Mat4x4>& preTransforms
 ) : Mesh{device, index, id, preTransforms, 1}, material{materialInfo}, indexOffset{0}
 {
-	ObjMeshLoader::loadDefault3DMesh(fileName, vertices, indices, material);
+	std::string fileStem = StringParser::getFileStem(fileName, false);
+	std::vector<SubmeshData> submeshesInfo{};
+
+	bool loadOk = MeshIO::loadMesh(fileStem, vertices, indices, submeshesInfo);
+	loadOk &= MaterialIO::loadMaterial(fileStem, material);
+	if(!loadOk)
+		throw std::runtime_error{"Failed to create mesh \"" + fileStem + "\"."};
 }
 
 mtd::DefaultMesh::DefaultMesh(DefaultMesh&& other) noexcept
@@ -22,10 +30,8 @@ mtd::DefaultMesh::DefaultMesh(DefaultMesh&& other) noexcept
 	indices{std::move(other.indices)},
 	material{std::move(other.material)},
 	indexOffset{other.indexOffset}
-{
-}
+{}
 
-// Loads mesh texture
 void mtd::DefaultMesh::loadTexture
 (
 	const Device& device, const CommandHandler& commandHandler, DescriptorSetHandler& descriptorSetHandler

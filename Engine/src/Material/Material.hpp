@@ -17,9 +17,16 @@ namespace mtd
 			Material(Material&& other) noexcept;
 
 			// Getters
-			const float* getFloatAttributesData() const { return floatAttributes.data(); }
 			size_t getFloatAttributesSize() const { return floatAttributes.size(); }
+			const float* getFloatAttributesData() const { return floatAttributes.data(); }
 			uint32_t getTextureCount() const { return static_cast<uint32_t>(textureTypes.size()); }
+			std::string_view getTexturePath(MaterialTextureType textureType) const
+				{ return texturePaths.at(textureType); }
+			const std::vector<MaterialFloatDataType>& getFloatAttributeTypes() const { return floatAttributeTypes; }
+			const std::vector<MaterialTextureType>& getTextureTypes() const { return textureTypes; }
+			std::vector<MaterialFloatDataType>& getFloatAttributeTypes() { return floatAttributeTypes; }
+			std::vector<MaterialTextureType>& getTextureTypes() { return textureTypes; }
+			std::vector<float>& getFloatAttributes() { return floatAttributes; }
 
 			// Fetches the texture paths for the material
 			void fetchTexturePaths(std::vector<std::string>& textureFilePaths) const;
@@ -31,6 +38,9 @@ namespace mtd
 			void addFloatData(MaterialFloatDataType floatDataType, const float* data);
 			// Adds a texture path to load the material
 			void addTexturePath(MaterialTextureType textureType, std::string&& texturePath);
+
+			// Updates the float attribute offsets based on the material float data types
+			void updateFloatAttributeOffsets();
 
 			// Loads all float attributes and textures to the GPU
 			void loadMaterial

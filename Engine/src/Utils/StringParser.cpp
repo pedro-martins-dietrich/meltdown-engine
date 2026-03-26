@@ -1,7 +1,6 @@
 #include <pch.hpp>
 #include "StringParser.hpp"
 
-// Separates a line into substrings, using the specified delimiter
 void mtd::StringParser::split
 (
 	std::string line, std::string delimiter, std::vector<std::string>& output
@@ -19,4 +18,22 @@ void mtd::StringParser::split
 	}
 
 	output.push_back(line);
+}
+
+std::string mtd::StringParser::getFileStem(std::string_view filePath, bool keepSuffix)
+{
+	if(filePath.empty()) return {};
+
+	size_t lastSeparator = filePath.find_last_of("/\\");
+	std::string_view fileName =
+		(lastSeparator == std::string_view::npos) ? filePath : filePath.substr(lastSeparator + 1);
+	if(fileName.empty()) return {};
+
+	if(keepSuffix) return std::string{fileName};
+
+	size_t lastDot = fileName.find_last_of('.');
+	if(lastDot == std::string_view::npos || lastDot == 0)
+		return std::string{fileName};
+
+	return std::string{fileName.substr(0, lastDot)};
 }

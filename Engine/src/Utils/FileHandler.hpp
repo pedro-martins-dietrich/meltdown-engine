@@ -1,5 +1,6 @@
 #pragma once
 
+#include <fstream>
 #include <string>
 #include <vector>
 
@@ -17,4 +18,10 @@ namespace mtd::FileHandler
 
 	// Reads a file and return its content as a JSON
 	bool readJSON(const char* filePath, nlohmann::json& json);
+
+	// Reads a string at the current cursor location from an open file
+	bool readString(std::ifstream& openFile, std::string& str);
+
+	// Writes a string to an open file
+	bool writeString(std::ofstream& openFile, std::string_view str);
 }

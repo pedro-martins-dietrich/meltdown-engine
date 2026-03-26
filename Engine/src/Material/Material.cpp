@@ -13,7 +13,8 @@ mtd::Material::Material(const MaterialInfo& materialInfo)
 		floatAttributeOffsets[floatDataType] = offset;
 		offset += mapFloatDataTypeDimension(floatDataType);
 	}
-	offset += offset % 4;
+	if(offset % 4U)
+		offset += 4U - (offset % 4U);
 	floatAttributes.resize(offset);
 }
 
@@ -26,14 +27,12 @@ mtd::Material::Material(Material&& other) noexcept
 	textures{std::move(other.textures)}
 {}
 
-// Fetches the texture paths for the material
 void mtd::Material::fetchTexturePaths(std::vector<std::string>& textureFilePaths) const
 {
 	for(const auto& [textureType, texturePath]: texturePaths)
 		textureFilePaths.emplace_back(texturePath.c_str());
 }
 
-// Inserts a float attribute data
 void mtd::Material::addFloatData(MaterialFloatDataType floatDataType, const float* data)
 {
 	if(floatAttributeOffsets.find(floatDataType) == floatAttributeOffsets.end()) return;
@@ -42,13 +41,22 @@ void mtd::Material::addFloatData(MaterialFloatDataType floatDataType, const floa
 		floatAttributes[floatAttributeOffsets.at(floatDataType) + i] = data[i];
 }
 
-// Adds a texture path to load the material
 void mtd::Material::addTexturePath(MaterialTextureType textureType, std::string&& texturePath)
 {
 	texturePaths[textureType] = std::move(texturePath);
 }
 
-// Loads all float attributes and textures to the GPU
+void mtd::Material::updateFloatAttributeOffsets()
+{
+	uint32_t offset = 0;
+	floatAttributeOffsets.reserve(floatAttributeTypes.size());
+	for(MaterialFloatDataType floatDataType: floatAttributeTypes)
+	{
+		floatAttributeOffsets[floatDataType] = offset;
+		offset += mapFloatDataTypeDimension(floatDataType);
+	}
+}
+
 void mtd::Material::loadMaterial
 (
 	const Device& device,
@@ -62,7 +70,6 @@ void mtd::Material::loadMaterial
 	loadTextures(device, commandHandler, descriptorSetHandler, swappableSetIndex, bindingOffset);
 }
 
-// Loads all float attributes to the GPU
 void mtd::Material::loadFloatData
 (
 	const Device& device,
@@ -85,7 +92,6 @@ void mtd::Material::loadFloatData
 		descriptorSetHandler.writeDescriptorSet(swappableSetIndex);
 }
 
-// Loads all material textures
 void mtd::Material::loadTextures
 (
 	const Device& device,
@@ -109,7 +115,6 @@ void mtd::Material::loadTextures
 	}
 }
 
-// Finds the dimension (amount of floats) of each material float data type
 uint32_t mtd::Material::mapFloatDataTypeDimension(MaterialFloatDataType floatDataType) const
 {
 	switch(floatDataType)

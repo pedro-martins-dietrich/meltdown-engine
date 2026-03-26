@@ -1,7 +1,6 @@
 #pragma once
 
 #include "../../Material/Material.hpp"
-#include "../../Material/MaterialLump.hpp"
 
 // Responsible for loading Wavefront .obj files
 namespace mtd::ObjMeshLoader
@@ -33,6 +32,7 @@ namespace mtd::ObjMeshLoader
 		std::vector<Vertex>& vertices,
 		std::vector<uint32_t>& indices,
 		std::vector<uint16_t>& materialIndices,
-		MaterialLump& materialLump
+		std::vector<Material>& meshMaterials,
+		const MaterialInfo& materialInfo
 	);
 }

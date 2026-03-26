@@ -58,9 +58,9 @@ namespace mtd
 	// Vertex format
 	struct Vertex
 	{
-		Vec3 position;
-		Vec2 textureCoordinates;
-		Vec3 normal;
+		Vec3 position = {0.0f, 0.0f, 0.0f};
+		Vec2 textureCoordinates = {0.0f, 0.0f};
+		Vec3 normal = {0.0f, 0.0f, 0.0f};
 	};
 
 	// Information about the attributes for a specific material type
@@ -73,8 +73,9 @@ namespace mtd
 	// Information for submesh rendering
 	struct SubmeshData
 	{
-		uint32_t indexOffset;
-		uint32_t materialID;
+		uint32_t indexCount = 0U;
+		uint32_t indexOffset = 0U;
+		uint32_t materialID = 0U;
 	};
 
 	// Information required for drawing a frame

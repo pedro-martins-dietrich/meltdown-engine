@@ -3,17 +3,15 @@
 
 #include "Logger.hpp"
 
-// Reads file data in the specified path
 bool mtd::FileHandler::readFile(const char* filePath, std::vector<char>& fileData)
 {
-	std::ifstream file{filePath, std::ios::binary};
+	std::ifstream file{filePath, std::ios::binary | std::ios::ate};
 	if(!file)
 	{
 		LOG_ERROR("File \"%s\" was not found.", filePath);
 		return false;
 	}
 
-	file.seekg(0, std::ios::end);
 	fileData.resize(file.tellg());
 	file.seekg(0, std::ios::beg);
 
@@ -23,7 +21,6 @@ bool mtd::FileHandler::readFile(const char* filePath, std::vector<char>& fileDat
 	return true;
 }
 
-// Reads a file and return its content as a JSON
 bool mtd::FileHandler::readJSON(const char* filePath, nlohmann::json& json)
 {
 	std::vector<char> fileData;
@@ -47,4 +44,26 @@ bool mtd::FileHandler::readJSON(const char* filePath, nlohmann::json& json)
 	}
 
 	return true;
+}
+
+bool mtd::FileHandler::readString(std::ifstream& openFile, std::string& str)
+{
+	uint32_t strSize = 0U;
+
+	openFile.read(reinterpret_cast<char*>(&strSize), sizeof(uint32_t));
+	if(!openFile) return false;
+
+	str.resize(strSize);
+	openFile.read(str.data(), static_cast<std::streamsize>(strSize));
+
+	return openFile.good();
+}
+
+bool mtd::FileHandler::writeString(std::ofstream& openFile, std::string_view str)
+{
+	uint32_t strSize = static_cast<uint32_t>(str.size());
+	openFile.write(reinterpret_cast<char*>(&strSize), sizeof(uint32_t));
+	openFile.write(str.data(), static_cast<std::streamsize>(strSize));
+
+	return openFile.good();
 }
