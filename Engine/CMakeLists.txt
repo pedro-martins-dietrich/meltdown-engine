@@ -1,5 +1,5 @@
 # Requests minimum CMake version
-cmake_minimum_required(VERSION 3.26)
+cmake_minimum_required(VERSION 3.31)
 
 # Meltdown Engine library project
 project(Meltdown)
@@ -54,37 +54,6 @@ set(
 
 # Sets resources directory
 set(RESOURCES_DIR "${CMAKE_SOURCE_DIR}/resources")
-# Sets shaders directories
-set(SOURCE_SHADERS_DIR "src/Shaders")
-set(COMPILED_SHADERS_DIR "${RESOURCES_DIR}/shaders")
-
-# Searches shaders source code files and compiles them
-file(
-    GLOB_RECURSE SHADER_SRC_FILES
-    "${SOURCE_SHADERS_DIR}/**.vert"
-    "${SOURCE_SHADERS_DIR}/**.frag"
-    "${SOURCE_SHADERS_DIR}/**.comp"
-    "${SOURCE_SHADERS_DIR}/**.rgen"
-    "${SOURCE_SHADERS_DIR}/**.rmiss"
-    "${SOURCE_SHADERS_DIR}/**.rahit"
-    "${SOURCE_SHADERS_DIR}/**.rchit"
-    "${SOURCE_SHADERS_DIR}/**.rint"
-    "${SOURCE_SHADERS_DIR}/**.rcall"
-)
-foreach(SHADER_SRC_FILE ${SHADER_SRC_FILES})
-    get_filename_component(SHADER_NAME ${SHADER_SRC_FILE} NAME)
-    set(SHADER_OUTPUT "${COMPILED_SHADERS_DIR}/${SHADER_NAME}.spv")
-
-    add_custom_command(
-        OUTPUT ${SHADER_OUTPUT}
-        COMMAND ${CMAKE_COMMAND} -E remove ${SHADER_OUTPUT}
-        COMMAND glslc --target-env=vulkan1.3 "${SHADER_SRC_FILE}" -o "${SHADER_OUTPUT}"
-        DEPENDS ${SHADER_SRC_FILE}
-        COMMENT "[MELTDOWN] Compiled shader: ${SHADER_NAME}"
-    )
-    list(APPEND SHADER_OUTPUTS ${SHADER_OUTPUT})
-endforeach()
-add_custom_target(SHADERS DEPENDS ${SHADER_OUTPUTS})
 
 # Gathers source files (.cpp) to be compiled
 file(GLOB_RECURSE SRC_FILES "src/**.cpp")
@@ -106,9 +75,6 @@ else()
 
     message(STATUS "${MTD_TAG} Creating Meltdown Engine as a static library...")
 endif()
-
-# The library depends on the shaders compilation
-add_dependencies(${MELTDOWN_LIB} SHADERS)
 
 # Defines macros for the project
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
