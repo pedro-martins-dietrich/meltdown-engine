@@ -37,21 +37,25 @@ void mtd::ImGuiHandler::init
 	uint32_t framesInFlight
 )
 {
+	ImGui_ImplVulkan_PipelineInfo pipelineInfo{};
+	pipelineInfo.RenderPass = renderPass;
+	pipelineInfo.Subpass = 0U;
+	pipelineInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+	pipelineInfo.PipelineRenderingCreateInfo = {};
+
 	ImGui_ImplVulkan_InitInfo imGuiInitInfo{};
+	imGuiInitInfo.ApiVersion = vk::ApiVersion14;
 	imGuiInitInfo.Instance = instance;
 	imGuiInitInfo.PhysicalDevice = device.getPhysicalDevice();
 	imGuiInitInfo.Device = device.getDevice();
 	imGuiInitInfo.QueueFamily = device.getQueueFamilies().getGraphicsFamilyIndex();
 	imGuiInitInfo.Queue = device.getGraphicsQueue();
 	imGuiInitInfo.DescriptorPool = guiDescriptorPool.getDescriptorPool();
-	imGuiInitInfo.RenderPass = renderPass;
 	imGuiInitInfo.MinImageCount = framesInFlight;
 	imGuiInitInfo.ImageCount = framesInFlight;
-	imGuiInitInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 	imGuiInitInfo.PipelineCache = nullptr;
-	imGuiInitInfo.Subpass = 0;
+	imGuiInitInfo.PipelineInfoMain = pipelineInfo;
 	imGuiInitInfo.UseDynamicRendering = false;
-	imGuiInitInfo.PipelineRenderingCreateInfo = {};
 	imGuiInitInfo.Allocator = nullptr;
 	imGuiInitInfo.CheckVkResultFn = checkVulkanResult;
 	imGuiInitInfo.MinAllocationSize = 0U;

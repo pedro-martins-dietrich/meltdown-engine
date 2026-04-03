@@ -15,6 +15,7 @@
 /Engine/install
 
 /resources/shaders
+/resources/**/experimental
 
 CMakeSettings.json
 vcpkg_installed
