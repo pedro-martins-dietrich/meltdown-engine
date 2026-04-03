@@ -12,11 +12,6 @@ mtd::Device::Device(const vk::Instance& vulkanInstance, const vk::SurfaceKHR sur
 	std::vector<vk::DeviceQueueCreateInfo> deviceQueueCreateInfos;
 	configureQueues(deviceQueueCreateInfos);
 
-	std::vector<const char*> enabledLayers;
-	#ifdef MTD_DEBUG
-		enabledLayers.push_back("VK_LAYER_KHRONOS_validation");
-	#endif
-
 	std::vector<const char*> extensions;
 	selectExtensions(extensions);
 
@@ -60,8 +55,6 @@ mtd::Device::Device(const vk::Instance& vulkanInstance, const vk::SurfaceKHR sur
 	deviceCreateInfo.flags = vk::DeviceCreateFlags();
 	deviceCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(deviceQueueCreateInfos.size());
 	deviceCreateInfo.pQueueCreateInfos = deviceQueueCreateInfos.data();
-	deviceCreateInfo.enabledLayerCount = static_cast<uint32_t>(enabledLayers.size());
-	deviceCreateInfo.ppEnabledLayerNames = enabledLayers.data();
 	deviceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
 	deviceCreateInfo.ppEnabledExtensionNames = extensions.data();
 	deviceCreateInfo.pEnabledFeatures = rayTracingEnabled ? nullptr : &physicalDeviceFeatures;
