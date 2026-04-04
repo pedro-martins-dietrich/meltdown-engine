@@ -55,10 +55,8 @@ namespace mtd
 			Renderer renderer;
 			ImGuiHandler imGuiHandler;
 
-			// Pipelines
-			std::vector<GraphicsPipeline> graphicsPipelines;
-			std::vector<FramebufferPipeline> framebufferPipelines;
-			std::vector<RayTracingPipeline> rayTracingPipelines;
+			// All pipelines in use by the scene
+			PipelineBundle pipelines;
 
 			// Scene being currently rendered
 			Scene scene;
@@ -96,9 +94,7 @@ namespace mtd
 			void createRenderResources
 			(
 				const std::vector<FramebufferInfo>& framebufferInfos,
-				const std::vector<GraphicsPipelineInfo>& graphicsPipelineInfos,
-				const std::vector<FramebufferPipelineInfo>& framebufferPipelineInfos,
-				const std::vector<RayTracingPipelineInfo>& rayTracingPipelineInfos
+				const PipelineInfoBundle& pipelineInfos
 			);
 			// Sets up the descriptor pools and sets
 			void configureDescriptors();

@@ -3,6 +3,7 @@
 #include "../Frame/Swapchain.hpp"
 #include "../Frame/Framebuffer.hpp"
 #include "../ImGui/ImGuiHandler.hpp"
+#include "../Pipeline/PipelineBundles.hpp"
 #include "../../Scene/Scene.hpp"
 
 namespace mtd
@@ -30,9 +31,7 @@ namespace mtd
 				const Swapchain& swapchain,
 				const ImGuiHandler& guiHandler,
 				const std::vector<Framebuffer>& framebuffers,
-				const std::vector<GraphicsPipeline>& graphicsPipelines,
-				const std::vector<FramebufferPipeline>& framebufferPipelines,
-				const std::vector<RayTracingPipeline>& rayTracingPipelines,
+				const PipelineBundle& pipelines,
 				const Scene& scene,
 				DrawInfo& drawInfo,
 				bool& shouldUpdateEngine
@@ -50,9 +49,7 @@ namespace mtd
 			void recordDrawCommands
 			(
 				const std::vector<Framebuffer>& framebuffers,
-				const std::vector<GraphicsPipeline>& graphicsPipelines,
-				const std::vector<FramebufferPipeline>& framebufferPipelines,
-				const std::vector<RayTracingPipeline>& rayTracingPipelines,
+				const PipelineBundle& pipelines,
 				const Scene& scene,
 				const CommandHandler& commandHandler,
 				const DrawInfo& drawInfo,
