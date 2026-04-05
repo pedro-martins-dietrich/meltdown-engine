@@ -11,16 +11,14 @@ mtd::Mat4x4::Mat4x4
 	y{yx, yy, yz, yw},
 	z{zx, zy, zz, zw},
 	w{wx, wy, wz, ww}
-{
-}
+{}
 
 mtd::Mat4x4::Mat4x4(float value)
 	: x{value, 0.0f, 0.0f, 0.0f},
 	y{0.0f, value, 0.0f, 0.0f},
 	z{0.0f, 0.0f, value, 0.0f},
 	w{0.0f, 0.0f, 0.0f, value}
-{
-}
+{}
 
 mtd::Mat4x4::Mat4x4(const Quaternion& quat)
 	: x
@@ -45,8 +43,7 @@ mtd::Mat4x4::Mat4x4(const Quaternion& quat)
 		0.0f
 	},
 	w{0.0f, 0.0f, 0.0f, 1.0f}
-{
-}
+{}
 
 mtd::Vec4& mtd::Mat4x4::operator[](size_t i)
 {
@@ -94,21 +91,18 @@ mtd::Mat4x4 mtd::operator*(float scalar, const Mat4x4& mat)
 	};
 }
 
-namespace mtd
+std::ostream& mtd::operator<<(std::ostream& os, const Mat4x4& mat)
 {
-	std::ostream& operator<<(std::ostream& os, const Mat4x4& mat)
+	for(uint32_t i = 0; i < 4; i++)
 	{
-		for(uint32_t i = 0; i < 4; i++)
-		{
-			os << "\n[ ";
-			for(uint32_t j = 0; j < 4; j++)
-				os << std::fixed << std::setw(8) << std::setprecision(3) << mat[i][j] << "  ";
-			os << ']';
-		}
-		os << '\n';
-
-		return os;
+		os << "\n[ ";
+		for(uint32_t j = 0; j < 4; j++)
+			os << std::fixed << std::setw(8) << std::setprecision(3) << mat[i][j] << "  ";
+		os << ']';
 	}
+	os << '\n';
+
+	return os;
 }
 
 void mtd::Mat4x4::rotateIntrinsic(float angle, const Vec3& axis)

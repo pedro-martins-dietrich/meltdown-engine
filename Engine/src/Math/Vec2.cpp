@@ -47,7 +47,7 @@ mtd::Vec2 mtd::Vec2::operator*(float scalar) const
 	return {x * scalar, y * scalar};
 }
 
-mtd::Vec2 mtd::operator*(float scalar, const Vec2& vec)
+mtd::Vec2 mtd::operator*(float scalar, Vec2 vec)
 {
 	return {vec.x * scalar, vec.y * scalar};
 }
@@ -85,14 +85,11 @@ mtd::Vec2& mtd::Vec2::operator/=(float scalar)
 	return *this;
 }
 
-namespace mtd
+std::ostream& mtd::operator<<(std::ostream& os, const Vec2& v2)
 {
-	std::ostream& operator<<(std::ostream& os, const Vec2& v2)
-	{
-		os << '(' << std::fixed << std::setw(8) << std::setprecision(3) << v2.x << ", ";
-		os << std::setw(8) << std::setprecision(3) << v2.y << ')';
-		return os;
-	}
+	os << '(' << std::fixed << std::setw(8) << std::setprecision(3) << v2.x << ", ";
+	os << std::setw(8) << std::setprecision(3) << v2.y << ')';
+	return os;
 }
 
 float mtd::Vec2::dot(const Vec2& other) const
@@ -108,4 +105,9 @@ float mtd::Vec2::length() const
 mtd::Vec2 mtd::Vec2::normalized() const
 {
 	return *this / length();
+}
+
+mtd::Vec2 mtd::Vec2::clamp(Vec2 minimum, Vec2 maximum) const
+{
+	return max(minimum, min(*this, maximum));
 }

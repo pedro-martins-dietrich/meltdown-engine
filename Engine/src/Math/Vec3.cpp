@@ -90,15 +90,12 @@ mtd::Vec3& mtd::Vec3::operator/=(float scalar)
 	return *this;
 }
 
-namespace mtd
+std::ostream& mtd::operator<<(std::ostream& os, const Vec3& v3)
 {
-	std::ostream& operator<<(std::ostream& os, const Vec3& v3)
-	{
-		os << '(' << std::fixed;
-		for(uint32_t i = 0; i < 3; i++)
-			os << std::setw(8) << std::setprecision(3) << v3[i] << ((i % 3 == 2) ? ")" : ", ");
-		return os;
-	}
+	os << '(' << std::fixed;
+	for(uint32_t i = 0; i < 3; i++)
+		os << std::setw(8) << std::setprecision(3) << v3[i] << ((i % 3 == 2) ? ")" : ", ");
+	return os;
 }
 
 float mtd::Vec3::dot(const Vec3& other) const
@@ -119,4 +116,9 @@ float mtd::Vec3::length() const
 mtd::Vec3 mtd::Vec3::normalized() const
 {
 	return *this / length();
+}
+
+mtd::Vec3 mtd::Vec3::clamp(const Vec3& minimum, const Vec3& maximum) const
+{
+	return max(minimum, min(*this, maximum));
 }
