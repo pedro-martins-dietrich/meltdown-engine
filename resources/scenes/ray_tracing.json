@@ -1,5 +1,5 @@
 {
-	"scene-loader-version": "0.1.9",
+	"scene-loader-version": "0.1.10",
 	"camera":
 	{
 		"orthographic": false,
@@ -13,6 +13,7 @@
 	},
 	"framebuffers": [],
 	"rasterization-pipelines": [],
+	"compute-pipelines": [],
 	"ray-tracing-pipelines":
 	[
 		{
@@ -36,6 +37,7 @@
 			"target-framebuffer": -1,
 			"descriptor-set-info": [],
 			"input-attachments": [],
+			"compute-storage-images": [],
 			"ray-tracing-storage-images": [0],
 			"dependencies": []
 		}

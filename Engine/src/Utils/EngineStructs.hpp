@@ -87,6 +87,13 @@ namespace mtd
 		const SynchronizationBundle* syncBundle;
 	};
 
+	// Compute shader push constant struct
+	struct ComputeShaderPushConstantData
+	{
+		UIntVec2 imagesSize = UIntVec2{0U, 0U};
+		uint32_t iterationCounter = 0U;
+	};
+
 	// Ray tracing push constant struct
 	struct RayTracingRenderData
 	{

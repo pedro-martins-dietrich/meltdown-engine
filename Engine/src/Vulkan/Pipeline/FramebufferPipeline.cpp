@@ -1,7 +1,6 @@
 #include <pch.hpp>
 #include "FramebufferPipeline.hpp"
 
-#include "Builders/PipelineMapping.hpp"
 #include "Builders/ColorBlendBuilder.hpp"
 #include "Builders/DescriptorSetBuilder.hpp"
 #include "../../Utils/Logger.hpp"
@@ -25,14 +24,18 @@ mtd::FramebufferPipeline::FramebufferPipeline(FramebufferPipeline&& other) noexc
 	: Pipeline{std::move(other)}
 {}
 
-// Recreates the framebuffer pipeline
+uint32_t mtd::FramebufferPipeline::getImageDescriptorsCount() const
+{
+	return static_cast<uint32_t>(info.inputAttachments.size()
+		+ info.rayTracingStorageImages.size() + info.computeStorageImages.size());
+}
+
 void mtd::FramebufferPipeline::recreate(vk::Extent2D extent, vk::RenderPass renderPass)
 {
 	device.destroyPipeline(pipeline);
 	createPipeline(extent, renderPass);
 }
 
-// Binds the pipeline to the command buffer
 void mtd::FramebufferPipeline::bind(const vk::CommandBuffer& commandBuffer) const
 {
 	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
@@ -58,10 +61,11 @@ void mtd::FramebufferPipeline::bind(const vk::CommandBuffer& commandBuffer) cons
 	);
 }
 
-// Updates all the input images descriptors
 void mtd::FramebufferPipeline::updateInputImagesDescriptors
 (
-	const std::vector<Framebuffer>& framebuffers, const std::vector<RayTracingPipeline>& rayTracingPipelines
+	const std::vector<Framebuffer>& framebuffers,
+	const std::vector<ComputePipeline>& computePipelines,
+	const std::vector<RayTracingPipeline>& rayTracingPipelines
 )
 {
 	DescriptorSetHandler& descriptorSetHandler = descriptorSetHandlers[0];
@@ -77,6 +81,13 @@ void mtd::FramebufferPipeline::updateInputImagesDescriptors
 		binding++;
 	}
 
+	for(uint32_t computePipelineIndex: info.computeStorageImages)
+	{
+		assert(computePipelineIndex < computePipelines.size() && "Compute pipeline index out of bounds.");
+		computePipelines[computePipelineIndex].shareRenderTargetImageDescriptor(descriptorSetHandler, binding);
+		binding++;
+	}
+
 	for(uint32_t rtPipelineIndex: info.rayTracingStorageImages)
 	{
 		assert(rtPipelineIndex < rayTracingPipelines.size() && "Ray tracing pipeline index out of bounds.");
@@ -87,7 +98,6 @@ void mtd::FramebufferPipeline::updateInputImagesDescriptors
 	descriptorSetHandler.writeDescriptorSet(0);
 }
 
-// Loads the pipeline shader modules
 void mtd::FramebufferPipeline::loadShaderModules()
 {
 	shaders.reserve(2);
@@ -95,7 +105,6 @@ void mtd::FramebufferPipeline::loadShaderModules()
 	shaders.emplace_back(device, vk::ShaderStageFlagBits::eFragment, info.fragmentShaderPath.c_str());
 }
 
-// Creates the layout for the framebuffer pipeline
 void mtd::FramebufferPipeline::createPipelineLayout(const vk::DescriptorSetLayout& globalDescriptorSetLayout)
 {
 	std::vector<vk::DescriptorSetLayout> descriptorSetLayouts{globalDescriptorSetLayout};
@@ -118,7 +127,6 @@ void mtd::FramebufferPipeline::createPipelineLayout(const vk::DescriptorSetLayou
 	LOG_VERBOSE("Created framebuffer pipeline layout.");
 }
 
-// Creates the graphics pipeline
 void mtd::FramebufferPipeline::createPipeline(vk::Extent2D extent, vk::RenderPass renderPass)
 {
 	std::vector<vk::PipelineShaderStageCreateInfo> shaderStageCreateInfos;
@@ -174,12 +182,12 @@ void mtd::FramebufferPipeline::createPipeline(vk::Extent2D extent, vk::RenderPas
 	LOG_INFO("Created framebuffer pipeline.\n");
 }
 
-// Configures the descriptor set handlers to be used
 void mtd::FramebufferPipeline::createDescriptorSetLayouts()
 {
 	descriptorSetHandlers.reserve(info.descriptorSetInfo.size() == 0 ? 1 : 2);
 
-	uint32_t imageDescriptorsCount = info.inputAttachments.size() + info.rayTracingStorageImages.size();
+	uint32_t imageDescriptorsCount = info.inputAttachments.size()
+		+ info.rayTracingStorageImages.size() + info.computeStorageImages.size();
 	std::vector<vk::DescriptorSetLayoutBinding> layoutBindings(imageDescriptorsCount);
 	for(uint32_t i = 0; i < layoutBindings.size(); i++)
 	{
@@ -199,7 +207,6 @@ void mtd::FramebufferPipeline::createDescriptorSetLayouts()
 	descriptorSetHandlers.emplace_back(device, layoutBindings);
 }
 
-// Sets the vertex input create info
 void mtd::FramebufferPipeline::setVertexInput(vk::PipelineVertexInputStateCreateInfo& vertexInputInfo) const
 {
 	vertexInputInfo.flags = vk::PipelineVertexInputStateCreateFlags();
@@ -209,7 +216,6 @@ void mtd::FramebufferPipeline::setVertexInput(vk::PipelineVertexInputStateCreate
 	vertexInputInfo.pVertexAttributeDescriptions = nullptr;
 }
 
-// Sets the input assembly create info
 void mtd::FramebufferPipeline::setInputAssembly(vk::PipelineInputAssemblyStateCreateInfo& inputAssemblyInfo) const
 {
 	inputAssemblyInfo.flags = vk::PipelineInputAssemblyStateCreateFlags();
@@ -217,7 +223,6 @@ void mtd::FramebufferPipeline::setInputAssembly(vk::PipelineInputAssemblyStateCr
 	inputAssemblyInfo.primitiveRestartEnable = vk::False;
 }
 
-// Sets the viewport create info
 void mtd::FramebufferPipeline::setViewport
 (
 	vk::PipelineViewportStateCreateInfo& viewportInfo,
@@ -244,7 +249,6 @@ void mtd::FramebufferPipeline::setViewport
 	viewportInfo.pScissors = &scissor;
 }
 
-// Sets the rasterization create info
 void mtd::FramebufferPipeline::setRasterizer(vk::PipelineRasterizationStateCreateInfo& rasterizationInfo) const
 {
 	rasterizationInfo.flags = vk::PipelineRasterizationStateCreateFlags();
@@ -260,7 +264,6 @@ void mtd::FramebufferPipeline::setRasterizer(vk::PipelineRasterizationStateCreat
 	rasterizationInfo.lineWidth = 1.0f;
 }
 
-// Sets the multisample create info
 void mtd::FramebufferPipeline::setMultisampling(vk::PipelineMultisampleStateCreateInfo& multisampleInfo) const
 {
 	multisampleInfo.flags = vk::PipelineMultisampleStateCreateFlags();
@@ -272,7 +275,6 @@ void mtd::FramebufferPipeline::setMultisampling(vk::PipelineMultisampleStateCrea
 	multisampleInfo.alphaToOneEnable = vk::False;
 }
 
-// Sets the depth stencil create info
 void mtd::FramebufferPipeline::setDepthStencil(vk::PipelineDepthStencilStateCreateInfo& depthStencilInfo) const
 {
 	depthStencilInfo.flags = vk::PipelineDepthStencilStateCreateFlags();

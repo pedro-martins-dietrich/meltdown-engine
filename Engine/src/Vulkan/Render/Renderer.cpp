@@ -1,16 +1,16 @@
 #include <pch.hpp>
 #include "Renderer.hpp"
 
-#include "../Image/Image.hpp"
 #include "../../Utils/Logger.hpp"
 #include "../../Utils/Profiler.hpp"
 
-mtd::Renderer::Renderer() : currentFrameIndex{0}, clearColor{0.1f, 0.1f, 0.1f, 1.0f}
+mtd::Renderer::Renderer()
+	: clearValues{vk::ClearColorValue{0.1f, 0.1f, 0.1f, 1.0f}, vk::ClearDepthStencilValue{1.0f, 0}}
 {}
 
 void mtd::Renderer::setClearColor(const Vec4& color)
 {
-	clearColor = vk::ClearColorValue{color.r, color.g, color.b, color.a};
+	clearValues[0] = vk::ClearColorValue{color.r, color.g, color.b, color.a};
 }
 
 void mtd::Renderer::render
@@ -112,14 +112,24 @@ void mtd::Renderer::recordDrawCommands
 
 	commandHandler.beginCommand();
 
-	commandBuffer.bindDescriptorSets
-	(
-		vk::PipelineBindPoint::eGraphics,
-		firstPipelineLayout,
-		0,
-		1, &(drawInfo.globalDescriptorSet),
-		0, nullptr
-	);
+	if(pipelines.computePipelines.size() > 0)
+	{
+		commandBuffer.bindDescriptorSets
+		(
+			vk::PipelineBindPoint::eCompute,
+			pipelines.computePipelines[0].getLayout(),
+			0,
+			1, &(drawInfo.globalDescriptorSet),
+			0, nullptr
+		);
+	}
+
+	for(const ComputePipeline& computePipeline: pipelines.computePipelines)
+	{
+		PROFILER_NEXT_STAGE(computePipeline.getName().c_str());
+		computePipeline.dispatchCompute(commandBuffer);
+	}
+
 	if(pipelines.rayTracingPipelines.size() > 0)
 	{
 		commandBuffer.bindDescriptorSets
@@ -132,23 +142,28 @@ void mtd::Renderer::recordDrawCommands
 		);
 	}
 
-	std::vector<vk::ClearValue> clearValues;
-	clearValues.push_back(clearColor);
-	clearValues.push_back(vk::ClearDepthStencilValue{1.0f, 0});
-
-	vk::Rect2D renderArea{};
-	renderArea.offset = vk::Offset2D{0, 0};
-
 	for(const RayTracingPipeline& rayTracingPipeline: pipelines.rayTracingPipelines)
 	{
 		PROFILER_NEXT_STAGE(rayTracingPipeline.getName().c_str());
 		rayTracingPipeline.traceRays(commandBuffer, dldi);
 	}
 
+	vk::Rect2D renderArea{};
+	renderArea.offset = vk::Offset2D{0, 0};
+
+	commandBuffer.bindDescriptorSets
+	(
+		vk::PipelineBindPoint::eGraphics,
+		firstPipelineLayout,
+		0,
+		1, &(drawInfo.globalDescriptorSet),
+		0, nullptr
+	);
+
 	for(const RenderPassInfo& renderPassInfo: renderOrder)
 	{
 		int32_t fbIndex = renderPassInfo.targetFramebufferIndex;
-		bool toSwapchain = fbIndex == -1;
+		bool toSwapchain = (fbIndex == -1);
 
 		renderArea.extent = toSwapchain ? drawInfo.extent : framebuffers[fbIndex].getExtent();
 

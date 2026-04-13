@@ -96,8 +96,9 @@ void mtd::Engine::loadScene(const char* sceneFile)
 	device.getDevice().waitIdle();
 	framebuffers.clear();
 	pipelines.graphicsPipelines.clear();
-	pipelines.framebufferPipelines.clear();
+	pipelines.computePipelines.clear();
 	pipelines.rayTracingPipelines.clear();
+	pipelines.framebufferPipelines.clear();
 	Profiler::clearStages();
 
 	std::vector<FramebufferInfo> framebufferInfos;
@@ -255,6 +256,15 @@ void mtd::Engine::createRenderResources
 		);
 	}
 
+	pipelines.computePipelines.reserve(pipelineInfos.computeInfos.size());
+	for(const ComputePipelineInfo& computePipelineInfo: pipelineInfos.computeInfos)
+	{
+		pipelines.computePipelines.emplace_back
+		(
+			device, computePipelineInfo, globalDescriptorSetHandler->getLayout(), swapchain.getExtent()
+		);
+	}
+
 	if(!device.isRayTracingEnabled()) return;
 	pipelines.rayTracingPipelines.reserve(pipelineInfos.rayTracingInfos.size());
 	for(const RayTracingPipelineInfo& rtPipelineInfo: pipelineInfos.rayTracingInfos)
@@ -279,6 +289,11 @@ void mtd::Engine::configureDescriptors()
 
 	for(GraphicsPipeline& graphicsPipeline: pipelines.graphicsPipelines)
 		graphicsPipeline.configureUserDescriptorData(device, scene.getDescriptorPool());
+	for(ComputePipeline& computePipeline: pipelines.computePipelines)
+	{
+		computePipeline.configureUserDescriptorData(device, scene.getDescriptorPool());
+		computePipeline.configurePipelineDescriptorSet();
+	}
 	for(RayTracingPipeline& rtPipeline: pipelines.rayTracingPipelines)
 	{
 		rtPipeline.configureUserDescriptorData(device, scene.getDescriptorPool());
@@ -287,7 +302,7 @@ void mtd::Engine::configureDescriptors()
 	for(FramebufferPipeline& fbPipeline: pipelines.framebufferPipelines)
 	{
 		fbPipeline.configureUserDescriptorData(device, scene.getDescriptorPool());
-		fbPipeline.updateInputImagesDescriptors(framebuffers, pipelines.rayTracingPipelines);
+		fbPipeline.updateInputImagesDescriptors(framebuffers, pipelines.computePipelines, pipelines.rayTracingPipelines);
 	}
 }
 
@@ -308,12 +323,14 @@ void mtd::Engine::updateEngine(WindowHandler* const pWindowHandler)
 		else
 			graphicsPipeline.recreate(framebuffers[fbIndex].getExtent(), framebuffers[fbIndex].getRenderPass());
 	}
+	for(ComputePipeline& computePipeline: pipelines.computePipelines)
+		computePipeline.resize(device, swapchain.getExtent());
 	for(RayTracingPipeline& rtPipeline: pipelines.rayTracingPipelines)
 		rtPipeline.resize(device, swapchain.getExtent());
 	for(FramebufferPipeline& fbPipeline: pipelines.framebufferPipelines)
 	{
 		fbPipeline.recreate(swapchain.getExtent(), swapchain.getRenderPass());
-		fbPipeline.updateInputImagesDescriptors(framebuffers, pipelines.rayTracingPipelines);
+		fbPipeline.updateInputImagesDescriptors(framebuffers, pipelines.computePipelines, pipelines.rayTracingPipelines);
 	}
 
 	camera.setAspectRatio(pWindowHandler->getAspectRatio());

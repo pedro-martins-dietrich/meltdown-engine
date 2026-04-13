@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -154,6 +155,8 @@ namespace mtd
 		int32_t targetFramebufferIndex = -1;
 		/* @brief Framebuffer attachments used as input for the pipeline. */
 		std::vector<AttachmentIdentifier> inputAttachments = {};
+		/* @brief Compute storage images used as input for the pipeline. */
+		std::vector<uint32_t> computeStorageImages = {};
 		/* @brief Ray tracing storage images used as input for the pipeline. */
 		std::vector<uint32_t> rayTracingStorageImages = {};
 		/* @brief Indices of the pipelines that draw to the input framebuffers. */
@@ -181,5 +184,24 @@ namespace mtd
 		std::vector<MaterialFloatDataType> materialFloatDataTypes = {};
 		/* @brief Types of materials attributes stored as textures used in the pipeline. */
 		std::vector<MaterialTextureType> materialTextureTypes = {};
+	};
+
+	/*
+	* @brief Parameters to create a compute pipeline with custom shaders.
+	*/
+	struct ComputePipelineInfo : public PipelineInfo
+	{
+		/* @brief File path for the compiled compute shader file, relative from the shaders folder. */
+		std::string computeShaderPath;
+		/* @brief Ratio between the storage image and window resolution. Use negative values for a fixed resolution. */
+		Vec2 windowResolutionRatio;
+		/* @brief Storage image resolution. Ignored when positive `windowResolutionRatio` values are set. */
+		UIntVec2 imageResolution;
+		/* @brief Number of workgroups for each dimension. */
+		UIntVec3 workgroups = {1U, 1U, 1U};
+		/* @brief Workgroup size for each dimension. */
+		UIntVec3 workgroupSize = {8U, 8U, 1U};
+		/* @brief Defines the workgroup X and Y count based on the image resolution and workgroup local sizes. */
+		std::array<bool, 2> calculateWorkgroupsFromImage = {false, false};
 	};
 }

@@ -39,9 +39,9 @@ namespace mtd
 
 		private:
 			// Index of the frame being rendered
-			uint32_t currentFrameIndex;
-			// Framebuffer clear color
-			vk::ClearColorValue clearColor;
+			uint32_t currentFrameIndex = 0U;
+			// Framebuffer clear values
+			std::array<vk::ClearValue, 2> clearValues;
 			// Order which the framebuffers will be rendered
 			std::vector<RenderPassInfo> renderOrder;
 

@@ -44,23 +44,22 @@ void mtd::Scene::allocateResources(PipelineBundle& pipelines)
 	if(totalImageSamplerCount > 0)
 		totalDescriptorTypeCount[vk::DescriptorType::eCombinedImageSampler] = totalImageSamplerCount;
 
-	for(const GraphicsPipeline& pipeline: pipelines.graphicsPipelines)
-	{
-		for(const auto& [type, count]: pipeline.getDescriptorTypeCount())
+	for(const GraphicsPipeline& rasterPipeline: pipelines.graphicsPipelines)
+		for(const auto& [type, count]: rasterPipeline.getDescriptorTypeCount())
 			totalDescriptorTypeCount[type] += count;
-	}
 	for(const FramebufferPipeline& fbPipeline: pipelines.framebufferPipelines)
-	{
 		for(const auto& [type, count]: fbPipeline.getDescriptorTypeCount())
 			totalDescriptorTypeCount[type] += count;
-	}
+	for(const ComputePipeline& computePipeline: pipelines.computePipelines)
+		for(const auto& [type, count]: computePipeline.getDescriptorTypeCount())
+			totalDescriptorTypeCount[type] += count;
 	for(const RayTracingPipeline& rtPipeline: pipelines.rayTracingPipelines)
 	{
 		for(const auto& [type, count]: rtPipeline.getDescriptorTypeCount())
 			totalDescriptorTypeCount[type] += count;
 		totalDescriptorTypeCount[vk::DescriptorType::eAccelerationStructureKHR]++;
-		totalDescriptorTypeCount[vk::DescriptorType::eStorageImage] += 2;
-		totalDescriptorTypeCount[vk::DescriptorType::eStorageBuffer] += 4;
+		totalDescriptorTypeCount[vk::DescriptorType::eStorageImage] += 2U;
+		totalDescriptorTypeCount[vk::DescriptorType::eStorageBuffer] += 4U;
 	}
 
 	std::vector<PoolSizeData> poolSizesInfo{totalDescriptorTypeCount.size()};
@@ -88,6 +87,12 @@ void mtd::Scene::allocateResources(PipelineBundle& pipelines)
 	for(FramebufferPipeline& fbPipeline: pipelines.framebufferPipelines)
 	{
 		DescriptorSetHandler& descriptorSetHandler = fbPipeline.getDescriptorSetHandler(0);
+		descriptorSetHandler.defineDescriptorSetsAmount(1);
+		descriptorPool.allocateDescriptorSet(descriptorSetHandler);
+	}
+	for(ComputePipeline& computePipeline: pipelines.computePipelines)
+	{
+		DescriptorSetHandler& descriptorSetHandler = computePipeline.getDescriptorSetHandler(0);
 		descriptorSetHandler.defineDescriptorSetsAmount(1);
 		descriptorPool.allocateDescriptorSet(descriptorSetHandler);
 	}
