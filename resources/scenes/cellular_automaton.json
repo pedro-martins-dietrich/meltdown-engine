@@ -1,0 +1,44 @@
+{
+	"scene-loader-version": "0.1.10",
+	"camera":
+	{
+		"orthographic": false,
+		"fov": 75.0,
+		"near-plane": 0.01,
+		"far-plane": 1000.0,
+		"view-width": 10.0,
+		"position": [0.0, -2.0, -6.0],
+		"yaw": 0.0,
+		"pitch": 0.4
+	},
+	"framebuffers": [],
+	"rasterization-pipelines": [],
+	"compute-pipelines":
+	[
+		{
+			"name": "Cellular Automaton Compute",
+			"compute-shader": "cellular-automaton.comp.spv",
+			"descriptor-set-info": [],
+			"resolution-ratio-horizontal": 0.125,
+			"resolution-ratio-vertical": 0.125,
+			"workgroups": [-1, -1, 1],
+			"workgroup-size": [8, 8, 1]
+		}
+	],
+	"ray-tracing-pipelines": [],
+	"framebuffer-pipelines":
+	[
+		{
+			"name": "Framebuffer Pipeline",
+			"vertex-shader": "framebuffer.vert.spv",
+			"fragment-shader": "framebuffer.frag.spv",
+			"target-framebuffer": -1,
+			"descriptor-set-info": [],
+			"input-attachments": [],
+			"compute-storage-images": [0],
+			"ray-tracing-storage-images": [],
+			"dependencies": []
+		}
+	],
+	"meshes": []
+}

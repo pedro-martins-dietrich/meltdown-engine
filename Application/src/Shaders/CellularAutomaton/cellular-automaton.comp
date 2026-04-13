@@ -1,0 +1,89 @@
+#version 460
+
+layout(local_size_x = 8, local_size_y = 8) in;
+
+layout(push_constant) uniform PushConstant
+{
+	uvec2 imagesSize;
+	uint iterationCounter;
+} computeData;
+
+layout(set = 1, binding = 0, rgba8) uniform image2D outputImage;
+layout(set = 1, binding = 1, rgba8) uniform image2D images[];
+
+
+uint pcgHash(uint inputValue)
+{
+	uint state = inputValue * 0x2C9277B5U + 0xAC564B05U;
+	uint word = ((state >> ((state >> 28U) + 4U)) ^ state) * 0x108EF2D9U;
+	return (word >> 22U) ^ word;
+}
+
+float randomFloat(inout uint seed)
+{
+	seed = pcgHash(seed);
+	return float(seed) / float(0xFFFFFFFFU);
+}
+
+void setInitialState(ivec2 coord)
+{
+	uint seed = uint(coord.x + coord.y * int(computeData.imagesSize.x)) + computeData.iterationCounter;
+	float value = randomFloat(seed);
+
+	vec4 color = vec4(0.0f, 0.0f, 0.0f, 1.0f);
+	if(value > 0.5f)
+		color = vec4(1.0f);
+
+	imageStore(images[0], coord, color);
+	imageStore(outputImage, coord, color);
+}
+
+int getCell(ivec2 coord)
+{
+	coord = (coord + ivec2(computeData.imagesSize)) % ivec2(computeData.imagesSize);
+
+	if((computeData.iterationCounter & 1) == 1)
+		return (imageLoad(images[0], coord).r > 0.5f) ? 1 : 0;
+	else
+		return (imageLoad(images[1], coord).r > 0.5f) ? 1 : 0;
+}
+
+void main()
+{
+	ivec2 coord = ivec2(gl_GlobalInvocationID.xy);
+	if(coord.x >= computeData.imagesSize.x || coord.y >= computeData.imagesSize.y) return;
+
+	if(computeData.iterationCounter == 0)
+	{
+		setInitialState(coord);
+		return;
+	}
+
+	if(computeData.iterationCounter % 101 != 0) return;
+
+	int neighbors = 0;
+	for(int y = -1; y <= 1; y++)
+	{
+		for(int x = -1; x <= 1; x++)
+		{
+			if(x == 0 && y == 0) continue;
+			neighbors += getCell(coord + ivec2(x, y));
+		}
+	}
+
+	int current = getCell(coord);
+	int next = current;
+
+	if(current == 1 && (neighbors < 2 || neighbors > 3))
+		next = 0;
+	else if(current == 0 && neighbors == 3)
+		next = 1;
+
+	vec4 color = (next == 1) ? vec4(1.0f) : vec4(0.0f, 0.0f, 0.0f, 1.0f);
+
+	if((computeData.iterationCounter & 1) == 0)
+		imageStore(images[0], coord, color);
+	else
+		imageStore(images[1], coord, color);
+	imageStore(outputImage, coord, color);
+}

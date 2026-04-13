@@ -75,14 +75,15 @@ void mtd::ComputePipeline::configurePipelineDescriptorSet()
 	vk::DescriptorImageInfo descriptorImageInfo{};
 	outputImage.defineDescriptorImageInfo(&descriptorImageInfo);
 	descriptorImageInfo.imageLayout = vk::ImageLayout::eGeneral;
-	descriptorSetHandlers[0].createImageDescriptorResources(0, 0, descriptorImageInfo);
+	descriptorSetHandlers[0].createImageDescriptorResources(0U, 0U, descriptorImageInfo);
 
-	for(uint32_t i = 0; i < images.size(); i++)
+	std::vector<vk::DescriptorImageInfo> descriptorImageInfos(images.size());
+	for(size_t i = 0; i < images.size(); i++)
 	{
-		images[i].defineDescriptorImageInfo(&descriptorImageInfo);
-		descriptorImageInfo.imageLayout = vk::ImageLayout::eGeneral;
-		descriptorSetHandlers[0].createImageDescriptorResources(0, i + 1U, descriptorImageInfo);
+		images[i].defineDescriptorImageInfo(&descriptorImageInfos[i]);
+		descriptorImageInfos[i].imageLayout = vk::ImageLayout::eGeneral;
 	}
+	descriptorSetHandlers[0].createImagesDescriptorResources(0U, 1U, descriptorImageInfos);
 
 	descriptorSetHandlers[0].writeDescriptorSet(0);
 }
@@ -152,18 +153,18 @@ void mtd::ComputePipeline::createDescriptorSetLayouts()
 {
 	descriptorSetHandlers.reserve(info.descriptorSetInfo.size() == 0 ? 1 : 2);
 
-	uint32_t bindingIndex = 0U;
+	std::vector<vk::DescriptorSetLayoutBinding> bindings(2);
+	bindings[0].binding = 0U;
+	bindings[0].descriptorType = vk::DescriptorType::eStorageImage;
+	bindings[0].descriptorCount = 1U;
+	bindings[0].stageFlags = vk::ShaderStageFlagBits::eCompute;
+	bindings[0].pImmutableSamplers = nullptr;
 
-	std::vector<vk::DescriptorSetLayoutBinding> bindings(3);
-	while(bindingIndex < bindings.size())
-	{
-		bindings[bindingIndex].binding = bindingIndex;
-		bindings[bindingIndex].descriptorType = vk::DescriptorType::eStorageImage;
-		bindings[bindingIndex].descriptorCount = 1;
-		bindings[bindingIndex].stageFlags = vk::ShaderStageFlagBits::eCompute;
-		bindings[bindingIndex].pImmutableSamplers = nullptr;
-		bindingIndex++;
-	}
+	bindings[1].binding = 1U;
+	bindings[1].descriptorType = vk::DescriptorType::eStorageImage;
+	bindings[1].descriptorCount = 2U;
+	bindings[1].stageFlags = vk::ShaderStageFlagBits::eCompute;
+	bindings[1].pImmutableSamplers = nullptr;
 
 	descriptorSetHandlers.emplace_back(device, bindings);
 	descriptorTypeCount[vk::DescriptorType::eStorageImage] += 3U;
