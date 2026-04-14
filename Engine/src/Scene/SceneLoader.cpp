@@ -12,70 +12,92 @@
 #include "../Utils/FileHandler.hpp"
 #include "../Utils/Logger.hpp"
 
-static constexpr const char* sceneLoaderVersion = "0.1.9";
+namespace mtd
+{
+	static constexpr const char* SCENE_LOADER_VERSION = "0.1.10";
 
-static void loadCamera(const nlohmann::json& cameraJson);
-static void loadFramebuffer
-(
-	const nlohmann::json& framebufferJson,
-	std::vector<mtd::FramebufferInfo>& framebufferInfos
-);
-static void loadPipeline
-(
-	const nlohmann::json& pipelineJson,
-	std::vector<mtd::GraphicsPipelineInfo>& graphicsPipelineInfos,
-	std::vector<mtd::RenderPassInfo>& renderOrder
-);
-static void loadRayTracingPipeline
-(
-	const nlohmann::json& rayTracingPipelineJson,
-	std::vector<mtd::RayTracingPipelineInfo>& rayTracingPipelineInfos
-);
-static void loadFramebufferPipeline
-(
-	const nlohmann::json& framebufferPipelineJson,
-	std::vector<mtd::FramebufferPipelineInfo>& framebufferPipelineInfos,
-	std::vector<mtd::RenderPassInfo>& renderOrder
-);
+	// Loads initial camera data for the scene
+	static void loadCamera(const nlohmann::json& cameraJson);
+	// Fetches the framebuffer info from the scene file
+	static void loadFramebuffer
+	(
+		const nlohmann::json& framebufferJson,
+		std::vector<FramebufferInfo>& framebufferInfos
+	);
+	// Fetches the rasterization pipeline infos from the scene file
+	static void loadRasterizationPipelines
+	(
+		const nlohmann::json& pipelineJson,
+		std::vector<GraphicsPipelineInfo>& graphicsPipelineInfos,
+		std::vector<RenderPassInfo>& renderOrder
+	);
+	// Fetches the ray tracing pipeline infos from the scene file
+	static void loadRayTracingPipelines
+	(
+		const nlohmann::json& rayTracingPipelineJson,
+		std::vector<RayTracingPipelineInfo>& rayTracingPipelineInfos
+	);
+	// Fetches the compute pipeline infos from the scene file
+	static void loadComputePipelines
+	(
+		const nlohmann::json& computePipelineJson,
+		std::vector<ComputePipelineInfo>& computePipelineInfos
+	);
+	// Fetches the framebuffer pipeline info from the scene file
+	static void loadFramebufferPipelines
+	(
+		const nlohmann::json& framebufferPipelineJson,
+		std::vector<FramebufferPipelineInfo>& framebufferPipelineInfos,
+		std::vector<RenderPassInfo>& renderOrder
+	);
 
-static void loadDefaultMeshes
-(
-	const mtd::Device& device,
-	const nlohmann::json& meshListJson,
-	const mtd::GraphicsPipelineInfo& graphicsPipelineInfo,
-	std::vector<std::unique_ptr<mtd::MeshManager>>& meshManagers
-);
-static void loadMultiMaterial3DMeshes
-(
-	const mtd::Device& device,
-	const nlohmann::json& meshListJson,
-	const mtd::GraphicsPipelineInfo& graphicsPipelineInfo,
-	std::vector<std::unique_ptr<mtd::MeshManager>>& meshManagers
-);
-static void loadBillboards
-(
-	const mtd::Device& device,
-	const nlohmann::json& billboardListJson,
-	const mtd::GraphicsPipelineInfo& graphicsPipelineInfo,
-	std::vector<std::unique_ptr<mtd::MeshManager>>& meshManagers
-);
-static void loadRayTracingMeshes
-(
-	const mtd::Device& device,
-	const nlohmann::json& rtMeshListJson,
-	const mtd::RayTracingPipelineInfo& rtPipelineInfo,
-	std::vector<std::unique_ptr<mtd::MeshManager>>& meshManagers
-);
+	// Loads the descriptor set info for a pipeline
+	static void loadDescriptorInfos
+	(
+		const nlohmann::json& descriptorSetInfoJson,
+		std::vector<DescriptorInfo>& descriptorInfos
+	);
 
-// Loads the meshes from a Meltdown scene file
+	// Fetches default meshes from scene file
+	static void loadDefaultMeshes
+	(
+		const Device& device,
+		const nlohmann::json& meshListJson,
+		const GraphicsPipelineInfo& graphicsPipelineInfo,
+		std::vector<std::unique_ptr<MeshManager>>& meshManagers
+	);
+	// Fetches multi-material 3D meshes from scene file
+	static void loadMultiMaterial3DMeshes
+	(
+		const Device& device,
+		const nlohmann::json& meshListJson,
+		const GraphicsPipelineInfo& graphicsPipelineInfo,
+		std::vector<std::unique_ptr<MeshManager>>& meshManagers
+	);
+	// Fetches billboards from scene file
+	static void loadBillboards
+	(
+		const Device& device,
+		const nlohmann::json& billboardListJson,
+		const GraphicsPipelineInfo& graphicsPipelineInfo,
+		std::vector<std::unique_ptr<MeshManager>>& meshManagers
+	);
+	// Fetches ray tracing meshes from the scene file
+	static void loadRayTracingMeshes
+	(
+		const Device& device,
+		const nlohmann::json& rtMeshListJson,
+		const RayTracingPipelineInfo& rtPipelineInfo,
+		std::vector<std::unique_ptr<MeshManager>>& meshManagers
+	);
+}
+
 void mtd::SceneLoader::load
 (
 	const Device& device,
 	const char* fileName,
 	std::vector<FramebufferInfo>& framebufferInfos,
-	std::vector<GraphicsPipelineInfo>& graphicsPipelineInfos,
-	std::vector<FramebufferPipelineInfo>& framebufferPipelineInfos,
-	std::vector<RayTracingPipelineInfo>& rayTracingPipelineInfos,
+	PipelineInfoBundle& pipelineInfos,
 	std::vector<RenderPassInfo>& renderOrder,
 	std::vector<std::unique_ptr<MeshManager>>& meshManagers
 )
@@ -88,7 +110,7 @@ void mtd::SceneLoader::load
 	if(!FileHandler::readJSON(scenePath.c_str(), sceneJson)) return;
 
 	std::string fileVersion = sceneJson["scene-loader-version"];
-	if(fileVersion.compare(sceneLoaderVersion))
+	if(fileVersion.compare(SCENE_LOADER_VERSION))
 	{
 		LOG_ERROR("Scene JSON file (\"%s\") version is incompatible with the scene loader.", fileName);
 		return;
@@ -98,17 +120,19 @@ void mtd::SceneLoader::load
 
 	const nlohmann::json& framebuffersJson = sceneJson["framebuffers"];
 	const nlohmann::json& rasterPipelinesJson = sceneJson["rasterization-pipelines"];
-	const nlohmann::json& fbPipelinesJson = sceneJson["framebuffer-pipelines"];
+	const nlohmann::json& computePipelinesJson = sceneJson["compute-pipelines"];
 	const nlohmann::json& rtPipelinesJson = sceneJson["ray-tracing-pipelines"];
+	const nlohmann::json& fbPipelinesJson = sceneJson["framebuffer-pipelines"];
 	const nlohmann::json& meshesJson = sceneJson["meshes"];
 
 	if((rasterPipelinesJson.size() + rtPipelinesJson.size()) != meshesJson.size())
 		LOG_ERROR("The number of pipelines and mesh managers should be the same.");
 	
 	framebufferInfos.reserve(framebuffersJson.size());
-	graphicsPipelineInfos.reserve(rasterPipelinesJson.size());
-	rayTracingPipelineInfos.reserve(rtPipelinesJson.size());
-	framebufferPipelineInfos.reserve(fbPipelinesJson.size());
+	pipelineInfos.graphicsInfos.reserve(rasterPipelinesJson.size());
+	pipelineInfos.computeInfos.reserve(computePipelinesJson.size());
+	pipelineInfos.rayTracingInfos.reserve(rtPipelinesJson.size());
+	pipelineInfos.framebufferInfos.reserve(fbPipelinesJson.size());
 	renderOrder.reserve(framebuffersJson.size() + 1);
 	meshManagers.reserve(meshesJson.size());
 
@@ -120,117 +144,96 @@ void mtd::SceneLoader::load
 	renderOrder.emplace_back(-1);
 
 	for(const nlohmann::json& rasterPipelineJson: rasterPipelinesJson)
-		loadPipeline(rasterPipelineJson, graphicsPipelineInfos, renderOrder);
+		loadRasterizationPipelines(rasterPipelineJson, pipelineInfos.graphicsInfos, renderOrder);
+	for(const nlohmann::json& computePipelineJson: computePipelinesJson)
+		loadComputePipelines(computePipelineJson, pipelineInfos.computeInfos);
 	for(const nlohmann::json& rtPipelineJson: rtPipelinesJson)
-		loadRayTracingPipeline(rtPipelineJson, rayTracingPipelineInfos);
+		loadRayTracingPipelines(rtPipelineJson, pipelineInfos.rayTracingInfos);
 	for(const nlohmann::json& fbPipelineJson: fbPipelinesJson)
-		loadFramebufferPipeline(fbPipelineJson, framebufferPipelineInfos, renderOrder);
+		loadFramebufferPipelines(fbPipelineJson, pipelineInfos.framebufferInfos, renderOrder);
 
 	for(uint32_t i = 0; i < meshesJson.size(); i++)
 	{
-		if(i >= graphicsPipelineInfos.size())
+		if(i >= pipelineInfos.graphicsInfos.size())
 		{
 			uint32_t rtPipelineIndex = i - rasterPipelinesJson.size();
-			loadRayTracingMeshes(device, meshesJson[i], rayTracingPipelineInfos[rtPipelineIndex], meshManagers);
+			loadRayTracingMeshes(device, meshesJson[i], pipelineInfos.rayTracingInfos[rtPipelineIndex], meshManagers);
 			continue;
 		}
 
-		switch(graphicsPipelineInfos[i].associatedMeshType)
+		switch(pipelineInfos.graphicsInfos[i].associatedMeshType)
 		{
 			case MeshType::Default3D:
-				loadDefaultMeshes(device, meshesJson[i], graphicsPipelineInfos[i], meshManagers);
+				loadDefaultMeshes(device, meshesJson[i], pipelineInfos.graphicsInfos[i], meshManagers);
 				break;
 			case MeshType::MultiMaterial3D:
-				loadMultiMaterial3DMeshes(device, meshesJson[i], graphicsPipelineInfos[i], meshManagers);
+				loadMultiMaterial3DMeshes(device, meshesJson[i], pipelineInfos.graphicsInfos[i], meshManagers);
 				break;
 			case MeshType::Billboard:
-				loadBillboards(device, meshesJson[i], graphicsPipelineInfos[i], meshManagers);
+				loadBillboards(device, meshesJson[i], pipelineInfos.graphicsInfos[i], meshManagers);
 				break;
 			default:
-				LOG_ERROR("Unknown type (%d) for mesh at index %d.", graphicsPipelineInfos[i].associatedMeshType, i);
+				LOG_ERROR
+				(
+					"Unknown type (%d) for mesh at index %d.", pipelineInfos.graphicsInfos[i].associatedMeshType, i
+				);
 		}
 	}
 
 	LOG_INFO("Scene \"%s\" loaded.", fileName);
 }
 
-// Loads initial camera data for the scene
-void loadCamera(const nlohmann::json& cameraJson)
+void mtd::loadCamera(const nlohmann::json& cameraJson)
 {
 	if(cameraJson["orthographic"])
 	{
-		mtd::EventManager::dispatch<mtd::SetOrthographicCameraEvent>
-		(
-			cameraJson["view-width"], cameraJson["far-plane"]
-		);
+		EventManager::dispatch<SetOrthographicCameraEvent>(cameraJson["view-width"], cameraJson["far-plane"]);
 	}
 	else
 	{
-		mtd::EventManager::dispatch<mtd::SetPerspectiveCameraEvent>
+		EventManager::dispatch<SetPerspectiveCameraEvent>
 		(
 			cameraJson["fov"], cameraJson["near-plane"], cameraJson["far-plane"]
 		);
 	}
 
-	mtd::CameraHandler::setPosition
-	(
-		mtd::Vec3{cameraJson["position"][0], cameraJson["position"][1], cameraJson["position"][2]}
-	);
-	mtd::CameraHandler::setOrientation(cameraJson["yaw"], cameraJson["pitch"]);
+	CameraHandler::setPosition(Vec3{cameraJson["position"][0], cameraJson["position"][1], cameraJson["position"][2]});
+	CameraHandler::setOrientation(cameraJson["yaw"], cameraJson["pitch"]);
 }
 
-// Fetches the framebuffer info from the scene file
-void loadFramebuffer
-(
-	const nlohmann::json& fbJson,
-	std::vector<mtd::FramebufferInfo>& framebufferInfos
-)
+void mtd::loadFramebuffer(const nlohmann::json& fbJson, std::vector<FramebufferInfo>& framebufferInfos)
 {
 	framebufferInfos.emplace_back
 	(
-		mtd::FramebufferInfo
+		FramebufferInfo
 		{
-			static_cast<mtd::FramebufferAttachments>(fbJson["attachments"]),
-			static_cast<mtd::TextureSamplingFilterType>(fbJson["sampling-filter"]),
+			static_cast<FramebufferAttachments>(fbJson["attachments"]),
+			static_cast<TextureSamplingFilterType>(fbJson["sampling-filter"]),
 			{fbJson.value("resolution-ratio-horizontal", -1.0f), fbJson.value("resolution-ratio-vertical", -1.0f)},
 			fbJson.value("fixed-horizontal-resolution", 1280U), fbJson.value("fixed-vertical-resolution", 720U)
 		}
 	);
 }
 
-// Fetches the pipeline infos from the scene file
-void loadPipeline
+void mtd::loadRasterizationPipelines
 (
 	const nlohmann::json& graphicsPipelineJson,
-	std::vector<mtd::GraphicsPipelineInfo>& graphicsPipelineInfos,
-	std::vector<mtd::RenderPassInfo>& renderOrder
+	std::vector<GraphicsPipelineInfo>& graphicsPipelineInfos,
+	std::vector<RenderPassInfo>& renderOrder
 )
 {
-	std::vector<mtd::DescriptorInfo> descriptorInfos;
-	descriptorInfos.reserve(graphicsPipelineJson["descriptor-set-info"].size());
-	for(const nlohmann::json& descriptorInfoJson: graphicsPipelineJson["descriptor-set-info"])
-	{
-		descriptorInfos.emplace_back
-		(
-			mtd::DescriptorInfo
-			{
-				static_cast<mtd::DescriptorType>(descriptorInfoJson["descriptor-type"]),
-				static_cast<mtd::ShaderStage>(descriptorInfoJson["shader-stage"]),
-				descriptorInfoJson["total-descriptor-size"],
-				descriptorInfoJson["descriptor-count"]
-			}
-		);
-	}
+	std::vector<DescriptorInfo> descriptorInfos;
+	loadDescriptorInfos(graphicsPipelineJson["descriptor-set-info"], descriptorInfos);
 
-	std::vector<mtd::MaterialFloatDataType> floatDataTypes;
+	std::vector<MaterialFloatDataType> floatDataTypes;
 	floatDataTypes.reserve(graphicsPipelineJson["material-float-data-types"].size());
 	for(const nlohmann::json& floatDataType: graphicsPipelineJson["material-float-data-types"])
-		floatDataTypes.emplace_back(static_cast<mtd::MaterialFloatDataType>(floatDataType));
+		floatDataTypes.emplace_back(static_cast<MaterialFloatDataType>(floatDataType));
 
-	std::vector<mtd::MaterialTextureType> textureTypes;
+	std::vector<MaterialTextureType> textureTypes;
 	textureTypes.reserve(graphicsPipelineJson["material-texture-types"].size());
 	for(const nlohmann::json& textureType: graphicsPipelineJson["material-texture-types"])
-		textureTypes.emplace_back(static_cast<mtd::MaterialTextureType>(textureType));
+		textureTypes.emplace_back(static_cast<MaterialTextureType>(textureType));
 
 	int32_t targetFramebuffer = graphicsPipelineJson["target-framebuffer"];
 	if(targetFramebuffer == -1)
@@ -240,15 +243,15 @@ void loadPipeline
 
 	graphicsPipelineInfos.emplace_back
 	(
-		mtd::GraphicsPipelineInfo
+		GraphicsPipelineInfo
 		{
 			{graphicsPipelineJson["name"], std::move(descriptorInfos)},
 			graphicsPipelineJson["vertex-shader"],
 			graphicsPipelineJson["fragment-shader"],
-			static_cast<mtd::MeshType>(graphicsPipelineJson["mesh-type"]),
+			static_cast<MeshType>(graphicsPipelineJson["mesh-type"]),
 			targetFramebuffer,
-			static_cast<mtd::ShaderPrimitiveTopology>(graphicsPipelineJson["shader-primitive-topology"]),
-			static_cast<mtd::ShaderFaceCulling>(graphicsPipelineJson["shader-face-culling"]),
+			static_cast<ShaderPrimitiveTopology>(graphicsPipelineJson["shader-primitive-topology"]),
+			static_cast<ShaderFaceCulling>(graphicsPipelineJson["shader-face-culling"]),
 			graphicsPipelineJson["transparency"],
 			std::move(floatDataTypes),
 			std::move(textureTypes)
@@ -256,42 +259,27 @@ void loadPipeline
 	);
 }
 
-// Fetches the ray tracing pipeline infos from the scene file
-void loadRayTracingPipeline
+void mtd::loadRayTracingPipelines
 (
-	const nlohmann::json& rtPipelineJson,
-	std::vector<mtd::RayTracingPipelineInfo>& rayTracingPipelineInfos
+	const nlohmann::json& rtPipelineJson, std::vector<RayTracingPipelineInfo>& rayTracingPipelineInfos
 )
 {
-	std::vector<mtd::DescriptorInfo> descriptorInfos;
-	descriptorInfos.reserve(rtPipelineJson["descriptor-set-info"].size());
-	for(const nlohmann::json& descriptorInfoJson: rtPipelineJson["descriptor-set-info"])
-	{
-		descriptorInfos.emplace_back
-		(
-			mtd::DescriptorInfo
-			{
-				static_cast<mtd::DescriptorType>(descriptorInfoJson["descriptor-type"]),
-				static_cast<mtd::ShaderStage>(descriptorInfoJson["shader-stage"]),
-				descriptorInfoJson["total-descriptor-size"],
-				descriptorInfoJson["descriptor-count"]
-			}
-		);
-	}
+	std::vector<DescriptorInfo> descriptorInfos;
+	loadDescriptorInfos(rtPipelineJson["descriptor-set-info"], descriptorInfos);
 
-	std::vector<mtd::MaterialFloatDataType> floatDataTypes;
+	std::vector<MaterialFloatDataType> floatDataTypes;
 	floatDataTypes.reserve(rtPipelineJson["material-float-data-types"].size());
 	for(const nlohmann::json& floatDataType: rtPipelineJson["material-float-data-types"])
-		floatDataTypes.emplace_back(static_cast<mtd::MaterialFloatDataType>(floatDataType));
+		floatDataTypes.emplace_back(static_cast<MaterialFloatDataType>(floatDataType));
 
-	std::vector<mtd::MaterialTextureType> textureTypes;
+	std::vector<MaterialTextureType> textureTypes;
 	textureTypes.reserve(rtPipelineJson["material-texture-types"].size());
 	for(const nlohmann::json& textureType: rtPipelineJson["material-texture-types"])
-		textureTypes.emplace_back(static_cast<mtd::MaterialTextureType>(textureType));
+		textureTypes.emplace_back(static_cast<MaterialTextureType>(textureType));
 
 	rayTracingPipelineInfos.emplace_back
 	(
-		mtd::RayTracingPipelineInfo
+		RayTracingPipelineInfo
 		{
 			{rtPipelineJson["name"], std::move(descriptorInfos)},
 			rtPipelineJson["ray-gen-shader"],
@@ -309,32 +297,56 @@ void loadRayTracingPipeline
 	);
 }
 
-// Fetches the framebuffer pipeline info from the scene file
-void loadFramebufferPipeline
+void mtd::loadComputePipelines
 (
-	const nlohmann::json& fbPipelineJson,
-	std::vector<mtd::FramebufferPipelineInfo>& framebufferPipelineInfos,
-	std::vector<mtd::RenderPassInfo>& renderOrder
+	const nlohmann::json& computePipelineJson,
+	std::vector<ComputePipelineInfo>& computePipelineInfos
 )
 {
-	std::vector<mtd::DescriptorInfo> descriptorInfos;
-	descriptorInfos.reserve(fbPipelineJson["descriptor-set-info"].size());
-	for(const nlohmann::json& descriptorInfoJson: fbPipelineJson["descriptor-set-info"])
-	{
-		descriptorInfos.emplace_back
-		(
-			mtd::DescriptorInfo
+	std::vector<DescriptorInfo> descriptorInfos;
+	loadDescriptorInfos(computePipelineJson["descriptor-set-info"], descriptorInfos);
+
+	computePipelineInfos.emplace_back
+	(
+		ComputePipelineInfo
+		{
+			{computePipelineJson["name"], std::move(descriptorInfos)},
+			computePipelineJson["compute-shader"],
+		{
+			computePipelineJson.value("resolution-ratio-horizontal", -1.0f),
+			computePipelineJson.value("resolution-ratio-vertical", -1.0f)
+		},
 			{
-				static_cast<mtd::DescriptorType>(descriptorInfoJson["descriptor-type"]),
-				static_cast<mtd::ShaderStage>(descriptorInfoJson["shader-stage"]),
-				descriptorInfoJson["total-descriptor-size"],
-				descriptorInfoJson["descriptor-count"]
-			}
-		);
-	}
+				computePipelineJson.value("fixed-horizontal-resolution", 1280U),
+				computePipelineJson.value("fixed-vertical-resolution", 720U),
+			},
+			{
+				computePipelineJson["workgroups"][0],
+				computePipelineJson["workgroups"][1],
+				computePipelineJson["workgroups"][2]
+			},
+			{
+				computePipelineJson["workgroup-size"][0],
+				computePipelineJson["workgroup-size"][1],
+				computePipelineJson["workgroup-size"][2]
+			},
+			{(computePipelineJson["workgroups"][0] == -1), (computePipelineJson["workgroups"][1] == -1)}
+		}
+	);
+}
+
+void mtd::loadFramebufferPipelines
+(
+	const nlohmann::json& fbPipelineJson,
+	std::vector<FramebufferPipelineInfo>& framebufferPipelineInfos,
+	std::vector<RenderPassInfo>& renderOrder
+)
+{
+	std::vector<DescriptorInfo> descriptorInfos;
+	loadDescriptorInfos(fbPipelineJson["descriptor-set-info"], descriptorInfos);
 
 	const nlohmann::json& inputAttachmentsJson = fbPipelineJson["input-attachments"];
-	std::vector<mtd::AttachmentIdentifier> inputAttachments(inputAttachmentsJson.size());
+	std::vector<AttachmentIdentifier> inputAttachments(inputAttachmentsJson.size());
 	for(uint32_t i = 0; i < inputAttachmentsJson.size(); i++)
 	{
 		inputAttachments[i].framebufferIndex = inputAttachmentsJson[i]["framebuffer-index"];
@@ -349,33 +361,52 @@ void loadFramebufferPipeline
 
 	framebufferPipelineInfos.emplace_back
 	(
-		mtd::FramebufferPipelineInfo
+		FramebufferPipelineInfo
 		{
 			{fbPipelineJson["name"], std::move(descriptorInfos)},
 			fbPipelineJson["vertex-shader"],
 			fbPipelineJson["fragment-shader"],
 			targetFramebuffer,
 			std::move(inputAttachments),
+			fbPipelineJson["compute-storage-images"],
 			fbPipelineJson["ray-tracing-storage-images"],
 			fbPipelineJson["dependencies"]
 		}
 	);
 }
 
-// Fetches default meshes from scene file
-void loadDefaultMeshes
+void mtd::loadDescriptorInfos
 (
-	const mtd::Device& device,
-	const nlohmann::json& meshListJson,
-	const mtd::GraphicsPipelineInfo& graphicsPipelineInfo,
-	std::vector<std::unique_ptr<mtd::MeshManager>>& meshManagers
+	const nlohmann::json& descriptorSetInfoJson,
+	std::vector<DescriptorInfo>& descriptorInfos
 )
 {
-	meshManagers.emplace_back(std::make_unique<mtd::DefaultMeshManager>(device));
-	mtd::MaterialInfo materialInfo
+	descriptorInfos.reserve(descriptorSetInfoJson.size());
+	for(const nlohmann::json& descriptorInfoJson: descriptorSetInfoJson)
 	{
-		graphicsPipelineInfo.materialFloatDataTypes, graphicsPipelineInfo.materialTextureTypes
-	};
+		descriptorInfos.emplace_back
+		(
+			DescriptorInfo
+			{
+				static_cast<DescriptorType>(descriptorInfoJson["descriptor-type"]),
+				static_cast<ShaderStage>(descriptorInfoJson["shader-stage"]),
+				descriptorInfoJson["total-descriptor-size"],
+				descriptorInfoJson["descriptor-count"]
+			}
+		);
+	}
+}
+
+void mtd::loadDefaultMeshes
+(
+	const Device& device,
+	const nlohmann::json& meshListJson,
+	const GraphicsPipelineInfo& graphicsPipelineInfo,
+	std::vector<std::unique_ptr<MeshManager>>& meshManagers
+)
+{
+	meshManagers.emplace_back(std::make_unique<DefaultMeshManager>(device));
+	MaterialInfo materialInfo{graphicsPipelineInfo.materialFloatDataTypes, graphicsPipelineInfo.materialTextureTypes};
 
 	for(uint32_t i = 0; i < meshListJson.size(); i++)
 	{
@@ -383,29 +414,23 @@ void loadDefaultMeshes
 		const std::string& file = meshListJson[i]["file"];
 
 		const std::vector<std::array<float, 16>>& preTransforms = meshListJson[i]["pre-transforms"];
-		const std::vector<mtd::Mat4x4>* pPreTransforms =
-			reinterpret_cast<const std::vector<mtd::Mat4x4>*>(&preTransforms);
+		const std::vector<Mat4x4>* pPreTransforms = reinterpret_cast<const std::vector<Mat4x4>*>(&preTransforms);
 
-		std::vector<mtd::DefaultMesh>& meshes =
-			dynamic_cast<mtd::DefaultMeshManager*>(meshManagers.back().get())->getMeshes();
+		std::vector<DefaultMesh>& meshes = dynamic_cast<DefaultMeshManager*>(meshManagers.back().get())->getMeshes();
 		meshes.emplace_back(device, i, id.c_str(), file.c_str(), materialInfo, *pPreTransforms);
 	}
 }
 
-// Fetches default meshes from scene file
-void loadMultiMaterial3DMeshes
+void mtd::loadMultiMaterial3DMeshes
 (
-	const mtd::Device& device,
+	const Device& device,
 	const nlohmann::json& meshListJson,
-	const mtd::GraphicsPipelineInfo& graphicsPipelineInfo,
-	std::vector<std::unique_ptr<mtd::MeshManager>>& meshManagers
+	const GraphicsPipelineInfo& graphicsPipelineInfo,
+	std::vector<std::unique_ptr<MeshManager>>& meshManagers
 )
 {
-	meshManagers.emplace_back(std::make_unique<mtd::MultiMaterial3DMeshManager>(device));
-	mtd::MaterialInfo materialInfo
-	{
-		graphicsPipelineInfo.materialFloatDataTypes, graphicsPipelineInfo.materialTextureTypes
-	};
+	meshManagers.emplace_back(std::make_unique<MultiMaterial3DMeshManager>(device));
+	MaterialInfo materialInfo{graphicsPipelineInfo.materialFloatDataTypes, graphicsPipelineInfo.materialTextureTypes};
 
 	for(uint32_t i = 0; i < meshListJson.size(); i++)
 	{
@@ -413,29 +438,24 @@ void loadMultiMaterial3DMeshes
 		const std::string& file = meshListJson[i]["file"];
 
 		const std::vector<std::array<float, 16>>& preTransforms = meshListJson[i]["pre-transforms"];
-		const std::vector<mtd::Mat4x4>* pPreTransforms =
-			reinterpret_cast<const std::vector<mtd::Mat4x4>*>(&preTransforms);
+		const std::vector<Mat4x4>* pPreTransforms = reinterpret_cast<const std::vector<Mat4x4>*>(&preTransforms);
 
-		std::vector<mtd::MultiMaterial3DMesh>& meshes =
-			dynamic_cast<mtd::MultiMaterial3DMeshManager*>(meshManagers.back().get())->getMeshes();
+		std::vector<MultiMaterial3DMesh>& meshes =
+			dynamic_cast<MultiMaterial3DMeshManager*>(meshManagers.back().get())->getMeshes();
 		meshes.emplace_back(device, i, id.c_str(), file.c_str(), materialInfo, *pPreTransforms);
 	}
 }
 
-// Fetches billboards from scene file
-void loadBillboards
+void mtd::loadBillboards
 (
-	const mtd::Device& device,
+	const Device& device,
 	const nlohmann::json& billboardListJson,
-	const mtd::GraphicsPipelineInfo& graphicsPipelineInfo,
-	std::vector<std::unique_ptr<mtd::MeshManager>>& meshManagers
+	const GraphicsPipelineInfo& graphicsPipelineInfo,
+	std::vector<std::unique_ptr<MeshManager>>& meshManagers
 )
 {
-	meshManagers.emplace_back(std::make_unique<mtd::BillboardManager>(device));
-	mtd::MaterialInfo materialInfo
-	{
-		graphicsPipelineInfo.materialFloatDataTypes, graphicsPipelineInfo.materialTextureTypes
-	};
+	meshManagers.emplace_back(std::make_unique<BillboardManager>(device));
+	MaterialInfo materialInfo{graphicsPipelineInfo.materialFloatDataTypes, graphicsPipelineInfo.materialTextureTypes};
 
 	for(uint32_t i = 0; i < billboardListJson.size(); i++)
 	{
@@ -444,28 +464,25 @@ void loadBillboards
 		std::string texturePath = MTD_RESOURCES_PATH + textureFile;
 
 		const std::vector<std::array<float, 16>>& preTransforms = billboardListJson[i]["pre-transforms"];
-		const std::vector<mtd::Mat4x4>* pPreTransforms =
-			reinterpret_cast<const std::vector<mtd::Mat4x4>*>(&preTransforms);
+		const std::vector<Mat4x4>* pPreTransforms = reinterpret_cast<const std::vector<Mat4x4>*>(&preTransforms);
 
-		std::vector<mtd::Billboard>& billboards =
-			dynamic_cast<mtd::BillboardManager*>(meshManagers.back().get())->getMeshes();
+		std::vector<Billboard>& billboards = dynamic_cast<BillboardManager*>(meshManagers.back().get())->getMeshes();
 		billboards.emplace_back(device, i, id.c_str(), texturePath.c_str(), materialInfo, *pPreTransforms);
 	}
 }
 
-// Fetches ray tracing meshes from the scene file
-void loadRayTracingMeshes
+void mtd::loadRayTracingMeshes
 (
-	const mtd::Device& device,
+	const Device& device,
 	const nlohmann::json& rtMeshListJson,
-	const mtd::RayTracingPipelineInfo& rtPipelineInfo,
-	std::vector<std::unique_ptr<mtd::MeshManager>>& meshManagers
+	const RayTracingPipelineInfo& rtPipelineInfo,
+	std::vector<std::unique_ptr<MeshManager>>& meshManagers
 )
 {
-	mtd::MaterialInfo materialInfo{rtPipelineInfo.materialFloatDataTypes, rtPipelineInfo.materialTextureTypes};
-	meshManagers.emplace_back(std::make_unique<mtd::RayTracingMeshManager>(device, materialInfo));
+	MaterialInfo materialInfo{rtPipelineInfo.materialFloatDataTypes, rtPipelineInfo.materialTextureTypes};
+	meshManagers.emplace_back(std::make_unique<RayTracingMeshManager>(device, materialInfo));
 
-	mtd::RayTracingMeshManager* pMeshManager = dynamic_cast<mtd::RayTracingMeshManager*>(meshManagers.back().get());
+	RayTracingMeshManager* pMeshManager = dynamic_cast<RayTracingMeshManager*>(meshManagers.back().get());
 
 	for(uint32_t i = 0; i < rtMeshListJson.size(); i++)
 	{
@@ -473,8 +490,7 @@ void loadRayTracingMeshes
 		const std::string& file = rtMeshListJson[i]["file"];
 
 		const std::vector<std::array<float, 16>>& preTransforms = rtMeshListJson[i]["pre-transforms"];
-		const std::vector<mtd::Mat4x4>* pPreTransforms =
-			reinterpret_cast<const std::vector<mtd::Mat4x4>*>(&preTransforms);
+		const std::vector<Mat4x4>* pPreTransforms = reinterpret_cast<const std::vector<Mat4x4>*>(&preTransforms);
 
 		pMeshManager->createNewMesh(i, id.c_str(), file.c_str(), *pPreTransforms);
 	}

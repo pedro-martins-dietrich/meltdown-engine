@@ -41,6 +41,12 @@ namespace mtd
 		* @param y Value for the second element (Y axis).
 		*/
 		constexpr Vec2(float x, float y) : x{x}, y{y} {}
+		/*
+		* @brief Builds a 2D vector by specifying a single value for both X and Y.
+		*
+		* @param value Value for both elements (X and Y axes).
+		*/
+		constexpr Vec2(float value) : x{value}, y{value} {}
 
 		/*
 		* @brief Calculates the dot product between this `Vec2` and a second `Vec2`.
@@ -64,6 +70,16 @@ namespace mtd
 		* @return The normalized 2D vector.
 		*/
 		Vec2 normalized() const;
+
+		/*
+		* @brief Clamps the vector's values between a minimum and a maximum, component-wise.
+		*
+		* @param minimum Vector containing the minimum value for each component.
+		* @param maximum Vector containing the maximum value for each component.
+		*
+		* @return The clamped 2D vector.
+		*/
+		Vec2 clamp(Vec2 minimum, Vec2 maximum) const;
 	};
 
 	/*
@@ -116,6 +132,12 @@ namespace mtd
 		*/
 		constexpr Vec3(float x, float y, float z) : x{x}, y{y}, z{z} {}
 		/*
+		* @brief Builds a 3D vector by specifying a single value for all three components.
+		*
+		* @param value Value for all elements (X, Y and Z axes).
+		*/
+		constexpr Vec3(float value) : x{value}, y{value}, z{value} {}
+		/*
 		* @brief Builds a 3D vector from a 2D vector plus a scalar.
 		*
 		* @param vec2 2D vector with the two first values (X and Y axes).
@@ -154,6 +176,16 @@ namespace mtd
 		* @return The normalized 3D vector.
 		*/
 		Vec3 normalized() const;
+
+		/*
+		* @brief Clamps the vector's values between a minimum and a maximum, component-wise.
+		*
+		* @param minimum Vector containing the minimum value for each component.
+		* @param maximum Vector containing the maximum value for each component.
+		*
+		* @return The clamped 3D vector.
+		*/
+		Vec3 clamp(const Vec3& minimum, const Vec3& maximum) const;
 	};
 
 	/*
@@ -209,6 +241,12 @@ namespace mtd
 		*/
 		constexpr Vec4(float x, float y, float z, float w) : x{x}, y{y}, z{z}, w{w} {}
 		/*
+		* @brief Builds a 4D vector by specifying a single value for all four components.
+		*
+		* @param value Value for all elements (X, Y, Z and W axes).
+		*/
+		constexpr Vec4(float value) : x{value}, y{value}, z{value}, w{value} {}
+		/*
 		* @brief Builds a 4D vector from a 2D vector plus two scalars.
 		*
 		* @param vec2 2D vector with the two first elements (X and Y axes).
@@ -253,6 +291,16 @@ namespace mtd
 		* @return The normalized 4D vector.
 		*/
 		Vec4 normalized() const;
+
+		/*
+		* @brief Clamps the vector's values between a minimum and a maximum, component-wise.
+		*
+		* @param minimum Vector containing the minimum value for each component.
+		* @param maximum Vector containing the maximum value for each component.
+		*
+		* @return The clamped 4D vector.
+		*/
+		Vec4 clamp(const Vec4& minimum, const Vec4& maximum) const;
 	};
 
 	/*
@@ -281,7 +329,7 @@ namespace mtd
 		UIntVec2 operator/(uint32_t scalar) const;
 		UIntVec2& operator/=(uint32_t scalar);
 
-		friend std::ostream& operator<<(std::ostream& os, const UIntVec2& uv2);
+		friend std::ostream& operator<<(std::ostream& os, UIntVec2 uv2);
 
 		/*
 		* @brief Builds a 2D unsigned integer vector by specifying both values.
@@ -289,7 +337,94 @@ namespace mtd
 		* @param x Value for the first element.
 		* @param y Value for the second element.
 		*/
-		constexpr UIntVec2(uint32_t x, uint32_t y): x{x}, y{y} {}
+		constexpr UIntVec2(uint32_t x, uint32_t y) : x{x}, y{y} {}
+		/*
+		* @brief Builds a 2D unsigned integer vector by specifying a single value for both components.
+		*
+		* @param value Unsigned integer value for both elements.
+		*/
+		constexpr UIntVec2(uint32_t value) : x{value}, y{value} {}
+
+		/*
+		* @brief Clamps the vector's values between a minimum and a maximum, component-wise.
+		*
+		* @param minimum Vector containing the minimum value for each component.
+		* @param maximum Vector containing the maximum value for each component.
+		*
+		* @return The clamped 2D integer vector.
+		*/
+		UIntVec2 clamp(UIntVec2 minimum, UIntVec2 maximum) const;
+	};
+
+	/*
+	* @brief Representation of a 3D vector of unsigned integers.
+	*/
+	struct UIntVec3
+	{
+		uint32_t x;
+		uint32_t y;
+		uint32_t z;
+
+		uint32_t& operator[](size_t i);
+		uint32_t operator[](size_t i) const;
+
+		UIntVec3 operator+(UIntVec3 other) const;
+		UIntVec3& operator+=(UIntVec3 other);
+
+		UIntVec3 operator-() const;
+		UIntVec3 operator-(UIntVec3 other) const;
+		UIntVec3& operator-=(UIntVec3 other);
+
+		UIntVec3 operator*(uint32_t scalar) const;
+		UIntVec3 operator*(UIntVec3 other) const;
+		UIntVec3& operator*=(uint32_t scalar);
+		UIntVec3& operator*=(UIntVec3 other);
+
+		UIntVec3 operator/(uint32_t scalar) const;
+		UIntVec3& operator/=(uint32_t scalar);
+
+		friend std::ostream& operator<<(std::ostream& os, const UIntVec3& uv3);
+
+		/*
+		* @brief Builds a 3D unsigned integer vector by specifying all three values.
+		*
+		* @param x Value for the first element.
+		* @param y Value for the second element.
+		* @param z Value for the third element.
+		*/
+		constexpr UIntVec3(uint32_t x, uint32_t y, uint32_t z) : x{x}, y{y}, z{z} {}
+		/*
+		* @brief Builds a 3D unsigned integer vector by specifying a single value for all three components.
+		*
+		* @param value Unsigned integer value for all elements.
+		*/
+		constexpr UIntVec3(uint32_t value) : x{value}, y{value}, z{value} {}
+		/*
+		* @brief Builds a 3D unsigned integer vector by specifying the two first values
+		* with a 2D unsigned integer vector, and the last with an unsigned integer.
+		*
+		* @param xy Value for the two first elements.
+		* @param z Value for the third element.
+		*/
+		constexpr UIntVec3(UIntVec2 xy, uint32_t z) : x{xy.x}, y{xy.y}, z{z} {}
+		/*
+		* @brief Builds a 3D unsigned integer vector by specifying the first value with
+		* an unsigned integer, and the last two values with a 2D unsigned integer vector.
+		*
+		* @param x Value for the first element.
+		* @param yz Value for the two last elements.
+		*/
+		constexpr UIntVec3(uint32_t x, UIntVec3 yz) : x{x}, y{yz.y}, z{yz.z} {}
+
+		/*
+		* @brief Clamps the vector's values between a minimum and a maximum, component-wise.
+		*
+		* @param minimum Vector containing the minimum value for each component.
+		* @param maximum Vector containing the maximum value for each component.
+		*
+		* @return The clamped 3D integer vector.
+		*/
+		UIntVec3 clamp(const UIntVec3& minimum, const UIntVec3& maximum) const;
 	};
 
 	/*
@@ -430,9 +565,140 @@ namespace mtd
 		void rotateExtrinsic(float angle, const Vec3& axis);
 	};
 
-	Vec2 operator*(float scalar, const Vec2& vec);
+	Vec2 operator*(float scalar, Vec2 vec);
 	Vec3 operator*(float scalar, const Vec3& vec);
 	Vec4 operator*(float scalar, const Vec4& vec);
 	UIntVec2 operator*(uint32_t scalar, UIntVec2 vec);
+	UIntVec3 operator*(uint32_t scalar, const UIntVec3& vec);
 	Mat4x4 operator*(float scalar, const Mat4x4& mat);
+
+	/*
+	* @brief Calculates the component-wise minimum between two `Vec2` vectors.
+	*
+	* @param a First operand of the minimum operation.
+	* @param b Second operand of the minimum operation.
+	*
+	* @return A `Vec2` vector with the minimum value for each component between the two operands.
+	*/
+	constexpr Vec2 min(Vec2 a, Vec2 b)
+	{
+		return Vec2{(a.x < b.x) ? a.x : b.x, (a.y < b.y) ? a.y : b.y};
+	}
+	/*
+	* @brief Calculates the component-wise minimum between two `Vec3` vectors.
+	*
+	* @param a First operand of the minimum operation.
+	* @param b Second operand of the minimum operation.
+	*
+	* @return A `Vec3` vector with the minimum value for each component between the two operands.
+	*/
+	constexpr Vec3 min(const Vec3& a, const Vec3& b)
+	{
+		return Vec3{(a.x < b.x) ? a.x : b.x, (a.y < b.y) ? a.y : b.y, (a.z < b.z) ? a.z : b.z};
+	}
+	/*
+	* @brief Calculates the component-wise minimum between two `Vec4` vectors.
+	*
+	* @param a First operand of the minimum operation.
+	* @param b Second operand of the minimum operation.
+	*
+	* @return A `Vec4` vector with the minimum value for each component between the two operands.
+	*/
+	constexpr Vec4 min(const Vec4& a, const Vec4& b)
+	{
+		return Vec4
+		{
+			(a.x < b.x) ? a.x : b.x, (a.y < b.y) ? a.y : b.y,
+			(a.z < b.z) ? a.z : b.z, (a.w < b.w) ? a.w : b.w
+		};
+	}
+	/*
+	* @brief Calculates the component-wise minimum between two `UIntVec2` vectors.
+	*
+	* @param a First operand of the minimum operation.
+	* @param b Second operand of the minimum operation.
+	*
+	* @return A `UIntVec2` vector with the minimum value for each component between the two operands.
+	*/
+	constexpr UIntVec2 min(UIntVec2 a, UIntVec2 b)
+	{
+		return UIntVec2{(a.x <= b.x) ? a.x : b.x, (a.y <= b.y) ? a.y : b.y};
+	}
+	/*
+	* @brief Calculates the component-wise minimum between two `UIntVec3` vectors.
+	*
+	* @param a First operand of the minimum operation.
+	* @param b Second operand of the minimum operation.
+	*
+	* @return A `UIntVec3` vector with the minimum value for each component between the two operands.
+	*/
+	constexpr UIntVec3 min(const UIntVec3& a, const UIntVec3& b)
+	{
+		return UIntVec3{(a.x <= b.x) ? a.x : b.x, (a.y <= b.y) ? a.y : b.y, (a.z <= b.z) ? a.z : b.z};
+	}
+
+	/*
+	* @brief Calculates the component-wise maximum between two `Vec2` vectors.
+	*
+	* @param a First operand of the maximum operation.
+	* @param b Second operand of the maximum operation.
+	*
+	* @return A `Vec2` vector with the maximum value for each component between the two operands.
+	*/
+	constexpr Vec2 max(Vec2 a, Vec2 b)
+	{
+		return Vec2{(a.x > b.x) ? a.x : b.x, (a.y > b.y) ? a.y : b.y};
+	}
+	/*
+	* @brief Calculates the component-wise maximum between two `Vec3` vectors.
+	*
+	* @param a First operand of the maximum operation.
+	* @param b Second operand of the maximum operation.
+	*
+	* @return A `Vec3` vector with the maximum value for each component between the two operands.
+	*/
+	constexpr Vec3 max(const Vec3& a, const Vec3& b)
+	{
+		return Vec3{(a.x > b.x) ? a.x : b.x, (a.y > b.y) ? a.y : b.y, (a.z > b.z) ? a.z : b.z};
+	}
+	/*
+	* @brief Calculates the component-wise maximum between two `Vec4` vectors.
+	*
+	* @param a First operand of the maximum operation.
+	* @param b Second operand of the maximum operation.
+	*
+	* @return A `Vec4` vector with the maximum value for each component between the two operands.
+	*/
+	constexpr Vec4 max(const Vec4& a, const Vec4& b)
+	{
+		return Vec4
+		{
+			(a.x > b.x) ? a.x : b.x, (a.y > b.y) ? a.y : b.y,
+			(a.z > b.z) ? a.z : b.z, (a.w > b.w) ? a.w : b.w
+		};
+	}
+	/*
+	* @brief Calculates the component-wise maximum between two `UIntVec2` vectors.
+	*
+	* @param a First operand of the maximum operation.
+	* @param b Second operand of the maximum operation.
+	*
+	* @return A `UIntVec2` vector with the maximum value for each component between the two operands.
+	*/
+	constexpr UIntVec2 max(UIntVec2 a, UIntVec2 b)
+	{
+		return UIntVec2{(a.x > b.x) ? a.x : b.x, (a.y > b.y) ? a.y : b.y};
+	}
+	/*
+	* @brief Calculates the component-wise maximum between two `UIntVec3` vectors.
+	*
+	* @param a First operand of the maximum operation.
+	* @param b Second operand of the maximum operation.
+	*
+	* @return A `UIntVec3` vector with the maximum value for each component between the two operands.
+	*/
+	constexpr UIntVec3 max(const UIntVec3& a, const UIntVec3& b)
+	{
+		return UIntVec3{(a.x > b.x) ? a.x : b.x, (a.y > b.y) ? a.y : b.y, (a.z > b.z) ? a.z : b.z};
+	}
 }

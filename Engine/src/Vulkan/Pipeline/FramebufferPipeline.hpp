@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ComputePipeline.hpp"
 #include "RayTracingPipeline.hpp"
 #include "../Frame/Framebuffer.hpp"
 
@@ -25,8 +26,7 @@ namespace mtd
 			int32_t getTargetFramebufferIndex() const { return info.targetFramebufferIndex; }
 			const std::vector<uint32_t>& getPipelineIndices() const { return info.dependencies; }
 			const std::vector<AttachmentIdentifier>& getAttachmentIdentifiers() const { return info.inputAttachments; }
-			uint32_t getImageDescriptorsCount() const
-				{ return static_cast<uint32_t>(info.inputAttachments.size() + info.rayTracingStorageImages.size()); }
+			uint32_t getImageDescriptorsCount() const;
 
 			// Recreates the framebuffer pipeline
 			void recreate(vk::Extent2D extent, vk::RenderPass renderPass);
@@ -38,6 +38,7 @@ namespace mtd
 			void updateInputImagesDescriptors
 			(
 				const std::vector<Framebuffer>& framebuffers,
+				const std::vector<ComputePipeline>& computePipelines,
 				const std::vector<RayTracingPipeline>& rayTracingPipelines
 			);
 

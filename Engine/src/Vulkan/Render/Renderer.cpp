@@ -1,29 +1,25 @@
 #include <pch.hpp>
 #include "Renderer.hpp"
 
-#include "../Image/Image.hpp"
 #include "../../Utils/Logger.hpp"
 #include "../../Utils/Profiler.hpp"
 
-mtd::Renderer::Renderer() : currentFrameIndex{0}, clearColor{0.1f, 0.1f, 0.1f, 1.0f}
-{
-}
+mtd::Renderer::Renderer()
+	: clearValues{vk::ClearColorValue{0.1f, 0.1f, 0.1f, 1.0f}, vk::ClearDepthStencilValue{1.0f, 0}}
+{}
 
 void mtd::Renderer::setClearColor(const Vec4& color)
 {
-	clearColor = vk::ClearColorValue{color.r, color.g, color.b, color.a};
+	clearValues[0] = vk::ClearColorValue{color.r, color.g, color.b, color.a};
 }
 
-// Renders frame to screen
 void mtd::Renderer::render
 (
 	const Device& mtdDevice,
 	const Swapchain& swapchain,
 	const ImGuiHandler& guiHandler,
 	const std::vector<Framebuffer>& framebuffers,
-	const std::vector<GraphicsPipeline>& graphicsPipelines,
-	const std::vector<FramebufferPipeline>& framebufferPipelines,
-	const std::vector<RayTracingPipeline>& rayTracingPipelines,
+	const PipelineBundle& pipelines,
 	const Scene& scene,
 	DrawInfo& drawInfo,
 	bool& shouldUpdateEngine
@@ -71,7 +67,7 @@ void mtd::Renderer::render
 	recordDrawCommands
 	(
 		framebuffers,
-		graphicsPipelines, framebufferPipelines, rayTracingPipelines,
+		pipelines,
 		scene,
 		commandHandler,
 		drawInfo,
@@ -91,13 +87,10 @@ void mtd::Renderer::render
 	currentFrameIndex = shouldUpdateEngine ? 0 : (currentFrameIndex + 1) % swapchain.getFrameCount();
 }
 
-// Records draw commands to the command buffer
 void mtd::Renderer::recordDrawCommands
 (
 	const std::vector<Framebuffer>& framebuffers,
-	const std::vector<GraphicsPipeline>& graphicsPipelines,
-	const std::vector<FramebufferPipeline>& framebufferPipelines,
-	const std::vector<RayTracingPipeline>& rayTracingPipelines,
+	const PipelineBundle& pipelines,
 	const Scene& scene,
 	const CommandHandler& commandHandler,
 	const DrawInfo& drawInfo,
@@ -107,15 +100,56 @@ void mtd::Renderer::recordDrawCommands
 {
 	assert
 	(
-		!(graphicsPipelines.empty() && framebufferPipelines.empty()) &&
+		!(pipelines.graphicsPipelines.empty() && pipelines.framebufferPipelines.empty()) &&
 		"There must be at least one rendering pipeline."
 	);
 
 	const vk::CommandBuffer& commandBuffer = commandHandler.getCommandBuffer();
 	const vk::PipelineLayout& firstPipelineLayout =
-		graphicsPipelines.empty() ? framebufferPipelines[0].getLayout() : graphicsPipelines[0].getLayout();
+		pipelines.graphicsPipelines.empty()
+		? pipelines.framebufferPipelines[0].getLayout()
+		: pipelines.graphicsPipelines[0].getLayout();
 
 	commandHandler.beginCommand();
+
+	if(pipelines.computePipelines.size() > 0)
+	{
+		commandBuffer.bindDescriptorSets
+		(
+			vk::PipelineBindPoint::eCompute,
+			pipelines.computePipelines[0].getLayout(),
+			0,
+			1, &(drawInfo.globalDescriptorSet),
+			0, nullptr
+		);
+	}
+
+	for(const ComputePipeline& computePipeline: pipelines.computePipelines)
+	{
+		PROFILER_NEXT_STAGE(computePipeline.getName().c_str());
+		computePipeline.dispatchCompute(commandBuffer);
+	}
+
+	if(pipelines.rayTracingPipelines.size() > 0)
+	{
+		commandBuffer.bindDescriptorSets
+		(
+			vk::PipelineBindPoint::eRayTracingKHR,
+			pipelines.rayTracingPipelines[0].getLayout(),
+			0,
+			1, &(drawInfo.globalDescriptorSet),
+			0, nullptr
+		);
+	}
+
+	for(const RayTracingPipeline& rayTracingPipeline: pipelines.rayTracingPipelines)
+	{
+		PROFILER_NEXT_STAGE(rayTracingPipeline.getName().c_str());
+		rayTracingPipeline.traceRays(commandBuffer, dldi);
+	}
+
+	vk::Rect2D renderArea{};
+	renderArea.offset = vk::Offset2D{0, 0};
 
 	commandBuffer.bindDescriptorSets
 	(
@@ -125,35 +159,11 @@ void mtd::Renderer::recordDrawCommands
 		1, &(drawInfo.globalDescriptorSet),
 		0, nullptr
 	);
-	if(rayTracingPipelines.size() > 0)
-	{
-		commandBuffer.bindDescriptorSets
-		(
-			vk::PipelineBindPoint::eRayTracingKHR,
-			rayTracingPipelines[0].getLayout(),
-			0,
-			1, &(drawInfo.globalDescriptorSet),
-			0, nullptr
-		);
-	}
-
-	std::vector<vk::ClearValue> clearValues;
-	clearValues.push_back(clearColor);
-	clearValues.push_back(vk::ClearDepthStencilValue{1.0f, 0});
-
-	vk::Rect2D renderArea{};
-	renderArea.offset = vk::Offset2D{0, 0};
-
-	for(const RayTracingPipeline& rayTracingPipeline: rayTracingPipelines)
-	{
-		PROFILER_NEXT_STAGE(rayTracingPipeline.getName().c_str());
-		rayTracingPipeline.traceRays(commandBuffer, dldi);
-	}
 
 	for(const RenderPassInfo& renderPassInfo: renderOrder)
 	{
 		int32_t fbIndex = renderPassInfo.targetFramebufferIndex;
-		bool toSwapchain = fbIndex == -1;
+		bool toSwapchain = (fbIndex == -1);
 
 		renderArea.extent = toSwapchain ? drawInfo.extent : framebuffers[fbIndex].getExtent();
 
@@ -161,7 +171,7 @@ void mtd::Renderer::recordDrawCommands
 		if(renderPassInfo.framebufferPipelineIndex.has_value())
 		{
 			const FramebufferPipeline& fbPipeline =
-				framebufferPipelines[renderPassInfo.framebufferPipelineIndex.value()];
+				pipelines.framebufferPipelines[renderPassInfo.framebufferPipelineIndex.value()];
 
 			for(AttachmentIdentifier attachmentIdentifier: fbPipeline.getAttachmentIdentifiers())
 			{
@@ -183,7 +193,7 @@ void mtd::Renderer::recordDrawCommands
 		if(renderPassInfo.framebufferPipelineIndex.has_value())
 		{
 			const FramebufferPipeline& fbPipeline =
-				framebufferPipelines[renderPassInfo.framebufferPipelineIndex.value()];
+				pipelines.framebufferPipelines[renderPassInfo.framebufferPipelineIndex.value()];
 			PROFILER_NEXT_STAGE(fbPipeline.getName().c_str());
 
 			fbPipeline.bind(commandBuffer);
@@ -192,7 +202,7 @@ void mtd::Renderer::recordDrawCommands
 
 		for(uint32_t pipelineIndex: renderPassInfo.pipelineIndices)
 		{
-			const GraphicsPipeline& graphicsPipeline = graphicsPipelines[pipelineIndex];
+			const GraphicsPipeline& graphicsPipeline = pipelines.graphicsPipelines[pipelineIndex];
 			PROFILER_NEXT_STAGE(graphicsPipeline.getName().c_str());
 			const MeshManager* pMeshManager = scene.getMeshManager(pipelineIndex);
 
@@ -215,7 +225,6 @@ void mtd::Renderer::recordDrawCommands
 	commandHandler.endCommand();
 }
 
-// Presents frame to screen when ready
 void mtd::Renderer::presentFrame
 (
 	const vk::SwapchainKHR& swapchain, const vk::Queue& presentQueue, const vk::Semaphore& renderFinished

@@ -9,7 +9,23 @@ namespace mtd
 	{
 		Vertex,
 		Fragment,
-		VertexAndFragment
+		Vertex_Fragment,
+		Compute,
+		RayGeneration,
+		ClosestHit,
+		AnyHit,
+		Miss,
+		RayGeneration_ClosestHit,
+		RayGeneration_AnyHit,
+		RayGeneration_Miss,
+		ClosestHit_AnyHit,
+		ClosestHit_Miss,
+		AnyHit_Miss,
+		RayGeneration_ClosestHit_AnyHit,
+		RayGeneration_ClosestHit_Miss,
+		RayGeneration_AnyHit_Miss,
+		ClosestHit_AnyHit_Miss,
+		RayGeneration_ClosestHit_AnyHit_Miss
 	};
 
 	/*
@@ -17,7 +33,8 @@ namespace mtd
 	*/
 	enum class DescriptorType
 	{
-		UniformBuffer
+		UniformBuffer,
+		StorageImage
 	};
 
 	/*

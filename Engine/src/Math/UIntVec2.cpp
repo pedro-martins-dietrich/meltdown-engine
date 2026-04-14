@@ -83,11 +83,13 @@ mtd::UIntVec2& mtd::UIntVec2::operator/=(uint32_t scalar)
 	return *this;
 }
 
-namespace mtd
+std::ostream& mtd::operator<<(std::ostream& os, UIntVec2 uv2)
 {
-	std::ostream& operator<<(std::ostream& os, const UIntVec2& uv2)
-	{
-		os << '(' << uv2.x << ", " << uv2.y << ')';
-		return os;
-	}
+	os << '(' << uv2.x << ", " << uv2.y << ')';
+	return os;
+}
+
+mtd::UIntVec2 mtd::UIntVec2::clamp(UIntVec2 minimum, UIntVec2 maximum) const
+{
+	return max(minimum, min(*this, maximum));
 }

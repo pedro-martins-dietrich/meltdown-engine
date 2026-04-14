@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "../Vulkan/Mesh/MeshManager.hpp"
+#include "../Vulkan/Pipeline/PipelineBundles.hpp"
 
 // Responsible to load Meltdown scenes from file
 namespace mtd::SceneLoader
@@ -13,9 +14,7 @@ namespace mtd::SceneLoader
 		const Device& device,
 		const char* fileName,
 		std::vector<FramebufferInfo>& framebufferInfos,
-		std::vector<GraphicsPipelineInfo>& graphicsPipelineInfos,
-		std::vector<FramebufferPipelineInfo>& framebufferPipelineInfos,
-		std::vector<RayTracingPipelineInfo>& rayTracingPipelineInfos,
+		PipelineInfoBundle& pipelineInfos,
 		std::vector<RenderPassInfo>& renderOrder,
 		std::vector<std::unique_ptr<MeshManager>>& meshManagers
 	);

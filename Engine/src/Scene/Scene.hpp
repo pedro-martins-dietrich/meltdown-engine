@@ -2,10 +2,9 @@
 
 #include <memory>
 
-#include "SceneLoader.hpp"
 #include "../Vulkan/Mesh/MeshManager.hpp"
-#include "../Vulkan/Pipeline/FramebufferPipeline.hpp"
 #include "../Vulkan/Descriptors/DescriptorPool.hpp"
+#include "../Vulkan/Pipeline/PipelineBundles.hpp"
 
 namespace mtd
 {
@@ -30,19 +29,12 @@ namespace mtd
 				const Device& device,
 				const char* sceneFileName,
 				std::vector<FramebufferInfo>& framebufferInfos,
-				std::vector<GraphicsPipelineInfo>& graphicsPipelineInfos,
-				std::vector<FramebufferPipelineInfo>& framebufferPipelineInfos,
-				std::vector<RayTracingPipelineInfo>& rayTracingPipelineInfos,
+				PipelineInfoBundle& pipelineInfos,
 				std::vector<RenderPassInfo>& renderOrder
 			);
 
 			// Allocates resources and loads all mesh data
-			void allocateResources
-			(
-				std::vector<GraphicsPipeline>& graphicsPipelines,
-				std::vector<FramebufferPipeline>& framebufferPipelines,
-				std::vector<RayTracingPipeline>& rayTracingPipelines
-			);
+			void allocateResources(PipelineBundle& pipelines);
 
 			// Executes starting code on scene
 			void start() const;

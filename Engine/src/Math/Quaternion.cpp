@@ -81,16 +81,13 @@ mtd::Quaternion& mtd::Quaternion::operator/=(float scalar)
 	return *this = {w * inverse, x * inverse, y * inverse, z * inverse};
 }
 
-namespace mtd
+std::ostream& mtd::operator<<(std::ostream& os, const Quaternion& quat)
 {
-	std::ostream& operator<<(std::ostream& os, const Quaternion& quat)
-	{
-		os << '(' << std::fixed << std::setw(8) << std::setprecision(3) << quat.w << " + " <<
-			std::setw(8) << std::setprecision(3) << quat.x << "i + " <<
-			std::setw(8) << std::setprecision(3) << quat.y << "j + " <<
-			std::setw(8) << std::setprecision(3) << quat.z << "k)";
-		return os;
-	}
+	os << '(' << std::fixed << std::setw(8) << std::setprecision(3) << quat.w << " + " <<
+		std::setw(8) << std::setprecision(3) << quat.x << "i + " <<
+		std::setw(8) << std::setprecision(3) << quat.y << "j + " <<
+		std::setw(8) << std::setprecision(3) << quat.z << "k)";
+	return os;
 }
 
 float mtd::Quaternion::norm() const

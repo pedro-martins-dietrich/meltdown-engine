@@ -95,15 +95,12 @@ mtd::Vec4& mtd::Vec4::operator/=(float scalar)
 	return *this;
 }
 
-namespace mtd
+std::ostream& mtd::operator<<(std::ostream& os, const Vec4& v4)
 {
-	std::ostream& operator<<(std::ostream& os, const Vec4& v4)
-	{
-		os << '(' << std::fixed;
-		for(uint32_t i = 0; i < 4; i++)
-			os << std::setw(8) << std::setprecision(3) << v4[i] << ((i % 4 == 3) ? ")" : ", ");
-		return os;
-	}
+	os << '(' << std::fixed;
+	for(uint32_t i = 0; i < 4; i++)
+		os << std::setw(8) << std::setprecision(3) << v4[i] << ((i % 4 == 3) ? ")" : ", ");
+	return os;
 }
 
 float mtd::Vec4::dot(const Vec4& other) const
@@ -119,4 +116,9 @@ float mtd::Vec4::length() const
 mtd::Vec4 mtd::Vec4::normalized() const
 {
 	return *this / length();
+}
+
+mtd::Vec4 mtd::Vec4::clamp(const Vec4& minimum, const Vec4& maximum) const
+{
+	return max(minimum, min(*this, maximum));
 }

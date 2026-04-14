@@ -35,5 +35,6 @@ class Application
 
 		// Change scene event handle
 		mtd::EventCallbackHandle changeSceneCallbackHandle;
-		bool changeScene;
+		bool changeScene = false;
+		uint32_t currentSceneIndex = 0U;
 };

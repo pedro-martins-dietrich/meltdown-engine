@@ -69,9 +69,7 @@ void mtd::Engine::run(Window& window, const std::function<void(double)>& onUpdat
 			swapchain,
 			imGuiHandler,
 			framebuffers,
-			graphicsPipelines,
-			framebufferPipelines,
-			rayTracingPipelines,
+			pipelines,
 			scene,
 			drawInfo,
 			shouldUpdateEngine
@@ -97,29 +95,26 @@ void mtd::Engine::loadScene(const char* sceneFile)
 	}
 	device.getDevice().waitIdle();
 	framebuffers.clear();
-	graphicsPipelines.clear();
-	framebufferPipelines.clear();
-	rayTracingPipelines.clear();
+	pipelines.graphicsPipelines.clear();
+	pipelines.computePipelines.clear();
+	pipelines.rayTracingPipelines.clear();
+	pipelines.framebufferPipelines.clear();
 	Profiler::clearStages();
 
 	std::vector<FramebufferInfo> framebufferInfos;
-	std::vector<GraphicsPipelineInfo> graphicsPipelineInfos;
-	std::vector<FramebufferPipelineInfo> framebufferPipelineInfos;
-	std::vector<RayTracingPipelineInfo> rayTracingPipelineInfos;
+	PipelineInfoBundle pipelineInfos;
 
 	scene.loadScene
 	(
 		device,
 		sceneFile,
 		framebufferInfos,
-		graphicsPipelineInfos,
-		framebufferPipelineInfos,
-		rayTracingPipelineInfos,
+		pipelineInfos,
 		renderer.getRenderOrder()
 	);
 
-	createRenderResources(framebufferInfos, graphicsPipelineInfos, framebufferPipelineInfos, rayTracingPipelineInfos);
-	scene.allocateResources(graphicsPipelines, framebufferPipelines, rayTracingPipelines);
+	createRenderResources(framebufferInfos, pipelineInfos);
+	scene.allocateResources(pipelines);
 	configureDescriptors();
 
 	scene.start();
@@ -183,10 +178,10 @@ void mtd::Engine::updateDescriptors()
 	for(const auto& [key, data]: pendingDescriptorUpdates)
 	{
 		uint32_t pipelineIndex = key >> 32;
-		if(pipelineIndex >= graphicsPipelines.size()) continue;
+		if(pipelineIndex >= pipelines.graphicsPipelines.size()) continue;
 
 		uint32_t binding = key & 0xFFFFFFFF;
-		graphicsPipelines[pipelineIndex].updateDescriptorData(binding, data);
+		pipelines.graphicsPipelines[pipelineIndex].updateDescriptorData(binding, data);
 	}
 	pendingDescriptorUpdates.clear();
 }
@@ -222,22 +217,20 @@ void mtd::Engine::configureGlobalDescriptorSetHandler()
 void mtd::Engine::createRenderResources
 (
 	const std::vector<FramebufferInfo>& framebufferInfos,
-	const std::vector<GraphicsPipelineInfo>& graphicsPipelineInfos,
-	const std::vector<FramebufferPipelineInfo>& framebufferPipelineInfos,
-	const std::vector<RayTracingPipelineInfo>& rayTracingPipelineInfos
+	const PipelineInfoBundle& pipelineInfos
 )
 {
 	framebuffers.reserve(framebufferInfos.size());
 	for(const FramebufferInfo& framebufferInfo: framebufferInfos)
 		framebuffers.emplace_back(device, framebufferInfo, swapchain.getExtent());
 
-	graphicsPipelines.reserve(graphicsPipelineInfos.size());
-	for(const GraphicsPipelineInfo& graphicsPipelineInfo: graphicsPipelineInfos)
+	pipelines.graphicsPipelines.reserve(pipelineInfos.graphicsInfos.size());
+	for(const GraphicsPipelineInfo& graphicsPipelineInfo: pipelineInfos.graphicsInfos)
 	{
 		int32_t fbIndex = graphicsPipelineInfo.targetFramebufferIndex;
 		bool targetSwapchain = fbIndex == -1;
 
-		graphicsPipelines.emplace_back
+		pipelines.graphicsPipelines.emplace_back
 		(
 			device.getDevice(),
 			graphicsPipelineInfo,
@@ -247,13 +240,13 @@ void mtd::Engine::createRenderResources
 		);
 	}
 
-	framebufferPipelines.reserve(framebufferPipelineInfos.size());
-	for(const FramebufferPipelineInfo& fbPipelineInfo: framebufferPipelineInfos)
+	pipelines.framebufferPipelines.reserve(pipelineInfos.framebufferInfos.size());
+	for(const FramebufferPipelineInfo& fbPipelineInfo: pipelineInfos.framebufferInfos)
 	{
 		int32_t fbIndex = fbPipelineInfo.targetFramebufferIndex;
 		bool targetSwapchain = fbIndex == -1;
 
-		framebufferPipelines.emplace_back
+		pipelines.framebufferPipelines.emplace_back
 		(
 			device.getDevice(),
 			fbPipelineInfo,
@@ -263,11 +256,20 @@ void mtd::Engine::createRenderResources
 		);
 	}
 
-	if(!device.isRayTracingEnabled()) return;
-	rayTracingPipelines.reserve(rayTracingPipelineInfos.size());
-	for(const RayTracingPipelineInfo& rtPipelineInfo: rayTracingPipelineInfos)
+	pipelines.computePipelines.reserve(pipelineInfos.computeInfos.size());
+	for(const ComputePipelineInfo& computePipelineInfo: pipelineInfos.computeInfos)
 	{
-		rayTracingPipelines.emplace_back
+		pipelines.computePipelines.emplace_back
+		(
+			device, computePipelineInfo, globalDescriptorSetHandler->getLayout(), swapchain.getExtent()
+		);
+	}
+
+	if(!device.isRayTracingEnabled()) return;
+	pipelines.rayTracingPipelines.reserve(pipelineInfos.rayTracingInfos.size());
+	for(const RayTracingPipelineInfo& rtPipelineInfo: pipelineInfos.rayTracingInfos)
+	{
+		pipelines.rayTracingPipelines.emplace_back
 		(
 			device, rtPipelineInfo, globalDescriptorSetHandler->getLayout(), swapchain.getExtent()
 		);
@@ -285,17 +287,22 @@ void mtd::Engine::configureDescriptors()
 
 	globalDescriptorSetHandler->writeDescriptorSet(0);
 
-	for(GraphicsPipeline& graphicsPipeline: graphicsPipelines)
+	for(GraphicsPipeline& graphicsPipeline: pipelines.graphicsPipelines)
 		graphicsPipeline.configureUserDescriptorData(device, scene.getDescriptorPool());
-	for(RayTracingPipeline& rtPipeline: rayTracingPipelines)
+	for(ComputePipeline& computePipeline: pipelines.computePipelines)
+	{
+		computePipeline.configureUserDescriptorData(device, scene.getDescriptorPool());
+		computePipeline.configurePipelineDescriptorSet();
+	}
+	for(RayTracingPipeline& rtPipeline: pipelines.rayTracingPipelines)
 	{
 		rtPipeline.configureUserDescriptorData(device, scene.getDescriptorPool());
 		rtPipeline.configurePipelineDescriptorSet();
 	}
-	for(FramebufferPipeline& fbPipeline: framebufferPipelines)
+	for(FramebufferPipeline& fbPipeline: pipelines.framebufferPipelines)
 	{
 		fbPipeline.configureUserDescriptorData(device, scene.getDescriptorPool());
-		fbPipeline.updateInputImagesDescriptors(framebuffers, rayTracingPipelines);
+		fbPipeline.updateInputImagesDescriptors(framebuffers, pipelines.computePipelines, pipelines.rayTracingPipelines);
 	}
 }
 
@@ -308,7 +315,7 @@ void mtd::Engine::updateEngine(WindowHandler* const pWindowHandler)
 
 	for(Framebuffer& framebuffer: framebuffers)
 		framebuffer.resize(device, swapchain.getExtent());
-	for(GraphicsPipeline& graphicsPipeline: graphicsPipelines)
+	for(GraphicsPipeline& graphicsPipeline: pipelines.graphicsPipelines)
 	{
 		int32_t fbIndex = graphicsPipeline.getTargetFramebuffer();
 		if(fbIndex == -1)
@@ -316,12 +323,14 @@ void mtd::Engine::updateEngine(WindowHandler* const pWindowHandler)
 		else
 			graphicsPipeline.recreate(framebuffers[fbIndex].getExtent(), framebuffers[fbIndex].getRenderPass());
 	}
-	for(RayTracingPipeline& rtPipeline: rayTracingPipelines)
+	for(ComputePipeline& computePipeline: pipelines.computePipelines)
+		computePipeline.resize(device, swapchain.getExtent());
+	for(RayTracingPipeline& rtPipeline: pipelines.rayTracingPipelines)
 		rtPipeline.resize(device, swapchain.getExtent());
-	for(FramebufferPipeline& fbPipeline: framebufferPipelines)
+	for(FramebufferPipeline& fbPipeline: pipelines.framebufferPipelines)
 	{
 		fbPipeline.recreate(swapchain.getExtent(), swapchain.getRenderPass());
-		fbPipeline.updateInputImagesDescriptors(framebuffers, rayTracingPipelines);
+		fbPipeline.updateInputImagesDescriptors(framebuffers, pipelines.computePipelines, pipelines.rayTracingPipelines);
 	}
 
 	camera.setAspectRatio(pWindowHandler->getAspectRatio());

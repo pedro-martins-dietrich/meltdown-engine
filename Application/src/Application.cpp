@@ -9,17 +9,17 @@
 #include "Models/SpinningModel.hpp"
 #include "Models/RotatingModel.hpp"
 
-static constexpr std::array<const char*, 2> scenes
+static constexpr std::array<const char*, 3> scenes
 {
 	"meltdown_demo.json",
-	"ray_tracing.json"
+	"ray_tracing.json",
+	"cellular_automaton.json"
 };
 
 Application::Application()
 	: window{mtd::WindowInfo{1280, 720, 640, 360, "Meltdown"}},
 	meltdownEngine{mtd::EngineInfo{"Meltdown Application", 1, 0, 0, true}, window},
-	cameraSettingsGui{}, profilerGui{},
-	changeScene{false}
+	cameraSettingsGui{}, profilerGui{}
 {
 	mapActions();
 	mtd::ModelHandler::registerModel<SpinningModel>("spinning");
@@ -29,7 +29,7 @@ Application::Application()
 	meltdownEngine.addGuiWindow(&cameraSettingsGui);
 	meltdownEngine.addGuiWindow(&profilerGui);
 
-	meltdownEngine.loadScene(scenes[0]);
+	meltdownEngine.loadScene(scenes[currentSceneIndex]);
 
 	meltdownEngine.setClearColor(mtd::Vec4{0.3f, 0.6f, 1.0f, 1.0f});
 	meltdownEngine.setVSync(false);
@@ -54,9 +54,8 @@ void Application::run()
 			cameraController.update(deltaTime);
 			if(changeScene)
 			{
-				static uint32_t currentScene = 0U;
-				currentScene = (currentScene + 1U) % static_cast<uint32_t>(scenes.size());
-				mtd::EventManager::dispatch<mtd::ChangeSceneEvent>(scenes[currentScene]);
+				currentSceneIndex = (currentSceneIndex + 1U) % static_cast<uint32_t>(scenes.size());
+				mtd::EventManager::dispatch<mtd::ChangeSceneEvent>(scenes[currentSceneIndex]);
 				changeScene = false;
 			}
 		}
