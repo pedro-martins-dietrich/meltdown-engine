@@ -34,7 +34,7 @@ namespace mtd
 				const PipelineBundle& pipelines,
 				const Scene& scene,
 				DrawInfo& drawInfo,
-				bool& shouldUpdateEngine
+				std::atomic<bool>& shouldUpdateEngine
 			);
 
 		private:

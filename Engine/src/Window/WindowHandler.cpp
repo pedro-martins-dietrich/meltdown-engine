@@ -160,6 +160,14 @@ void mtd::WindowHandler::setupWindowEventDispatching() const
 		pWindow->info.posX = posX;
 		pWindow->info.posY = posY;
 	});
+
+	glfwSetFramebufferSizeCallback(glfwWindow, [](GLFWwindow* win, int newWidth, int newHeight)
+	{
+		EventManager::dispatch<WindowResizeEvent>
+		(
+			UIntVec2{static_cast<uint32_t>(newWidth), static_cast<uint32_t>(newHeight)}
+		);
+	});
 }
 
 void mtd::WindowHandler::setWindowEventCallbacks()

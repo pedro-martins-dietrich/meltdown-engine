@@ -66,6 +66,14 @@ int mtd::WindowPositionEvent::getPosY() const
 	return posY;
 }
 
+mtd::WindowResizeEvent::WindowResizeEvent(UIntVec2 newSize) : newSize{newSize}
+{}
+
+mtd::UIntVec2 mtd::WindowResizeEvent::getNewSize() const
+{
+	return newSize;
+} 
+
 mtd::SetPerspectiveCameraEvent::SetPerspectiveCameraEvent(float yFOV, float nearPlane, float farPlane)
 	: yFOV{yFOV}, nearPlane{nearPlane}, farPlane{farPlane}
 {}

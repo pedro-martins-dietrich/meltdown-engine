@@ -64,14 +64,15 @@ namespace mtd
 			// Event callback handles
 			EventCallbackHandle changeSceneCallbackHandle;
 			EventCallbackHandle updateDescriptorDataCallbackHandle;
+			EventCallbackHandle windowResizeCallbackHandle;
 
 			// Flag for updating the engine
-			bool shouldUpdateEngine;
+			std::atomic<bool> shouldUpdateEngine = false;
 			// Flag to ensure all threads finish executing
-			std::atomic<bool> running;
+			std::atomic<bool> running = false;
 
 			// Scene loading objects
-			std::atomic<bool> shouldLoadScene;
+			std::atomic<bool> shouldLoadScene = false;
 			std::string sceneFileToLoad;
 			std::mutex sceneLoadMutex;
 			std::condition_variable sceneLoadCV;

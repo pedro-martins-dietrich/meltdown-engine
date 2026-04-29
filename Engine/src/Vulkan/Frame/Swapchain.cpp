@@ -3,17 +3,14 @@
 
 #include "../../Utils/Logger.hpp"
 
-mtd::Swapchain::Swapchain
-(
-	const Device& device,
-	vk::SurfaceKHR surface,
-	UIntVec2 frameDimensions
-): swapchain{nullptr}, device{device.getDevice()}
+mtd::Swapchain::Swapchain(const Device& device, vk::SurfaceKHR surface, UIntVec2 frameDimensions)
+	: swapchain{nullptr}, device{device.getDevice()}
 {
 	configureDefaultSettings();
 	getSupportedDetails(device.getPhysicalDevice(), surface);
 	checkImageCount();
-	createSwapchain(device, surface, frameDimensions);
+	selectExtent(frameDimensions);
+	createSwapchain(device, surface);
 	createRenderPass();
 }
 
@@ -22,13 +19,14 @@ mtd::Swapchain::~Swapchain()
 	destroy();
 }
 
-void mtd::Swapchain::recreate(const Device& device, const vk::SurfaceKHR& surface, const UIntVec2& frameDimensions)
+void mtd::Swapchain::recreate(const Device& device, vk::SurfaceKHR surface, UIntVec2 frameDimensions)
 {
 	destroy();
 
 	getSupportedDetails(device.getPhysicalDevice(), surface);
 	checkImageCount();
-	createSwapchain(device, surface, frameDimensions);
+	selectExtent(frameDimensions);
+	createSwapchain(device, surface);
 	createRenderPass();
 }
 
@@ -65,7 +63,7 @@ bool mtd::Swapchain::setVSync(bool enableVSync)
 
 void mtd::Swapchain::configureDefaultSettings()
 {
-	settings.frameCount = 3;
+	settings.frameCount = 3U;
 	settings.colorFormat = vk::Format::eB8G8R8A8Unorm;
 	settings.colorSpace = vk::ColorSpaceKHR::eSrgbNonlinear;
 	settings.compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque;
@@ -79,10 +77,7 @@ void mtd::Swapchain::getSupportedDetails(const vk::PhysicalDevice& physicalDevic
 	supportedDetails.presentModes = physicalDevice.getSurfacePresentModesKHR(surface);
 }
 
-void mtd::Swapchain::createSwapchain
-(
-	const Device& device, const vk::SurfaceKHR& surface, const UIntVec2& frameDimensions
-)
+void mtd::Swapchain::createSwapchain(const Device& device, const vk::SurfaceKHR& surface)
 {
 	checkSurfaceFormat();
 
@@ -90,7 +85,6 @@ void mtd::Swapchain::createSwapchain
 	vk::SharingMode selectedSharingMode =
 		distinctQueueFamilyIndices ? vk::SharingMode::eExclusive : vk::SharingMode::eConcurrent;
 
-	selectExtent(frameDimensions);
 	checkPresentMode();
 
 	vk::SwapchainCreateInfoKHR swapchainCreateInfo{};
@@ -118,7 +112,7 @@ void mtd::Swapchain::createSwapchain
 		return;
 	}
 
-	setSwapchainFrames(device, frameDimensions);
+	setSwapchainFrames(device);
 
 	LOG_INFO("Created swapchain.\n");
 }
@@ -137,7 +131,7 @@ void mtd::Swapchain::createRenderPass()
 	colorAttachmentDescription.finalLayout = vk::ImageLayout::ePresentSrcKHR;
 
 	vk::AttachmentReference colorAttachmentReference{};
-	colorAttachmentReference.attachment = 0;
+	colorAttachmentReference.attachment = 0U;
 	colorAttachmentReference.layout = vk::ImageLayout::eColorAttachmentOptimal;
 
 	vk::AttachmentDescription depthAttachmentDescription{};
@@ -163,22 +157,22 @@ void mtd::Swapchain::createRenderPass()
 	vk::SubpassDescription subpassDescription{};
 	subpassDescription.flags = vk::SubpassDescriptionFlags();
 	subpassDescription.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
-	subpassDescription.inputAttachmentCount = 0;
+	subpassDescription.inputAttachmentCount = 0U;
 	subpassDescription.pInputAttachments = nullptr;
-	subpassDescription.colorAttachmentCount = 1;
+	subpassDescription.colorAttachmentCount = 1U;
 	subpassDescription.pColorAttachments = &colorAttachmentReference;
 	subpassDescription.pResolveAttachments = nullptr;
 	subpassDescription.pDepthStencilAttachment = &depthAttachmentReference;
-	subpassDescription.preserveAttachmentCount = 0;
+	subpassDescription.preserveAttachmentCount = 0U;
 	subpassDescription.pPreserveAttachments = nullptr;
 
 	vk::RenderPassCreateInfo renderPassCreateInfo{};
 	renderPassCreateInfo.flags = vk::RenderPassCreateFlags();
 	renderPassCreateInfo.attachmentCount = static_cast<uint32_t>(attachmentDescriptions.size());
 	renderPassCreateInfo.pAttachments = attachmentDescriptions.data();
-	renderPassCreateInfo.subpassCount = 1;
+	renderPassCreateInfo.subpassCount = 1U;
 	renderPassCreateInfo.pSubpasses = &subpassDescription;
-	renderPassCreateInfo.dependencyCount = 0;
+	renderPassCreateInfo.dependencyCount = 0U;
 	renderPassCreateInfo.pDependencies = nullptr;
 
 	vk::Result result = device.createRenderPass(&renderPassCreateInfo, nullptr, &renderPass);
@@ -214,7 +208,7 @@ void mtd::Swapchain::checkSurfaceFormat()
 
 void mtd::Swapchain::checkImageCount()
 {
-	if(supportedDetails.capabilities.maxImageCount == 0)
+	if(supportedDetails.capabilities.maxImageCount == 0U)
 	{
 		settings.frameCount = std::max(settings.frameCount, supportedDetails.capabilities.minImageCount);
 		return;
@@ -228,7 +222,7 @@ void mtd::Swapchain::checkImageCount()
 	);
 }
 
-void mtd::Swapchain::selectExtent(const UIntVec2& frameDimensions)
+void mtd::Swapchain::selectExtent(UIntVec2 frameDimensions)
 {
 	if(supportedDetails.capabilities.currentExtent.width != UINT32_MAX)
 	{
@@ -274,14 +268,14 @@ bool mtd::Swapchain::isPresentModeAvailable(vk::PresentModeKHR presentMode) cons
 	return false;
 }
 
-void mtd::Swapchain::setSwapchainFrames(const Device& device, const UIntVec2& frameDimensions)
+void mtd::Swapchain::setSwapchainFrames(const Device& device)
 {
 	std::vector<vk::Image> images = this->device.getSwapchainImagesKHR(swapchain);
 
 	frames.reserve(settings.frameCount);
 	LOG_INFO("Reserved %d frames.", settings.frameCount);
-	for(uint32_t i = 0; i < images.size(); i++)
-		frames.emplace_back(device, frameDimensions, images[i], settings.colorFormat, i);
+	for(uint32_t i = 0U; i < images.size(); i++)
+		frames.emplace_back(device, UIntVec2{extent.width, extent.height}, images[i], settings.colorFormat, i);
 }
 
 void mtd::Swapchain::destroy()

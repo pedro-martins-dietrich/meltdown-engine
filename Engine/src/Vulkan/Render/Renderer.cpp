@@ -22,7 +22,7 @@ void mtd::Renderer::render
 	const PipelineBundle& pipelines,
 	const Scene& scene,
 	DrawInfo& drawInfo,
-	bool& shouldUpdateEngine
+	std::atomic<bool>& shouldUpdateEngine
 )
 {
 	PROFILER_NEXT_STAGE("Render - Acquire frame");
@@ -52,7 +52,7 @@ void mtd::Renderer::render
 		)
 		{
 			currentFrameIndex = 0;
-			shouldUpdateEngine = true;
+			shouldUpdateEngine.store(true);
 		}
 		else
 		{
@@ -84,7 +84,7 @@ void mtd::Renderer::render
 		drawInfo.syncBundle->renderFinished
 	);
 
-	currentFrameIndex = shouldUpdateEngine ? 0 : (currentFrameIndex + 1) % swapchain.getFrameCount();
+	currentFrameIndex = shouldUpdateEngine.load() ? 0U : (currentFrameIndex + 1U) % swapchain.getFrameCount();
 }
 
 void mtd::Renderer::recordDrawCommands
