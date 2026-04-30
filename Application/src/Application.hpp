@@ -33,6 +33,9 @@ class Application
 		// GUI for the frame profiler
 		ProfilerGui profilerGui;
 
+		// Scene files
+		std::vector<const char*> scenes;
+
 		// Change scene event handle
 		mtd::EventCallbackHandle changeSceneCallbackHandle;
 		bool changeScene = false;

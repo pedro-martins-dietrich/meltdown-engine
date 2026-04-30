@@ -30,9 +30,17 @@ mtd::ComputePipeline::ComputePipeline(ComputePipeline&& other) noexcept
 
 void mtd::ComputePipeline::dispatchCompute(const vk::CommandBuffer& commandBuffer) const
 {
-	outputImage.transitionImageLayout(commandBuffer, vk::ImageLayout::eGeneral);
+	outputImage.transitionImageLayout
+	(
+		commandBuffer, vk::ImageLayout::eGeneral,
+		vk::PipelineStageFlagBits::eNone, vk::PipelineStageFlagBits::eComputeShader
+	);
 	for(const Image& image: images)
-		image.transitionImageLayout(commandBuffer, vk::ImageLayout::eGeneral);
+		image.transitionImageLayout
+		(
+			commandBuffer, vk::ImageLayout::eGeneral,
+			vk::PipelineStageFlagBits::eNone, vk::PipelineStageFlagBits::eComputeShader
+		);
 
 	commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline);
 	commandBuffer.bindDescriptorSets
@@ -67,7 +75,11 @@ void mtd::ComputePipeline::dispatchCompute(const vk::CommandBuffer& commandBuffe
 
 	pushConstantData.iterationCounter++;
 
-	outputImage.transitionImageLayout(commandBuffer, vk::ImageLayout::eShaderReadOnlyOptimal);
+	outputImage.transitionImageLayout
+	(
+		commandBuffer, vk::ImageLayout::eShaderReadOnlyOptimal,
+		vk::PipelineStageFlagBits::eComputeShader, vk::PipelineStageFlagBits::eFragmentShader
+	);
 }
 
 void mtd::ComputePipeline::configurePipelineDescriptorSet()

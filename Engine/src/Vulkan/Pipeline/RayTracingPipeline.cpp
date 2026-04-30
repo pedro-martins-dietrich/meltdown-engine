@@ -51,8 +51,16 @@ void mtd::RayTracingPipeline::traceRays
 	const vk::CommandBuffer& commandBuffer, const vk::detail::DispatchLoaderDynamic& dldi
 ) const
 {
-	outputImage.transitionImageLayout(commandBuffer, vk::ImageLayout::eGeneral);
-	accumulationImage.transitionImageLayout(commandBuffer, vk::ImageLayout::eGeneral);
+	outputImage.transitionImageLayout
+	(
+		commandBuffer, vk::ImageLayout::eGeneral,
+		vk::PipelineStageFlagBits::eNone, vk::PipelineStageFlagBits::eRayTracingShaderKHR
+	);
+	accumulationImage.transitionImageLayout
+	(
+		commandBuffer, vk::ImageLayout::eGeneral,
+		vk::PipelineStageFlagBits::eNone, vk::PipelineStageFlagBits::eRayTracingShaderKHR
+	);
 
 	commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, pipeline);
 	commandBuffer.bindDescriptorSets
@@ -94,7 +102,11 @@ void mtd::RayTracingPipeline::traceRays
 		dldi
 	);
 
-	outputImage.transitionImageLayout(commandBuffer, vk::ImageLayout::eShaderReadOnlyOptimal);
+	outputImage.transitionImageLayout
+	(
+		commandBuffer, vk::ImageLayout::eShaderReadOnlyOptimal,
+		vk::PipelineStageFlagBits::eRayTracingShaderKHR, vk::PipelineStageFlagBits::eFragmentShader
+	);
 
 	shaderRenderingInfo.accumulatedFrames++;
 }

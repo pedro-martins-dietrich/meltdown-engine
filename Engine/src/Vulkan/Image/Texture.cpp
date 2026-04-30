@@ -54,7 +54,6 @@ vk::DescriptorImageInfo mtd::Texture::getDescriptorImageInfo() const
 	return descriptorImageInfo;
 }
 
-// Sends the texture data to the GPU
 void mtd::Texture::loadToGpu(const Device& mtdDevice, const CommandHandler& commandHandler)
 {
 	assert(pixels != nullptr && "The image must be loaded from file before loading to the GPU.");
@@ -76,7 +75,11 @@ void mtd::Texture::loadToGpu(const Device& mtdDevice, const CommandHandler& comm
 	image.copyBufferToImage(commandHandler, stagingBuffer.getBuffer());
 
 	commandBuffer = commandHandler.beginSingleTimeCommand();
-	image.transitionImageLayout(commandBuffer, vk::ImageLayout::eShaderReadOnlyOptimal);
+	image.transitionImageLayout
+	(
+		commandBuffer, vk::ImageLayout::eShaderReadOnlyOptimal,
+		vk::PipelineStageFlagBits::eNone, vk::PipelineStageFlagBits::eFragmentShader
+	);
 	commandHandler.endSingleTimeCommand(commandBuffer);
 
 	if(!isPlaceholderTexture)
@@ -86,7 +89,6 @@ void mtd::Texture::loadToGpu(const Device& mtdDevice, const CommandHandler& comm
 	image.createImageSampler(vk::Filter::eNearest);
 }
 
-// Loads texture from file
 void mtd::Texture::loadFromFile(const Device& mtdDevice, const char* fileName)
 {
 	stbi_set_flip_vertically_on_load(true);
@@ -113,7 +115,6 @@ void mtd::Texture::loadFromFile(const Device& mtdDevice, const char* fileName)
 	image.createImageMemory(mtdDevice, vk::MemoryPropertyFlagBits::eDeviceLocal);
 }
 
-// Configures the texture descriptor set
 void mtd::Texture::createDescriptorResource
 (
 	DescriptorSetHandler& descriptorSetHandler, uint32_t swappableSetIndex, uint32_t binding

@@ -57,7 +57,13 @@ namespace mtd
 			void defineDescriptorImageInfo(vk::DescriptorImageInfo* descriptorImageInfo) const;
 
 			// Changes the Vulkan image layout
-			void transitionImageLayout(vk::CommandBuffer commandBuffer, vk::ImageLayout newLayout) const;
+			void transitionImageLayout
+			(
+				vk::CommandBuffer commandBuffer,
+				vk::ImageLayout newLayout,
+				vk::PipelineStageFlags srcStage = vk::PipelineStageFlagBits::eNone,
+				vk::PipelineStageFlags dstStage = vk::PipelineStageFlagBits::eNone
+			) const;
 			// Copies buffer data to Vulkan image
 			void copyBufferToImage(const CommandHandler& commandHandler, vk::Buffer srcBuffer);
 
