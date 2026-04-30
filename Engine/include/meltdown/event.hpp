@@ -200,6 +200,30 @@ namespace mtd
 	};
 
 	/*
+	* @brief Event created when the window gets resized.
+	*/
+	class WindowResizeEvent : public Event
+	{
+		public:
+			/*
+			* @brief Creates an event informing the new window size.
+			*
+			* @param newSize Dimensions of the new window size.
+			*/
+			WindowResizeEvent(UIntVec2 newSize);
+
+			/*
+			* @brief Getter for the new window size dimensions.
+			*
+			* @return Values for the width and height of the window, in pixels.
+			*/
+			UIntVec2 getNewSize() const;
+
+		private:
+			UIntVec2 newSize;
+	};
+
+	/*
 	* @brief Event to change the perspective camera configuration.
 	* If the camera is in the orthographic mode, it will change to perspective.
 	*/

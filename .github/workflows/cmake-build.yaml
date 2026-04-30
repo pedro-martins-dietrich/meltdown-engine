@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, ubuntu-latest]
+        os: [windows-latest, ubuntu-latest, macos-latest]
 
     env:
       BUILD_PATH: ${{github.workspace}}/build
@@ -30,6 +30,14 @@ jobs:
           sudo apt update
           sudo apt install -y ninja-build
           ninja --version
+
+      - name: Install Dependencies for macOS
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew update
+          brew install ninja pkg-config molten-vk shaderc
+          ninja --version
+          glslc --version
 
       - name: Install Vulkan SDK for Windows
         if: matrix.os == 'windows-latest'
@@ -62,8 +70,8 @@ jobs:
           vcpkg --version
           vcpkg install glfw3 glm vulkan nlohmann-json stb imgui[docking-experimental,glfw-binding,vulkan-binding] --triplet=x64-windows-static
 
-      - name: Install vcpkg dependencies for Ubuntu
-        if: matrix.os == 'ubuntu-latest'
+      - name: Install vcpkg dependencies for Ubuntu/macOS
+        if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
         run: |
             vcpkg --version
             vcpkg install glfw3 glm vulkan nlohmann-json stb imgui[docking-experimental,glfw-binding,vulkan-binding]
@@ -79,8 +87,8 @@ jobs:
           -D CMAKE_INSTALL_PREFIX="./install"
           -D VCPKG_TARGET_TRIPLET=x64-windows-static
 
-      - name: Configure CMake for Ubuntu
-        if: matrix.os == 'ubuntu-latest'
+      - name: Configure CMake for Ubuntu/macOS
+        if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
         run: >
           cmake -S ${{github.workspace}}
           -B ${{env.BUILD_PATH}}
@@ -97,8 +105,8 @@ jobs:
           cmake --build ${{env.BUILD_PATH}} --config ${{env.BUILD_TYPE}} -j 4
           cmake --install build/ --config Release
 
-      - name: Build for Ubuntu
-        if: matrix.os == 'ubuntu-latest'
+      - name: Build for Ubuntu/macOS
+        if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
         run: |
           cmake --build ${{env.BUILD_PATH}} --config ${{env.BUILD_TYPE}} -j 4
           cmake --install build/ --config Release

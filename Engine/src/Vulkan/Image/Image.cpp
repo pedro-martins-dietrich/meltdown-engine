@@ -64,14 +64,14 @@ void mtd::Image::createImage
 	imageCreateInfo.flags = imageFlags;
 	imageCreateInfo.imageType = vk::ImageType::e2D;
 	imageCreateInfo.format = format;
-	imageCreateInfo.extent = vk::Extent3D{dimensions.x, dimensions.y, 1};
-	imageCreateInfo.mipLevels = 1;
-	imageCreateInfo.arrayLayers = 1;
+	imageCreateInfo.extent = vk::Extent3D{dimensions.x, dimensions.y, 1U};
+	imageCreateInfo.mipLevels = 1U;
+	imageCreateInfo.arrayLayers = 1U;
 	imageCreateInfo.samples = vk::SampleCountFlagBits::e1;
 	imageCreateInfo.tiling = tiling;
 	imageCreateInfo.usage = usage;
 	imageCreateInfo.sharingMode = vk::SharingMode::eExclusive;
-	imageCreateInfo.queueFamilyIndexCount = 0;
+	imageCreateInfo.queueFamilyIndexCount = 0U;
 	imageCreateInfo.pQueueFamilyIndices = nullptr;
 	imageCreateInfo.initialLayout = layout;
 
@@ -119,10 +119,10 @@ void mtd::Image::createImageView(vk::ImageAspectFlags aspect, vk::ImageViewType 
 
 	vk::ImageSubresourceRange subresourceRange{};
 	subresourceRange.aspectMask = aspect;
-	subresourceRange.baseMipLevel = 0;
-	subresourceRange.levelCount = 1;
-	subresourceRange.baseArrayLayer = 0;
-	subresourceRange.layerCount = 1;
+	subresourceRange.baseMipLevel = 0U;
+	subresourceRange.levelCount = 1U;
+	subresourceRange.baseArrayLayer = 0U;
+	subresourceRange.layerCount = 1U;
 
 	vk::ImageViewCreateInfo imageViewCreateInfo{};
 	imageViewCreateInfo.flags = vk::ImageViewCreateFlags();
@@ -199,7 +199,13 @@ void mtd::Image::defineDescriptorImageInfo(vk::DescriptorImageInfo* descriptorIm
 	descriptorImageInfo->imageLayout = layout;
 }
 
-void mtd::Image::transitionImageLayout(vk::CommandBuffer commandBuffer, vk::ImageLayout newLayout) const
+void mtd::Image::transitionImageLayout
+(
+	vk::CommandBuffer commandBuffer,
+	vk::ImageLayout newLayout,
+	vk::PipelineStageFlags srcStage,
+	vk::PipelineStageFlags dstStage
+) const
 {
 	assert(image != nullptr && "The image must be created before transitioning it.");
 
@@ -207,10 +213,10 @@ void mtd::Image::transitionImageLayout(vk::CommandBuffer commandBuffer, vk::Imag
 
 	vk::ImageSubresourceRange subresource{};
 	subresource.aspectMask = vk::ImageAspectFlagBits::eColor;
-	subresource.baseMipLevel = 0;
-	subresource.levelCount = 1;
-	subresource.baseArrayLayer = 0;
-	subresource.layerCount = 1;
+	subresource.baseMipLevel = 0U;
+	subresource.levelCount = 1U;
+	subresource.baseArrayLayer = 0U;
+	subresource.layerCount = 1U;
 
 	vk::ImageMemoryBarrier barrier{};
 	barrier.srcAccessMask = vk::AccessFlagBits::eNone;
@@ -222,7 +228,6 @@ void mtd::Image::transitionImageLayout(vk::CommandBuffer commandBuffer, vk::Imag
 	barrier.image = image;
 	barrier.subresourceRange = subresource;
 
-	vk::PipelineStageFlags srcStage, dstStage;
 	switch(layout)
 	{
 		case vk::ImageLayout::eUndefined:
@@ -236,7 +241,11 @@ void mtd::Image::transitionImageLayout(vk::CommandBuffer commandBuffer, vk::Imag
 			break;
 		case vk::ImageLayout::eGeneral:
 			barrier.srcAccessMask = vk::AccessFlagBits::eShaderWrite;
-			srcStage = vk::PipelineStageFlagBits::eRayTracingShaderKHR;
+			assert
+			(
+				srcStage != vk::PipelineStageFlagBits::eNone
+				&& "The image source stage when transitioning from the general image layout must not be none."
+			);
 			break;
 		default:
 			LOG_WARNING("Unexpected image source layout for transition: %d.", layout);
@@ -250,11 +259,19 @@ void mtd::Image::transitionImageLayout(vk::CommandBuffer commandBuffer, vk::Imag
 			break;
 		case vk::ImageLayout::eShaderReadOnlyOptimal:
 			barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
-			dstStage = vk::PipelineStageFlagBits::eFragmentShader;
+			assert
+			(
+				dstStage != vk::PipelineStageFlagBits::eNone
+				&& "The image destination stage when transitioning to the shader read only image layout must not be none."
+			);
 			break;
 		case vk::ImageLayout::eGeneral:
 			barrier.dstAccessMask = vk::AccessFlagBits::eShaderWrite;
-			dstStage = vk::PipelineStageFlagBits::eRayTracingShaderKHR;
+			assert
+			(
+				dstStage != vk::PipelineStageFlagBits::eNone
+				&& "The image destination stage when transitioning to the general image layout must not be none."
+			);
 			break;
 		default:
 			LOG_WARNING("Unexpected image destination layout for transition: %d.", newLayout);
@@ -271,17 +288,17 @@ void mtd::Image::copyBufferToImage(const CommandHandler& commandHandler, vk::Buf
 
 	vk::ImageSubresourceLayers subresource{};
 	subresource.aspectMask = vk::ImageAspectFlagBits::eColor;
-	subresource.mipLevel = 0;
-	subresource.baseArrayLayer = 0;
-	subresource.layerCount = 1;
+	subresource.mipLevel = 0U;
+	subresource.baseArrayLayer = 0U;
+	subresource.layerCount = 1U;
 
 	vk::BufferImageCopy bufferImageCopy{};
 	bufferImageCopy.bufferOffset = 0;
-	bufferImageCopy.bufferRowLength = 0;
-	bufferImageCopy.bufferImageHeight = 0;
+	bufferImageCopy.bufferRowLength = 0U;
+	bufferImageCopy.bufferImageHeight = 0U;
 	bufferImageCopy.imageSubresource = subresource;
 	bufferImageCopy.imageOffset = vk::Offset3D{0, 0, 0};
-	bufferImageCopy.imageExtent = vk::Extent3D{dimensions.x, dimensions.y, 1};
+	bufferImageCopy.imageExtent = vk::Extent3D{dimensions.x, dimensions.y, 1U};
 
 	vk::CommandBuffer commandBuffer = commandHandler.beginSingleTimeCommand();
 

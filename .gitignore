@@ -2,6 +2,8 @@
 .vscode
 .env
 
+.DS_Store
+
 /build
 /Application/build
 /Engine/build

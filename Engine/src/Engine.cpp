@@ -14,10 +14,7 @@ mtd::Engine::Engine(const EngineInfo& info, Window& window)
 	commandHandler{device},
 	camera{window.getAspectRatio()},
 	scene{device},
-	imGuiHandler{device.getDevice()},
-	renderer{},
-	shouldUpdateEngine{false}, running{false},
-	shouldLoadScene{false}
+	imGuiHandler{device.getDevice()}
 {
 	configureEventCallbacks();
 	configureGlobalDescriptorSetHandler();
@@ -76,7 +73,7 @@ void mtd::Engine::run(Window& window, const std::function<void(double)>& onUpdat
 		);
 
 		PROFILER_NEXT_STAGE("Update engine");
-		if(shouldUpdateEngine)
+		if(shouldUpdateEngine.load())
 			updateEngine(pWindowHandler);
 
 		running.store(pWindowHandler->keepOpen());
@@ -198,6 +195,10 @@ void mtd::Engine::configureEventCallbacks()
 		uint64_t key = static_cast<uint64_t>(event.getPipelineIndex()) << 32 | event.getBinding();
 		std::lock_guard lock{pendingDescriptorUpdateMutex};
 		pendingDescriptorUpdates[key] = event.getData();
+	});
+	windowResizeCallbackHandle = EventManager::addCallback([this](const WindowResizeEvent& event)
+	{
+		shouldUpdateEngine.store(true);
 	});
 }
 
@@ -335,5 +336,5 @@ void mtd::Engine::updateEngine(WindowHandler* const pWindowHandler)
 
 	camera.setAspectRatio(pWindowHandler->getAspectRatio());
 
-	shouldUpdateEngine = false;
+	shouldUpdateEngine.store(false);
 }
