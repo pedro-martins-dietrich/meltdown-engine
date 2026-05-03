@@ -63,6 +63,12 @@ namespace mtd
 		Vec3 normal;
 	};
 
+	// Texture data for loading from the disk to the GPU
+	struct TextureInfo
+	{
+		std::string texturePath;
+	};
+
 	// Information about the attributes for a specific material type
 	struct MaterialInfo
 	{

@@ -14,7 +14,7 @@
 
 namespace mtd
 {
-	static constexpr const char* SCENE_LOADER_VERSION = "0.1.10";
+	static constexpr const char* SCENE_LOADER_VERSION = "0.2.0";
 
 	// Loads initial camera data for the scene
 	static void loadCamera(const nlohmann::json& cameraJson);
@@ -90,16 +90,19 @@ namespace mtd
 		const RayTracingPipelineInfo& rtPipelineInfo,
 		std::vector<std::unique_ptr<MeshManager>>& meshManagers
 	);
+	// Fetches all textures from the scene file
+	static void loadTextures(const nlohmann::json& texturesJson, TexturePool& texturePool);
 }
 
 void mtd::SceneLoader::load
 (
 	const Device& device,
-	const char* fileName,
+	std::string_view fileName,
 	std::vector<FramebufferInfo>& framebufferInfos,
 	PipelineInfoBundle& pipelineInfos,
 	std::vector<RenderPassInfo>& renderOrder,
-	std::vector<std::unique_ptr<MeshManager>>& meshManagers
+	std::vector<std::unique_ptr<MeshManager>>& meshManagers,
+	TexturePool& texturePool
 )
 {
 	std::string scenePath{MTD_RESOURCES_PATH};
@@ -112,7 +115,7 @@ void mtd::SceneLoader::load
 	std::string fileVersion = sceneJson["scene-loader-version"];
 	if(fileVersion.compare(SCENE_LOADER_VERSION))
 	{
-		LOG_ERROR("Scene JSON file (\"%s\") version is incompatible with the scene loader.", fileName);
+		LOG_ERROR("Scene JSON file (\"%s\") version is incompatible with the scene loader.", fileName.data());
 		return;
 	}
 
@@ -180,7 +183,9 @@ void mtd::SceneLoader::load
 		}
 	}
 
-	LOG_INFO("Scene \"%s\" loaded.", fileName);
+	loadTextures(sceneJson["textures"], texturePool);
+
+	LOG_INFO("Scene \"%s\" loaded.", fileName.data());
 }
 
 void mtd::loadCamera(const nlohmann::json& cameraJson)
@@ -494,4 +499,16 @@ void mtd::loadRayTracingMeshes
 
 		pMeshManager->createNewMesh(i, id.c_str(), file.c_str(), *pPreTransforms);
 	}
+}
+
+void mtd::loadTextures(const nlohmann::json& texturesJson, TexturePool& texturePool)
+{
+	std::vector<TextureInfo> textureInfos;
+	textureInfos.reserve(texturesJson.size());
+	for(const nlohmann::json& texJson: texturesJson)
+		textureInfos.emplace_back(MTD_RESOURCES_PATH + texJson.value("path", ""));
+
+	texturePool.loadTextures(textureInfos);
+
+	LOG_VERBOSE("Loaded %d textures.", textureInfos.size());
 }

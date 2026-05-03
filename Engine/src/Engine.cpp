@@ -204,13 +204,19 @@ void mtd::Engine::configureEventCallbacks()
 
 void mtd::Engine::configureGlobalDescriptorSetHandler()
 {
-	std::vector<vk::DescriptorSetLayoutBinding> bindings(1);
+	std::vector<vk::DescriptorSetLayoutBinding> bindings(2);
 	// Camera data
-	bindings[0].binding = 0;
+	bindings[0].binding = 0U;
 	bindings[0].descriptorType = vk::DescriptorType::eUniformBuffer;
-	bindings[0].descriptorCount = 1;
+	bindings[0].descriptorCount = 1U;
 	bindings[0].stageFlags = vk::ShaderStageFlagBits::eAll;
 	bindings[0].pImmutableSamplers = nullptr;
+	// Scene textures data
+	bindings[1].binding = 1U;
+	bindings[1].descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	bindings[1].descriptorCount = MAX_TEXTURE_POOL_SIZE;
+	bindings[1].stageFlags = vk::ShaderStageFlagBits::eAll;
+	bindings[1].pImmutableSamplers = nullptr;
 
 	globalDescriptorSetHandler = std::make_unique<DescriptorSetHandler>(device.getDevice(), bindings);
 }
@@ -279,14 +285,15 @@ void mtd::Engine::createRenderResources
 
 void mtd::Engine::configureDescriptors()
 {
-	globalDescriptorSetHandler->defineDescriptorSetsAmount(1);
+	globalDescriptorSetHandler->defineDescriptorSetsAmount(1U);
 	scene.getDescriptorPool().allocateDescriptorSet(*globalDescriptorSetHandler);
 	globalDescriptorSetHandler->createDescriptorResources
 	(
-		device, sizeof(CameraMatrices), vk::BufferUsageFlagBits::eUniformBuffer, 0, 0
+		device, sizeof(CameraMatrices), vk::BufferUsageFlagBits::eUniformBuffer, 0U, 0U
 	);
+	scene.configureSceneDescriptorSet(*globalDescriptorSetHandler);
 
-	globalDescriptorSetHandler->writeDescriptorSet(0);
+	globalDescriptorSetHandler->writeDescriptorSet(0U);
 
 	for(GraphicsPipeline& graphicsPipeline: pipelines.graphicsPipelines)
 		graphicsPipeline.configureUserDescriptorData(device, scene.getDescriptorPool());

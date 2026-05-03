@@ -5,14 +5,7 @@
 #include "../../Utils/Logger.hpp"
 
 mtd::Image::Image(const vk::Device& device)
-	: device{device},
-	image{nullptr},
-	imageMemory{nullptr},
-	view{nullptr},
-	sampler{nullptr},
-	format{vk::Format::eUndefined},
-	layout{vk::ImageLayout::eUndefined},
-	dimensions{0U, 0U}
+	: device{device}, image{nullptr}, imageMemory{nullptr}, view{nullptr}, sampler{nullptr}
 {}
 
 mtd::Image::~Image()

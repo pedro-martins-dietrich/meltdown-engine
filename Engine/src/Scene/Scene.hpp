@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "../AssetManager/TexturePool.hpp"
 #include "../Vulkan/Mesh/MeshManager.hpp"
 #include "../Vulkan/Descriptors/DescriptorPool.hpp"
 #include "../Vulkan/Pipeline/PipelineBundles.hpp"
@@ -12,7 +13,7 @@ namespace mtd
 	class Scene
 	{
 		public:
-			Scene(const Device& device);
+			Scene(const Device& mtdDevice);
 			~Scene() = default;
 
 			Scene(const Scene&) = delete;
@@ -26,8 +27,8 @@ namespace mtd
 			// Loads scene from file
 			void loadScene
 			(
-				const Device& device,
-				const char* sceneFileName,
+				const Device& mtdDevice,
+				std::string_view sceneFileName,
 				std::vector<FramebufferInfo>& framebufferInfos,
 				PipelineInfoBundle& pipelineInfos,
 				std::vector<RenderPassInfo>& renderOrder
@@ -35,6 +36,8 @@ namespace mtd
 
 			// Allocates resources and loads all mesh data
 			void allocateResources(PipelineBundle& pipelines);
+			// Configures the scene descriptor set with the scene data
+			void configureSceneDescriptorSet(DescriptorSetHandler& descriptorSetHandler) const;
 
 			// Executes starting code on scene
 			void start() const;
@@ -44,6 +47,9 @@ namespace mtd
 		private:
 			// Active mesh managers
 			std::vector<std::unique_ptr<MeshManager>> meshManagers;
+
+			// Scene textures
+			TexturePool texturePool;
 
 			// Descriptor pool for the pipelines descriptor sets
 			DescriptorPool descriptorPool;
