@@ -22,6 +22,8 @@
 CMakeSettings.json
 vcpkg_installed
 
+*.config
+
 build.sh
 build.cmd
 run.sh
