@@ -204,7 +204,7 @@ void mtd::Engine::configureEventCallbacks()
 
 void mtd::Engine::configureGlobalDescriptorSetHandler()
 {
-	std::vector<vk::DescriptorSetLayoutBinding> bindings(2);
+	std::vector<vk::DescriptorSetLayoutBinding> bindings(4);
 	// Camera data
 	bindings[0].binding = 0U;
 	bindings[0].descriptorType = vk::DescriptorType::eUniformBuffer;
@@ -217,6 +217,18 @@ void mtd::Engine::configureGlobalDescriptorSetHandler()
 	bindings[1].descriptorCount = MAX_TEXTURE_POOL_SIZE;
 	bindings[1].stageFlags = vk::ShaderStageFlagBits::eAll;
 	bindings[1].pImmutableSamplers = nullptr;
+	// Scene materials indexing
+	bindings[2].binding = 2U;
+	bindings[2].descriptorType = vk::DescriptorType::eStorageBuffer;
+	bindings[2].descriptorCount = 1U;
+	bindings[2].stageFlags = vk::ShaderStageFlagBits::eAll;
+	bindings[2].pImmutableSamplers = nullptr;
+	// Scene materials data
+	bindings[3].binding = 3U;
+	bindings[3].descriptorType = vk::DescriptorType::eStorageBuffer;
+	bindings[3].descriptorCount = 1U;
+	bindings[3].stageFlags = vk::ShaderStageFlagBits::eAll;
+	bindings[3].pImmutableSamplers = nullptr;
 
 	globalDescriptorSetHandler = std::make_unique<DescriptorSetHandler>(device.getDevice(), bindings);
 }

@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "../AssetManager/TexturePool.hpp"
+#include "../AssetManager/MaterialManager.hpp"
 #include "../Vulkan/Mesh/MeshManager.hpp"
 #include "../Vulkan/Descriptors/DescriptorPool.hpp"
 #include "../Vulkan/Pipeline/PipelineBundles.hpp"
@@ -50,6 +51,8 @@ namespace mtd
 
 			// Scene textures
 			TexturePool texturePool;
+			// Scene materials
+			MaterialManager materialManager;
 
 			// Descriptor pool for the pipelines descriptor sets
 			DescriptorPool descriptorPool;

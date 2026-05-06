@@ -90,8 +90,11 @@ namespace mtd
 		const RayTracingPipelineInfo& rtPipelineInfo,
 		std::vector<std::unique_ptr<MeshManager>>& meshManagers
 	);
+
 	// Fetches all textures from the scene file
 	static void loadTextures(const nlohmann::json& texturesJson, TexturePool& texturePool);
+	// Fetches all material files from the scene file and loads them
+	static void loadMaterials(const nlohmann::json& materialsJson, MaterialManager& materialManager);
 }
 
 void mtd::SceneLoader::load
@@ -102,7 +105,8 @@ void mtd::SceneLoader::load
 	PipelineInfoBundle& pipelineInfos,
 	std::vector<RenderPassInfo>& renderOrder,
 	std::vector<std::unique_ptr<MeshManager>>& meshManagers,
-	TexturePool& texturePool
+	TexturePool& texturePool,
+	MaterialManager& materialManager
 )
 {
 	std::string scenePath{MTD_RESOURCES_PATH};
@@ -184,6 +188,7 @@ void mtd::SceneLoader::load
 	}
 
 	loadTextures(sceneJson["textures"], texturePool);
+	loadMaterials(sceneJson["materials"], materialManager);
 
 	LOG_INFO("Scene \"%s\" loaded.", fileName.data());
 }
@@ -511,4 +516,14 @@ void mtd::loadTextures(const nlohmann::json& texturesJson, TexturePool& textureP
 	texturePool.loadTextures(textureInfos);
 
 	LOG_VERBOSE("Loaded %d textures.", textureInfos.size());
+}
+
+void mtd::loadMaterials(const nlohmann::json& materialsJson, MaterialManager& materialManager)
+{
+	std::vector<std::string> materialPaths;
+	materialPaths.reserve(materialsJson.size());
+	for(const std::string& path: materialsJson)
+		materialPaths.emplace_back(MTD_RESOURCES_PATH + path);
+
+	materialManager.loadMaterials(materialPaths);
 }

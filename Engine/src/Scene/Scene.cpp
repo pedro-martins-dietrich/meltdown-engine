@@ -5,7 +5,8 @@
 #include "../Utils/Logger.hpp"
 #include "../Vulkan/Mesh/MeshManager.hpp"
 
-mtd::Scene::Scene(const Device& mtdDevice) : texturePool{mtdDevice}, descriptorPool{mtdDevice.getDevice()}
+mtd::Scene::Scene(const Device& mtdDevice)
+	: texturePool{mtdDevice}, descriptorPool{mtdDevice.getDevice()}, materialManager{mtdDevice}
 {}
 
 void mtd::Scene::loadScene
@@ -28,7 +29,8 @@ void mtd::Scene::loadScene
 		pipelineInfos,
 		renderOrder,
 		meshManagers,
-		texturePool
+		texturePool,
+		materialManager
 	);
 }
 
@@ -38,6 +40,7 @@ void mtd::Scene::allocateResources(PipelineBundle& pipelines)
 
 	std::unordered_map<vk::DescriptorType, uint32_t> totalDescriptorTypeCount;
 	totalDescriptorTypeCount[vk::DescriptorType::eUniformBuffer] = 1U + getMaterialFloatDataCount();
+	totalDescriptorTypeCount[vk::DescriptorType::eStorageBuffer] = 2U;
 
 	uint32_t totalImageSamplerCount = getTotalTextureCount();
 	for(const FramebufferPipeline& fbPipeline: pipelines.framebufferPipelines)
@@ -115,6 +118,7 @@ void mtd::Scene::allocateResources(PipelineBundle& pipelines)
 void mtd::Scene::configureSceneDescriptorSet(DescriptorSetHandler& descriptorSetHandler) const
 {
 	texturePool.createTextureListDescriptor(descriptorSetHandler, 1U);
+	materialManager.createMaterialDescriptor(descriptorSetHandler, 2U, 3U);
 }
 
 void mtd::Scene::start() const
