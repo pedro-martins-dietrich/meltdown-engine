@@ -55,6 +55,20 @@ namespace mtd
 		Mat4x4 projectionView;
 	};
 
+	// Common header format for asset files
+	struct AssetHeader
+	{
+		uint64_t magic;
+		uint32_t version;
+	};
+
+	// Common block header for asset files
+	struct AssetBlockHeader
+	{
+		uint64_t blockID;
+		uint32_t blockSize;
+	};
+
 	// Vertex format
 	struct Vertex
 	{
@@ -80,6 +94,7 @@ namespace mtd
 	struct SubmeshData
 	{
 		uint32_t indexOffset;
+		uint32_t indexCount;
 		uint32_t materialID;
 	};
 

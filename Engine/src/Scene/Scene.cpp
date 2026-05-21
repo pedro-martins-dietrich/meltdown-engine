@@ -6,7 +6,8 @@
 #include "../Vulkan/Mesh/MeshManager.hpp"
 
 mtd::Scene::Scene(const Device& mtdDevice)
-	: texturePool{mtdDevice}, descriptorPool{mtdDevice.getDevice()}, materialManager{mtdDevice}
+	: texturePool{mtdDevice}, materialManager{mtdDevice}, meshPool{mtdDevice},
+	descriptorPool{mtdDevice.getDevice()}
 {}
 
 void mtd::Scene::loadScene
@@ -30,7 +31,8 @@ void mtd::Scene::loadScene
 		renderOrder,
 		meshManagers,
 		texturePool,
-		materialManager
+		materialManager,
+		meshPool
 	);
 }
 

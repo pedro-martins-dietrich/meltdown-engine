@@ -4,6 +4,7 @@
 
 #include "../AssetManager/TexturePool.hpp"
 #include "../AssetManager/MaterialManager.hpp"
+#include "../AssetManager/MeshPool.hpp"
 #include "../Vulkan/Mesh/MeshManager.hpp"
 #include "../Vulkan/Pipeline/PipelineBundles.hpp"
 
@@ -20,6 +21,7 @@ namespace mtd::SceneLoader
 		std::vector<RenderPassInfo>& renderOrder,
 		std::vector<std::unique_ptr<MeshManager>>& meshManagers,
 		TexturePool& texturePool,
-		MaterialManager& materialManager
+		MaterialManager& materialManager,
+		MeshPool& meshPool
 	);
 }

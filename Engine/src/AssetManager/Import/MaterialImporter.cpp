@@ -1,6 +1,7 @@
 #include <pch.hpp>
 #include "MaterialImporter.hpp"
 
+#include "../../Utils/EngineStructs.hpp"
 #include "../../Utils/Logger.hpp"
 #include "../../Utils/StringParser.hpp"
 
@@ -21,20 +22,20 @@ bool mtd::MaterialImporter::loadMaterial(std::string_view filePath, std::vector<
     }
 
     std::streamsize materialFileSize = materialFile.tellg();
-    if(materialFileSize < static_cast<std::streamsize>(sizeof(MaterialHeader)))
+    if(materialFileSize < static_cast<std::streamsize>(sizeof(AssetHeader)))
     {
         LOG_WARNING("Invalid header for material file \"%s\".", filePath.data());
         return false;
     }
-    size_t materialSize = materialFileSize - sizeof(MaterialHeader);
+    size_t materialSize = materialFileSize - sizeof(AssetHeader);
 
-    MaterialHeader header{};
+    AssetHeader materialHeader{};
     materialFile.seekg(0, std::ios::beg);
-    materialFile.read(reinterpret_cast<char*>(&header), sizeof(MaterialHeader));
+    materialFile.read(reinterpret_cast<char*>(&materialHeader), sizeof(AssetHeader));
 
     bool validMaterialFile = true;
-    validMaterialFile &= (header.magic == MATERIAL_MAGIC);
-    validMaterialFile &= (header.version == MATERIAL_FILE_VERSION);
+    validMaterialFile &= (materialHeader.magic == MATERIAL_MAGIC);
+    validMaterialFile &= (materialHeader.version == MATERIAL_FILE_VERSION);
     validMaterialFile &= (materialSize > 0);
     if(!validMaterialFile)
     {
@@ -49,7 +50,7 @@ bool mtd::MaterialImporter::loadMaterial(std::string_view filePath, std::vector<
     materialData.resize(newMaterialLumpSize + padding);
     std::span<std::byte> loadTarget{materialData.data() + oldMaterialLumpSize, materialSize};
 
-    materialFile.seekg(sizeof(MaterialHeader), std::ios::beg);
+    materialFile.seekg(sizeof(AssetHeader), std::ios::beg);
     materialFile.read(reinterpret_cast<char*>(loadTarget.data()), loadTarget.size());
     materialFile.close();
 

@@ -95,6 +95,8 @@ namespace mtd
 	static void loadTextures(const nlohmann::json& texturesJson, TexturePool& texturePool);
 	// Fetches all material files from the scene file and loads them
 	static void loadMaterials(const nlohmann::json& materialsJson, MaterialManager& materialManager);
+	// Fetches all mesh files from the scene file and loads them
+	static void loadMeshes(const nlohmann::json& meshJson, MeshPool& meshPool);
 }
 
 void mtd::SceneLoader::load
@@ -106,7 +108,8 @@ void mtd::SceneLoader::load
 	std::vector<RenderPassInfo>& renderOrder,
 	std::vector<std::unique_ptr<MeshManager>>& meshManagers,
 	TexturePool& texturePool,
-	MaterialManager& materialManager
+	MaterialManager& materialManager,
+	MeshPool& meshPool
 )
 {
 	std::string scenePath{MTD_RESOURCES_PATH};
@@ -130,7 +133,7 @@ void mtd::SceneLoader::load
 	const nlohmann::json& computePipelinesJson = sceneJson["compute-pipelines"];
 	const nlohmann::json& rtPipelinesJson = sceneJson["ray-tracing-pipelines"];
 	const nlohmann::json& fbPipelinesJson = sceneJson["framebuffer-pipelines"];
-	const nlohmann::json& meshesJson = sceneJson["meshes"];
+	const nlohmann::json& meshesJson = sceneJson["meshes-old"];
 
 	if((rasterPipelinesJson.size() + rtPipelinesJson.size()) != meshesJson.size())
 		LOG_ERROR("The number of pipelines and mesh managers should be the same.");
@@ -189,6 +192,7 @@ void mtd::SceneLoader::load
 
 	loadTextures(sceneJson["textures"], texturePool);
 	loadMaterials(sceneJson["materials"], materialManager);
+	loadMeshes(sceneJson["meshes"], meshPool);
 
 	LOG_INFO("Scene \"%s\" loaded.", fileName.data());
 }
@@ -526,4 +530,14 @@ void mtd::loadMaterials(const nlohmann::json& materialsJson, MaterialManager& ma
 		materialPaths.emplace_back(MTD_RESOURCES_PATH + path);
 
 	materialManager.loadMaterials(materialPaths);
+}
+
+void mtd::loadMeshes(const nlohmann::json& meshJson, MeshPool& meshPool)
+{
+	std::vector<std::string> meshPaths;
+	meshPaths.reserve(meshJson.size());
+	for(const std::string& path: meshJson)
+		meshPaths.emplace_back(MTD_RESOURCES_PATH + path);
+
+	meshPool.loadMeshes(meshPaths);
 }
