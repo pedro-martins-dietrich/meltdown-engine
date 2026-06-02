@@ -124,7 +124,7 @@ void mtd::GpuBuffer::resizeBuffer(const CommandHandler& commandHandler, vk::Devi
 		usage | vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst,
 		memoryProperties
 	};
-	copyDataFromBuffer(newBuffer, commandHandler);
+	newBuffer.copyDataFromBuffer(*this, commandHandler);
 
 	device.getDevice().destroyBuffer(buffer);
 	device.getDevice().freeMemory(bufferMemory);

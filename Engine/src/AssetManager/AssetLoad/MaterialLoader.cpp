@@ -1,5 +1,5 @@
 #include <pch.hpp>
-#include "MaterialImporter.hpp"
+#include "MaterialLoader.hpp"
 
 #include "../../Utils/EngineStructs.hpp"
 #include "../../Utils/Logger.hpp"
@@ -12,7 +12,7 @@ namespace mtd
     constexpr size_t MATERIAL_ALIGNMENT = 16;
 }
 
-bool mtd::MaterialImporter::loadMaterial(std::string_view filePath, std::vector<std::byte>& materialData)
+bool mtd::MaterialLoader::loadMaterial(std::string_view filePath, std::vector<std::byte>& materialData)
 {
     std::ifstream materialFile{filePath.data(), std::ios::binary | std::ios::ate};
     if(!materialFile)
