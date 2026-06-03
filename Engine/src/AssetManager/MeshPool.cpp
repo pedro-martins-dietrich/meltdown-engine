@@ -1,7 +1,7 @@
 #include <pch.hpp>
 #include "MeshPool.hpp"
 
-#include "Import/MeshImporter.hpp"
+#include "AssetLoad/MeshLoader.hpp"
 #include "../Utils/Logger.hpp"
 
 mtd::MeshPool::MeshPool(const Device& mtdDevice)
@@ -20,12 +20,10 @@ void mtd::MeshPool::loadMeshes(const std::vector<std::string>& meshFiles)
 
     std::vector<std::byte> vertexData;
     std::vector<uint32_t> indexData;
-    submeshes.clear();
+    meshes.clear();
 
     for(const std::string_view file: meshFiles)
-    {
-        MeshImporter::loadMesh(file, vertexData, indexData, submeshes);
-    }
+        MeshLoader::loadMesh(file, vertexData, indexData, meshes);
 
     loadToGpu(vertexData, indexData);
     anyMeshLoaded = true;
@@ -47,6 +45,13 @@ void mtd::MeshPool::createMeshDescriptors
 
     descriptorSetHandler.assignExternalResourcesToDescriptor(0U, vertexBinding, vertexBuffer);
     descriptorSetHandler.assignExternalResourcesToDescriptor(0U, indexBinding, indexBuffer);
+}
+
+void mtd::MeshPool::bindBuffers(const vk::CommandBuffer& commandBuffer) const
+{
+    vk::DeviceSize offset{0};
+    commandBuffer.bindVertexBuffers(0U, 1U, &(vertexBuffer.getBuffer()), &offset);
+    commandBuffer.bindIndexBuffer(indexBuffer.getBuffer(), offset, vk::IndexType::eUint32);
 }
 
 void mtd::MeshPool::loadToGpu(const std::vector<std::byte>& vertexData, const std::vector<uint32_t>& indexData)

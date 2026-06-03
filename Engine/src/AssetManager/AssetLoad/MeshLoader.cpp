@@ -1,5 +1,5 @@
 #include <pch.hpp>
-#include "MeshImporter.hpp"
+#include "MeshLoader.hpp"
 
 #include "../../Utils/Logger.hpp"
 #include "../../Utils/StringParser.hpp"
@@ -10,12 +10,12 @@ namespace mtd
     constexpr uint32_t MESH_FILE_VERSION = 1U;
 }
 
-bool mtd::MeshImporter::loadMesh
+bool mtd::MeshLoader::loadMesh
 (
     const std::string_view filePath,
     std::vector<std::byte>& vertexData,
     std::vector<uint32_t>& indexData,
-    std::vector<SubmeshData>& submeshes
+    std::vector<MeshData>& meshes
 )
 {
     std::ifstream meshFile{filePath.data(), std::ios::binary | std::ios::ate};
@@ -48,35 +48,51 @@ bool mtd::MeshImporter::loadMesh
     AssetBlockHeader blockHeader;
     meshFile.read(reinterpret_cast<char*>(&blockHeader), sizeof(AssetBlockHeader));
 
-    std::streamoff currentOffset = meshFile.tellg();
+    MeshData meshData{};
+    meshData.materialSlotCount = 0U;
 
+    std::streamoff currentOffset = meshFile.tellg();
     while(currentOffset < meshFileSize)
     {
         if(meshFileSize - currentOffset < blockHeader.blockSize)
         {
-            LOG_WARNING("Invalid block [%d] size in mesh file \"%s\". Skipping...", blockHeader.blockID, filePath.data());
+            LOG_WARNING
+            (
+                "Invalid block [%d] size in mesh file \"%s\". Skipping the rest of the file...",
+                blockHeader.blockID, filePath.data()
+            );
             break;
         }
 
-        size_t oldBufferSize = 0U;
+        size_t oldBufferSize = 0;
+        size_t vertexOffset = 0;
         switch(blockHeader.blockID)
         {
             case "Vertices"_u64:
                 oldBufferSize = vertexData.size();
+                if(oldBufferSize % sizeof(Vertex) == 0)
+                    vertexOffset = oldBufferSize;
+                else
+                    vertexOffset = oldBufferSize + sizeof(Vertex) - (oldBufferSize % sizeof(Vertex));
+                meshData.vertexOffset = static_cast<uint32_t>(vertexOffset / sizeof(Vertex));
                 vertexData.resize(oldBufferSize + blockHeader.blockSize);
                 meshFile.read(reinterpret_cast<char*>(vertexData.data() + oldBufferSize), blockHeader.blockSize);
                 break;
 
             case "Indices\0"_u64:
-                oldBufferSize = indexData.size();
-                indexData.resize(oldBufferSize + (blockHeader.blockSize / sizeof(uint32_t)));
-                meshFile.read(reinterpret_cast<char*>(indexData.data() + oldBufferSize), blockHeader.blockSize);
+                meshData.indexOffset = indexData.size();
+                indexData.resize(meshData.indexOffset + (blockHeader.blockSize / sizeof(uint32_t)));
+                meshFile.read(reinterpret_cast<char*>(indexData.data() + meshData.indexOffset), blockHeader.blockSize);
                 break;
 
             case "Submesh\0"_u64:
-                oldBufferSize = submeshes.size();
-                submeshes.resize(oldBufferSize + (blockHeader.blockSize / sizeof(SubmeshData)));
-                meshFile.read(reinterpret_cast<char*>(submeshes.data() + oldBufferSize), blockHeader.blockSize);
+                meshData.submeshes.resize(blockHeader.blockSize / sizeof(SubmeshData));
+                meshFile.read(reinterpret_cast<char*>(meshData.submeshes.data()), blockHeader.blockSize);
+                for(const SubmeshData& submesh: meshData.submeshes)
+                {
+                    if(submesh.materialSlot + 1U > meshData.materialSlotCount)
+                        meshData.materialSlotCount = submesh.materialSlot + 1U;
+                }
                 break;
 
             default:
@@ -92,6 +108,8 @@ bool mtd::MeshImporter::loadMesh
     }
 
     meshFile.close();
+
+    meshes.emplace_back(std::move(meshData));
 
     LOG_VERBOSE("Mesh loaded from \"%s\".", filePath.data());
     return true;

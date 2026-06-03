@@ -95,7 +95,16 @@ namespace mtd
 	{
 		uint32_t indexOffset;
 		uint32_t indexCount;
-		uint32_t materialID;
+		uint32_t materialSlot;
+	};
+
+	// Information for the mesh rendering
+	struct MeshData
+	{
+		uint32_t vertexOffset;
+		uint32_t indexOffset;
+		uint32_t materialSlotCount;
+		std::vector<SubmeshData> submeshes;
 	};
 
 	// Information required for drawing a frame

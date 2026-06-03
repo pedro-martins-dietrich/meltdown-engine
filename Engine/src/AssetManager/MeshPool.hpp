@@ -14,6 +14,9 @@ namespace mtd
             MeshPool(const MeshPool&) = delete;
             MeshPool& operator=(const MeshPool&) = delete;
 
+            // Getter
+            const MeshData& getMesh(uint32_t meshID) const { return meshes[meshID]; }
+
             // Loads all scene mesh data to the GPU
             void loadMeshes(const std::vector<std::string>& meshFiles);
 
@@ -24,6 +27,9 @@ namespace mtd
                 uint32_t vertexBinding, uint32_t indexBinding
             ) const;
 
+            // Binds the vertex and index buffers
+            void bindBuffers(const vk::CommandBuffer& commandBuffer) const;
+
         private:
             // GPU buffer for the vertex data
             GpuBuffer vertexBuffer;
@@ -32,8 +38,8 @@ namespace mtd
             // Mesh pool command handler
 			CommandHandler commandHandler;
 
-            // Submeshes information
-            std::vector<SubmeshData> submeshes;
+            // Mesh data for the CPU side
+            std::vector<MeshData> meshes;
 
             // Flag to indicate if the GPU buffers have been created
             bool gpuBuffersCreated = false;
