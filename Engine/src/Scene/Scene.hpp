@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "InstanceManager.hpp"
 #include "../AssetManager/TexturePool.hpp"
 #include "../AssetManager/MaterialManager.hpp"
 #include "../AssetManager/MeshPool.hpp"
@@ -22,6 +23,8 @@ namespace mtd
 			Scene& operator=(const Scene&) = delete;
 
 			// Getters
+			const MeshPool& getMeshPool() const { return meshPool; }
+			const std::vector<SceneInstance>& getInstances() const { return instanceManager.getInstances(); }
 			const MeshManager* getMeshManager(uint32_t pipelineIndex) const
 				{ return meshManagers[pipelineIndex].get(); }
 			const DescriptorPool& getDescriptorPool() const { return descriptorPool; }
@@ -56,6 +59,8 @@ namespace mtd
 			MaterialManager materialManager;
 			// Scene meshes
 			MeshPool meshPool;
+			// Scene instances
+			InstanceManager instanceManager;
 
 			// Descriptor pool for the pipelines descriptor sets
 			DescriptorPool descriptorPool;

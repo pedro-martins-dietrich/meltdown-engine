@@ -69,6 +69,33 @@ namespace mtd
 		uint32_t blockSize;
 	};
 
+	// Scene instance data
+	struct SceneInstance
+	{
+		Mat4x4 transform;
+		uint32_t pipelineID;
+		uint32_t meshID;
+		uint32_t materialSetID;
+		bool visible = true;
+	};
+
+	// Data used by the GPU for each render object
+	struct RenderObject
+	{
+		Mat4x4 transform;
+		uint32_t materialSetID;
+		uint32_t padding[3];
+	};
+
+	// Drawing data for each draw batch call
+	struct DrawBatch
+	{
+		uint32_t pipelineID;
+		uint32_t meshID;
+		uint32_t firstInstance;
+		uint32_t instanceCount;
+	};
+
 	// Vertex format
 	struct Vertex
 	{

@@ -30,6 +30,7 @@ void mtd::Scene::loadScene
 		pipelineInfos,
 		renderOrder,
 		meshManagers,
+		instanceManager,
 		texturePool,
 		materialManager,
 		meshPool
