@@ -1,5 +1,5 @@
 {
-	"scene-loader-version": "0.1.10",
+	"scene-loader-version": "0.2.0",
 	"camera":
 	{
 		"orthographic": false,
@@ -40,5 +40,10 @@
 			"dependencies": []
 		}
 	],
-	"meshes": []
+	"meshes": [],
+	"meshes-old": [],
+	"textures": [],
+	"materials": [],
+	"material-sets": [],
+	"instances": []
 }

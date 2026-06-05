@@ -523,8 +523,8 @@ void mtd::loadTextures(const nlohmann::json& texturesJson, TexturePool& textureP
 {
 	std::vector<TextureInfo> textureInfos;
 	textureInfos.reserve(texturesJson.size());
-	for(const nlohmann::json& texJson: texturesJson)
-		textureInfos.emplace_back(MTD_RESOURCES_PATH + texJson.value("path", ""));
+	for(const std::string& path: texturesJson)
+		textureInfos.emplace_back(MTD_RESOURCES_PATH + path);
 
 	texturePool.loadTextures(textureInfos);
 

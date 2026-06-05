@@ -1,9 +1,37 @@
 #version 450
 
+struct MaterialData
+{
+	uint diffuseIndex;
+	uint unused0;
+	uint unused1;
+	uint unused2;
+};
+
 layout(location = 0) in vec2 fragTextureCoordinates;
 layout(location = 1) in vec3 fragNormal;
+layout(location = 2) flat in uint materialSetID;
 
 layout(location = 0) out vec4 outColor;
+
+layout(push_constant) uniform PushConstant
+{
+	uint materialSlot;
+} pushConstant;
+
+layout(set = 0, binding = 1) uniform sampler2D textures[1024];
+layout(set = 0, binding = 2) readonly buffer Materials
+{
+	MaterialData materialData[];
+};
+layout(set = 0, binding = 3) readonly buffer MaterialIndexing
+{
+	uint materialOffsets[];
+};
+layout(set = 0, binding = 4) readonly buffer MaterialSets
+{
+	uint materialIDs[];
+};
 
 layout(set = 1, binding = 0) uniform sampler2D diffuse;
 
@@ -15,7 +43,10 @@ layout(set = 2, binding = 0) uniform LightData
 
 void main()
 {
+	uint materialID = materialIDs[materialSetID + pushConstant.materialSlot];
+	MaterialData material = materialData[materialOffsets[materialID]];
+
 	float lightIntensity = 0.8f * (dot(fragNormal, -lightData.lightDirection) + 0.25f);
 
-	outColor = max(lightData.ambientLightIntensity, lightIntensity) * texture(diffuse, fragTextureCoordinates);
+	outColor = max(lightData.ambientLightIntensity, lightIntensity) * texture(textures[material.diffuseIndex], fragTextureCoordinates);
 }
