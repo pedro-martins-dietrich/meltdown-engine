@@ -28,9 +28,12 @@ namespace mtd
 			void recreate(vk::Extent2D extent, vk::RenderPass renderPass);
 
 			// Binds the pipeline and per pipeline descriptors to the command buffer
-			void bind(const vk::CommandBuffer& commandBuffer) const;
+			void bind(vk::CommandBuffer commandBuffer) const;
 			// Binds per mesh descriptors
-			void bindMeshDescriptors(const vk::CommandBuffer& commandBuffer, uint32_t index) const;
+			void bindMeshDescriptors(vk::CommandBuffer commandBuffer, uint32_t index) const;
+
+			// Pushes a constant to the pipeline draw call
+			void pushConstant(vk::CommandBuffer commandBuffer, const uint32_t& constantData) const;
 
 		private:
 			// Loads the pipeline shader modules

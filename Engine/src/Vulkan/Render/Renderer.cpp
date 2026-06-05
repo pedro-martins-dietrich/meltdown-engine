@@ -4,8 +4,10 @@
 #include "../../Utils/Logger.hpp"
 #include "../../Utils/Profiler.hpp"
 
-mtd::Renderer::Renderer()
-	: clearValues{vk::ClearColorValue{0.1f, 0.1f, 0.1f, 1.0f}, vk::ClearDepthStencilValue{1.0f, 0}}
+mtd::Renderer::Renderer(const Device& mtdDevice)
+	: mtdDevice{mtdDevice},
+	clearValues{vk::ClearColorValue{0.1f, 0.1f, 0.1f, 1.0f}, vk::ClearDepthStencilValue{1.0f, 0}},
+	renderObjectManager{mtdDevice}
 {}
 
 void mtd::Renderer::setClearColor(const Vec4& color)
@@ -15,7 +17,6 @@ void mtd::Renderer::setClearColor(const Vec4& color)
 
 void mtd::Renderer::render
 (
-	const Device& mtdDevice,
 	const Swapchain& swapchain,
 	const ImGuiHandler& guiHandler,
 	const std::vector<Framebuffer>& framebuffers,
@@ -25,14 +26,19 @@ void mtd::Renderer::render
 	std::atomic<bool>& shouldUpdateEngine
 )
 {
+	PROFILER_NEXT_STAGE("Render - Create render objects");
+
+	std::vector<DrawBatch> drawBatches;
+	renderObjectManager.createFrameRenderObjects(scene.getInstances(), drawBatches);
+
 	PROFILER_NEXT_STAGE("Render - Acquire frame");
 
 	const vk::Device& device = mtdDevice.getDevice();
 	const Frame& frame = swapchain.getFrame(currentFrameIndex);
 	const vk::Fence& inFlightFence = frame.getInFlightFence();
 
-	(void) device.waitForFences(1, &inFlightFence, vk::True, UINT64_MAX);
-	(void) device.resetFences(1, &inFlightFence);
+	(void) device.waitForFences(1U, &inFlightFence, vk::True, UINT64_MAX);
+	(void) device.resetFences(1U, &inFlightFence);
 
 	vk::Result result = device.acquireNextImageKHR
 	(
@@ -71,8 +77,8 @@ void mtd::Renderer::render
 		scene,
 		commandHandler,
 		drawInfo,
-		guiHandler,
-		mtdDevice.getDLDI()
+		drawBatches,
+		guiHandler
 	);
 	commandHandler.submitDrawCommandBuffer(*(drawInfo.syncBundle));
 
@@ -94,8 +100,8 @@ void mtd::Renderer::recordDrawCommands
 	const Scene& scene,
 	const CommandHandler& commandHandler,
 	const DrawInfo& drawInfo,
-	const ImGuiHandler& guiHandler,
-	const vk::detail::DispatchLoaderDynamic& dldi
+	const std::vector<DrawBatch>& drawBatches,
+	const ImGuiHandler& guiHandler
 ) const
 {
 	assert
@@ -145,7 +151,7 @@ void mtd::Renderer::recordDrawCommands
 	for(const RayTracingPipeline& rayTracingPipeline: pipelines.rayTracingPipelines)
 	{
 		PROFILER_NEXT_STAGE(rayTracingPipeline.getName().c_str());
-		rayTracingPipeline.traceRays(commandBuffer, dldi);
+		rayTracingPipeline.traceRays(commandBuffer, mtdDevice.getDLDI());
 	}
 
 	vk::Rect2D renderArea{};
@@ -200,18 +206,35 @@ void mtd::Renderer::recordDrawCommands
 			commandBuffer.draw(3, 1, 0, 0);
 		}
 
+		const MeshPool& meshPool = scene.getMeshPool();
+		meshPool.bindBuffers(commandBuffer);
+
+		renderObjectManager.bindRenderObjectsBuffer(commandBuffer);
+
 		for(uint32_t pipelineIndex: renderPassInfo.pipelineIndices)
 		{
 			const GraphicsPipeline& graphicsPipeline = pipelines.graphicsPipelines[pipelineIndex];
 			PROFILER_NEXT_STAGE(graphicsPipeline.getName().c_str());
-			const MeshManager* pMeshManager = scene.getMeshManager(pipelineIndex);
-
-			if(pMeshManager->getMeshCount() == 0) continue;
 
 			graphicsPipeline.bind(commandBuffer);
-			pMeshManager->bindBuffers(commandBuffer);
 
-			pMeshManager->drawMesh(commandBuffer, graphicsPipeline);
+			for(const DrawBatch& drawBatch: drawBatches)
+			{
+				if(drawBatch.pipelineID != pipelineIndex) continue;
+				const MeshData& mesh = meshPool.getMesh(drawBatch.meshID);
+				graphicsPipeline.bindMeshDescriptors(commandBuffer, 0U);
+
+				for(const SubmeshData& submesh: mesh.submeshes)
+				{
+					graphicsPipeline.pushConstant(commandBuffer, submesh.materialSlot);
+					commandBuffer.drawIndexed
+					(
+						submesh.indexCount, drawBatch.instanceCount,
+						mesh.indexOffset + submesh.indexOffset, mesh.vertexOffset,
+						drawBatch.firstInstance
+					);
+				}
+			}
 		}
 
 		if(toSwapchain)

@@ -13,6 +13,7 @@ mtd::Engine::Engine(const EngineInfo& info, Window& window)
 	swapchain{device, surface.getSurface(), window.getDimensions()},
 	commandHandler{device},
 	camera{window.getAspectRatio()},
+	renderer{device},
 	scene{device},
 	imGuiHandler{device.getDevice()}
 {
@@ -62,7 +63,6 @@ void mtd::Engine::run(Window& window, const std::function<void(double)>& onUpdat
 		
 		renderer.render
 		(
-			device,
 			swapchain,
 			imGuiHandler,
 			framebuffers,
