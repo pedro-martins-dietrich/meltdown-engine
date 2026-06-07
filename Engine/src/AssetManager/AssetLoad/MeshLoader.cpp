@@ -26,15 +26,15 @@ bool mtd::MeshLoader::loadMesh
     }
 
     std::streamsize meshFileSize = meshFile.tellg();
-    if(meshFileSize < static_cast<std::streamsize>(sizeof(AssetHeader) + sizeof(AssetBlockHeader)))
+    if(meshFileSize < static_cast<std::streamsize>(sizeof(MeshHeader) + sizeof(AssetBlockHeader)))
     {
         LOG_WARNING("Invalid header for mesh file \"%s\".", filePath.data());
         return false;
     }
 
-    AssetHeader meshHeader;
+    MeshHeader meshHeader;
     meshFile.seekg(0, std::ios::beg);
-    meshFile.read(reinterpret_cast<char*>(&meshHeader), sizeof(AssetHeader));
+    meshFile.read(reinterpret_cast<char*>(&meshHeader), sizeof(MeshHeader));
 
     bool validMeshFile = true;
     validMeshFile &= (meshHeader.magic == MESH_MAGIC);
@@ -49,6 +49,8 @@ bool mtd::MeshLoader::loadMesh
     meshFile.read(reinterpret_cast<char*>(&blockHeader), sizeof(AssetBlockHeader));
 
     MeshData meshData{};
+    meshData.vertexStride = meshHeader.vertexStride;
+    meshData.indexOffset = static_cast<uint32_t>(indexData.size());
     meshData.materialSlotCount = 0U;
 
     std::streamoff currentOffset = meshFile.tellg();
@@ -70,17 +72,16 @@ bool mtd::MeshLoader::loadMesh
         {
             case "Vertices"_u64:
                 oldBufferSize = vertexData.size();
-                if(oldBufferSize % sizeof(Vertex) == 0)
+                if(oldBufferSize % meshData.vertexStride == 0)
                     vertexOffset = oldBufferSize;
                 else
-                    vertexOffset = oldBufferSize + sizeof(Vertex) - (oldBufferSize % sizeof(Vertex));
-                meshData.vertexOffset = static_cast<uint32_t>(vertexOffset / sizeof(Vertex));
+                    vertexOffset = oldBufferSize + meshData.vertexStride - (oldBufferSize % meshData.vertexStride);
+                meshData.vertexOffset = static_cast<uint32_t>(vertexOffset / meshData.vertexStride);
                 vertexData.resize(oldBufferSize + blockHeader.blockSize);
                 meshFile.read(reinterpret_cast<char*>(vertexData.data() + oldBufferSize), blockHeader.blockSize);
                 break;
 
             case "Indices\0"_u64:
-                meshData.indexOffset = indexData.size();
                 indexData.resize(meshData.indexOffset + (blockHeader.blockSize / sizeof(uint32_t)));
                 meshFile.read(reinterpret_cast<char*>(indexData.data() + meshData.indexOffset), blockHeader.blockSize);
                 break;

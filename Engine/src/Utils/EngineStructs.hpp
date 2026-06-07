@@ -128,6 +128,7 @@ namespace mtd
 	// Information for the mesh rendering
 	struct MeshData
 	{
+		uint32_t vertexStride;
 		uint32_t vertexOffset;
 		uint32_t indexOffset;
 		uint32_t materialSlotCount;
