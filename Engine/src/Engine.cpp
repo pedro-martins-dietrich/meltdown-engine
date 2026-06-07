@@ -13,6 +13,7 @@ mtd::Engine::Engine(const EngineInfo& info, Window& window)
 	swapchain{device, surface.getSurface(), window.getDimensions()},
 	commandHandler{device},
 	camera{window.getAspectRatio()},
+	renderer{device},
 	scene{device},
 	imGuiHandler{device.getDevice()}
 {
@@ -62,7 +63,6 @@ void mtd::Engine::run(Window& window, const std::function<void(double)>& onUpdat
 		
 		renderer.render
 		(
-			device,
 			swapchain,
 			imGuiHandler,
 			framebuffers,
@@ -204,13 +204,37 @@ void mtd::Engine::configureEventCallbacks()
 
 void mtd::Engine::configureGlobalDescriptorSetHandler()
 {
-	std::vector<vk::DescriptorSetLayoutBinding> bindings(1);
+	std::vector<vk::DescriptorSetLayoutBinding> bindings(5);
 	// Camera data
-	bindings[0].binding = 0;
+	bindings[0].binding = 0U;
 	bindings[0].descriptorType = vk::DescriptorType::eUniformBuffer;
-	bindings[0].descriptorCount = 1;
+	bindings[0].descriptorCount = 1U;
 	bindings[0].stageFlags = vk::ShaderStageFlagBits::eAll;
 	bindings[0].pImmutableSamplers = nullptr;
+	// Scene textures data
+	bindings[1].binding = 1U;
+	bindings[1].descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	bindings[1].descriptorCount = MAX_TEXTURE_POOL_SIZE;
+	bindings[1].stageFlags = vk::ShaderStageFlagBits::eAll;
+	bindings[1].pImmutableSamplers = nullptr;
+	// Scene materials indexing
+	bindings[2].binding = 2U;
+	bindings[2].descriptorType = vk::DescriptorType::eStorageBuffer;
+	bindings[2].descriptorCount = 1U;
+	bindings[2].stageFlags = vk::ShaderStageFlagBits::eAll;
+	bindings[2].pImmutableSamplers = nullptr;
+	// Scene materials data
+	bindings[3].binding = 3U;
+	bindings[3].descriptorType = vk::DescriptorType::eStorageBuffer;
+	bindings[3].descriptorCount = 1U;
+	bindings[3].stageFlags = vk::ShaderStageFlagBits::eAll;
+	bindings[3].pImmutableSamplers = nullptr;
+	// Scene material sets
+	bindings[4].binding = 4U;
+	bindings[4].descriptorType = vk::DescriptorType::eStorageBuffer;
+	bindings[4].descriptorCount = 1U;
+	bindings[4].stageFlags = vk::ShaderStageFlagBits::eAll;
+	bindings[4].pImmutableSamplers = nullptr;
 
 	globalDescriptorSetHandler = std::make_unique<DescriptorSetHandler>(device.getDevice(), bindings);
 }
@@ -279,14 +303,15 @@ void mtd::Engine::createRenderResources
 
 void mtd::Engine::configureDescriptors()
 {
-	globalDescriptorSetHandler->defineDescriptorSetsAmount(1);
+	globalDescriptorSetHandler->defineDescriptorSetsAmount(1U);
 	scene.getDescriptorPool().allocateDescriptorSet(*globalDescriptorSetHandler);
 	globalDescriptorSetHandler->createDescriptorResources
 	(
-		device, sizeof(CameraMatrices), vk::BufferUsageFlagBits::eUniformBuffer, 0, 0
+		device, sizeof(CameraMatrices), vk::BufferUsageFlagBits::eUniformBuffer, 0U, 0U
 	);
+	scene.configureSceneDescriptorSet(*globalDescriptorSetHandler);
 
-	globalDescriptorSetHandler->writeDescriptorSet(0);
+	globalDescriptorSetHandler->writeDescriptorSet(0U);
 
 	for(GraphicsPipeline& graphicsPipeline: pipelines.graphicsPipelines)
 		graphicsPipeline.configureUserDescriptorData(device, scene.getDescriptorPool());

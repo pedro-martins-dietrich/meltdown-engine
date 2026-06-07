@@ -56,15 +56,16 @@ mtd::GpuBuffer::GpuBuffer(GpuBuffer&& other) noexcept
 
 vk::DeviceAddress mtd::GpuBuffer::getBufferAddress() const
 {
-	assert(bufferMemory != nullptr && size != 0 && "Invalid buffer address.");
+	assert(bufferMemory && size != 0 && "Invalid GPU buffer address.");
 
 	vk::BufferDeviceAddressInfo addressInfo{buffer};
 	return device.getDevice().getBufferAddress(addressInfo);
 }
 
-// Initializes the buffer
 void mtd::GpuBuffer::create(vk::DeviceSize dataSize)
 {
+	assert(!buffer && !bufferMemory && "The GPU buffer has already been created.");
+
 	size = dataSize;
 
 	vk::BufferCreateInfo bufferCreateInfo{};
@@ -85,12 +86,13 @@ void mtd::GpuBuffer::create(vk::DeviceSize dataSize)
 	allocateBufferMemory();
 }
 
-// Initializes the buffer using device local memory
 void mtd::GpuBuffer::createDeviceLocal
 (
 	const CommandHandler& commandHandler, vk::DeviceSize dataSize, const void* data
 )
 {
+	assert(!buffer && !bufferMemory && "The GPU buffer has already been created.");
+
 	GpuBuffer stagingBuffer
 	{
 		device,
@@ -109,9 +111,12 @@ void mtd::GpuBuffer::createDeviceLocal
 	copyDataFromBuffer(stagingBuffer, commandHandler);
 }
 
-// Changes the buffer size by reallocating it
 void mtd::GpuBuffer::resizeBuffer(const CommandHandler& commandHandler, vk::DeviceSize newSize)
 {
+	assert(buffer && bufferMemory && "Cannot resize an invalid GPU buffer.");
+	
+	if(newSize == size) return;
+
 	GpuBuffer newBuffer
 	{
 		device,
@@ -119,21 +124,29 @@ void mtd::GpuBuffer::resizeBuffer(const CommandHandler& commandHandler, vk::Devi
 		usage | vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst,
 		memoryProperties
 	};
-	copyDataFromBuffer(newBuffer, commandHandler);
+	newBuffer.copyDataFromBuffer(*this, commandHandler);
+
+	device.getDevice().destroyBuffer(buffer);
+	device.getDevice().freeMemory(bufferMemory);
 
 	buffer = newBuffer.buffer;
 	bufferMemory = newBuffer.bufferMemory;
 	size = newSize;
 	usage = newBuffer.usage;
+
+	newBuffer.buffer = nullptr;
+	newBuffer.bufferMemory = nullptr;
 }
 
-// Copies data to the buffer
 void mtd::GpuBuffer::copyMemoryToBuffer(vk::DeviceSize copySize, const void* srcData, vk::DeviceSize bufferOffset)
 {
+	assert(buffer && bufferMemory && "Cannot copy memory to an invalid GPU buffer.");
+	assert(bufferOffset < size && "The buffer offset cannot be greater the the GPU buffer size.");
+
 	if(copySize > size - bufferOffset)
 	{
 		copySize = size - bufferOffset;
-		LOG_WARNING("Copy size exceeded the available GPU buffer size.");
+		LOG_WARNING("Copy size exceeded the available GPU buffer size. Only part of the data will be copied.");
 	}
 
 	void* memoryLocation = device.getDevice().mapMemory(bufferMemory, bufferOffset, copySize);
@@ -141,7 +154,6 @@ void mtd::GpuBuffer::copyMemoryToBuffer(vk::DeviceSize copySize, const void* src
 	device.getDevice().unmapMemory(bufferMemory);
 }
 
-// Allocates memory for the buffer
 void mtd::GpuBuffer::allocateBufferMemory()
 {
 	const vk::Device& vulkanDevice = device.getDevice();
@@ -167,7 +179,6 @@ void mtd::GpuBuffer::allocateBufferMemory()
 	vulkanDevice.bindBufferMemory(buffer, bufferMemory, 0);
 }
 
-// Copies the data from another buffer to this buffer
 void mtd::GpuBuffer::copyDataFromBuffer(const GpuBuffer& srcBuffer, const CommandHandler& commandHandler) const
 {
 	vk::DeviceSize copySize = (size > srcBuffer.size) ? srcBuffer.size : size;
@@ -184,7 +195,6 @@ void mtd::GpuBuffer::copyDataFromBuffer(const GpuBuffer& srcBuffer, const Comman
 	commandHandler.endSingleTimeCommand(commandBuffer);
 }
 
-// Finds the memory type index that fits the requirements
 uint32_t mtd::Memory::findMemoryTypeIndex
 (
 	const vk::PhysicalDevice& physicalDevice,

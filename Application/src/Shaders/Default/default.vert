@@ -4,10 +4,12 @@ layout(location = 0) in vec3 position;
 layout(location = 1) in vec2 textureCoordinates;
 layout(location = 2) in vec3 normal;
 
-layout(location = 4) in mat4 modelMatrix;
+layout(location = 3) in mat4 transform;
+layout(location = 7) in uvec4 instanceMaterialSet;
 
 layout(location = 0) out vec2 fragTextureCoordinates;
 layout(location = 1) out vec3 fragNormal;
+layout(location = 2) flat out uint materialSetID;
 
 layout(set = 0, binding = 0) uniform CameraMatrices
 {
@@ -19,7 +21,8 @@ layout(set = 0, binding = 0) uniform CameraMatrices
 void main()
 {
 	fragTextureCoordinates = textureCoordinates;
-	fragNormal = (modelMatrix * vec4(normal, 0.0f)).xyz;
+	fragNormal = (transform * vec4(normal, 0.0f)).xyz;
+	materialSetID = instanceMaterialSet.x;
 
-	gl_Position = camera.projectionView * (modelMatrix * vec4(position, 1.0f));
+	gl_Position = camera.projectionView * (transform * vec4(position, 1.0f));
 }

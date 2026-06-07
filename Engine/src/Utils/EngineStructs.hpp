@@ -55,12 +55,59 @@ namespace mtd
 		Mat4x4 projectionView;
 	};
 
+	// Common header format for asset files
+	struct AssetHeader
+	{
+		uint64_t magic;
+		uint32_t version;
+	};
+
+	// Common block header for asset files
+	struct AssetBlockHeader
+	{
+		uint64_t blockID;
+		uint32_t blockSize;
+	};
+
+	// Scene instance data
+	struct SceneInstance
+	{
+		Mat4x4 transform;
+		uint32_t pipelineID;
+		uint32_t meshID;
+		uint32_t materialSetID;
+		bool visible = true;
+	};
+
+	// Data used by the GPU for each render object
+	struct RenderObject
+	{
+		Mat4x4 transform;
+		uint32_t materialSetID;
+		uint32_t padding[3];
+	};
+
+	// Drawing data for each draw batch call
+	struct DrawBatch
+	{
+		uint32_t pipelineID;
+		uint32_t meshID;
+		uint32_t firstInstance;
+		uint32_t instanceCount;
+	};
+
 	// Vertex format
 	struct Vertex
 	{
 		Vec3 position;
 		Vec2 textureCoordinates;
 		Vec3 normal;
+	};
+
+	// Texture data for loading from the disk to the GPU
+	struct TextureInfo
+	{
+		std::string texturePath;
 	};
 
 	// Information about the attributes for a specific material type
@@ -74,7 +121,18 @@ namespace mtd
 	struct SubmeshData
 	{
 		uint32_t indexOffset;
-		uint32_t materialID;
+		uint32_t indexCount;
+		uint32_t materialSlot;
+	};
+
+	// Information for the mesh rendering
+	struct MeshData
+	{
+		uint32_t vertexStride;
+		uint32_t vertexOffset;
+		uint32_t indexOffset;
+		uint32_t materialSlotCount;
+		std::vector<SubmeshData> submeshes;
 	};
 
 	// Information required for drawing a frame

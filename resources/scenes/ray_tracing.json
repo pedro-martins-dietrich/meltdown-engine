@@ -1,5 +1,5 @@
 {
-	"scene-loader-version": "0.1.10",
+	"scene-loader-version": "0.2.0",
 	"camera":
 	{
 		"orthographic": false,
@@ -44,6 +44,10 @@
 	],
 	"meshes":
 	[
+		"meshes/meltdown_box.mesh"
+	],
+	"meshes-old":
+	[
 		[
 			{
 				"file": "meltdown_box/meltdown_box.obj",
@@ -58,5 +62,34 @@
 				]
 			}
 		]
+	],
+	"textures": [],
+	"materials":
+	[
+		"materials/meltdown_box_green.mtrl",
+		"materials/meltdown_box_light.mtrl",
+		"materials/meltdown_box_mirror.mtrl",
+		"materials/meltdown_box_red.mtrl",
+		"materials/meltdown_box_white.mtrl"
+	],
+	"material-sets":
+	[
+		[0, 1, 2, 3, 4]
+	],
+	"instances":
+	[
+		{
+			"pipeline-id": 0,
+			"mesh-id": 0,
+			"material-set-id": 0,
+			"transform":
+			[
+				1.0, 0.0, 0.0, 0.0,
+				0.0, 1.0, 0.0, 0.0,
+				0.0, 0.0, 1.0, 0.0,
+				0.0, 0.0, 1.0, 1.0
+			],
+			"visible": true
+		}
 	]
 }

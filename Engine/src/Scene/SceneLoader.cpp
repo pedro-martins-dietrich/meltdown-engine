@@ -14,7 +14,7 @@
 
 namespace mtd
 {
-	static constexpr const char* SCENE_LOADER_VERSION = "0.1.10";
+	static constexpr const char* SCENE_LOADER_VERSION = "0.2.0";
 
 	// Loads initial camera data for the scene
 	static void loadCamera(const nlohmann::json& cameraJson);
@@ -90,16 +90,33 @@ namespace mtd
 		const RayTracingPipelineInfo& rtPipelineInfo,
 		std::vector<std::unique_ptr<MeshManager>>& meshManagers
 	);
+
+	// Fetches all textures from the scene file
+	static void loadTextures(const nlohmann::json& texturesJson, TexturePool& texturePool);
+	// Fetches all material files and material sets from the scene file and loads them
+	static void loadMaterials
+	(
+		const nlohmann::json& materialsJson, const nlohmann::json& materialSetsJson, MaterialManager& materialManager
+	);
+	// Fetches all mesh files from the scene file and loads them
+	static void loadMeshes(const nlohmann::json& meshJson, MeshPool& meshPool);
+
+	// Loads all instances from the scene file
+	static void loadInstances(const nlohmann::json& instancesJson, InstanceManager& instanceManager);
 }
 
 void mtd::SceneLoader::load
 (
 	const Device& device,
-	const char* fileName,
+	std::string_view fileName,
 	std::vector<FramebufferInfo>& framebufferInfos,
 	PipelineInfoBundle& pipelineInfos,
 	std::vector<RenderPassInfo>& renderOrder,
-	std::vector<std::unique_ptr<MeshManager>>& meshManagers
+	std::vector<std::unique_ptr<MeshManager>>& meshManagers,
+	InstanceManager& instanceManager,
+	TexturePool& texturePool,
+	MaterialManager& materialManager,
+	MeshPool& meshPool
 )
 {
 	std::string scenePath{MTD_RESOURCES_PATH};
@@ -112,7 +129,7 @@ void mtd::SceneLoader::load
 	std::string fileVersion = sceneJson["scene-loader-version"];
 	if(fileVersion.compare(SCENE_LOADER_VERSION))
 	{
-		LOG_ERROR("Scene JSON file (\"%s\") version is incompatible with the scene loader.", fileName);
+		LOG_ERROR("Scene JSON file (\"%s\") version is incompatible with the scene loader.", fileName.data());
 		return;
 	}
 
@@ -123,7 +140,7 @@ void mtd::SceneLoader::load
 	const nlohmann::json& computePipelinesJson = sceneJson["compute-pipelines"];
 	const nlohmann::json& rtPipelinesJson = sceneJson["ray-tracing-pipelines"];
 	const nlohmann::json& fbPipelinesJson = sceneJson["framebuffer-pipelines"];
-	const nlohmann::json& meshesJson = sceneJson["meshes"];
+	const nlohmann::json& meshesJson = sceneJson["meshes-old"];
 
 	if((rasterPipelinesJson.size() + rtPipelinesJson.size()) != meshesJson.size())
 		LOG_ERROR("The number of pipelines and mesh managers should be the same.");
@@ -180,7 +197,13 @@ void mtd::SceneLoader::load
 		}
 	}
 
-	LOG_INFO("Scene \"%s\" loaded.", fileName);
+	loadTextures(sceneJson["textures"], texturePool);
+	loadMaterials(sceneJson["materials"], sceneJson["material-sets"], materialManager);
+	loadMeshes(sceneJson["meshes"], meshPool);
+
+	loadInstances(sceneJson["instances"], instanceManager);
+
+	LOG_INFO("Scene \"%s\" loaded.", fileName.data());
 }
 
 void mtd::loadCamera(const nlohmann::json& cameraJson)
@@ -494,4 +517,60 @@ void mtd::loadRayTracingMeshes
 
 		pMeshManager->createNewMesh(i, id.c_str(), file.c_str(), *pPreTransforms);
 	}
+}
+
+void mtd::loadTextures(const nlohmann::json& texturesJson, TexturePool& texturePool)
+{
+	std::vector<TextureInfo> textureInfos;
+	textureInfos.reserve(texturesJson.size());
+	for(const std::string& path: texturesJson)
+		textureInfos.emplace_back(MTD_RESOURCES_PATH + path);
+
+	texturePool.loadTextures(textureInfos);
+
+	LOG_VERBOSE("Loaded %d textures.", textureInfos.size());
+}
+
+void mtd::loadMaterials
+(
+	const nlohmann::json& materialsJson, const nlohmann::json& materialSetsJson, MaterialManager& materialManager
+)
+{
+	std::vector<std::string> materialPaths;
+	materialPaths.reserve(materialsJson.size());
+	for(const std::string& path: materialsJson)
+		materialPaths.emplace_back(MTD_RESOURCES_PATH + path);
+
+	std::vector<std::vector<uint32_t>> materialSets;
+	materialSetsJson.get_to(materialSets);
+
+	materialManager.loadMaterials(materialPaths, materialSets);
+}
+
+void mtd::loadMeshes(const nlohmann::json& meshJson, MeshPool& meshPool)
+{
+	std::vector<std::string> meshPaths;
+	meshPaths.reserve(meshJson.size());
+	for(const std::string& path: meshJson)
+		meshPaths.emplace_back(MTD_RESOURCES_PATH + path);
+
+	meshPool.loadMeshes(meshPaths);
+}
+
+void mtd::loadInstances(const nlohmann::json& instancesJson, InstanceManager& instanceManager)
+{
+	std::vector<SceneInstance> instances;
+	instances.reserve(instancesJson.size());
+	for(const nlohmann::json& instance: instancesJson)
+	{
+		uint32_t pipelineID = instance["pipeline-id"];
+		uint32_t meshID = instance["mesh-id"];
+		uint32_t materialSetID = instance["material-set-id"];
+		const std::array<float, 16>& transform = instance["transform"];
+		const Mat4x4* pTransform = reinterpret_cast<const Mat4x4*>(&transform);
+		bool visible = instance["visible"];
+
+		instances.emplace_back(*pTransform, pipelineID, meshID, materialSetID, visible);
+	}
+	instanceManager.loadInstances(instances);
 }

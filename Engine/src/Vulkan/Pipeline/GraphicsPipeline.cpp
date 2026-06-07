@@ -26,15 +26,13 @@ mtd::GraphicsPipeline::GraphicsPipeline(GraphicsPipeline&& other) noexcept
 	: Pipeline{std::move(other)}
 {}
 
-// Recreates the pipeline
 void mtd::GraphicsPipeline::recreate(vk::Extent2D extent, vk::RenderPass renderPass)
 {
 	device.destroyPipeline(pipeline);
 	createPipeline(extent, renderPass);
 }
 
-// Binds the pipeline and per pipeline descriptors to the command buffer
-void mtd::GraphicsPipeline::bind(const vk::CommandBuffer& commandBuffer) const
+void mtd::GraphicsPipeline::bind(vk::CommandBuffer commandBuffer) const
 {
 	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
 
@@ -50,8 +48,7 @@ void mtd::GraphicsPipeline::bind(const vk::CommandBuffer& commandBuffer) const
 	);
 }
 
-// Binds per mesh descriptors
-void mtd::GraphicsPipeline::bindMeshDescriptors(const vk::CommandBuffer& commandBuffer, uint32_t index) const
+void mtd::GraphicsPipeline::bindMeshDescriptors(vk::CommandBuffer commandBuffer, uint32_t index) const
 {
 	commandBuffer.bindDescriptorSets
 	(
@@ -63,7 +60,14 @@ void mtd::GraphicsPipeline::bindMeshDescriptors(const vk::CommandBuffer& command
 	);
 }
 
-// Loads the pipeline shader modules
+void mtd::GraphicsPipeline::pushConstant(vk::CommandBuffer commandBuffer, const uint32_t& constantData) const
+{
+	commandBuffer.pushConstants
+	(
+		pipelineLayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(uint32_t), &constantData
+	);
+}
+
 void mtd::GraphicsPipeline::loadShaderModules()
 {
 	shaders.reserve(2);
@@ -71,19 +75,23 @@ void mtd::GraphicsPipeline::loadShaderModules()
 	shaders.emplace_back(device, vk::ShaderStageFlagBits::eFragment, info.fragmentShaderPath.c_str());
 }
 
-// Creates the layout for the pipeline
 void mtd::GraphicsPipeline::createPipelineLayout(const vk::DescriptorSetLayout& globalDescriptorSetLayout)
 {
 	std::vector<vk::DescriptorSetLayout> descriptorSetLayouts{globalDescriptorSetLayout};
 	for(const DescriptorSetHandler& descriptorSetHandler: descriptorSetHandlers)
 		descriptorSetLayouts.push_back(descriptorSetHandler.getLayout());
 
+	vk::PushConstantRange pushConstantRange{};
+	pushConstantRange.stageFlags = vk::ShaderStageFlagBits::eFragment;
+	pushConstantRange.offset = 0;
+	pushConstantRange.size = sizeof(uint32_t);
+
 	vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
 	pipelineLayoutCreateInfo.flags = vk::PipelineLayoutCreateFlags();
 	pipelineLayoutCreateInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
 	pipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayouts.data();
-	pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
-	pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
+	pipelineLayoutCreateInfo.pushConstantRangeCount = 1U;
+	pipelineLayoutCreateInfo.pPushConstantRanges = &pushConstantRange;
 
 	vk::Result result = device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &pipelineLayout);
 	if(result != vk::Result::eSuccess)
@@ -94,7 +102,6 @@ void mtd::GraphicsPipeline::createPipelineLayout(const vk::DescriptorSetLayout& 
 	LOG_VERBOSE("Created pipeline layout.");
 }
 
-// Creates the graphics pipeline
 void mtd::GraphicsPipeline::createPipeline(vk::Extent2D extent, vk::RenderPass renderPass)
 {
 	std::vector<vk::PipelineShaderStageCreateInfo> shaderStageCreateInfos;
@@ -150,7 +157,6 @@ void mtd::GraphicsPipeline::createPipeline(vk::Extent2D extent, vk::RenderPass r
 	LOG_INFO("Created graphics pipeline.\n");
 }
 
-// Configures the descriptor set handlers to be used
 void mtd::GraphicsPipeline::createDescriptorSetLayouts()
 {
 	descriptorSetHandlers.reserve(info.descriptorSetInfo.size() == 0 ? 1 : 2);
@@ -192,7 +198,6 @@ void mtd::GraphicsPipeline::createDescriptorSetLayouts()
 	descriptorSetHandlers.emplace_back(device, bindings);
 }
 
-// Sets the input assembly create info
 void mtd::GraphicsPipeline::setInputAssembly(vk::PipelineInputAssemblyStateCreateInfo& inputAssemblyInfo) const
 {
 	inputAssemblyInfo.flags = vk::PipelineInputAssemblyStateCreateFlags();
@@ -200,7 +205,6 @@ void mtd::GraphicsPipeline::setInputAssembly(vk::PipelineInputAssemblyStateCreat
 	inputAssemblyInfo.primitiveRestartEnable = vk::False;
 }
 
-// Sets the viewport create info
 void mtd::GraphicsPipeline::setViewport
 (
 	vk::PipelineViewportStateCreateInfo& viewportInfo,
@@ -227,7 +231,6 @@ void mtd::GraphicsPipeline::setViewport
 	viewportInfo.pScissors = &scissor;
 }
 
-// Sets the rasterization create info
 void mtd::GraphicsPipeline::setRasterizer(vk::PipelineRasterizationStateCreateInfo& rasterizationInfo) const
 {
 	rasterizationInfo.flags = vk::PipelineRasterizationStateCreateFlags();
@@ -243,7 +246,6 @@ void mtd::GraphicsPipeline::setRasterizer(vk::PipelineRasterizationStateCreateIn
 	rasterizationInfo.lineWidth = 1.0f;
 }
 
-// Sets the multisample create info
 void mtd::GraphicsPipeline::setMultisampling(vk::PipelineMultisampleStateCreateInfo& multisampleInfo) const
 {
 	multisampleInfo.flags = vk::PipelineMultisampleStateCreateFlags();
@@ -255,7 +257,6 @@ void mtd::GraphicsPipeline::setMultisampling(vk::PipelineMultisampleStateCreateI
 	multisampleInfo.alphaToOneEnable = vk::False;
 }
 
-// Sets the depth stencil create info
 void mtd::GraphicsPipeline::setDepthStencil(vk::PipelineDepthStencilStateCreateInfo& depthStencilInfo) const
 {
 	depthStencilInfo.flags = vk::PipelineDepthStencilStateCreateFlags();

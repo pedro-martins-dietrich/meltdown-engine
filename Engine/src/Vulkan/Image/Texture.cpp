@@ -14,25 +14,45 @@ static constexpr std::array<uint32_t, 256> missingTexture = []() constexpr
 	return texture;
 }();
 
-mtd::Texture::Texture(const Device& mtdDevice, const char* fileName)
-	: width{0}, height{0}, channels{0},
-	pixels{nullptr}, image{mtdDevice.getDevice()},
-	isPlaceholderTexture{false}
+mtd::Texture::Texture(const Device& mtdDevice, std::string_view fileName) : image{mtdDevice.getDevice()}
 {
 	loadFromFile(mtdDevice, fileName);
+}
+
+mtd::Texture::Texture(const Device& mtdDevice, std::string_view fileName, const CommandHandler& commandHandler)
+	: image{mtdDevice.getDevice()}
+{
+	loadFromFile(mtdDevice, fileName);
+	loadToGpu(mtdDevice, commandHandler);
+}
+
+mtd::Texture::Texture(const Device& mtdDevice, const CommandHandler& commandHandler) : image{mtdDevice.getDevice()}
+{
+	int width = 0;
+	int height = 0;
+	pixels = loadPlaceholderTexture(width, height);
+
+	image.createImage
+	(
+		{static_cast<uint32_t>(width), static_cast<uint32_t>(height)},
+		vk::Format::eR8G8B8A8Unorm,
+		vk::ImageTiling::eOptimal,
+		vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled
+	);
+	image.createImageMemory(mtdDevice, vk::MemoryPropertyFlagBits::eDeviceLocal);
+
+	loadToGpu(mtdDevice, commandHandler);
 }
 
 mtd::Texture::Texture
 (
 	const Device& mtdDevice,
-	const char* fileName,
+	std::string_view fileName,
 	const CommandHandler& commandHandler,
 	DescriptorSetHandler& descriptorSetHandler,
 	uint32_t swappableSetIndex,
 	uint32_t binding
-) : width{0}, height{0}, channels{0},
-	pixels{nullptr}, image{mtdDevice.getDevice()},
-	isPlaceholderTexture{false}
+) : image{mtdDevice.getDevice()}
 {
 	loadFromFile(mtdDevice, fileName);
 	loadToGpu(mtdDevice, commandHandler);
@@ -40,8 +60,7 @@ mtd::Texture::Texture
 }
 
 mtd::Texture::Texture(Texture&& other) noexcept
-	: width{other.width}, height{other.height}, channels{other.channels},
-	pixels{other.pixels}, image{std::move(other.image)},
+	: channels{other.channels}, pixels{other.pixels}, image{std::move(other.image)},
 	isPlaceholderTexture{other.isPlaceholderTexture}
 {
 	other.pixels = nullptr;
@@ -58,7 +77,9 @@ void mtd::Texture::loadToGpu(const Device& mtdDevice, const CommandHandler& comm
 {
 	assert(pixels != nullptr && "The image must be loaded from file before loading to the GPU.");
 
-	const vk::DeviceSize imageSize = static_cast<vk::DeviceSize>(width * height * 4);
+	UIntVec2 dimensions = image.getDimensions();
+	const vk::DeviceSize imageSize = static_cast<vk::DeviceSize>(dimensions.x * dimensions.y * 4UL);
+
 	GpuBuffer stagingBuffer
 	{
 		mtdDevice,
@@ -89,20 +110,17 @@ void mtd::Texture::loadToGpu(const Device& mtdDevice, const CommandHandler& comm
 	image.createImageSampler(vk::Filter::eNearest);
 }
 
-void mtd::Texture::loadFromFile(const Device& mtdDevice, const char* fileName)
+void mtd::Texture::loadFromFile(const Device& mtdDevice, std::string_view fileName)
 {
+	int width = 0;
+	int height = 0;
+
 	stbi_set_flip_vertically_on_load(true);
-	pixels = stbi_load(fileName, &width, &height, &channels, STBI_rgb_alpha);
+	pixels = stbi_load(fileName.data(), &width, &height, &channels, STBI_rgb_alpha);
 	if(!pixels)
 	{
-		LOG_WARNING("Failed to load texture \"%s\".", fileName);
-
-		width = 16;
-		height = 16;
-		channels = 4;
-
-		pixels = (stbi_uc*) missingTexture.data();
-		isPlaceholderTexture = true;
+		LOG_WARNING("Failed to load texture \"%s\".", fileName.data());
+		pixels = loadPlaceholderTexture(width, height);
 	}
 
 	image.createImage
@@ -113,6 +131,16 @@ void mtd::Texture::loadFromFile(const Device& mtdDevice, const char* fileName)
 		vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled
 	);
 	image.createImageMemory(mtdDevice, vk::MemoryPropertyFlagBits::eDeviceLocal);
+}
+
+stbi_uc* mtd::Texture::loadPlaceholderTexture(int& width, int& height)
+{
+	width = 16;
+	height = 16;
+	channels = 4;
+
+	isPlaceholderTexture = true;
+	return (stbi_uc*) missingTexture.data();
 }
 
 void mtd::Texture::createDescriptorResource

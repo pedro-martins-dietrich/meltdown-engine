@@ -20,6 +20,7 @@ namespace mtd
 			vk::Image getImage() const { return image; }
 			vk::ImageView getImageView() const { return view; }
 			vk::Format getFormat() const { return format; }
+			UIntVec2 getDimensions() const { return dimensions; }
 
 			// Setter
 			void setVulkanImage(vk::Image newImage, vk::Format newFormat, UIntVec2 newDimensions);
@@ -80,12 +81,12 @@ namespace mtd
 			// Method for image sampling
 			vk::Sampler sampler;
 
-			// Image pixel format
-			vk::Format format;
-			// Image GPU memory layout
-			mutable vk::ImageLayout layout;
 			// Image resolution
-			UIntVec2 dimensions;
+			UIntVec2 dimensions = UIntVec2{0U, 0U};
+			// Image pixel format
+			vk::Format format = vk::Format::eUndefined;
+			// Image GPU memory layout
+			mutable vk::ImageLayout layout = vk::ImageLayout::eUndefined;
 
 			// Vulkan device reference
 			const vk::Device& device;

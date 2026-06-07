@@ -31,7 +31,7 @@ namespace mtd
 			uint32_t getSubmeshIndexOffset(uint32_t submeshIndex) const
 				{ return submeshInfos[submeshIndex].indexOffset; }
 			uint32_t getSubmeshMaterialIndex(uint32_t submeshIndex) const
-				{ return submeshInfos[submeshIndex].materialID; }
+				{ return submeshInfos[submeshIndex].materialSlot; }
 			uint32_t getSubmeshIndexCount(uint32_t submeshIndex) const;
 
 			// Sets all sub-mesh index offsets in the lump

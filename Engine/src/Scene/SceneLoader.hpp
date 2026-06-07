@@ -2,6 +2,10 @@
 
 #include <memory>
 
+#include "InstanceManager.hpp"
+#include "../AssetManager/TexturePool.hpp"
+#include "../AssetManager/MaterialManager.hpp"
+#include "../AssetManager/MeshPool.hpp"
 #include "../Vulkan/Mesh/MeshManager.hpp"
 #include "../Vulkan/Pipeline/PipelineBundles.hpp"
 
@@ -12,10 +16,14 @@ namespace mtd::SceneLoader
 	void load
 	(
 		const Device& device,
-		const char* fileName,
+		std::string_view fileName,
 		std::vector<FramebufferInfo>& framebufferInfos,
 		PipelineInfoBundle& pipelineInfos,
 		std::vector<RenderPassInfo>& renderOrder,
-		std::vector<std::unique_ptr<MeshManager>>& meshManagers
+		std::vector<std::unique_ptr<MeshManager>>& meshManagers,
+		InstanceManager& instanceManager,
+		TexturePool& texturePool,
+		MaterialManager& materialManager,
+		MeshPool& meshPool
 	);
 }

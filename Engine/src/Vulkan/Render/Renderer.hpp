@@ -1,5 +1,6 @@
 #pragma once
 
+#include "RenderObjectManager.hpp"
 #include "../Frame/Swapchain.hpp"
 #include "../Frame/Framebuffer.hpp"
 #include "../ImGui/ImGuiHandler.hpp"
@@ -12,7 +13,7 @@ namespace mtd
 	class Renderer
 	{
 		public:
-			Renderer();
+			Renderer(const Device& mtdDevice);
 			~Renderer() = default;
 
 			Renderer(const Renderer&) = delete;
@@ -27,7 +28,6 @@ namespace mtd
 			// Renders frame to screen
 			void render
 			(
-				const Device& device,
 				const Swapchain& swapchain,
 				const ImGuiHandler& guiHandler,
 				const std::vector<Framebuffer>& framebuffers,
@@ -45,6 +45,12 @@ namespace mtd
 			// Order which the framebuffers will be rendered
 			std::vector<RenderPassInfo> renderOrder;
 
+			// Handler for per frame data to be sent to the GPU
+			RenderObjectManager renderObjectManager;
+
+			// Device reference
+			const Device& mtdDevice;
+
 			// Records draw commands to the command buffer
 			void recordDrawCommands
 			(
@@ -53,8 +59,8 @@ namespace mtd
 				const Scene& scene,
 				const CommandHandler& commandHandler,
 				const DrawInfo& drawInfo,
-				const ImGuiHandler& guiHandler,
-				const vk::detail::DispatchLoaderDynamic& dldi
+				const std::vector<DrawBatch>& drawBatches,
+				const ImGuiHandler& guiHandler
 			) const;
 
 			// Presents frame to screen when ready

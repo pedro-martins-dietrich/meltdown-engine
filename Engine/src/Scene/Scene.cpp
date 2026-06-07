@@ -5,13 +5,15 @@
 #include "../Utils/Logger.hpp"
 #include "../Vulkan/Mesh/MeshManager.hpp"
 
-mtd::Scene::Scene(const Device& device) : descriptorPool{device.getDevice()}
+mtd::Scene::Scene(const Device& mtdDevice)
+	: texturePool{mtdDevice}, materialManager{mtdDevice}, meshPool{mtdDevice},
+	descriptorPool{mtdDevice.getDevice()}
 {}
 
 void mtd::Scene::loadScene
 (
-	const Device& device,
-	const char* sceneFileName,
+	const Device& mtdDevice,
+	std::string_view sceneFileName,
 	std::vector<FramebufferInfo>& framebufferInfos,
 	PipelineInfoBundle& pipelineInfos,
 	std::vector<RenderPassInfo>& renderOrder
@@ -22,12 +24,16 @@ void mtd::Scene::loadScene
 
 	SceneLoader::load
 	(
-		device,
+		mtdDevice,
 		sceneFileName,
 		framebufferInfos,
 		pipelineInfos,
 		renderOrder,
-		meshManagers
+		meshManagers,
+		instanceManager,
+		texturePool,
+		materialManager,
+		meshPool
 	);
 }
 
@@ -36,12 +42,13 @@ void mtd::Scene::allocateResources(PipelineBundle& pipelines)
 	descriptorPool.clear();
 
 	std::unordered_map<vk::DescriptorType, uint32_t> totalDescriptorTypeCount;
-	totalDescriptorTypeCount[vk::DescriptorType::eUniformBuffer] = 1 + getMaterialFloatDataCount();
+	totalDescriptorTypeCount[vk::DescriptorType::eUniformBuffer] = 1U + getMaterialFloatDataCount();
+	totalDescriptorTypeCount[vk::DescriptorType::eStorageBuffer] = 3U;
 
 	uint32_t totalImageSamplerCount = getTotalTextureCount();
 	for(const FramebufferPipeline& fbPipeline: pipelines.framebufferPipelines)
 		totalImageSamplerCount += fbPipeline.getImageDescriptorsCount();
-	if(totalImageSamplerCount > 0)
+	if(totalImageSamplerCount > 0U)
 		totalDescriptorTypeCount[vk::DescriptorType::eCombinedImageSampler] = totalImageSamplerCount;
 
 	for(const GraphicsPipeline& rasterPipeline: pipelines.graphicsPipelines)
@@ -76,7 +83,7 @@ void mtd::Scene::allocateResources(PipelineBundle& pipelines)
 	for(uint32_t i = 0; i < pipelines.graphicsPipelines.size(); i++)
 	{
 		const std::unique_ptr<MeshManager>& pMeshManager = meshManagers[i];
-		if(pMeshManager->getMeshCount() == 0) continue;
+		if(pMeshManager->getMeshCount() == 0U) continue;
 
 		DescriptorSetHandler& descriptorSetHandler = pipelines.graphicsPipelines[i].getDescriptorSetHandler(0);
 		descriptorSetHandler.defineDescriptorSetsAmount(pMeshManager->getMaterialCount());
@@ -87,19 +94,19 @@ void mtd::Scene::allocateResources(PipelineBundle& pipelines)
 	for(FramebufferPipeline& fbPipeline: pipelines.framebufferPipelines)
 	{
 		DescriptorSetHandler& descriptorSetHandler = fbPipeline.getDescriptorSetHandler(0);
-		descriptorSetHandler.defineDescriptorSetsAmount(1);
+		descriptorSetHandler.defineDescriptorSetsAmount(1U);
 		descriptorPool.allocateDescriptorSet(descriptorSetHandler);
 	}
 	for(ComputePipeline& computePipeline: pipelines.computePipelines)
 	{
 		DescriptorSetHandler& descriptorSetHandler = computePipeline.getDescriptorSetHandler(0);
-		descriptorSetHandler.defineDescriptorSetsAmount(1);
+		descriptorSetHandler.defineDescriptorSetsAmount(1U);
 		descriptorPool.allocateDescriptorSet(descriptorSetHandler);
 	}
 	for(uint32_t i = 0; i < pipelines.rayTracingPipelines.size(); i++)
 	{
 		DescriptorSetHandler& descriptorSetHandler = pipelines.rayTracingPipelines[i].getDescriptorSetHandler(0);
-		descriptorSetHandler.defineDescriptorSetsAmount(1);
+		descriptorSetHandler.defineDescriptorSetsAmount(1U);
 
 		vk::DescriptorSetVariableDescriptorCountAllocateInfo variableCountInfo{};
 		variableCountInfo.descriptorSetCount = 1U;
@@ -111,11 +118,17 @@ void mtd::Scene::allocateResources(PipelineBundle& pipelines)
 	LOG_INFO("Meshes loaded to the GPU.\n");
 }
 
+void mtd::Scene::configureSceneDescriptorSet(DescriptorSetHandler& descriptorSetHandler) const
+{
+	texturePool.createTextureListDescriptor(descriptorSetHandler, 1U);
+	materialManager.createMaterialDescriptor(descriptorSetHandler, 2U, 3U, 4U);
+}
+
 void mtd::Scene::start() const
 {
 	for(const std::unique_ptr<MeshManager>& pMeshManager: meshManagers)
 	{
-		if(pMeshManager->getMeshCount() > 0)
+		if(pMeshManager->getMeshCount() > 0U)
 			pMeshManager->start();
 	}
 }
@@ -124,23 +137,25 @@ void mtd::Scene::update(double frameTime) const
 {
 	for(const std::unique_ptr<MeshManager>& pMeshManager: meshManagers)
 	{
-		if(pMeshManager->getMeshCount() > 0)
+		if(pMeshManager->getMeshCount() > 0U)
 			pMeshManager->update(frameTime);
 	}
 }
 
 uint32_t mtd::Scene::getTotalTextureCount() const
 {
-	uint32_t count = 0;
+	uint32_t count = 0U;
 	for(const std::unique_ptr<MeshManager>& pMeshManager: meshManagers)
 		count += pMeshManager->getTextureCount();
+
+	count += MAX_TEXTURE_POOL_SIZE;
 
 	return count;
 }
 
 uint32_t mtd::Scene::getMaterialFloatDataCount() const
 {
-	uint32_t count = 0;
+	uint32_t count = 0U;
 	for(const std::unique_ptr<MeshManager>& pMeshManager: meshManagers)
 	{
 		if(pMeshManager->hasMaterialFloatData())

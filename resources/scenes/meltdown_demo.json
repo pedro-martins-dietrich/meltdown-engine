@@ -1,5 +1,5 @@
 {
-	"scene-loader-version": "0.1.10",
+	"scene-loader-version": "0.2.0",
 	"camera":
 	{
 		"orthographic": false,
@@ -81,9 +81,19 @@
 	],
 	"meshes":
 	[
+		"meshes/ground.mesh",
+		"meshes/tetrahedron.mesh",
+		"meshes/cube.mesh",
+		"meshes/octahedron.mesh",
+		"meshes/dodecahedron.mesh",
+		"meshes/icosahedron.mesh"
+	],
+	"meshes-old":
+	[
 		[
 			{
 				"file": "ground/ground.obj",
+				"texture-id": 0,
 				"pre-transforms":
 				[
 					[
@@ -96,6 +106,7 @@
 			},
 			{
 				"file": "tetrahedron/tetrahedron.obj",
+				"texture-id": 1,
 				"model-id": "spinning",
 				"pre-transforms":
 				[
@@ -115,6 +126,7 @@
 			},
 			{
 				"file": "cube/cube.obj",
+				"texture-id": 2,
 				"model-id": "spinning",
 				"pre-transforms":
 				[
@@ -134,6 +146,7 @@
 			},
 			{
 				"file": "octahedron/octahedron.obj",
+				"texture-id": 3,
 				"model-id": "spinning",
 				"pre-transforms":
 				[
@@ -153,6 +166,7 @@
 			},
 			{
 				"file": "dodecahedron/dodecahedron.obj",
+				"texture-id": 4,
 				"model-id": "spinning",
 				"pre-transforms":
 				[
@@ -172,6 +186,7 @@
 			},
 			{
 				"file": "icosahedron/icosahedron.obj",
+				"texture-id": 5,
 				"model-id": "rotating",
 				"pre-transforms":
 				[
@@ -187,6 +202,7 @@
 		[
 			{
 				"texture": "textures/orb.png",
+				"texture-id": 6,
 				"pre-transforms":
 				[
 					[
@@ -205,6 +221,7 @@
 			},
 			{
 				"texture": "textures/square_billboard.png",
+				"texture-id": 7,
 				"pre-transforms":
 				[
 					[
@@ -222,5 +239,171 @@
 				]
 			}
 		]
+	],
+	"textures":
+	[
+		"textures/ground.png",
+		"textures/tetrahedron.png",
+		"textures/cube.png",
+		"textures/octahedron.png",
+		"textures/dodecahedron.png",
+		"textures/icosahedron.png",
+		"textures/orb.png",
+		"textures/square_billboard.png"
+	],
+	"materials":
+	[
+		"materials/ground.mtrl",
+		"materials/tetrahedron.mtrl",
+		"materials/cube.mtrl",
+		"materials/octahedron.mtrl",
+		"materials/dodecahedron.mtrl",
+		"materials/icosahedron.mtrl",
+		"materials/orb.mtrl",
+		"materials/square_billboard.mtrl"
+	],
+	"material-sets":
+	[
+		[0],
+		[1],
+		[2],
+		[3],
+		[4],
+		[5],
+		[6],
+		[7]
+	],
+	"instances":
+	[
+		{
+			"pipeline-id": 0,
+			"mesh-id": 0,
+			"material-set-id": 0,
+			"transform":
+			[
+				1.0, 0.0, 0.0, 0.0,
+				0.0, 1.0, 0.0, 0.0,
+				0.0, 0.0, 1.0, 0.0,
+				0.0, 0.3, 0.0, 1.0
+			],
+			"visible": true
+		},
+		{
+			"pipeline-id": 0,
+			"mesh-id": 1,
+			"material-set-id": 1,
+			"transform":
+			[
+				1.0, 0.0, 0.0, 0.0,
+				0.0, 1.0, 0.0, 0.0,
+				0.0, 0.0, 1.0, 0.0,
+				4.0, 0.0, 4.0, 1.0
+			],
+			"visible": true
+		},
+		{
+			"pipeline-id": 0,
+			"mesh-id": 1,
+			"material-set-id": 1,
+			"transform":
+			[
+				-1.0, 0.0, 0.0, 0.0,
+				0.0, -1.0, 0.0, 0.0,
+				0.0, 0.0, 1.0, 0.0,
+				-4.0, 0.0, -4.0, 1.0
+			],
+			"visible": true
+		},
+		{
+			"pipeline-id": 0,
+			"mesh-id": 2,
+			"material-set-id": 2,
+			"transform":
+			[
+				1.0, 0.0, 0.0, 0.0,
+				0.0, 1.0, 0.0, 0.0,
+				0.0, 0.0, 1.0, 0.0,
+				4.0, 0.0, 0.0, 1.0
+			],
+			"visible": true
+		},
+		{
+			"pipeline-id": 0,
+			"mesh-id": 2,
+			"material-set-id": 2,
+			"transform":
+			[
+				0.5, 0.5, 0.7071, 0.0,
+				-0.7071, 0.7071, 0.0, 0.0,
+				-0.5, -0.5, 0.7071, 0.0,
+				-4.0, 0.0, 0.0, 1.0
+			],
+			"visible": true
+		},
+		{
+			"pipeline-id": 0,
+			"mesh-id": 3,
+			"material-set-id": 3,
+			"transform":
+			[
+				1.0, 0.0, 0.0, 0.0,
+				0.0, 1.0, 0.0, 0.0,
+				0.0, 0.0, 1.0, 0.0,
+				4.0, 0.0, -4.0, 1.0
+			],
+			"visible": true
+		},
+		{
+			"pipeline-id": 0,
+			"mesh-id": 3,
+			"material-set-id": 3,
+			"transform":
+			[
+				0.5, 0.5, 0.7071, 0.0,
+				-0.7071, 0.7071, 0.0, 0.0,
+				-0.5, -0.5, 0.7071, 0.0,
+				-4.0, 0.0, 4.0, 1.0
+			],
+			"visible": true
+		},
+		{
+			"pipeline-id": 0,
+			"mesh-id": 4,
+			"material-set-id": 4,
+			"transform":
+			[
+				1.0, 0.0, 0.0, 0.0,
+				0.0, 1.0, 0.0, 0.0,
+				0.0, 0.0, 1.0, 0.0,
+				0.0, 0.0, -4.0, 1.0
+			],
+			"visible": true
+		},
+		{
+			"pipeline-id": 0,
+			"mesh-id": 4,
+			"material-set-id": 4,
+			"transform":
+			[
+				0.5, 0.5, 0.7071, 0.0,
+				-0.7071, 0.7071, 0.0, 0.0,
+				-0.5, -0.5, 0.7071, 0.0,
+				0.0, 0.0, 4.0, 1.0
+			],
+			"visible": true
+		},
+		{
+			"pipeline-id": 0,
+			"mesh-id": 5,
+			"material-set-id": 5,
+			"transform":
+			[
+				1.0, 0.0, 0.0, 0.0,
+				0.0, 1.0, 0.0, 0.0,
+				0.0, 0.0, 1.0, 0.0,
+				1.0, 0.0, 0.0, 1.0
+			],
+			"visible": true
+		}
 	]
 }

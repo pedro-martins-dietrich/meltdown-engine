@@ -52,7 +52,7 @@ namespace mtd
 			GpuBuffer floatDataBuffer;
 
 			// Counter for the materials in the lump
-			uint32_t materialCount;
+			uint32_t materialCount = 0U;
 
 			// Device reference
 			const Device& mtdDevice;
