@@ -130,6 +130,9 @@ void mtd::Renderer::recordDrawCommands
 		);
 	}
 
+	const MeshPool& meshPool = scene.getMeshPool();
+	meshPool.bindBuffers(commandBuffer);
+
 	for(const ComputePipeline& computePipeline: pipelines.computePipelines)
 	{
 		PROFILER_NEXT_STAGE(computePipeline.getName().c_str());
@@ -205,9 +208,6 @@ void mtd::Renderer::recordDrawCommands
 			fbPipeline.bind(commandBuffer);
 			commandBuffer.draw(3, 1, 0, 0);
 		}
-
-		const MeshPool& meshPool = scene.getMeshPool();
-		meshPool.bindBuffers(commandBuffer);
 
 		renderObjectManager.bindRenderObjectsBuffer(commandBuffer);
 

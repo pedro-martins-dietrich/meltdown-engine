@@ -102,7 +102,7 @@ void mtd::GpuBuffer::createDeviceLocal
 	};
 
 	size = stagingBuffer.size;
-	usage |= vk::BufferUsageFlagBits::eTransferDst;
+	usage |= vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst;
 	memoryProperties = vk::MemoryPropertyFlagBits::eDeviceLocal;
 
 	stagingBuffer.copyMemoryToBuffer(dataSize, data);

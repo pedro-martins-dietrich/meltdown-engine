@@ -5,8 +5,18 @@
 #include "../Utils/Logger.hpp"
 
 mtd::MeshPool::MeshPool(const Device& mtdDevice)
-    : vertexBuffer{mtdDevice, vk::BufferUsageFlagBits::eVertexBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal},
-    indexBuffer{mtdDevice, vk::BufferUsageFlagBits::eIndexBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal},
+    : vertexBuffer
+    {
+        mtdDevice,
+        vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eVertexBuffer,
+        vk::MemoryPropertyFlagBits::eDeviceLocal
+    },
+    indexBuffer
+    {
+        mtdDevice,
+        vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eIndexBuffer,
+        vk::MemoryPropertyFlagBits::eDeviceLocal
+    },
     commandHandler{mtdDevice}
 {}
 

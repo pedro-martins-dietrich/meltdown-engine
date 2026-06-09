@@ -17,6 +17,8 @@
 /Engine/install
 
 /resources/shaders
+
+/Application/**/experimental
 /resources/**/experimental
 
 CMakeSettings.json
