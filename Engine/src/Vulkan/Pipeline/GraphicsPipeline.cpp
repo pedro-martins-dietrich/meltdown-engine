@@ -64,7 +64,7 @@ void mtd::GraphicsPipeline::pushConstant(vk::CommandBuffer commandBuffer, const 
 {
 	commandBuffer.pushConstants
 	(
-		pipelineLayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(uint32_t), &constantData
+		pipelineLayout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(uint32_t), &constantData
 	);
 }
 
@@ -82,7 +82,7 @@ void mtd::GraphicsPipeline::createPipelineLayout(const vk::DescriptorSetLayout& 
 		descriptorSetLayouts.push_back(descriptorSetHandler.getLayout());
 
 	vk::PushConstantRange pushConstantRange{};
-	pushConstantRange.stageFlags = vk::ShaderStageFlagBits::eFragment;
+	pushConstantRange.stageFlags = vk::ShaderStageFlagBits::eVertex;
 	pushConstantRange.offset = 0;
 	pushConstantRange.size = sizeof(uint32_t);
 

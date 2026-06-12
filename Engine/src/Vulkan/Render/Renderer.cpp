@@ -222,7 +222,6 @@ void mtd::Renderer::recordDrawCommands
 			{
 				if(drawBatch.pipelineID != pipelineIndex) continue;
 				const MeshData& mesh = meshPool.getMesh(drawBatch.meshID);
-				graphicsPipeline.bindMeshDescriptors(commandBuffer, 0U);
 
 				for(const SubmeshData& submesh: mesh.submeshes)
 				{
