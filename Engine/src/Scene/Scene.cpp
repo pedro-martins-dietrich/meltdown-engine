@@ -80,17 +80,6 @@ void mtd::Scene::allocateResources(PipelineBundle& pipelines)
 
 	descriptorPool.createDescriptorPool(poolSizesInfo, vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet);
 
-	for(uint32_t i = 0; i < pipelines.graphicsPipelines.size(); i++)
-	{
-		const std::unique_ptr<MeshManager>& pMeshManager = meshManagers[i];
-		if(pMeshManager->getMeshCount() == 0U) continue;
-
-		DescriptorSetHandler& descriptorSetHandler = pipelines.graphicsPipelines[i].getDescriptorSetHandler(0);
-		descriptorSetHandler.defineDescriptorSetsAmount(pMeshManager->getMaterialCount());
-		descriptorPool.allocateDescriptorSet(descriptorSetHandler);
-
-		pMeshManager->loadMeshes(descriptorSetHandler);
-	}
 	for(FramebufferPipeline& fbPipeline: pipelines.framebufferPipelines)
 	{
 		DescriptorSetHandler& descriptorSetHandler = fbPipeline.getDescriptorSetHandler(0);
@@ -113,7 +102,7 @@ void mtd::Scene::allocateResources(PipelineBundle& pipelines)
 		variableCountInfo.pDescriptorCounts = &totalImageSamplerCount;
 		descriptorPool.allocateDescriptorSet(descriptorSetHandler, &variableCountInfo);
 
-		meshManagers[pipelines.graphicsPipelines.size() + i]->loadMeshes(descriptorSetHandler);
+		meshManagers[i]->loadMeshes(descriptorSetHandler);
 	}
 	LOG_INFO("Meshes loaded to the GPU.\n");
 }
