@@ -8,7 +8,7 @@ namespace mtd::VertexInputBuilder
 {
 	// Vertex input builders for each pipeline type
 	static void defaultVertexInput(vk::PipelineVertexInputStateCreateInfo& vertexInputInfo);
-	static void noVertexInput(vk::PipelineVertexInputStateCreateInfo& vertexInputInfo);
+	static void billboardVertexInput(vk::PipelineVertexInputStateCreateInfo& vertexInputInfo);
 }
 
 void mtd::VertexInputBuilder::setVertexInput(MeshType type, vk::PipelineVertexInputStateCreateInfo& vertexInputInfo)
@@ -21,12 +21,12 @@ void mtd::VertexInputBuilder::setVertexInput(MeshType type, vk::PipelineVertexIn
 			break;
 
 		case MeshType::Billboard:
-			noVertexInput(vertexInputInfo);
+			billboardVertexInput(vertexInputInfo);
 			break;
 
 		default:
 			LOG_WARNING("No vertex input builder set for pipeline type %d.", type);
-			noVertexInput(vertexInputInfo);
+			defaultVertexInput(vertexInputInfo);
 	}
 }
 
@@ -34,11 +34,11 @@ void mtd::VertexInputBuilder::defaultVertexInput(vk::PipelineVertexInputStateCre
 {
 	static std::array<vk::VertexInputBindingDescription, 2> bindingDescriptions;
 	// Per vertex binding
-	bindingDescriptions[0].binding = 0;
+	bindingDescriptions[0].binding = 0U;
 	bindingDescriptions[0].stride = static_cast<uint32_t>(sizeof(Vertex));
 	bindingDescriptions[0].inputRate = vk::VertexInputRate::eVertex;
 	// Per instance binding
-	bindingDescriptions[1].binding = 1;
+	bindingDescriptions[1].binding = 1U;
 	bindingDescriptions[1].stride = static_cast<uint32_t>(sizeof(RenderObject));
 	bindingDescriptions[1].inputRate = vk::VertexInputRate::eInstance;
 
@@ -59,7 +59,7 @@ void mtd::VertexInputBuilder::defaultVertexInput(vk::PipelineVertexInputStateCre
 	attributeDescriptions[2].format = vk::Format::eR32G32B32Sfloat;
 	attributeDescriptions[2].offset = 5U * sizeof(float);
 	// Instance transformation matrix
-	for(size_t i = 0; i < 4; i++)
+	for(uint32_t i = 0U; i < 4U; i++)
 	{
 		attributeDescriptions[3 + i].location = 3U + i;
 		attributeDescriptions[3 + i].binding = 1U;
@@ -79,27 +79,41 @@ void mtd::VertexInputBuilder::defaultVertexInput(vk::PipelineVertexInputStateCre
 	vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 }
 
-void mtd::VertexInputBuilder::noVertexInput(vk::PipelineVertexInputStateCreateInfo& vertexInputInfo)
+void mtd::VertexInputBuilder::billboardVertexInput(vk::PipelineVertexInputStateCreateInfo& vertexInputInfo)
 {
-	static vk::VertexInputBindingDescription bindingDescription;
+	static std::array<vk::VertexInputBindingDescription, 2> bindingDescriptions;
+	// Per vertex binding
+	bindingDescriptions[0].binding = 0U;
+	bindingDescriptions[0].stride = static_cast<uint32_t>(sizeof(Vec2));
+	bindingDescriptions[0].inputRate = vk::VertexInputRate::eVertex;
 	// Per instance binding
-	bindingDescription.binding = 0;
-	bindingDescription.stride = static_cast<uint32_t>(sizeof(mtd::Mat4x4));
-	bindingDescription.inputRate = vk::VertexInputRate::eInstance;
+	bindingDescriptions[1].binding = 1U;
+	bindingDescriptions[1].stride = static_cast<uint32_t>(sizeof(RenderObject));
+	bindingDescriptions[1].inputRate = vk::VertexInputRate::eInstance;
 
-	static std::array<vk::VertexInputAttributeDescription, 4> attributeDescriptions;
+	static std::array<vk::VertexInputAttributeDescription, 6> attributeDescriptions;
+	// Vertex position
+	attributeDescriptions[0].location = 0U;
+	attributeDescriptions[0].binding = 0U;
+	attributeDescriptions[0].format = vk::Format::eR32G32Sfloat;
+	attributeDescriptions[0].offset = 0U;
 	// Instance transformation matrix
-	for(size_t i = 0; i < 4; i++)
+	for(uint32_t i = 0U; i < 4U; i++)
 	{
-		attributeDescriptions[i].location = i;
-		attributeDescriptions[i].binding = 0;
-		attributeDescriptions[i].format = vk::Format::eR32G32B32A32Sfloat;
-		attributeDescriptions[i].offset = 4 * i * sizeof(float);
+		attributeDescriptions[1 + i].location = 1U + i;
+		attributeDescriptions[1 + i].binding = 1U;
+		attributeDescriptions[1 + i].format = vk::Format::eR32G32B32A32Sfloat;
+		attributeDescriptions[1 + i].offset = 4U * i * sizeof(float);
 	}
+	// Instance material set
+	attributeDescriptions[5].location = 5U;
+	attributeDescriptions[5].binding = 1U;
+	attributeDescriptions[5].format = vk::Format::eR8G8B8A8Uint;
+	attributeDescriptions[5].offset = 16U * sizeof(float);
 
 	vertexInputInfo.flags = vk::PipelineVertexInputStateCreateFlags();
-	vertexInputInfo.vertexBindingDescriptionCount = 1;
-	vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+	vertexInputInfo.vertexBindingDescriptionCount = bindingDescriptions.size();
+	vertexInputInfo.pVertexBindingDescriptions = bindingDescriptions.data();
 	vertexInputInfo.vertexAttributeDescriptionCount = attributeDescriptions.size();
 	vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 }

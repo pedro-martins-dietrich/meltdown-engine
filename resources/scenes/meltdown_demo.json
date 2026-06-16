@@ -81,6 +81,7 @@
 	],
 	"meshes":
 	[
+		"meshes/square.mesh",
 		"meshes/ground.mesh",
 		"meshes/tetrahedron.mesh",
 		"meshes/cube.mesh",
@@ -126,7 +127,7 @@
 	[
 		{
 			"pipeline-id": 0,
-			"mesh-id": 0,
+			"mesh-id": 1,
 			"material-set-id": 0,
 			"transform":
 			[
@@ -139,7 +140,7 @@
 		},
 		{
 			"pipeline-id": 0,
-			"mesh-id": 1,
+			"mesh-id": 2,
 			"material-set-id": 1,
 			"transform":
 			[
@@ -152,7 +153,7 @@
 		},
 		{
 			"pipeline-id": 0,
-			"mesh-id": 1,
+			"mesh-id": 2,
 			"material-set-id": 1,
 			"transform":
 			[
@@ -165,7 +166,7 @@
 		},
 		{
 			"pipeline-id": 0,
-			"mesh-id": 2,
+			"mesh-id": 3,
 			"material-set-id": 2,
 			"transform":
 			[
@@ -178,7 +179,7 @@
 		},
 		{
 			"pipeline-id": 0,
-			"mesh-id": 2,
+			"mesh-id": 3,
 			"material-set-id": 2,
 			"transform":
 			[
@@ -191,7 +192,7 @@
 		},
 		{
 			"pipeline-id": 0,
-			"mesh-id": 3,
+			"mesh-id": 4,
 			"material-set-id": 3,
 			"transform":
 			[
@@ -204,7 +205,7 @@
 		},
 		{
 			"pipeline-id": 0,
-			"mesh-id": 3,
+			"mesh-id": 4,
 			"material-set-id": 3,
 			"transform":
 			[
@@ -217,7 +218,7 @@
 		},
 		{
 			"pipeline-id": 0,
-			"mesh-id": 4,
+			"mesh-id": 5,
 			"material-set-id": 4,
 			"transform":
 			[
@@ -230,7 +231,7 @@
 		},
 		{
 			"pipeline-id": 0,
-			"mesh-id": 4,
+			"mesh-id": 5,
 			"material-set-id": 4,
 			"transform":
 			[
@@ -243,7 +244,7 @@
 		},
 		{
 			"pipeline-id": 0,
-			"mesh-id": 5,
+			"mesh-id": 6,
 			"material-set-id": 5,
 			"transform":
 			[
@@ -256,7 +257,7 @@
 		},
 		{
 			"pipeline-id": 1,
-			"mesh-id": 2,
+			"mesh-id": 0,
 			"material-set-id": 6,
 			"transform":
 			[
@@ -265,11 +266,11 @@
 				0.0, 0.0, 1.0, 0.0,
 				2.0, -1.5, 2.0, 1.0
 			],
-			"visible": false
+			"visible": true
 		},
 		{
 			"pipeline-id": 1,
-			"mesh-id": 2,
+			"mesh-id": 0,
 			"material-set-id": 6,
 			"transform":
 			[
@@ -278,11 +279,11 @@
 				0.0, 0.0, 1.0, 0.0,
 				-2.0, -1.5, -2.0, 1.0
 			],
-			"visible": false
+			"visible": true
 		},
 		{
 			"pipeline-id": 1,
-			"mesh-id": 2,
+			"mesh-id": 0,
 			"material-set-id": 7,
 			"transform":
 			[
@@ -291,11 +292,11 @@
 				0.0, 0.0, 1.0, 0.0,
 				2.0, -1.5, -2.0, 1.0
 			],
-			"visible": false
+			"visible": true
 		},
 		{
 			"pipeline-id": 1,
-			"mesh-id": 2,
+			"mesh-id": 0,
 			"material-set-id": 7,
 			"transform":
 			[
@@ -304,7 +305,7 @@
 				0.0, 0.0, 1.0, 0.0,
 				-2.0, -1.5, 2.0, 1.0
 			],
-			"visible": false
+			"visible": true
 		}
 	]
 }
