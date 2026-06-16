@@ -81,7 +81,7 @@ jobs:
         run: >
           cmake -S ${{github.workspace}}
           -B ${{env.BUILD_PATH}}
-          -G "Visual Studio 17 2022"
+          -G "Visual Studio 18 2026"
           -D CMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
           -D CMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
           -D CMAKE_INSTALL_PREFIX="./install"
