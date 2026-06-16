@@ -51,7 +51,7 @@ void mtd::Scene::allocateResources(PipelineBundle& pipelines)
 	if(totalImageSamplerCount > 0U)
 		totalDescriptorTypeCount[vk::DescriptorType::eCombinedImageSampler] = totalImageSamplerCount;
 
-	for(const GraphicsPipeline& rasterPipeline: pipelines.graphicsPipelines)
+	for(const RasterizationPipeline& rasterPipeline: pipelines.rasterizationPipelines)
 		for(const auto& [type, count]: rasterPipeline.getDescriptorTypeCount())
 			totalDescriptorTypeCount[type] += count;
 	for(const FramebufferPipeline& fbPipeline: pipelines.framebufferPipelines)

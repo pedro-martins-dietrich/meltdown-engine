@@ -24,8 +24,8 @@ namespace mtd::SceneLoader
 	// Fetches the rasterization pipeline infos from the scene file
 	static void loadRasterizationPipelines
 	(
-		const nlohmann::json& pipelineJson,
-		std::vector<GraphicsPipelineInfo>& graphicsPipelineInfos,
+		const nlohmann::json& rasterizationPipelineJson,
+		std::vector<RasterizationPipelineInfo>& rasterizationPipelineInfos,
 		std::vector<RenderPassInfo>& renderOrder
 	);
 	// Fetches the ray tracing pipeline infos from the scene file
@@ -119,7 +119,7 @@ void mtd::SceneLoader::load
 		LOG_ERROR("The number of ray tracing pipelines and mesh managers should be the same.");
 	
 	framebufferInfos.reserve(framebuffersJson.size());
-	pipelineInfos.graphicsInfos.reserve(rasterPipelinesJson.size());
+	pipelineInfos.rasterizerInfos.reserve(rasterPipelinesJson.size());
 	pipelineInfos.computeInfos.reserve(computePipelinesJson.size());
 	pipelineInfos.rayTracingInfos.reserve(rtPipelinesJson.size());
 	pipelineInfos.framebufferInfos.reserve(fbPipelinesJson.size());
@@ -134,7 +134,7 @@ void mtd::SceneLoader::load
 	renderOrder.emplace_back(-1);
 
 	for(const nlohmann::json& rasterPipelineJson: rasterPipelinesJson)
-		loadRasterizationPipelines(rasterPipelineJson, pipelineInfos.graphicsInfos, renderOrder);
+		loadRasterizationPipelines(rasterPipelineJson, pipelineInfos.rasterizerInfos, renderOrder);
 	for(const nlohmann::json& computePipelineJson: computePipelinesJson)
 		loadComputePipelines(computePipelineJson, pipelineInfos.computeInfos);
 	for(const nlohmann::json& rtPipelineJson: rtPipelinesJson)
@@ -142,9 +142,9 @@ void mtd::SceneLoader::load
 	for(const nlohmann::json& fbPipelineJson: fbPipelinesJson)
 		loadFramebufferPipelines(fbPipelineJson, pipelineInfos.framebufferInfos, renderOrder);
 
-	for(uint32_t i = 0; i < meshesJson.size(); i++)
+	for(uint32_t i = 0U; i < meshesJson.size(); i++)
 	{
-		if(i >= pipelineInfos.graphicsInfos.size())
+		if(i >= pipelineInfos.rasterizerInfos.size())
 		{
 			uint32_t rtPipelineIndex = i - rasterPipelinesJson.size();
 			loadRayTracingMeshes(device, meshesJson[i], pipelineInfos.rayTracingInfos[rtPipelineIndex], meshManagers);
@@ -195,44 +195,33 @@ void mtd::SceneLoader::loadFramebuffer(const nlohmann::json& fbJson, std::vector
 
 void mtd::SceneLoader::loadRasterizationPipelines
 (
-	const nlohmann::json& graphicsPipelineJson,
-	std::vector<GraphicsPipelineInfo>& graphicsPipelineInfos,
+	const nlohmann::json& rasterizationPipelineJson,
+	std::vector<RasterizationPipelineInfo>& rasterizationPipelineInfos,
 	std::vector<RenderPassInfo>& renderOrder
 )
 {
 	std::vector<DescriptorInfo> descriptorInfos;
-	loadDescriptorInfos(graphicsPipelineJson["descriptor-set-info"], descriptorInfos);
+	loadDescriptorInfos(rasterizationPipelineJson["descriptor-set-info"], descriptorInfos);
 
-	std::vector<MaterialFloatDataType> floatDataTypes;
-	floatDataTypes.reserve(graphicsPipelineJson["material-float-data-types"].size());
-	for(const nlohmann::json& floatDataType: graphicsPipelineJson["material-float-data-types"])
-		floatDataTypes.emplace_back(static_cast<MaterialFloatDataType>(floatDataType));
-
-	std::vector<MaterialTextureType> textureTypes;
-	textureTypes.reserve(graphicsPipelineJson["material-texture-types"].size());
-	for(const nlohmann::json& textureType: graphicsPipelineJson["material-texture-types"])
-		textureTypes.emplace_back(static_cast<MaterialTextureType>(textureType));
-
-	int32_t targetFramebuffer = graphicsPipelineJson["target-framebuffer"];
+	int32_t targetFramebuffer = rasterizationPipelineJson["target-framebuffer"];
 	if(targetFramebuffer == -1)
-		renderOrder.back().pipelineIndices.emplace_back(static_cast<uint32_t>(graphicsPipelineInfos.size()));
+		renderOrder.back().pipelineIndices.emplace_back(static_cast<uint32_t>(rasterizationPipelineInfos.size()));
 	else
-		renderOrder[targetFramebuffer].pipelineIndices.emplace_back(static_cast<uint32_t>(graphicsPipelineInfos.size()));
+		renderOrder[targetFramebuffer].pipelineIndices
+			.emplace_back(static_cast<uint32_t>(rasterizationPipelineInfos.size()));
 
-	graphicsPipelineInfos.emplace_back
+	rasterizationPipelineInfos.emplace_back
 	(
-		GraphicsPipelineInfo
+		RasterizationPipelineInfo
 		{
-			{graphicsPipelineJson["name"], std::move(descriptorInfos)},
-			graphicsPipelineJson["vertex-shader"],
-			graphicsPipelineJson["fragment-shader"],
-			static_cast<MeshType>(graphicsPipelineJson["mesh-type"]),
+			{rasterizationPipelineJson["name"], std::move(descriptorInfos)},
+			rasterizationPipelineJson["vertex-shader"],
+			rasterizationPipelineJson["fragment-shader"],
+			static_cast<MeshType>(rasterizationPipelineJson["mesh-type"]),
 			targetFramebuffer,
-			static_cast<ShaderPrimitiveTopology>(graphicsPipelineJson["shader-primitive-topology"]),
-			static_cast<ShaderFaceCulling>(graphicsPipelineJson["shader-face-culling"]),
-			graphicsPipelineJson["transparency"],
-			std::move(floatDataTypes),
-			std::move(textureTypes)
+			static_cast<ShaderPrimitiveTopology>(rasterizationPipelineJson["shader-primitive-topology"]),
+			static_cast<ShaderFaceCulling>(rasterizationPipelineJson["shader-face-culling"]),
+			rasterizationPipelineJson["transparency"],
 		}
 	);
 }

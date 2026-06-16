@@ -1,14 +1,14 @@
 #pragma once
 
-#include "GraphicsPipeline.hpp"
+#include "RasterizationPipeline.hpp"
 #include "FramebufferPipeline.hpp"
 
 namespace mtd
 {
-	// Bundle with all pipelines
+	// Bundle with all pipelines currently in use
 	struct PipelineBundle
 	{
-		std::vector<GraphicsPipeline> graphicsPipelines;
+		std::vector<RasterizationPipeline> rasterizationPipelines;
 		std::vector<ComputePipeline> computePipelines;
 		std::vector<RayTracingPipeline> rayTracingPipelines;
 		std::vector<FramebufferPipeline> framebufferPipelines;
@@ -17,7 +17,7 @@ namespace mtd
 	// Bundle with all pipeline infos
 	struct PipelineInfoBundle
 	{
-		std::vector<GraphicsPipelineInfo> graphicsInfos;
+		std::vector<RasterizationPipelineInfo> rasterizerInfos;
 		std::vector<ComputePipelineInfo> computeInfos;
 		std::vector<RayTracingPipelineInfo> rayTracingInfos;
 		std::vector<FramebufferPipelineInfo> framebufferInfos;

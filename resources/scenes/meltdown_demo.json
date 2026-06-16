@@ -39,9 +39,7 @@
 			],
 			"shader-primitive-topology": 5,
 			"shader-face-culling": 1,
-			"transparency": false,
-			"material-float-data-types": [],
-			"material-texture-types": [0]
+			"transparency": false
 		},
 		{
 			"name": "Billboard Pipeline",
@@ -52,9 +50,7 @@
 			"descriptor-set-info": [],
 			"shader-primitive-topology": 5,
 			"shader-face-culling": 2,
-			"transparency": true,
-			"material-float-data-types": [],
-			"material-texture-types": [0]
+			"transparency": true
 		}
 	],
 	"compute-pipelines": [],

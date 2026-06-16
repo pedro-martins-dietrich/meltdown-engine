@@ -92,7 +92,7 @@ void mtd::Engine::loadScene(const char* sceneFile)
 	}
 	device.getDevice().waitIdle();
 	framebuffers.clear();
-	pipelines.graphicsPipelines.clear();
+	pipelines.rasterizationPipelines.clear();
 	pipelines.computePipelines.clear();
 	pipelines.rayTracingPipelines.clear();
 	pipelines.framebufferPipelines.clear();
@@ -169,16 +169,16 @@ void mtd::Engine::updateLoop(const std::function<void(double)>& onUpdateCallback
 
 void mtd::Engine::updateDescriptors()
 {
-	globalDescriptorSetHandler->updateDescriptorData(0, 0, camera.fetchUpdatedMatrices(), sizeof(CameraMatrices));
+	globalDescriptorSetHandler->updateDescriptorData(0U, 0U, camera.fetchUpdatedMatrices(), sizeof(CameraMatrices));
 
 	std::lock_guard lock{pendingDescriptorUpdateMutex};
 	for(const auto& [key, data]: pendingDescriptorUpdates)
 	{
 		uint32_t pipelineIndex = key >> 32;
-		if(pipelineIndex >= pipelines.graphicsPipelines.size()) continue;
+		if(pipelineIndex >= pipelines.rasterizationPipelines.size()) continue;
 
 		uint32_t binding = key & 0xFFFFFFFF;
-		pipelines.graphicsPipelines[pipelineIndex].updateDescriptorData(binding, data);
+		pipelines.rasterizationPipelines[pipelineIndex].updateDescriptorData(binding, data);
 	}
 	pendingDescriptorUpdates.clear();
 }
@@ -261,16 +261,16 @@ void mtd::Engine::createRenderResources
 	for(const FramebufferInfo& framebufferInfo: framebufferInfos)
 		framebuffers.emplace_back(device, framebufferInfo, swapchain.getExtent());
 
-	pipelines.graphicsPipelines.reserve(pipelineInfos.graphicsInfos.size());
-	for(const GraphicsPipelineInfo& graphicsPipelineInfo: pipelineInfos.graphicsInfos)
+	pipelines.rasterizationPipelines.reserve(pipelineInfos.rasterizerInfos.size());
+	for(const RasterizationPipelineInfo& rasterizationPipelineInfo: pipelineInfos.rasterizerInfos)
 	{
-		int32_t fbIndex = graphicsPipelineInfo.targetFramebufferIndex;
+		int32_t fbIndex = rasterizationPipelineInfo.targetFramebufferIndex;
 		bool targetSwapchain = fbIndex == -1;
 
-		pipelines.graphicsPipelines.emplace_back
+		pipelines.rasterizationPipelines.emplace_back
 		(
 			device.getDevice(),
-			graphicsPipelineInfo,
+			rasterizationPipelineInfo,
 			globalDescriptorSetHandler->getLayout(),
 			targetSwapchain ? swapchain.getExtent() : framebuffers[fbIndex].getExtent(),
 			targetSwapchain ? swapchain.getRenderPass() : framebuffers[fbIndex].getRenderPass()
@@ -325,8 +325,8 @@ void mtd::Engine::configureDescriptors()
 
 	globalDescriptorSetHandler->writeDescriptorSet(0U);
 
-	for(GraphicsPipeline& graphicsPipeline: pipelines.graphicsPipelines)
-		graphicsPipeline.configureUserDescriptorData(device, scene.getDescriptorPool());
+	for(RasterizationPipeline& rasterizationPipeline: pipelines.rasterizationPipelines)
+		rasterizationPipeline.configureUserDescriptorData(device, scene.getDescriptorPool());
 	for(ComputePipeline& computePipeline: pipelines.computePipelines)
 	{
 		computePipeline.configureUserDescriptorData(device, scene.getDescriptorPool());
@@ -353,13 +353,13 @@ void mtd::Engine::updateEngine(WindowHandler* const pWindowHandler)
 
 	for(Framebuffer& framebuffer: framebuffers)
 		framebuffer.resize(device, swapchain.getExtent());
-	for(GraphicsPipeline& graphicsPipeline: pipelines.graphicsPipelines)
+	for(RasterizationPipeline& rasterizationPipeline: pipelines.rasterizationPipelines)
 	{
-		int32_t fbIndex = graphicsPipeline.getTargetFramebuffer();
+		int32_t fbIndex = rasterizationPipeline.getTargetFramebuffer();
 		if(fbIndex == -1)
-			graphicsPipeline.recreate(swapchain.getExtent(), swapchain.getRenderPass());
+			rasterizationPipeline.recreate(swapchain.getExtent(), swapchain.getRenderPass());
 		else
-			graphicsPipeline.recreate(framebuffers[fbIndex].getExtent(), framebuffers[fbIndex].getRenderPass());
+			rasterizationPipeline.recreate(framebuffers[fbIndex].getExtent(), framebuffers[fbIndex].getRenderPass());
 	}
 	for(ComputePipeline& computePipeline: pipelines.computePipelines)
 		computePipeline.resize(device, swapchain.getExtent());

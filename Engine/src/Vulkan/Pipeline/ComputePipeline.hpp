@@ -22,10 +22,6 @@ namespace mtd
 
 			ComputePipeline(ComputePipeline&& other) noexcept;
 
-			// Getter
-			DescriptorSetHandler& getDescriptorSetHandler(uint32_t index)
-				{ return descriptorSetHandlers[index]; }
-
 			// Starts the compute shader execution
 			void dispatchCompute(const vk::CommandBuffer& commandBuffer) const;
 

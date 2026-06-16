@@ -28,7 +28,7 @@ layout(set = 0, binding = 6) readonly buffer MaterialSets
 	uint materialIDs[];
 };
 
-layout(set = 2, binding = 0) uniform LightData
+layout(set = 1, binding = 0) uniform LightData
 {
 	vec3 lightDirection;
 	float ambientLightIntensity;

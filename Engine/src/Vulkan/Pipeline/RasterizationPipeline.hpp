@@ -4,21 +4,21 @@
 
 namespace mtd
 {
-	// Vulkan graphics (rasterization) pipeline handler
-	class GraphicsPipeline : public Pipeline<GraphicsPipelineInfo>
+	// Vulkan rasterization pipeline handler
+	class RasterizationPipeline : public Pipeline<RasterizationPipelineInfo>
 	{
 		public:
-			GraphicsPipeline
+			RasterizationPipeline
 			(
 				const vk::Device& device,
-				const GraphicsPipelineInfo& info,
+				const RasterizationPipelineInfo& info,
 				const vk::DescriptorSetLayout& globalDescriptorSetLayout,
 				vk::Extent2D extent,
 				vk::RenderPass renderPass
 			);
-			~GraphicsPipeline() = default;
+			~RasterizationPipeline() = default;
 
-			GraphicsPipeline(GraphicsPipeline&& other) noexcept;
+			RasterizationPipeline(RasterizationPipeline&& other) noexcept;
 
 			// Getters
 			int32_t getTargetFramebuffer() const { return info.targetFramebufferIndex; }
@@ -29,8 +29,6 @@ namespace mtd
 
 			// Binds the pipeline and per pipeline descriptors to the command buffer
 			void bind(vk::CommandBuffer commandBuffer) const;
-			// Binds per mesh descriptors
-			void bindMeshDescriptors(vk::CommandBuffer commandBuffer, uint32_t index) const;
 
 			// Pushes a constant to the pipeline draw call
 			void pushConstant(vk::CommandBuffer commandBuffer, const uint32_t& constantData) const;
@@ -41,7 +39,7 @@ namespace mtd
 
 			// Creates the layout for the pipeline
 			void createPipelineLayout(const vk::DescriptorSetLayout& globalDescriptorSetLayout);
-			// Creates the graphics pipeline
+			// Creates the rasterization pipeline
 			void createPipeline(vk::Extent2D extent, vk::RenderPass renderPass);
 
 			// Configures the descriptor set handlers to be used
