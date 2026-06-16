@@ -1,5 +1,5 @@
 #include <pch.hpp>
-#include "GraphicsPipeline.hpp"
+#include "RasterizationPipeline.hpp"
 
 #include "Builders/PipelineMapping.hpp"
 #include "Builders/VertexInputBuilder.hpp"
@@ -7,10 +7,10 @@
 #include "Builders/DescriptorSetBuilder.hpp"
 #include "../../Utils/Logger.hpp"
 
-mtd::GraphicsPipeline::GraphicsPipeline
+mtd::RasterizationPipeline::RasterizationPipeline
 (
 	const vk::Device& device,
-	const GraphicsPipelineInfo& info,
+	const RasterizationPipelineInfo& info,
 	const vk::DescriptorSetLayout& globalDescriptorSetLayout,
 	vk::Extent2D extent,
 	vk::RenderPass renderPass
@@ -22,68 +22,56 @@ mtd::GraphicsPipeline::GraphicsPipeline
 	createPipeline(extent, renderPass);
 }
 
-mtd::GraphicsPipeline::GraphicsPipeline(GraphicsPipeline&& other) noexcept
+mtd::RasterizationPipeline::RasterizationPipeline(RasterizationPipeline&& other) noexcept
 	: Pipeline{std::move(other)}
 {}
 
-void mtd::GraphicsPipeline::recreate(vk::Extent2D extent, vk::RenderPass renderPass)
+void mtd::RasterizationPipeline::recreate(vk::Extent2D extent, vk::RenderPass renderPass)
 {
 	device.destroyPipeline(pipeline);
 	createPipeline(extent, renderPass);
 }
 
-void mtd::GraphicsPipeline::bind(vk::CommandBuffer commandBuffer) const
+void mtd::RasterizationPipeline::bind(vk::CommandBuffer commandBuffer) const
 {
 	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
 
-	if(descriptorSetHandlers.size() == 1 || descriptorSetHandlers[1].getSetCount() == 0) return;
+	if(descriptorSetHandlers.empty() || descriptorSetHandlers[0].getSetCount() == 0U) return;
 
 	commandBuffer.bindDescriptorSets
 	(
 		vk::PipelineBindPoint::eGraphics,
 		pipelineLayout,
-		2,
-		1, &(descriptorSetHandlers[1].getSet(0)),
-		0, nullptr
+		1U,
+		1U, &(descriptorSetHandlers[0].getSet(0U)),
+		0U, nullptr
 	);
 }
 
-void mtd::GraphicsPipeline::bindMeshDescriptors(vk::CommandBuffer commandBuffer, uint32_t index) const
-{
-	commandBuffer.bindDescriptorSets
-	(
-		vk::PipelineBindPoint::eGraphics,
-		pipelineLayout,
-		1,
-		1, &(descriptorSetHandlers[0].getSet(index)),
-		0, nullptr
-	);
-}
-
-void mtd::GraphicsPipeline::pushConstant(vk::CommandBuffer commandBuffer, const uint32_t& constantData) const
+void mtd::RasterizationPipeline::pushConstant(vk::CommandBuffer commandBuffer, const uint32_t& constantData) const
 {
 	commandBuffer.pushConstants
 	(
-		pipelineLayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(uint32_t), &constantData
+		pipelineLayout, vk::ShaderStageFlagBits::eVertex, 0U, sizeof(uint32_t), &constantData
 	);
 }
 
-void mtd::GraphicsPipeline::loadShaderModules()
+void mtd::RasterizationPipeline::loadShaderModules()
 {
 	shaders.reserve(2);
 	shaders.emplace_back(device, vk::ShaderStageFlagBits::eVertex, info.vertexShaderPath.c_str());
 	shaders.emplace_back(device, vk::ShaderStageFlagBits::eFragment, info.fragmentShaderPath.c_str());
 }
 
-void mtd::GraphicsPipeline::createPipelineLayout(const vk::DescriptorSetLayout& globalDescriptorSetLayout)
+void mtd::RasterizationPipeline::createPipelineLayout(const vk::DescriptorSetLayout& globalDescriptorSetLayout)
 {
 	std::vector<vk::DescriptorSetLayout> descriptorSetLayouts{globalDescriptorSetLayout};
 	for(const DescriptorSetHandler& descriptorSetHandler: descriptorSetHandlers)
 		descriptorSetLayouts.push_back(descriptorSetHandler.getLayout());
 
 	vk::PushConstantRange pushConstantRange{};
-	pushConstantRange.stageFlags = vk::ShaderStageFlagBits::eFragment;
-	pushConstantRange.offset = 0;
+	pushConstantRange.stageFlags = vk::ShaderStageFlagBits::eVertex;
+	pushConstantRange.offset = 0U;
 	pushConstantRange.size = sizeof(uint32_t);
 
 	vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
@@ -102,7 +90,7 @@ void mtd::GraphicsPipeline::createPipelineLayout(const vk::DescriptorSetLayout& 
 	LOG_VERBOSE("Created pipeline layout.");
 }
 
-void mtd::GraphicsPipeline::createPipeline(vk::Extent2D extent, vk::RenderPass renderPass)
+void mtd::RasterizationPipeline::createPipeline(vk::Extent2D extent, vk::RenderPass renderPass)
 {
 	std::vector<vk::PipelineShaderStageCreateInfo> shaderStageCreateInfos;
 	shaderStageCreateInfos.reserve(shaders.size());
@@ -144,11 +132,11 @@ void mtd::GraphicsPipeline::createPipeline(vk::Extent2D extent, vk::RenderPass r
 	graphicsPipelineCreateInfo.pDynamicState = nullptr;
 	graphicsPipelineCreateInfo.layout = pipelineLayout;
 	graphicsPipelineCreateInfo.renderPass = renderPass;
-	graphicsPipelineCreateInfo.subpass = 0;
+	graphicsPipelineCreateInfo.subpass = 0U;
 	graphicsPipelineCreateInfo.basePipelineHandle = nullptr;
 	graphicsPipelineCreateInfo.basePipelineIndex = 0;
 
-	vk::Result result = device.createGraphicsPipelines(nullptr, 1, &graphicsPipelineCreateInfo, nullptr, &pipeline);
+	vk::Result result = device.createGraphicsPipelines(nullptr, 1U, &graphicsPipelineCreateInfo, nullptr, &pipeline);
 	if(result != vk::Result::eSuccess)
 	{
 		LOG_ERROR("Failed to create graphics pipeline. Vulkan result: %d", result);
@@ -157,55 +145,24 @@ void mtd::GraphicsPipeline::createPipeline(vk::Extent2D extent, vk::RenderPass r
 	LOG_INFO("Created graphics pipeline.\n");
 }
 
-void mtd::GraphicsPipeline::createDescriptorSetLayouts()
+void mtd::RasterizationPipeline::createDescriptorSetLayouts()
 {
-	descriptorSetHandlers.reserve(info.descriptorSetInfo.size() == 0 ? 1 : 2);
-
-	bool hasFloatData = !info.materialFloatDataTypes.empty();
-	bool hasTextures = !info.materialTextureTypes.empty();
-
-	uint32_t binding = 0;
-	std::vector<vk::DescriptorSetLayoutBinding> bindings
-	(
-		static_cast<uint32_t>(hasFloatData) + static_cast<uint32_t>(hasTextures)
-	);
-
-	if(hasFloatData)
-	{
-		bindings[binding].binding = binding;
-		bindings[binding].descriptorType = vk::DescriptorType::eUniformBuffer;
-		bindings[binding].descriptorCount = 1;
-		bindings[binding].stageFlags = vk::ShaderStageFlagBits::eFragment;
-		bindings[binding].pImmutableSamplers = nullptr;
-
-		binding++;
-	}
-	if(hasTextures)
-	{
-		bindings[binding].binding = binding;
-		bindings[binding].descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		bindings[binding].descriptorCount = static_cast<uint32_t>(info.materialTextureTypes.size());
-		bindings[binding].stageFlags = vk::ShaderStageFlagBits::eFragment;
-		bindings[binding].pImmutableSamplers = nullptr;
-	}
-
-	descriptorSetHandlers.emplace_back(device, bindings);
-
+	userDescriptorSetIndex = 1U;
 	if(info.descriptorSetInfo.size() == 0) return;
-	bindings.clear();
-
+	
+	std::vector<vk::DescriptorSetLayoutBinding> bindings;
 	DescriptorSetBuilder::buildDescriptorSetLayout(bindings, info.descriptorSetInfo, descriptorTypeCount);
 	descriptorSetHandlers.emplace_back(device, bindings);
 }
 
-void mtd::GraphicsPipeline::setInputAssembly(vk::PipelineInputAssemblyStateCreateInfo& inputAssemblyInfo) const
+void mtd::RasterizationPipeline::setInputAssembly(vk::PipelineInputAssemblyStateCreateInfo& inputAssemblyInfo) const
 {
 	inputAssemblyInfo.flags = vk::PipelineInputAssemblyStateCreateFlags();
 	inputAssemblyInfo.topology = PipelineMapping::mapPrimitiveTopology(info.primitiveTopology);
 	inputAssemblyInfo.primitiveRestartEnable = vk::False;
 }
 
-void mtd::GraphicsPipeline::setViewport
+void mtd::RasterizationPipeline::setViewport
 (
 	vk::PipelineViewportStateCreateInfo& viewportInfo,
 	vk::Viewport& viewport,
@@ -225,13 +182,13 @@ void mtd::GraphicsPipeline::setViewport
 	scissor.extent = extent;
 
 	viewportInfo.flags = vk::PipelineViewportStateCreateFlags();
-	viewportInfo.viewportCount = 1;
+	viewportInfo.viewportCount = 1U;
 	viewportInfo.pViewports = &viewport;
-	viewportInfo.scissorCount = 1;
+	viewportInfo.scissorCount = 1U;
 	viewportInfo.pScissors = &scissor;
 }
 
-void mtd::GraphicsPipeline::setRasterizer(vk::PipelineRasterizationStateCreateInfo& rasterizationInfo) const
+void mtd::RasterizationPipeline::setRasterizer(vk::PipelineRasterizationStateCreateInfo& rasterizationInfo) const
 {
 	rasterizationInfo.flags = vk::PipelineRasterizationStateCreateFlags();
 	rasterizationInfo.depthClampEnable = vk::False;
@@ -246,7 +203,7 @@ void mtd::GraphicsPipeline::setRasterizer(vk::PipelineRasterizationStateCreateIn
 	rasterizationInfo.lineWidth = 1.0f;
 }
 
-void mtd::GraphicsPipeline::setMultisampling(vk::PipelineMultisampleStateCreateInfo& multisampleInfo) const
+void mtd::RasterizationPipeline::setMultisampling(vk::PipelineMultisampleStateCreateInfo& multisampleInfo) const
 {
 	multisampleInfo.flags = vk::PipelineMultisampleStateCreateFlags();
 	multisampleInfo.rasterizationSamples = vk::SampleCountFlagBits::e1;
@@ -257,7 +214,7 @@ void mtd::GraphicsPipeline::setMultisampling(vk::PipelineMultisampleStateCreateI
 	multisampleInfo.alphaToOneEnable = vk::False;
 }
 
-void mtd::GraphicsPipeline::setDepthStencil(vk::PipelineDepthStencilStateCreateInfo& depthStencilInfo) const
+void mtd::RasterizationPipeline::setDepthStencil(vk::PipelineDepthStencilStateCreateInfo& depthStencilInfo) const
 {
 	depthStencilInfo.flags = vk::PipelineDepthStencilStateCreateFlags();
 	depthStencilInfo.depthTestEnable = vk::True;

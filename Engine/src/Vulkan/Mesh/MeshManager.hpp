@@ -1,8 +1,6 @@
 #pragma once
 
-#include "Mesh.hpp"
-#include "../Pipeline/GraphicsPipeline.hpp"
-#include "../Pipeline/RayTracingPipeline.hpp"
+#include "../Descriptors/DescriptorSetHandler.hpp"
 
 namespace mtd
 {
@@ -34,11 +32,6 @@ namespace mtd
 			virtual void start() = 0;
 			// Updates mesh data
 			virtual void update(double frameTime) = 0;
-
-			// Binds vertex and index buffers, if used
-			virtual void bindBuffers(const vk::CommandBuffer& commandBuffer) const = 0;
-			// Draws the meshes using a rasterization pipeline
-			virtual void drawMesh(const vk::CommandBuffer& commandBuffer, const GraphicsPipeline& pipeline) const = 0;
 
 		protected:
 			// Mesh manager command handler

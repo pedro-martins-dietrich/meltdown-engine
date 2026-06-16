@@ -118,9 +118,9 @@ namespace mtd
 	};
 
 	/*
-	* @brief Parameters to create a pipeline with custom shaders.
+	* @brief Parameters to create a rasterization pipeline with custom shaders.
 	*/
-	struct GraphicsPipelineInfo : public PipelineInfo
+	struct RasterizationPipelineInfo : public PipelineInfo
 	{
 		/* @brief File path to the vertex shader, from the shaders folder. */
 		std::string vertexShaderPath;
@@ -136,10 +136,6 @@ namespace mtd
 		ShaderFaceCulling faceCulling = ShaderFaceCulling::None;
 		/* @brief Enables alpha blending for the pipeline. */
 		bool useTransparency = false;
-		/* @brief Types of materials attributes stored as floats used in the pipeline. */
-		std::vector<MaterialFloatDataType> materialFloatDataTypes = {};
-		/* @brief Types of materials attributes stored as textures used in the pipeline. */
-		std::vector<MaterialTextureType> materialTextureTypes = {};
 	};
 
 	/*

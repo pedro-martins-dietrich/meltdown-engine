@@ -26,7 +26,7 @@ namespace mtd
 				device.destroyPipeline(pipeline);
 				device.destroyPipelineLayout(pipelineLayout);
 			}
-			
+
 			Pipeline(const Pipeline&) = delete;
 			Pipeline& operator=(const Pipeline&) = delete;
 
@@ -54,13 +54,13 @@ namespace mtd
 			// Allocates user descriptor set data in the descriptor pool
 			void configureUserDescriptorData(const Device& mtdDevice, const DescriptorPool& pool)
 			{
-				if(descriptorSetHandlers.size() < 2) return;
+				if(descriptorSetHandlers.size() < userDescriptorSetIndex) return;
 
-				DescriptorSetHandler& descriptorSetHandler = descriptorSetHandlers[1];
+				DescriptorSetHandler& descriptorSetHandler = descriptorSetHandlers[userDescriptorSetIndex - 1];
 				descriptorSetHandler.defineDescriptorSetsAmount(1);
 				pool.allocateDescriptorSet(descriptorSetHandler);
 
-				for(uint32_t binding = 0; binding < info.descriptorSetInfo.size(); binding++)
+				for(uint32_t binding = 0U; binding < info.descriptorSetInfo.size(); binding++)
 				{
 					const DescriptorInfo& bindingInfo = info.descriptorSetInfo[binding];
 					descriptorSetHandler.createDescriptorResources
@@ -77,11 +77,15 @@ namespace mtd
 			// Updates the user descriptor data for the specified binding
 			void updateDescriptorData(uint32_t bindingIndex, const void* data) const
 			{
-				if(descriptorSetHandlers.size() < 2 || descriptorSetHandlers[1].getSetCount() <= bindingIndex) return;
-
-				descriptorSetHandlers[1].updateDescriptorData
+				if
 				(
-					0, bindingIndex, data, info.descriptorSetInfo[bindingIndex].totalDescriptorSize
+					descriptorSetHandlers.size() < userDescriptorSetIndex
+					|| descriptorSetHandlers[userDescriptorSetIndex - 1].getSetCount() <= bindingIndex
+				) return;
+
+				descriptorSetHandlers[userDescriptorSetIndex - 1].updateDescriptorData
+				(
+					0U, bindingIndex, data, info.descriptorSetInfo[bindingIndex].totalDescriptorSize
 				);
 			}
 
@@ -100,6 +104,8 @@ namespace mtd
 
 			// Pipeline specific configurations
 			PipelineInfoType info;
+			// Index for the user defined descriptor set
+			uint32_t userDescriptorSetIndex = 2U;
 
 			// Vulkan device reference
 			const vk::Device& device;

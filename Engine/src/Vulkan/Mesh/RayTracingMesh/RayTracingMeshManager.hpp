@@ -32,14 +32,6 @@ namespace mtd
 				uint32_t index, const char* id, const char* file, const std::vector<Mat4x4>& preTransforms
 			);
 
-			// Binds vertex and index buffers
-			virtual void bindBuffers(const vk::CommandBuffer& commandBuffer) const override {}
-			// Draws the meshes using a rasterization pipeline
-			virtual void drawMesh
-			(
-				const vk::CommandBuffer& commandBuffer, const GraphicsPipeline& graphicsPipeline
-			) const override {}
-
 			// Draws the meshes using a ray tracing pipeline
 			void rayTraceMesh
 			(

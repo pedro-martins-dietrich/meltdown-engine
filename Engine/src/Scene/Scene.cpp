@@ -43,7 +43,7 @@ void mtd::Scene::allocateResources(PipelineBundle& pipelines)
 
 	std::unordered_map<vk::DescriptorType, uint32_t> totalDescriptorTypeCount;
 	totalDescriptorTypeCount[vk::DescriptorType::eUniformBuffer] = 1U + getMaterialFloatDataCount();
-	totalDescriptorTypeCount[vk::DescriptorType::eStorageBuffer] = 3U;
+	totalDescriptorTypeCount[vk::DescriptorType::eStorageBuffer] = 5U;
 
 	uint32_t totalImageSamplerCount = getTotalTextureCount();
 	for(const FramebufferPipeline& fbPipeline: pipelines.framebufferPipelines)
@@ -51,7 +51,7 @@ void mtd::Scene::allocateResources(PipelineBundle& pipelines)
 	if(totalImageSamplerCount > 0U)
 		totalDescriptorTypeCount[vk::DescriptorType::eCombinedImageSampler] = totalImageSamplerCount;
 
-	for(const GraphicsPipeline& rasterPipeline: pipelines.graphicsPipelines)
+	for(const RasterizationPipeline& rasterPipeline: pipelines.rasterizationPipelines)
 		for(const auto& [type, count]: rasterPipeline.getDescriptorTypeCount())
 			totalDescriptorTypeCount[type] += count;
 	for(const FramebufferPipeline& fbPipeline: pipelines.framebufferPipelines)
@@ -80,17 +80,6 @@ void mtd::Scene::allocateResources(PipelineBundle& pipelines)
 
 	descriptorPool.createDescriptorPool(poolSizesInfo, vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet);
 
-	for(uint32_t i = 0; i < pipelines.graphicsPipelines.size(); i++)
-	{
-		const std::unique_ptr<MeshManager>& pMeshManager = meshManagers[i];
-		if(pMeshManager->getMeshCount() == 0U) continue;
-
-		DescriptorSetHandler& descriptorSetHandler = pipelines.graphicsPipelines[i].getDescriptorSetHandler(0);
-		descriptorSetHandler.defineDescriptorSetsAmount(pMeshManager->getMaterialCount());
-		descriptorPool.allocateDescriptorSet(descriptorSetHandler);
-
-		pMeshManager->loadMeshes(descriptorSetHandler);
-	}
 	for(FramebufferPipeline& fbPipeline: pipelines.framebufferPipelines)
 	{
 		DescriptorSetHandler& descriptorSetHandler = fbPipeline.getDescriptorSetHandler(0);
@@ -113,15 +102,16 @@ void mtd::Scene::allocateResources(PipelineBundle& pipelines)
 		variableCountInfo.pDescriptorCounts = &totalImageSamplerCount;
 		descriptorPool.allocateDescriptorSet(descriptorSetHandler, &variableCountInfo);
 
-		meshManagers[pipelines.graphicsPipelines.size() + i]->loadMeshes(descriptorSetHandler);
+		meshManagers[i]->loadMeshes(descriptorSetHandler);
 	}
 	LOG_INFO("Meshes loaded to the GPU.\n");
 }
 
 void mtd::Scene::configureSceneDescriptorSet(DescriptorSetHandler& descriptorSetHandler) const
 {
-	texturePool.createTextureListDescriptor(descriptorSetHandler, 1U);
-	materialManager.createMaterialDescriptor(descriptorSetHandler, 2U, 3U, 4U);
+	meshPool.createMeshDescriptors(descriptorSetHandler, 1U, 2U);
+	texturePool.createTextureListDescriptor(descriptorSetHandler, 3U);
+	materialManager.createMaterialDescriptor(descriptorSetHandler, 4U, 5U, 6U);
 }
 
 void mtd::Scene::start() const

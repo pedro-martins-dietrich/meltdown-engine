@@ -25,8 +25,6 @@ namespace mtd
 			// Getters
 			const MeshPool& getMeshPool() const { return meshPool; }
 			const std::vector<SceneInstance>& getInstances() const { return instanceManager.getInstances(); }
-			const MeshManager* getMeshManager(uint32_t pipelineIndex) const
-				{ return meshManagers[pipelineIndex].get(); }
 			const DescriptorPool& getDescriptorPool() const { return descriptorPool; }
 
 			// Loads scene from file

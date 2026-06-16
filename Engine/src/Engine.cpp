@@ -92,7 +92,7 @@ void mtd::Engine::loadScene(const char* sceneFile)
 	}
 	device.getDevice().waitIdle();
 	framebuffers.clear();
-	pipelines.graphicsPipelines.clear();
+	pipelines.rasterizationPipelines.clear();
 	pipelines.computePipelines.clear();
 	pipelines.rayTracingPipelines.clear();
 	pipelines.framebufferPipelines.clear();
@@ -169,16 +169,16 @@ void mtd::Engine::updateLoop(const std::function<void(double)>& onUpdateCallback
 
 void mtd::Engine::updateDescriptors()
 {
-	globalDescriptorSetHandler->updateDescriptorData(0, 0, camera.fetchUpdatedMatrices(), sizeof(CameraMatrices));
+	globalDescriptorSetHandler->updateDescriptorData(0U, 0U, camera.fetchUpdatedMatrices(), sizeof(CameraMatrices));
 
 	std::lock_guard lock{pendingDescriptorUpdateMutex};
 	for(const auto& [key, data]: pendingDescriptorUpdates)
 	{
 		uint32_t pipelineIndex = key >> 32;
-		if(pipelineIndex >= pipelines.graphicsPipelines.size()) continue;
+		if(pipelineIndex >= pipelines.rasterizationPipelines.size()) continue;
 
 		uint32_t binding = key & 0xFFFFFFFF;
-		pipelines.graphicsPipelines[pipelineIndex].updateDescriptorData(binding, data);
+		pipelines.rasterizationPipelines[pipelineIndex].updateDescriptorData(binding, data);
 	}
 	pendingDescriptorUpdates.clear();
 }
@@ -204,37 +204,49 @@ void mtd::Engine::configureEventCallbacks()
 
 void mtd::Engine::configureGlobalDescriptorSetHandler()
 {
-	std::vector<vk::DescriptorSetLayoutBinding> bindings(5);
+	std::vector<vk::DescriptorSetLayoutBinding> bindings(7);
 	// Camera data
 	bindings[0].binding = 0U;
 	bindings[0].descriptorType = vk::DescriptorType::eUniformBuffer;
 	bindings[0].descriptorCount = 1U;
 	bindings[0].stageFlags = vk::ShaderStageFlagBits::eAll;
 	bindings[0].pImmutableSamplers = nullptr;
-	// Scene textures data
+	// Scene vertex buffer
 	bindings[1].binding = 1U;
-	bindings[1].descriptorType = vk::DescriptorType::eCombinedImageSampler;
-	bindings[1].descriptorCount = MAX_TEXTURE_POOL_SIZE;
+	bindings[1].descriptorType = vk::DescriptorType::eStorageBuffer;
+	bindings[1].descriptorCount = 1U;
 	bindings[1].stageFlags = vk::ShaderStageFlagBits::eAll;
 	bindings[1].pImmutableSamplers = nullptr;
-	// Scene materials indexing
+	// Scene index buffer
 	bindings[2].binding = 2U;
 	bindings[2].descriptorType = vk::DescriptorType::eStorageBuffer;
 	bindings[2].descriptorCount = 1U;
 	bindings[2].stageFlags = vk::ShaderStageFlagBits::eAll;
 	bindings[2].pImmutableSamplers = nullptr;
-	// Scene materials data
+	// Scene textures data
 	bindings[3].binding = 3U;
-	bindings[3].descriptorType = vk::DescriptorType::eStorageBuffer;
-	bindings[3].descriptorCount = 1U;
+	bindings[3].descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	bindings[3].descriptorCount = MAX_TEXTURE_POOL_SIZE;
 	bindings[3].stageFlags = vk::ShaderStageFlagBits::eAll;
 	bindings[3].pImmutableSamplers = nullptr;
-	// Scene material sets
+	// Scene materials data
 	bindings[4].binding = 4U;
 	bindings[4].descriptorType = vk::DescriptorType::eStorageBuffer;
 	bindings[4].descriptorCount = 1U;
 	bindings[4].stageFlags = vk::ShaderStageFlagBits::eAll;
 	bindings[4].pImmutableSamplers = nullptr;
+	// Scene materials indexing
+	bindings[5].binding = 5U;
+	bindings[5].descriptorType = vk::DescriptorType::eStorageBuffer;
+	bindings[5].descriptorCount = 1U;
+	bindings[5].stageFlags = vk::ShaderStageFlagBits::eAll;
+	bindings[5].pImmutableSamplers = nullptr;
+	// Scene material sets
+	bindings[6].binding = 6U;
+	bindings[6].descriptorType = vk::DescriptorType::eStorageBuffer;
+	bindings[6].descriptorCount = 1U;
+	bindings[6].stageFlags = vk::ShaderStageFlagBits::eAll;
+	bindings[6].pImmutableSamplers = nullptr;
 
 	globalDescriptorSetHandler = std::make_unique<DescriptorSetHandler>(device.getDevice(), bindings);
 }
@@ -249,16 +261,16 @@ void mtd::Engine::createRenderResources
 	for(const FramebufferInfo& framebufferInfo: framebufferInfos)
 		framebuffers.emplace_back(device, framebufferInfo, swapchain.getExtent());
 
-	pipelines.graphicsPipelines.reserve(pipelineInfos.graphicsInfos.size());
-	for(const GraphicsPipelineInfo& graphicsPipelineInfo: pipelineInfos.graphicsInfos)
+	pipelines.rasterizationPipelines.reserve(pipelineInfos.rasterizerInfos.size());
+	for(const RasterizationPipelineInfo& rasterizationPipelineInfo: pipelineInfos.rasterizerInfos)
 	{
-		int32_t fbIndex = graphicsPipelineInfo.targetFramebufferIndex;
+		int32_t fbIndex = rasterizationPipelineInfo.targetFramebufferIndex;
 		bool targetSwapchain = fbIndex == -1;
 
-		pipelines.graphicsPipelines.emplace_back
+		pipelines.rasterizationPipelines.emplace_back
 		(
 			device.getDevice(),
-			graphicsPipelineInfo,
+			rasterizationPipelineInfo,
 			globalDescriptorSetHandler->getLayout(),
 			targetSwapchain ? swapchain.getExtent() : framebuffers[fbIndex].getExtent(),
 			targetSwapchain ? swapchain.getRenderPass() : framebuffers[fbIndex].getRenderPass()
@@ -313,8 +325,8 @@ void mtd::Engine::configureDescriptors()
 
 	globalDescriptorSetHandler->writeDescriptorSet(0U);
 
-	for(GraphicsPipeline& graphicsPipeline: pipelines.graphicsPipelines)
-		graphicsPipeline.configureUserDescriptorData(device, scene.getDescriptorPool());
+	for(RasterizationPipeline& rasterizationPipeline: pipelines.rasterizationPipelines)
+		rasterizationPipeline.configureUserDescriptorData(device, scene.getDescriptorPool());
 	for(ComputePipeline& computePipeline: pipelines.computePipelines)
 	{
 		computePipeline.configureUserDescriptorData(device, scene.getDescriptorPool());
@@ -341,13 +353,13 @@ void mtd::Engine::updateEngine(WindowHandler* const pWindowHandler)
 
 	for(Framebuffer& framebuffer: framebuffers)
 		framebuffer.resize(device, swapchain.getExtent());
-	for(GraphicsPipeline& graphicsPipeline: pipelines.graphicsPipelines)
+	for(RasterizationPipeline& rasterizationPipeline: pipelines.rasterizationPipelines)
 	{
-		int32_t fbIndex = graphicsPipeline.getTargetFramebuffer();
+		int32_t fbIndex = rasterizationPipeline.getTargetFramebuffer();
 		if(fbIndex == -1)
-			graphicsPipeline.recreate(swapchain.getExtent(), swapchain.getRenderPass());
+			rasterizationPipeline.recreate(swapchain.getExtent(), swapchain.getRenderPass());
 		else
-			graphicsPipeline.recreate(framebuffers[fbIndex].getExtent(), framebuffers[fbIndex].getRenderPass());
+			rasterizationPipeline.recreate(framebuffers[fbIndex].getExtent(), framebuffers[fbIndex].getRenderPass());
 	}
 	for(ComputePipeline& computePipeline: pipelines.computePipelines)
 		computePipeline.resize(device, swapchain.getExtent());

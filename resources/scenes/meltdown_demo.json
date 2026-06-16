@@ -39,9 +39,7 @@
 			],
 			"shader-primitive-topology": 5,
 			"shader-face-culling": 1,
-			"transparency": false,
-			"material-float-data-types": [],
-			"material-texture-types": [0]
+			"transparency": false
 		},
 		{
 			"name": "Billboard Pipeline",
@@ -52,9 +50,7 @@
 			"descriptor-set-info": [],
 			"shader-primitive-topology": 5,
 			"shader-face-culling": 2,
-			"transparency": true,
-			"material-float-data-types": [],
-			"material-texture-types": [0]
+			"transparency": true
 		}
 	],
 	"compute-pipelines": [],
@@ -81,6 +77,7 @@
 	],
 	"meshes":
 	[
+		"meshes/square.mesh",
 		"meshes/ground.mesh",
 		"meshes/tetrahedron.mesh",
 		"meshes/cube.mesh",
@@ -88,158 +85,7 @@
 		"meshes/dodecahedron.mesh",
 		"meshes/icosahedron.mesh"
 	],
-	"meshes-old":
-	[
-		[
-			{
-				"file": "ground/ground.obj",
-				"texture-id": 0,
-				"pre-transforms":
-				[
-					[
-						1.0, 0.0, 0.0, 0.0,
-						0.0, 1.0, 0.0, 0.0,
-						0.0, 0.0, 1.0, 0.0,
-						0.0, 0.3, 0.0, 1.0
-					]
-				]
-			},
-			{
-				"file": "tetrahedron/tetrahedron.obj",
-				"texture-id": 1,
-				"model-id": "spinning",
-				"pre-transforms":
-				[
-					[
-						1.0, 0.0, 0.0, 0.0,
-						0.0, 1.0, 0.0, 0.0,
-						0.0, 0.0, 1.0, 0.0,
-						4.0, 0.0, 4.0, 1.0
-					],
-					[
-						-1.0, 0.0, 0.0, 0.0,
-						0.0, -1.0, 0.0, 0.0,
-						0.0, 0.0, 1.0, 0.0,
-						-4.0, 0.0, -4.0, 1.0
-					]
-				]
-			},
-			{
-				"file": "cube/cube.obj",
-				"texture-id": 2,
-				"model-id": "spinning",
-				"pre-transforms":
-				[
-					[
-						1.0, 0.0, 0.0, 0.0,
-						0.0, 1.0, 0.0, 0.0,
-						0.0, 0.0, 1.0, 0.0,
-						4.0, 0.0, 0.0, 1.0
-					],
-					[
-						0.5, 0.5, 0.7071, 0.0,
-						-0.7071, 0.7071, 0.0, 0.0,
-						-0.5, -0.5, 0.7071, 0.0,
-						-4.0, 0.0, 0.0, 1.0
-					]
-				]
-			},
-			{
-				"file": "octahedron/octahedron.obj",
-				"texture-id": 3,
-				"model-id": "spinning",
-				"pre-transforms":
-				[
-					[
-						1.0, 0.0, 0.0, 0.0,
-						0.0, 1.0, 0.0, 0.0,
-						0.0, 0.0, 1.0, 0.0,
-						4.0, 0.0, -4.0, 1.0
-					],
-					[
-						0.5, 0.5, 0.7071, 0.0,
-						-0.7071, 0.7071, 0.0, 0.0,
-						-0.5, -0.5, 0.7071, 0.0,
-						-4.0, 0.0, 4.0, 1.0
-					]
-				]
-			},
-			{
-				"file": "dodecahedron/dodecahedron.obj",
-				"texture-id": 4,
-				"model-id": "spinning",
-				"pre-transforms":
-				[
-					[
-						1.0, 0.0, 0.0, 0.0,
-						0.0, 1.0, 0.0, 0.0,
-						0.0, 0.0, 1.0, 0.0,
-						0.0, 0.0, -4.0, 1.0
-					],
-					[
-						0.5, 0.5, 0.7071, 0.0,
-						-0.7071, 0.7071, 0.0, 0.0,
-						-0.5, -0.5, 0.7071, 0.0,
-						0.0, 0.0, 4.0, 1.0
-					]
-				]
-			},
-			{
-				"file": "icosahedron/icosahedron.obj",
-				"texture-id": 5,
-				"model-id": "rotating",
-				"pre-transforms":
-				[
-					[
-						1.0, 0.0, 0.0, 0.0,
-						0.0, 1.0, 0.0, 0.0,
-						0.0, 0.0, 1.0, 0.0,
-						1.0, 0.0, 0.0, 1.0
-					]
-				]
-			}
-		],
-		[
-			{
-				"texture": "textures/orb.png",
-				"texture-id": 6,
-				"pre-transforms":
-				[
-					[
-						0.5, 0.0, 0.0, 0.0,
-						0.0, 0.5, 0.0, 0.0,
-						0.0, 0.0, 1.0, 0.0,
-						2.0, -1.5, 2.0, 1.0
-					],
-					[
-						0.5, 0.0, 0.0, 0.0,
-						0.0, 0.5, 0.0, 0.0,
-						0.0, 0.0, 1.0, 0.0,
-						-2.0, -1.5, -2.0, 1.0
-					]
-				]
-			},
-			{
-				"texture": "textures/square_billboard.png",
-				"texture-id": 7,
-				"pre-transforms":
-				[
-					[
-						0.2, 0.0, 0.0, 0.0,
-						0.0, 0.2, 0.0, 0.0,
-						0.0, 0.0, 1.0, 0.0,
-						2.0, -1.5, -2.0, 1.0
-					],
-					[
-						0.2, 0.0, 0.0, 0.0,
-						0.0, 0.2, 0.0, 0.0,
-						0.0, 0.0, 1.0, 0.0,
-						-2.0, -1.5, 2.0, 1.0
-					]
-				]
-			}
-		]
-	],
+	"meshes-old": [],
 	"textures":
 	[
 		"textures/ground.png",
@@ -277,7 +123,7 @@
 	[
 		{
 			"pipeline-id": 0,
-			"mesh-id": 0,
+			"mesh-id": 1,
 			"material-set-id": 0,
 			"transform":
 			[
@@ -290,7 +136,7 @@
 		},
 		{
 			"pipeline-id": 0,
-			"mesh-id": 1,
+			"mesh-id": 2,
 			"material-set-id": 1,
 			"transform":
 			[
@@ -303,7 +149,7 @@
 		},
 		{
 			"pipeline-id": 0,
-			"mesh-id": 1,
+			"mesh-id": 2,
 			"material-set-id": 1,
 			"transform":
 			[
@@ -316,7 +162,7 @@
 		},
 		{
 			"pipeline-id": 0,
-			"mesh-id": 2,
+			"mesh-id": 3,
 			"material-set-id": 2,
 			"transform":
 			[
@@ -329,7 +175,7 @@
 		},
 		{
 			"pipeline-id": 0,
-			"mesh-id": 2,
+			"mesh-id": 3,
 			"material-set-id": 2,
 			"transform":
 			[
@@ -342,7 +188,7 @@
 		},
 		{
 			"pipeline-id": 0,
-			"mesh-id": 3,
+			"mesh-id": 4,
 			"material-set-id": 3,
 			"transform":
 			[
@@ -355,7 +201,7 @@
 		},
 		{
 			"pipeline-id": 0,
-			"mesh-id": 3,
+			"mesh-id": 4,
 			"material-set-id": 3,
 			"transform":
 			[
@@ -368,7 +214,7 @@
 		},
 		{
 			"pipeline-id": 0,
-			"mesh-id": 4,
+			"mesh-id": 5,
 			"material-set-id": 4,
 			"transform":
 			[
@@ -381,7 +227,7 @@
 		},
 		{
 			"pipeline-id": 0,
-			"mesh-id": 4,
+			"mesh-id": 5,
 			"material-set-id": 4,
 			"transform":
 			[
@@ -394,7 +240,7 @@
 		},
 		{
 			"pipeline-id": 0,
-			"mesh-id": 5,
+			"mesh-id": 6,
 			"material-set-id": 5,
 			"transform":
 			[
@@ -402,6 +248,58 @@
 				0.0, 1.0, 0.0, 0.0,
 				0.0, 0.0, 1.0, 0.0,
 				1.0, 0.0, 0.0, 1.0
+			],
+			"visible": true
+		},
+		{
+			"pipeline-id": 1,
+			"mesh-id": 0,
+			"material-set-id": 6,
+			"transform":
+			[
+				0.5, 0.0, 0.0, 0.0,
+				0.0, 0.5, 0.0, 0.0,
+				0.0, 0.0, 1.0, 0.0,
+				2.0, -1.5, 2.0, 1.0
+			],
+			"visible": true
+		},
+		{
+			"pipeline-id": 1,
+			"mesh-id": 0,
+			"material-set-id": 6,
+			"transform":
+			[
+				0.5, 0.0, 0.0, 0.0,
+				0.0, 0.5, 0.0, 0.0,
+				0.0, 0.0, 1.0, 0.0,
+				-2.0, -1.5, -2.0, 1.0
+			],
+			"visible": true
+		},
+		{
+			"pipeline-id": 1,
+			"mesh-id": 0,
+			"material-set-id": 7,
+			"transform":
+			[
+				0.2, 0.0, 0.0, 0.0,
+				0.0, 0.2, 0.0, 0.0,
+				0.0, 0.0, 1.0, 0.0,
+				2.0, -1.5, -2.0, 1.0
+			],
+			"visible": true
+		},
+		{
+			"pipeline-id": 1,
+			"mesh-id": 0,
+			"material-set-id": 7,
+			"transform":
+			[
+				0.2, 0.0, 0.0, 0.0,
+				0.0, 0.2, 0.0, 0.0,
+				0.0, 0.0, 1.0, 0.0,
+				-2.0, -1.5, 2.0, 1.0
 			],
 			"visible": true
 		}

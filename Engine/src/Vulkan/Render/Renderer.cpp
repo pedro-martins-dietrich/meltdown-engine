@@ -6,7 +6,7 @@
 
 mtd::Renderer::Renderer(const Device& mtdDevice)
 	: mtdDevice{mtdDevice},
-	clearValues{vk::ClearColorValue{0.1f, 0.1f, 0.1f, 1.0f}, vk::ClearDepthStencilValue{1.0f, 0}},
+	clearValues{vk::ClearColorValue{0.1f, 0.1f, 0.1f, 1.0f}, vk::ClearDepthStencilValue{1.0f, 0U}},
 	renderObjectManager{mtdDevice}
 {}
 
@@ -57,7 +57,7 @@ void mtd::Renderer::render
 			result == vk::Result::eSuboptimalKHR
 		)
 		{
-			currentFrameIndex = 0;
+			currentFrameIndex = 0U;
 			shouldUpdateEngine.store(true);
 		}
 		else
@@ -106,15 +106,15 @@ void mtd::Renderer::recordDrawCommands
 {
 	assert
 	(
-		!(pipelines.graphicsPipelines.empty() && pipelines.framebufferPipelines.empty()) &&
+		!(pipelines.rasterizationPipelines.empty() && pipelines.framebufferPipelines.empty()) &&
 		"There must be at least one rendering pipeline."
 	);
 
 	const vk::CommandBuffer& commandBuffer = commandHandler.getCommandBuffer();
 	const vk::PipelineLayout& firstPipelineLayout =
-		pipelines.graphicsPipelines.empty()
+		pipelines.rasterizationPipelines.empty()
 		? pipelines.framebufferPipelines[0].getLayout()
-		: pipelines.graphicsPipelines[0].getLayout();
+		: pipelines.rasterizationPipelines[0].getLayout();
 
 	commandHandler.beginCommand();
 
@@ -124,11 +124,14 @@ void mtd::Renderer::recordDrawCommands
 		(
 			vk::PipelineBindPoint::eCompute,
 			pipelines.computePipelines[0].getLayout(),
-			0,
-			1, &(drawInfo.globalDescriptorSet),
-			0, nullptr
+			0U,
+			1U, &(drawInfo.globalDescriptorSet),
+			0U, nullptr
 		);
 	}
+
+	const MeshPool& meshPool = scene.getMeshPool();
+	meshPool.bindBuffers(commandBuffer);
 
 	for(const ComputePipeline& computePipeline: pipelines.computePipelines)
 	{
@@ -142,9 +145,9 @@ void mtd::Renderer::recordDrawCommands
 		(
 			vk::PipelineBindPoint::eRayTracingKHR,
 			pipelines.rayTracingPipelines[0].getLayout(),
-			0,
-			1, &(drawInfo.globalDescriptorSet),
-			0, nullptr
+			0U,
+			1U, &(drawInfo.globalDescriptorSet),
+			0U, nullptr
 		);
 	}
 
@@ -161,9 +164,9 @@ void mtd::Renderer::recordDrawCommands
 	(
 		vk::PipelineBindPoint::eGraphics,
 		firstPipelineLayout,
-		0,
-		1, &(drawInfo.globalDescriptorSet),
-		0, nullptr
+		0U,
+		1U, &(drawInfo.globalDescriptorSet),
+		0U, nullptr
 	);
 
 	for(const RenderPassInfo& renderPassInfo: renderOrder)
@@ -203,30 +206,26 @@ void mtd::Renderer::recordDrawCommands
 			PROFILER_NEXT_STAGE(fbPipeline.getName().c_str());
 
 			fbPipeline.bind(commandBuffer);
-			commandBuffer.draw(3, 1, 0, 0);
+			commandBuffer.draw(3U, 1U, 0U, 0U);
 		}
-
-		const MeshPool& meshPool = scene.getMeshPool();
-		meshPool.bindBuffers(commandBuffer);
 
 		renderObjectManager.bindRenderObjectsBuffer(commandBuffer);
 
 		for(uint32_t pipelineIndex: renderPassInfo.pipelineIndices)
 		{
-			const GraphicsPipeline& graphicsPipeline = pipelines.graphicsPipelines[pipelineIndex];
-			PROFILER_NEXT_STAGE(graphicsPipeline.getName().c_str());
+			const RasterizationPipeline& rasterizationPipeline = pipelines.rasterizationPipelines[pipelineIndex];
+			PROFILER_NEXT_STAGE(rasterizationPipeline.getName().c_str());
 
-			graphicsPipeline.bind(commandBuffer);
+			rasterizationPipeline.bind(commandBuffer);
 
 			for(const DrawBatch& drawBatch: drawBatches)
 			{
 				if(drawBatch.pipelineID != pipelineIndex) continue;
 				const MeshData& mesh = meshPool.getMesh(drawBatch.meshID);
-				graphicsPipeline.bindMeshDescriptors(commandBuffer, 0U);
 
 				for(const SubmeshData& submesh: mesh.submeshes)
 				{
-					graphicsPipeline.pushConstant(commandBuffer, submesh.materialSlot);
+					rasterizationPipeline.pushConstant(commandBuffer, submesh.materialSlot);
 					commandBuffer.drawIndexed
 					(
 						submesh.indexCount, drawBatch.instanceCount,
@@ -254,9 +253,9 @@ void mtd::Renderer::presentFrame
 ) const
 {
 	vk::PresentInfoKHR presentInfo{};
-	presentInfo.waitSemaphoreCount = 1;
+	presentInfo.waitSemaphoreCount = 1U;
 	presentInfo.pWaitSemaphores = &renderFinished;
-	presentInfo.swapchainCount = 1;
+	presentInfo.swapchainCount = 1U;
 	presentInfo.pSwapchains = &swapchain;
 	presentInfo.pImageIndices = &currentFrameIndex;
 	presentInfo.pResults = nullptr;
