@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../../Scene/InstanceManager.hpp"
-#include "../Device/GpuBuffer.hpp"
+#include "../../AssetManager/MeshPool.hpp"
 
 namespace mtd
 {
@@ -18,16 +18,25 @@ namespace mtd
             // Creates the render objects and the draw batches from the scene instances
             void createFrameRenderObjects
             (
-                const std::vector<SceneInstance>& sceneInstances, std::vector<DrawBatch>& drawBatches
+                const MeshPool& meshPool,
+                const std::vector<SceneInstance>& sceneInstances,
+                std::vector<DrawBatch>& drawBatches,
+                DescriptorSetHandler& descriptorSetHandler
             );
-            // Binds the render objects buffer
-            void bindRenderObjectsBuffer(vk::CommandBuffer commandBuffer) const;
+
+            // Binds the render object buffer
+            void bindBuffer(vk::CommandBuffer commandBuffer) const;
+            // Creates the render object descriptor for the render object buffer
+            void createDescriptor(DescriptorSetHandler& descriptorSetHandler, uint32_t binding) const;
 
         private:
             // GPU buffer for the render objects that will be used in the current frame
-            GpuBuffer renderObjectsBuffer;
+            GpuBuffer renderObjectBuffer;
             // Render object manager command handler
             CommandHandler commandHandler;
+
+            // Descriptor binding used for the render object GPU buffer
+            mutable uint32_t bufferDescriptorBinding;
 
             // List of instances visible in the current frame
             std::vector<const SceneInstance*> visibleInstances;
@@ -35,6 +44,6 @@ namespace mtd
             std::vector<RenderObject> renderObjects;
 
             // Updates the render objects buffer contents
-            void updateRenderObjectsBuffer();
+            void updateBufferData(DescriptorSetHandler& descriptorSetHandler);
     };
 }

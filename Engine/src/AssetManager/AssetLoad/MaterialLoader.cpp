@@ -8,7 +8,7 @@
 namespace mtd
 {
     constexpr uint64_t MATERIAL_MAGIC = "MTD_MTRL"_u64;
-    constexpr uint32_t MATERIAL_FILE_VERSION = 1U;
+    constexpr uint64_t MATERIAL_FILE_VERSION = 1UL;
     constexpr size_t MATERIAL_ALIGNMENT = 16;
 }
 

@@ -43,7 +43,7 @@ void mtd::Scene::allocateResources(PipelineBundle& pipelines)
 
 	std::unordered_map<vk::DescriptorType, uint32_t> totalDescriptorTypeCount;
 	totalDescriptorTypeCount[vk::DescriptorType::eUniformBuffer] = 1U + getMaterialFloatDataCount();
-	totalDescriptorTypeCount[vk::DescriptorType::eStorageBuffer] = 5U;
+	totalDescriptorTypeCount[vk::DescriptorType::eStorageBuffer] = 7U;
 
 	uint32_t totalImageSamplerCount = getTotalTextureCount();
 	for(const FramebufferPipeline& fbPipeline: pipelines.framebufferPipelines)
@@ -109,9 +109,9 @@ void mtd::Scene::allocateResources(PipelineBundle& pipelines)
 
 void mtd::Scene::configureSceneDescriptorSet(DescriptorSetHandler& descriptorSetHandler) const
 {
-	meshPool.createMeshDescriptors(descriptorSetHandler, 1U, 2U);
-	texturePool.createTextureListDescriptor(descriptorSetHandler, 3U);
-	materialManager.createMaterialDescriptor(descriptorSetHandler, 4U, 5U, 6U);
+	meshPool.createMeshDescriptors(descriptorSetHandler, 1U, 2U, 3U);
+	texturePool.createTextureListDescriptor(descriptorSetHandler, 4U);
+	materialManager.createMaterialDescriptor(descriptorSetHandler, 5U, 6U, 7U);
 }
 
 void mtd::Scene::start() const

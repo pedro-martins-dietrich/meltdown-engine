@@ -24,9 +24,8 @@ namespace mtd
             void createMeshDescriptors
             (
                 DescriptorSetHandler& descriptorSetHandler,
-                uint32_t vertexBinding, uint32_t indexBinding
+                uint32_t vertexBinding, uint32_t indexBinding, uint32_t submeshBinding
             ) const;
-
             // Binds the vertex and index buffers
             void bindBuffers(const vk::CommandBuffer& commandBuffer) const;
 
@@ -35,6 +34,8 @@ namespace mtd
             GpuBuffer vertexBuffer;
             // GPU buffer for the index data
             GpuBuffer indexBuffer;
+            // GPU buffer for mapping each mesh to its submeshes
+            GpuBuffer submeshBuffer;
             // Mesh pool command handler
 			CommandHandler commandHandler;
 

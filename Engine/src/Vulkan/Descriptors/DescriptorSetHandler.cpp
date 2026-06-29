@@ -31,7 +31,6 @@ mtd::DescriptorSetHandler::DescriptorSetHandler(DescriptorSetHandler&& other) no
 		set = nullptr;
 }
 
-// Defines how many descriptor sets can be associated with the descriptor set layout
 void mtd::DescriptorSetHandler::defineDescriptorSetsAmount(uint32_t swappableSetsAmount)
 {
 	descriptorSets.resize(swappableSetsAmount);
@@ -40,7 +39,6 @@ void mtd::DescriptorSetHandler::defineDescriptorSetsAmount(uint32_t swappableSet
 		setResourcesList.resize(descriptorTypes.size());
 }
 
-// Creates a descriptor, assigning it to a set and returning the buffer write location
 void mtd::DescriptorSetHandler::createDescriptorResources
 (
 	const Device& mtdDevice,
@@ -71,7 +69,6 @@ void mtd::DescriptorSetHandler::createDescriptorResources
 	resources.descriptorBufferInfo.range = resourceSize;
 }
 
-// Creates the resources for an image descriptor
 void mtd::DescriptorSetHandler::createImageDescriptorResources
 (
 	uint32_t swappableSetIndex, uint32_t binding, const vk::DescriptorImageInfo& descriptorImageInfo
@@ -87,7 +84,6 @@ void mtd::DescriptorSetHandler::createImageDescriptorResources
 	resourcesList[swappableSetIndex][binding].descriptorImagesInfo = {descriptorImageInfo};
 }
 
-// Creates the resources for a vector of images descriptor
 void mtd::DescriptorSetHandler::createImagesDescriptorResources
 (
 	uint32_t swappableSetIndex,
@@ -105,7 +101,6 @@ void mtd::DescriptorSetHandler::createImagesDescriptorResources
 	resourcesList[swappableSetIndex][binding].descriptorImagesInfo = std::move(descriptorImagesInfo);
 }
 
-// Assigns an external GPU buffer as a descriptor
 void mtd::DescriptorSetHandler::assignExternalResourcesToDescriptor
 (
 	uint32_t swappableSetIndex, uint32_t binding, const GpuBuffer& buffer, const void* pNext
@@ -126,7 +121,6 @@ void mtd::DescriptorSetHandler::assignExternalResourcesToDescriptor
 	resourcesList[swappableSetIndex][binding].pNext = pNext;
 }
 
-// Updates the descriptor set write data
 void mtd::DescriptorSetHandler::writeDescriptorSet(uint32_t swappableSetIndex)
 {
 	assert(swappableSetIndex < resourcesList.size() && "Swappable descriptor set not available to write data.");
@@ -134,7 +128,7 @@ void mtd::DescriptorSetHandler::writeDescriptorSet(uint32_t swappableSetIndex)
 	const std::vector<DescriptorResources>& setResourcesList = resourcesList[swappableSetIndex];
 
 	writeOps.resize(setResourcesList.size());
-	for(uint32_t binding = 0; binding < setResourcesList.size(); binding++)
+	for(uint32_t binding = 0U; binding < setResourcesList.size(); binding++)
 	{
 		const DescriptorResources& bindingResources = setResourcesList[binding];
 		uint32_t descriptorCount = 1U;
@@ -143,8 +137,8 @@ void mtd::DescriptorSetHandler::writeDescriptorSet(uint32_t swappableSetIndex)
 		const vk::DescriptorBufferInfo* pBufferInfo = nullptr;
 		if
 		(
-			descriptorTypes[binding] == vk::DescriptorType::eCombinedImageSampler ||
-			descriptorTypes[binding] == vk::DescriptorType::eStorageImage
+			descriptorTypes[binding] == vk::DescriptorType::eCombinedImageSampler
+				|| descriptorTypes[binding] == vk::DescriptorType::eStorageImage
 		)
 		{
 			pImageInfo = bindingResources.descriptorImagesInfo.data();
@@ -157,7 +151,7 @@ void mtd::DescriptorSetHandler::writeDescriptorSet(uint32_t swappableSetIndex)
 
 		writeOps[binding].dstSet = descriptorSets[swappableSetIndex];
 		writeOps[binding].dstBinding = binding;
-		writeOps[binding].dstArrayElement = 0;
+		writeOps[binding].dstArrayElement = 0U;
 		writeOps[binding].descriptorCount = descriptorCount;
 		writeOps[binding].descriptorType = descriptorTypes[binding];
 		writeOps[binding].pImageInfo = pImageInfo;
@@ -166,10 +160,51 @@ void mtd::DescriptorSetHandler::writeDescriptorSet(uint32_t swappableSetIndex)
 		writeOps[binding].pNext = bindingResources.pNext;
 	}
 
-	device.updateDescriptorSets(static_cast<uint32_t>(writeOps.size()), writeOps.data(), 0, nullptr);
+	device.updateDescriptorSets(static_cast<uint32_t>(writeOps.size()), writeOps.data(), 0U, nullptr);
 }
 
-// Updates the descriptor data
+void mtd::DescriptorSetHandler::writeDescriptor(uint32_t swappableSetIndex, uint32_t binding) const
+{
+	assert
+	(
+		swappableSetIndex < resourcesList.size() &&
+		binding < resourcesList[swappableSetIndex].size() &&
+		"Descriptor out of bounds for descriptor writing."
+	);
+
+	const DescriptorResources& bindingResources = resourcesList[swappableSetIndex][binding];
+	uint32_t descriptorCount = 1U;
+
+	const vk::DescriptorImageInfo* pImageInfo = nullptr;
+	const vk::DescriptorBufferInfo* pBufferInfo = nullptr;
+	if
+	(
+		descriptorTypes[binding] == vk::DescriptorType::eCombinedImageSampler
+			|| descriptorTypes[binding] == vk::DescriptorType::eStorageImage
+	)
+	{
+		pImageInfo = bindingResources.descriptorImagesInfo.data();
+		descriptorCount = static_cast<uint32_t>(bindingResources.descriptorImagesInfo.size());
+	}
+	else
+	{
+		pBufferInfo = &(bindingResources.descriptorBufferInfo);
+	}
+
+	vk::WriteDescriptorSet writeOperation;
+	writeOperation.dstSet = descriptorSets[swappableSetIndex];
+	writeOperation.dstBinding = binding;
+	writeOperation.dstArrayElement = 0U;
+	writeOperation.descriptorCount = descriptorCount;
+	writeOperation.descriptorType = descriptorTypes[binding];
+	writeOperation.pImageInfo = pImageInfo;
+	writeOperation.pBufferInfo = pBufferInfo;
+	writeOperation.pTexelBufferView = nullptr;
+	writeOperation.pNext = bindingResources.pNext;
+
+	device.updateDescriptorSets(1U, &writeOperation, 0U, nullptr);
+}
+
 void mtd::DescriptorSetHandler::updateDescriptorData
 (
 	uint32_t swappableSetIndex, uint32_t binding, const void* data, vk::DeviceSize dataSize
@@ -186,7 +221,6 @@ void mtd::DescriptorSetHandler::updateDescriptorData
 	buffer->copyMemoryToBuffer(dataSize, data);
 }
 
-// Creates a descriptor set layout
 void mtd::DescriptorSetHandler::createDescriptorSetLayout
 (
 	const std::vector<vk::DescriptorSetLayoutBinding>& bindings,
@@ -194,7 +228,7 @@ void mtd::DescriptorSetHandler::createDescriptorSetLayout
 )
 {
 	descriptorTypes.resize(bindings.size());
-	for(uint32_t i = 0; i < bindings.size(); i++)
+	for(uint32_t i = 0U; i < bindings.size(); i++)
 		descriptorTypes[i] = bindings[i].descriptorType;
 
 	vk::DescriptorSetLayoutCreateInfo layoutCreateInfo{};
