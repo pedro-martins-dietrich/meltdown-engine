@@ -164,6 +164,11 @@ namespace mtd
 	{
 		UIntVec2 imagesSize = UIntVec2{0U, 0U};
 		uint32_t iterationCounter = 0U;
+		uint32_t samplesPerPixel = 1U;
+		uint32_t maxRecursionDepth = 4U;
+		uint32_t maxScatterRayCount = 4U;
+		uint32_t accumulatedFrames = 0U;
+		uint32_t randomSeed = 0U;
 	};
 
 	// Ray tracing push constant struct

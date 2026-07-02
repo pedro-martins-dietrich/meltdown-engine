@@ -1,5 +1,7 @@
 #pragma once
 
+#include <meltdown/event.hpp>
+
 #include "Pipeline.hpp"
 #include "../Image/Image.hpp"
 
@@ -50,6 +52,9 @@ namespace mtd
 			// Push constant data for the compute shader
 			mutable ComputeShaderPushConstantData pushConstantData;
 
+			// Event callback handle for resetting frame accumulation
+			EventCallbackHandle resetAccumulationCallbackHandle;
+
 			// Loads the compute shader module
 			void loadShaderModule();
 			// Configures the descriptor set handlers to be used
@@ -62,5 +67,7 @@ namespace mtd
 
 			// Creates the storage images for the ray trace rendering
 			void createStorageImages(const Device& mtdDevice, vk::Extent2D swapchainExtent);
+			// Sets up the frame accumulation reset event callback
+			void setEventCallback();
 	};
 }
