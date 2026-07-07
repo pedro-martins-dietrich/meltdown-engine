@@ -15,6 +15,9 @@ namespace mtd
             RenderObjectManager(const RenderObjectManager&) = delete;
             RenderObjectManager& operator=(const RenderObjectManager&) = delete;
 
+            // Getter
+            uint32_t getRenderObjectCount() const { return renderObjectCount; }
+
             // Creates the render objects and the draw batches from the scene instances
             void createFrameRenderObjects
             (
@@ -42,6 +45,8 @@ namespace mtd
             std::vector<const SceneInstance*> visibleInstances;
             // List of render objects for the current frame
             std::vector<RenderObject> renderObjects;
+            // Count of active render objects in the GPU buffer
+            uint32_t renderObjectCount = 0U;
 
             // Updates the render objects buffer contents
             void updateBufferData(DescriptorSetHandler& descriptorSetHandler);

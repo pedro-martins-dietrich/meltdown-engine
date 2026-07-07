@@ -24,6 +24,9 @@ namespace mtd
 
 			ComputePipeline(ComputePipeline&& other) noexcept;
 
+			// Setter
+			void setInstanceCount(uint32_t instanceCount) const { pushConstantData.instanceCount = instanceCount; }
+
 			// Starts the compute shader execution
 			void dispatchCompute(const vk::CommandBuffer& commandBuffer) const;
 

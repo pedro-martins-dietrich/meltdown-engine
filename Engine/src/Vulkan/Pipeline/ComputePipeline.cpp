@@ -11,7 +11,7 @@ mtd::ComputePipeline::ComputePipeline
 	const vk::DescriptorSetLayout& globalDescriptorSetLayout,
 	vk::Extent2D swapchainExtent
 ) : Pipeline{mtdDevice.getDevice(), info}, outputImage{mtdDevice.getDevice()},
-	pushConstantData{UIntVec2{0U, 0U}, 0U, 4U, 4U, 4U, 0U, 0U}
+	pushConstantData{UIntVec2{0U, 0U}, 0U, 4U, 4U, 4U, 0U, 0U, 0U}
 {
 	loadShaderModule();
 	createDescriptorSetLayouts();

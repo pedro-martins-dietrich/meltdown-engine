@@ -83,6 +83,8 @@ void mtd::RenderObjectManager::createFrameRenderObjects
     visibleInstances.clear();
 
     updateBufferData(descriptorSetHandler);
+
+    renderObjectCount = renderObjects.size();
     renderObjects.clear();
 }
 

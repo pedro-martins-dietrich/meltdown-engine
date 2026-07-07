@@ -145,6 +145,7 @@ void mtd::Renderer::recordDrawCommands
 	for(const ComputePipeline& computePipeline: pipelines.computePipelines)
 	{
 		PROFILER_NEXT_STAGE(computePipeline.getName().c_str());
+		computePipeline.setInstanceCount(renderObjectManager.getRenderObjectCount());
 		computePipeline.dispatchCompute(commandBuffer);
 	}
 
