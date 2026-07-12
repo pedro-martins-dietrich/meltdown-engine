@@ -7,7 +7,7 @@
 namespace mtd
 {
     constexpr uint64_t MESH_MAGIC = "MTD_MESH"_u64;
-    constexpr uint32_t MESH_FILE_VERSION = 1U;
+    constexpr uint64_t MESH_FILE_VERSION = 1UL;
 }
 
 bool mtd::MeshLoader::loadMesh
@@ -52,6 +52,11 @@ bool mtd::MeshLoader::loadMesh
     meshData.vertexStride = meshHeader.vertexStride;
     meshData.indexOffset = static_cast<uint32_t>(indexData.size());
     meshData.materialSlotCount = 0U;
+    meshData.centerAABB = meshHeader.centerAABB;
+    meshData.extentAABB = meshHeader.extentAABB;
+    meshData.submeshOffset = 0U;
+    if(!meshes.empty())
+        meshData.submeshOffset = meshes.back().submeshOffset + meshes.back().submeshes.size();
 
     std::streamoff currentOffset = meshFile.tellg();
     while(currentOffset < meshFileSize)

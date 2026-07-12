@@ -17,11 +17,11 @@ namespace mtd
 	class DescriptorSetHandler
 	{
 		public:
-		DescriptorSetHandler
-		(
-			const vk::Device& device,
-			const std::vector<vk::DescriptorSetLayoutBinding>& setLayoutBindings,
-			const vk::DescriptorSetLayoutBindingFlagsCreateInfo* pFlags = nullptr
+			DescriptorSetHandler
+			(
+				const vk::Device& device,
+				const std::vector<vk::DescriptorSetLayoutBinding>& setLayoutBindings,
+				const vk::DescriptorSetLayoutBindingFlagsCreateInfo* pFlags = nullptr
 			);
 			~DescriptorSetHandler();
 
@@ -65,7 +65,7 @@ namespace mtd
 				uint32_t binding,
 				std::vector<vk::DescriptorImageInfo>& descriptorImagesInfo
 			);
-			// Assigns an external GPU buffer as a descriptor
+			// Assigns an external GPU buffer to a descriptor
 			void assignExternalResourcesToDescriptor
 			(
 				uint32_t swappableSetIndex, uint32_t binding, const GpuBuffer& buffer, const void* pNext = nullptr
@@ -73,6 +73,8 @@ namespace mtd
 
 			// Updates the descriptor set write data
 			void writeDescriptorSet(uint32_t swappableSetIndex);
+			// Updates a specific descriptor write data
+			void writeDescriptor(uint32_t swappableSetIndex, uint32_t binding) const;
 
 			// Updates the descriptor data
 			void updateDescriptorData

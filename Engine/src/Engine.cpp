@@ -68,6 +68,7 @@ void mtd::Engine::run(Window& window, const std::function<void(double)>& onUpdat
 			framebuffers,
 			pipelines,
 			scene,
+			*globalDescriptorSetHandler,
 			drawInfo,
 			shouldUpdateEngine
 		);
@@ -204,7 +205,7 @@ void mtd::Engine::configureEventCallbacks()
 
 void mtd::Engine::configureGlobalDescriptorSetHandler()
 {
-	std::vector<vk::DescriptorSetLayoutBinding> bindings(7);
+	std::vector<vk::DescriptorSetLayoutBinding> bindings(9);
 	// Camera data
 	bindings[0].binding = 0U;
 	bindings[0].descriptorType = vk::DescriptorType::eUniformBuffer;
@@ -223,30 +224,42 @@ void mtd::Engine::configureGlobalDescriptorSetHandler()
 	bindings[2].descriptorCount = 1U;
 	bindings[2].stageFlags = vk::ShaderStageFlagBits::eAll;
 	bindings[2].pImmutableSamplers = nullptr;
-	// Scene textures data
+	// Scene submesh buffer
 	bindings[3].binding = 3U;
-	bindings[3].descriptorType = vk::DescriptorType::eCombinedImageSampler;
-	bindings[3].descriptorCount = MAX_TEXTURE_POOL_SIZE;
+	bindings[3].descriptorType = vk::DescriptorType::eStorageBuffer;
+	bindings[3].descriptorCount = 1U;
 	bindings[3].stageFlags = vk::ShaderStageFlagBits::eAll;
 	bindings[3].pImmutableSamplers = nullptr;
-	// Scene materials data
+	// Scene textures data
 	bindings[4].binding = 4U;
-	bindings[4].descriptorType = vk::DescriptorType::eStorageBuffer;
-	bindings[4].descriptorCount = 1U;
+	bindings[4].descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	bindings[4].descriptorCount = MAX_TEXTURE_POOL_SIZE;
 	bindings[4].stageFlags = vk::ShaderStageFlagBits::eAll;
 	bindings[4].pImmutableSamplers = nullptr;
-	// Scene materials indexing
+	// Scene materials data
 	bindings[5].binding = 5U;
 	bindings[5].descriptorType = vk::DescriptorType::eStorageBuffer;
 	bindings[5].descriptorCount = 1U;
 	bindings[5].stageFlags = vk::ShaderStageFlagBits::eAll;
 	bindings[5].pImmutableSamplers = nullptr;
-	// Scene material sets
+	// Scene materials indexing
 	bindings[6].binding = 6U;
 	bindings[6].descriptorType = vk::DescriptorType::eStorageBuffer;
 	bindings[6].descriptorCount = 1U;
 	bindings[6].stageFlags = vk::ShaderStageFlagBits::eAll;
 	bindings[6].pImmutableSamplers = nullptr;
+	// Scene material sets
+	bindings[7].binding = 7U;
+	bindings[7].descriptorType = vk::DescriptorType::eStorageBuffer;
+	bindings[7].descriptorCount = 1U;
+	bindings[7].stageFlags = vk::ShaderStageFlagBits::eAll;
+	bindings[7].pImmutableSamplers = nullptr;
+	// Render objects
+	bindings[8].binding = 8U;
+	bindings[8].descriptorType = vk::DescriptorType::eStorageBuffer;
+	bindings[8].descriptorCount = 1U;
+	bindings[8].stageFlags = vk::ShaderStageFlagBits::eAll;
+	bindings[8].pImmutableSamplers = nullptr;
 
 	globalDescriptorSetHandler = std::make_unique<DescriptorSetHandler>(device.getDevice(), bindings);
 }
@@ -322,6 +335,7 @@ void mtd::Engine::configureDescriptors()
 		device, sizeof(CameraMatrices), vk::BufferUsageFlagBits::eUniformBuffer, 0U, 0U
 	);
 	scene.configureSceneDescriptorSet(*globalDescriptorSetHandler);
+	renderer.configureRendererDescriptor(*globalDescriptorSetHandler);
 
 	globalDescriptorSetHandler->writeDescriptorSet(0U);
 

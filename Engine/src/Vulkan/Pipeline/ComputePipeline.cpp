@@ -10,13 +10,16 @@ mtd::ComputePipeline::ComputePipeline
 	const ComputePipelineInfo& info,
 	const vk::DescriptorSetLayout& globalDescriptorSetLayout,
 	vk::Extent2D swapchainExtent
-) : Pipeline{mtdDevice.getDevice(), info}, outputImage{mtdDevice.getDevice()}
+) : Pipeline{mtdDevice.getDevice(), info}, outputImage{mtdDevice.getDevice()},
+	pushConstantData{UIntVec2{0U, 0U}, 0U, 4U, 4U, 4U, 0U, 0U, 0U}
 {
 	loadShaderModule();
 	createDescriptorSetLayouts();
 	createPipelineLayout(globalDescriptorSetLayout);
 	createComputePipeline();
 	createStorageImages(mtdDevice, swapchainExtent);
+
+	setEventCallback();
 }
 
 mtd::ComputePipeline::ComputePipeline(ComputePipeline&& other) noexcept
@@ -64,6 +67,7 @@ void mtd::ComputePipeline::dispatchCompute(const vk::CommandBuffer& commandBuffe
 		);
 	}
 
+	pushConstantData.randomSeed = rand();
 	commandBuffer.pushConstants
 	(
 		pipelineLayout,
@@ -74,6 +78,7 @@ void mtd::ComputePipeline::dispatchCompute(const vk::CommandBuffer& commandBuffe
 	commandBuffer.dispatch(info.workgroups.x, info.workgroups.y, info.workgroups.z);
 
 	pushConstantData.iterationCounter++;
+	pushConstantData.accumulatedFrames++;
 
 	outputImage.transitionImageLayout
 	(
@@ -274,7 +279,7 @@ void mtd::ComputePipeline::createStorageImages(const Device& mtdDevice, vk::Exte
 		image.createImage
 		(
 			info.imageResolution,
-			vk::Format::eR8G8B8A8Unorm,
+			vk::Format::eR32G32B32A32Sfloat,
 			vk::ImageTiling::eOptimal,
 			vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled
 		);
@@ -282,4 +287,12 @@ void mtd::ComputePipeline::createStorageImages(const Device& mtdDevice, vk::Exte
 		image.createImageView(vk::ImageAspectFlagBits::eColor, vk::ImageViewType::e2D);
 		image.createImageSampler(vk::Filter::eLinear);
 	}
+}
+
+void mtd::ComputePipeline::setEventCallback()
+{
+	resetAccumulationCallbackHandle = EventManager::addCallback([this](const ResetFrameAccumulationEvent& event)
+	{
+		pushConstantData.accumulatedFrames = 0U;
+	});
 }

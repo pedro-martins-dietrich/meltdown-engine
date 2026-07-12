@@ -17,6 +17,12 @@ mtd::MeshPool::MeshPool(const Device& mtdDevice)
         vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eIndexBuffer,
         vk::MemoryPropertyFlagBits::eDeviceLocal
     },
+    submeshBuffer
+    {
+        mtdDevice,
+        vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eIndexBuffer,
+        vk::MemoryPropertyFlagBits::eDeviceLocal
+    },
     commandHandler{mtdDevice}
 {}
 
@@ -44,7 +50,7 @@ void mtd::MeshPool::loadMeshes(const std::vector<std::string>& meshFiles)
 void mtd::MeshPool::createMeshDescriptors
 (
     DescriptorSetHandler& descriptorSetHandler,
-    uint32_t vertexBinding, uint32_t indexBinding
+    uint32_t vertexBinding, uint32_t indexBinding, uint32_t submeshBinding
 ) const
 {
     if(!anyMeshLoaded)
@@ -55,6 +61,7 @@ void mtd::MeshPool::createMeshDescriptors
 
     descriptorSetHandler.assignExternalResourcesToDescriptor(0U, vertexBinding, vertexBuffer);
     descriptorSetHandler.assignExternalResourcesToDescriptor(0U, indexBinding, indexBuffer);
+    descriptorSetHandler.assignExternalResourcesToDescriptor(0U, submeshBinding, submeshBuffer);
 }
 
 void mtd::MeshPool::bindBuffers(const vk::CommandBuffer& commandBuffer) const
@@ -66,10 +73,18 @@ void mtd::MeshPool::bindBuffers(const vk::CommandBuffer& commandBuffer) const
 
 void mtd::MeshPool::loadToGpu(const std::vector<std::byte>& vertexData, const std::vector<uint32_t>& indexData)
 {
+    assert(!meshes.empty() && "Cannot load mesh data to the GPU if there are no meshes.");
+
+    std::vector<SubmeshData> submeshes;
+    submeshes.reserve(meshes.back().submeshOffset + meshes.back().submeshes.size());
+    for(const MeshData& mesh: meshes)
+        submeshes.insert(submeshes.end(), mesh.submeshes.begin(), mesh.submeshes.end());
+
     if(!gpuBuffersCreated)
     {
         vertexBuffer.createDeviceLocal(commandHandler, vertexData.size(), vertexData.data());
         indexBuffer.createDeviceLocal(commandHandler, sizeof(uint32_t) * indexData.size(), indexData.data());
+        submeshBuffer.createDeviceLocal(commandHandler, sizeof(SubmeshData) * submeshes.size(), submeshes.data());
 
         gpuBuffersCreated = true;
         return;
@@ -79,4 +94,6 @@ void mtd::MeshPool::loadToGpu(const std::vector<std::byte>& vertexData, const st
     vertexBuffer.copyMemoryToBuffer(vertexData.size(), vertexData.data());
     indexBuffer.resizeBuffer(commandHandler, sizeof(uint32_t) * indexData.size());
     indexBuffer.copyMemoryToBuffer(sizeof(uint32_t) * indexData.size(), indexData.data());
+    submeshBuffer.resizeBuffer(commandHandler, sizeof(SubmeshData) * submeshes.size());
+    submeshBuffer.copyMemoryToBuffer(sizeof(SubmeshData) * submeshes.size(), submeshes.data());
 }

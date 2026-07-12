@@ -59,14 +59,14 @@ namespace mtd
 	struct AssetHeader
 	{
 		uint64_t magic;
-		uint32_t version;
+		uint64_t version;
 	};
 
 	// Common block header for asset files
 	struct AssetBlockHeader
 	{
 		uint64_t blockID;
-		uint32_t blockSize;
+		uint64_t blockSize;
 	};
 
 	// Scene instance data
@@ -84,7 +84,13 @@ namespace mtd
 	{
 		Mat4x4 transform;
 		uint32_t materialSetID;
-		uint32_t padding[3];
+		uint32_t submeshOffset;
+		uint32_t submeshCount;
+		uint32_t vertexOffset;
+		Vec3 centerAABB = Vec3{0.0f};
+		float padding1 = 0.0f;
+		Vec3 extentAABB = Vec3{0.0f};
+		float padding2 = 0.0f;
 	};
 
 	// Drawing data for each draw batch call
@@ -123,6 +129,11 @@ namespace mtd
 		uint32_t indexOffset;
 		uint32_t indexCount;
 		uint32_t materialSlot;
+		uint32_t padding0;
+		Vec3 centerAABB = Vec3{0.0f};
+		float padding1;
+		Vec3 extentAABB = Vec3{0.0f};
+		float padding2;
 	};
 
 	// Information for the mesh rendering
@@ -132,7 +143,10 @@ namespace mtd
 		uint32_t vertexOffset;
 		uint32_t indexOffset;
 		uint32_t materialSlotCount;
+		Vec3 centerAABB = Vec3{0.0f};
+		Vec3 extentAABB = Vec3{0.0f};
 		std::vector<SubmeshData> submeshes;
+		uint32_t submeshOffset;
 	};
 
 	// Information required for drawing a frame
@@ -150,6 +164,12 @@ namespace mtd
 	{
 		UIntVec2 imagesSize = UIntVec2{0U, 0U};
 		uint32_t iterationCounter = 0U;
+		uint32_t samplesPerPixel = 1U;
+		uint32_t maxRecursionDepth = 4U;
+		uint32_t maxScatterRayCount = 4U;
+		uint32_t accumulatedFrames = 0U;
+		uint32_t randomSeed = 0U;
+		uint32_t instanceCount = 0U;
 	};
 
 	// Ray tracing push constant struct
