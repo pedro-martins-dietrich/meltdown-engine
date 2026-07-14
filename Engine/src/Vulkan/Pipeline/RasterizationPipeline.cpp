@@ -36,14 +36,14 @@ void mtd::RasterizationPipeline::bind(vk::CommandBuffer commandBuffer) const
 {
 	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
 
-	if(descriptorSetHandlers.empty() || descriptorSetHandlers[0].getSetCount() == 0U) return;
+	if(descriptorSetHandlers.empty()) return;
 
 	commandBuffer.bindDescriptorSets
 	(
 		vk::PipelineBindPoint::eGraphics,
 		pipelineLayout,
 		1U,
-		1U, &(descriptorSetHandlers[0].getSet(0U)),
+		1U, &(descriptorSetHandlers[0].getSet()),
 		0U, nullptr
 	);
 }

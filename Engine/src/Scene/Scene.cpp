@@ -82,20 +82,17 @@ void mtd::Scene::allocateResources(PipelineBundle& pipelines)
 
 	for(FramebufferPipeline& fbPipeline: pipelines.framebufferPipelines)
 	{
-		DescriptorSetHandler& descriptorSetHandler = fbPipeline.getDescriptorSetHandler(0);
-		descriptorSetHandler.defineDescriptorSetsAmount(1U);
+		DescriptorSetHandler& descriptorSetHandler = fbPipeline.getDescriptorSetHandler(0U);
 		descriptorPool.allocateDescriptorSet(descriptorSetHandler);
 	}
 	for(ComputePipeline& computePipeline: pipelines.computePipelines)
 	{
-		DescriptorSetHandler& descriptorSetHandler = computePipeline.getDescriptorSetHandler(0);
-		descriptorSetHandler.defineDescriptorSetsAmount(1U);
+		DescriptorSetHandler& descriptorSetHandler = computePipeline.getDescriptorSetHandler(0U);
 		descriptorPool.allocateDescriptorSet(descriptorSetHandler);
 	}
-	for(uint32_t i = 0; i < pipelines.rayTracingPipelines.size(); i++)
+	for(uint32_t i = 0U; i < pipelines.rayTracingPipelines.size(); i++)
 	{
-		DescriptorSetHandler& descriptorSetHandler = pipelines.rayTracingPipelines[i].getDescriptorSetHandler(0);
-		descriptorSetHandler.defineDescriptorSetsAmount(1U);
+		DescriptorSetHandler& descriptorSetHandler = pipelines.rayTracingPipelines[i].getDescriptorSetHandler(0U);
 
 		vk::DescriptorSetVariableDescriptorCountAllocateInfo variableCountInfo{};
 		variableCountInfo.descriptorSetCount = 1U;

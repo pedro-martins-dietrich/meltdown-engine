@@ -28,12 +28,12 @@ namespace mtd
 			// Assigns the material float data buffer as a descriptor
 			void assignFloatDataBufferToDescriptor
 			(
-				DescriptorSetHandler& descriptorSetHandler, uint32_t swappableSetIndex, uint32_t bindingIndex
+				DescriptorSetHandler& descriptorSetHandler, uint32_t bindingIndex
 			) const;
 			// Assigns the material textures to a descriptor
 			void assignTexturesToDescriptor
 			(
-				DescriptorSetHandler& descriptorSetHandler, uint32_t swappableSetIndex, uint32_t bindingIndex
+				DescriptorSetHandler& descriptorSetHandler, uint32_t bindingIndex
 			) const;
 
 			// Loads all materials to the VRAM

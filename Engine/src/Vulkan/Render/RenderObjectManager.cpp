@@ -97,7 +97,7 @@ void mtd::RenderObjectManager::bindBuffer(vk::CommandBuffer commandBuffer) const
 void mtd::RenderObjectManager::createDescriptor(DescriptorSetHandler& descriptorSetHandler, uint32_t binding) const
 {
     bufferDescriptorBinding = binding;
-    descriptorSetHandler.assignExternalResourcesToDescriptor(0U, binding, renderObjectBuffer);
+    descriptorSetHandler.assignExternalResourcesToDescriptor(binding, renderObjectBuffer);
 }
 
 void mtd::RenderObjectManager::updateBufferData(DescriptorSetHandler& descriptorSetHandler)
@@ -106,8 +106,8 @@ void mtd::RenderObjectManager::updateBufferData(DescriptorSetHandler& descriptor
 	if(minimumBufferSize > renderObjectBuffer.getSize())
     {
 		renderObjectBuffer.resizeBuffer(commandHandler, minimumBufferSize);
-        descriptorSetHandler.assignExternalResourcesToDescriptor(0U, bufferDescriptorBinding, renderObjectBuffer);
-        descriptorSetHandler.writeDescriptor(0U, bufferDescriptorBinding);
+        descriptorSetHandler.assignExternalResourcesToDescriptor(bufferDescriptorBinding, renderObjectBuffer);
+        descriptorSetHandler.writeDescriptor(bufferDescriptorBinding);
     }
 
     renderObjectBuffer.copyMemoryToBuffer(renderObjects.size() * sizeof(RenderObject), renderObjects.data());

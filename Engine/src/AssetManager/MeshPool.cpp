@@ -59,9 +59,9 @@ void mtd::MeshPool::createMeshDescriptors
         return;
     }
 
-    descriptorSetHandler.assignExternalResourcesToDescriptor(0U, vertexBinding, vertexBuffer);
-    descriptorSetHandler.assignExternalResourcesToDescriptor(0U, indexBinding, indexBuffer);
-    descriptorSetHandler.assignExternalResourcesToDescriptor(0U, submeshBinding, submeshBuffer);
+    descriptorSetHandler.assignExternalResourcesToDescriptor(vertexBinding, vertexBuffer);
+    descriptorSetHandler.assignExternalResourcesToDescriptor(indexBinding, indexBuffer);
+    descriptorSetHandler.assignExternalResourcesToDescriptor(submeshBinding, submeshBuffer);
 }
 
 void mtd::MeshPool::bindBuffers(const vk::CommandBuffer& commandBuffer) const

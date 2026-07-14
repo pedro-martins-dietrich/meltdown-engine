@@ -60,9 +60,9 @@ void mtd::MaterialManager::createMaterialDescriptor
         return;
     }
 
-    descriptorSetHandler.assignExternalResourcesToDescriptor(0U, materialDataBinding, materialBuffer);
-    descriptorSetHandler.assignExternalResourcesToDescriptor(0U, materialIndexingBinding, materialIndexingBuffer);
-    descriptorSetHandler.assignExternalResourcesToDescriptor(0U, materialSetBinding, materialSetBuffer);
+    descriptorSetHandler.assignExternalResourcesToDescriptor(materialDataBinding, materialBuffer);
+    descriptorSetHandler.assignExternalResourcesToDescriptor(materialIndexingBinding, materialIndexingBuffer);
+    descriptorSetHandler.assignExternalResourcesToDescriptor(materialSetBinding, materialSetBuffer);
 }
 
 void mtd::MaterialManager::loadToGpu

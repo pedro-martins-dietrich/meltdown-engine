@@ -10,10 +10,9 @@ namespace mtd
 		std::unique_ptr<GpuBuffer> descriptorBuffer;
 		vk::DescriptorBufferInfo descriptorBufferInfo;
 		std::vector<vk::DescriptorImageInfo> descriptorImagesInfo;
-		const void* pNext = nullptr;
 	};
 
-	// Handles the data to be sent to the GPU through descriptors
+	// Manages the accessibility of GPU data in the shaders through descriptors
 	class DescriptorSetHandler
 	{
 		public:
@@ -32,69 +31,48 @@ namespace mtd
 
 			// Getters
 			const vk::DescriptorSetLayout& getLayout() const { return descriptorSetLayout; }
-			uint32_t getSetCount() const { return static_cast<uint32_t>(descriptorSets.size()); }
-			uint32_t getBindingCount() const { return static_cast<uint32_t>(descriptorTypes.size()); }
-			std::vector<vk::DescriptorSet>& getSets() { return descriptorSets; }
-			vk::DescriptorSet& getSet(uint32_t swappableSet) { return descriptorSets[swappableSet]; }
-			const vk::DescriptorSet& getSet(uint32_t swappableSet) const { return descriptorSets[swappableSet]; }
-			vk::DescriptorType getDescriptorType(uint32_t binding) const { return descriptorTypes[binding]; }
-
-			// Defines how many descriptor sets can be associated with the descriptor set layout
-			void defineDescriptorSetsAmount(uint32_t swappableSetsAmount);
+			const vk::DescriptorSet& getSet() const { return descriptorSet; }
+			vk::DescriptorSet& getSet() { return descriptorSet; }
+			uint32_t getBindingCount() const { return static_cast<uint32_t>(writeOperations.size()); }
+			vk::DescriptorType getDescriptorType(uint32_t binding) const
+				{ return writeOperations[binding].descriptorType; }
 
 			// Creates a descriptor, assigning it to a set and returning the buffer write location
 			void createDescriptorResources
 			(
-				const Device& mtdDevice,
-				vk::DeviceSize resourceSize,
-				vk::BufferUsageFlags usageFlags,
-				uint32_t swappableSetIndex,
-				uint32_t binding
+				const Device& mtdDevice, vk::DeviceSize resourceSize, vk::BufferUsageFlags usageFlags, uint32_t binding
 			);
 			// Creates the resources for an image descriptor
-			void createImageDescriptorResources
-			(
-				uint32_t swappableSetIndex,
-				uint32_t binding,
-				const vk::DescriptorImageInfo& descriptorImageInfo
-			);
+			void createImageDescriptorResources(uint32_t binding, const vk::DescriptorImageInfo& descriptorImageInfo);
 			// Creates the resources for a vector of images descriptor
 			void createImagesDescriptorResources
 			(
-				uint32_t swappableSetIndex,
-				uint32_t binding,
-				std::vector<vk::DescriptorImageInfo>& descriptorImagesInfo
+				uint32_t binding, std::vector<vk::DescriptorImageInfo>& descriptorImagesInfo
 			);
 			// Assigns an external GPU buffer to a descriptor
 			void assignExternalResourcesToDescriptor
 			(
-				uint32_t swappableSetIndex, uint32_t binding, const GpuBuffer& buffer, const void* pNext = nullptr
+				uint32_t binding, const GpuBuffer& buffer, const void* pNext = nullptr
 			);
 
-			// Updates the descriptor set write data
-			void writeDescriptorSet(uint32_t swappableSetIndex);
-			// Updates a specific descriptor write data
-			void writeDescriptor(uint32_t swappableSetIndex, uint32_t binding) const;
+			// Updates all the descriptors in the set
+			void writeDescriptorSet();
+			// Updates a specific descriptor in the set
+			void writeDescriptor(uint32_t binding);
 
 			// Updates the descriptor data
-			void updateDescriptorData
-			(
-				uint32_t swappableSetIndex, uint32_t binding, const void* data, vk::DeviceSize dataSize
-			) const;
+			void updateDescriptorData(uint32_t binding, const void* data, vk::DeviceSize dataSize) const;
 
 		private:
 			// Layout for the descriptor set
 			vk::DescriptorSetLayout descriptorSetLayout;
-			// Descriptor sets
-			std::vector<vk::DescriptorSet> descriptorSets;
+			// Descriptor set
+			vk::DescriptorSet descriptorSet;
 
-			// Descriptor type for each binding in the set layout
-			std::vector<vk::DescriptorType> descriptorTypes;
-
+			// Write operations for each descriptor in the set
+			std::vector<vk::WriteDescriptorSet> writeOperations;
 			// Data about the descriptors used in each descriptor set
-			std::vector<std::vector<DescriptorResources>> resourcesList;
-			// Write operations
-			std::vector<vk::WriteDescriptorSet> writeOps;
+			std::vector<DescriptorResources> resourcesList;
 
 			// Vulkan device reference
 			const vk::Device& device;

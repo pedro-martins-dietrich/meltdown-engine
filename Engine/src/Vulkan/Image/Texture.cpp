@@ -50,13 +50,12 @@ mtd::Texture::Texture
 	std::string_view fileName,
 	const CommandHandler& commandHandler,
 	DescriptorSetHandler& descriptorSetHandler,
-	uint32_t swappableSetIndex,
 	uint32_t binding
 ) : image{mtdDevice.getDevice()}
 {
 	loadFromFile(mtdDevice, fileName);
 	loadToGpu(mtdDevice, commandHandler);
-	createDescriptorResource(descriptorSetHandler, swappableSetIndex, binding);
+	createDescriptorResource(descriptorSetHandler, binding);
 }
 
 mtd::Texture::Texture(Texture&& other) noexcept
@@ -145,12 +144,12 @@ stbi_uc* mtd::Texture::loadPlaceholderTexture(int& width, int& height)
 
 void mtd::Texture::createDescriptorResource
 (
-	DescriptorSetHandler& descriptorSetHandler, uint32_t swappableSetIndex, uint32_t binding
+	DescriptorSetHandler& descriptorSetHandler, uint32_t binding
 ) const
 {
 	vk::DescriptorImageInfo descriptorImageInfo{};
 	image.defineDescriptorImageInfo(&descriptorImageInfo);
 
-	descriptorSetHandler.createImageDescriptorResources(swappableSetIndex, binding, descriptorImageInfo);
-	descriptorSetHandler.writeDescriptorSet(swappableSetIndex);
+	descriptorSetHandler.createImageDescriptorResources(binding, descriptorImageInfo);
+	descriptorSetHandler.writeDescriptorSet();
 }

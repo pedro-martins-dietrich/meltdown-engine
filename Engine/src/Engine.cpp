@@ -47,7 +47,7 @@ void mtd::Engine::run(Window& window, const std::function<void(double)>& onUpdat
 	{
 		swapchain.getRenderPass(),
 		swapchain.getExtent(),
-		globalDescriptorSetHandler->getSet(0)
+		globalDescriptorSetHandler->getSet()
 	};
 
 	running.store(pWindowHandler->keepOpen());
@@ -170,7 +170,7 @@ void mtd::Engine::updateLoop(const std::function<void(double)>& onUpdateCallback
 
 void mtd::Engine::updateDescriptors()
 {
-	globalDescriptorSetHandler->updateDescriptorData(0U, 0U, camera.fetchUpdatedMatrices(), sizeof(CameraMatrices));
+	globalDescriptorSetHandler->updateDescriptorData(0U, camera.fetchUpdatedMatrices(), sizeof(CameraMatrices));
 
 	std::lock_guard lock{pendingDescriptorUpdateMutex};
 	for(const auto& [key, data]: pendingDescriptorUpdates)
@@ -328,16 +328,15 @@ void mtd::Engine::createRenderResources
 
 void mtd::Engine::configureDescriptors()
 {
-	globalDescriptorSetHandler->defineDescriptorSetsAmount(1U);
 	scene.getDescriptorPool().allocateDescriptorSet(*globalDescriptorSetHandler);
 	globalDescriptorSetHandler->createDescriptorResources
 	(
-		device, sizeof(CameraMatrices), vk::BufferUsageFlagBits::eUniformBuffer, 0U, 0U
+		device, sizeof(CameraMatrices), vk::BufferUsageFlagBits::eUniformBuffer, 0U
 	);
 	scene.configureSceneDescriptorSet(*globalDescriptorSetHandler);
 	renderer.configureRendererDescriptor(*globalDescriptorSetHandler);
 
-	globalDescriptorSetHandler->writeDescriptorSet(0U);
+	globalDescriptorSetHandler->writeDescriptorSet();
 
 	for(RasterizationPipeline& rasterizationPipeline: pipelines.rasterizationPipelines)
 		rasterizationPipeline.configureUserDescriptorData(device, scene.getDescriptorPool());

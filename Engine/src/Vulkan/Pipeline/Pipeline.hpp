@@ -57,7 +57,6 @@ namespace mtd
 				if(descriptorSetHandlers.size() < userDescriptorSetIndex) return;
 
 				DescriptorSetHandler& descriptorSetHandler = descriptorSetHandlers[userDescriptorSetIndex - 1];
-				descriptorSetHandler.defineDescriptorSetsAmount(1);
 				pool.allocateDescriptorSet(descriptorSetHandler);
 
 				for(uint32_t binding = 0U; binding < info.descriptorSetInfo.size(); binding++)
@@ -68,10 +67,10 @@ namespace mtd
 						mtdDevice,
 						bindingInfo.totalDescriptorSize,
 						PipelineMapping::mapBufferUsageFlags(bindingInfo.descriptorType),
-						0, binding
+						binding
 					);
 				}
-				descriptorSetHandler.writeDescriptorSet(0);
+				descriptorSetHandler.writeDescriptorSet();
 			}
 
 			// Updates the user descriptor data for the specified binding
@@ -80,12 +79,12 @@ namespace mtd
 				if
 				(
 					descriptorSetHandlers.size() < userDescriptorSetIndex
-					|| descriptorSetHandlers[userDescriptorSetIndex - 1].getSetCount() <= bindingIndex
+					|| descriptorSetHandlers[userDescriptorSetIndex - 1].getBindingCount() <= bindingIndex
 				) return;
 
 				descriptorSetHandlers[userDescriptorSetIndex - 1].updateDescriptorData
 				(
-					0U, bindingIndex, data, info.descriptorSetInfo[bindingIndex].totalDescriptorSize
+					bindingIndex, data, info.descriptorSetInfo[bindingIndex].totalDescriptorSize
 				);
 			}
 

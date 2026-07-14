@@ -11,7 +11,7 @@ mtd::RayTracingMesh::RayTracingMesh
 	const char* fileName,
 	MaterialLump& materialLump,
 	const std::vector<Mat4x4>& preTransforms
-) : Mesh{device, index, id, preTransforms, 1}, materialCount{0U}
+) : Mesh{device, index, id, preTransforms, 1U}, materialCount{0U}
 {
 	uint32_t materialOffset = materialLump.getMaterialCount();
 	ObjMeshLoader::loadRayTracingMesh(fileName, vertices, indices, materialIndices, materialLump);
@@ -26,7 +26,6 @@ mtd::RayTracingMesh::RayTracingMesh(RayTracingMesh&& other) noexcept
 	materialCount{other.materialCount}
 {}
 
-// Deletes all mesh data on this object
 void mtd::RayTracingMesh::clearMeshData()
 {
 	vertices.clear();

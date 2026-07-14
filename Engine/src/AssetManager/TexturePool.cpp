@@ -16,11 +16,11 @@ void mtd::TexturePool::loadTextures(const std::vector<TextureInfo>& texturesInfo
 void mtd::TexturePool::createTextureListDescriptor(DescriptorSetHandler& descriptorSetHandler, uint32_t binding) const
 {
     std::vector<vk::DescriptorImageInfo> descriptorImageInfos(MAX_TEXTURE_POOL_SIZE);
-    size_t index = 0;
+    size_t index = 0UL;
 	for(; index < textures.size(); index++)
 		textures[index].updateDescriptorImageInfo(descriptorImageInfos[index]);
     for(; index < MAX_TEXTURE_POOL_SIZE; index++)
         missingTexture.updateDescriptorImageInfo(descriptorImageInfos[index]);
 
-	descriptorSetHandler.createImagesDescriptorResources(0, binding, descriptorImageInfos);
+	descriptorSetHandler.createImagesDescriptorResources(binding, descriptorImageInfos);
 }

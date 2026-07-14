@@ -20,7 +20,6 @@ namespace mtd
 				std::string_view fileName,
 				const CommandHandler& commandHandler,
 				DescriptorSetHandler& descriptorSetHandler,
-				uint32_t swappableSetIndex,
 				uint32_t binding
 			);
 			~Texture() = default;
@@ -55,9 +54,6 @@ namespace mtd
 			// Loads placeholder texture
 			stbi_uc* loadPlaceholderTexture(int& width, int& height);
 			// Configures the texture descriptor set
-			void createDescriptorResource
-			(
-				DescriptorSetHandler& descriptorSetHandler, uint32_t swappableSetIndex, uint32_t binding
-			) const;
+			void createDescriptorResource(DescriptorSetHandler& descriptorSetHandler, uint32_t binding) const;
 	};
 }

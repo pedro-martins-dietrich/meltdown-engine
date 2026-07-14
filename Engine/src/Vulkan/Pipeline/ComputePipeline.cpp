@@ -50,20 +50,20 @@ void mtd::ComputePipeline::dispatchCompute(const vk::CommandBuffer& commandBuffe
 	(
 		vk::PipelineBindPoint::eCompute,
 		pipelineLayout,
-		1,
-		1, &(descriptorSetHandlers[0].getSet(0)),
-		0, nullptr
+		1U,
+		1U, &(descriptorSetHandlers[0].getSet()),
+		0U, nullptr
 	);
 
-	if(descriptorSetHandlers.size() > 1 && descriptorSetHandlers[1].getSetCount() > 0)
+	if(descriptorSetHandlers.size() > 1)
 	{
 		commandBuffer.bindDescriptorSets
 		(
 			vk::PipelineBindPoint::eCompute,
 			pipelineLayout,
-			2,
-			1, &(descriptorSetHandlers[1].getSet(0)),
-			0, nullptr
+			2U,
+			1U, &(descriptorSetHandlers[1].getSet()),
+			0U, nullptr
 		);
 	}
 
@@ -92,7 +92,7 @@ void mtd::ComputePipeline::configurePipelineDescriptorSet()
 	vk::DescriptorImageInfo descriptorImageInfo{};
 	outputImage.defineDescriptorImageInfo(&descriptorImageInfo);
 	descriptorImageInfo.imageLayout = vk::ImageLayout::eGeneral;
-	descriptorSetHandlers[0].createImageDescriptorResources(0U, 0U, descriptorImageInfo);
+	descriptorSetHandlers[0].createImageDescriptorResources(0U, descriptorImageInfo);
 
 	std::vector<vk::DescriptorImageInfo> descriptorImageInfos(images.size());
 	for(size_t i = 0; i < images.size(); i++)
@@ -100,9 +100,9 @@ void mtd::ComputePipeline::configurePipelineDescriptorSet()
 		images[i].defineDescriptorImageInfo(&descriptorImageInfos[i]);
 		descriptorImageInfos[i].imageLayout = vk::ImageLayout::eGeneral;
 	}
-	descriptorSetHandlers[0].createImagesDescriptorResources(0U, 1U, descriptorImageInfos);
+	descriptorSetHandlers[0].createImagesDescriptorResources(1U, descriptorImageInfos);
 
-	descriptorSetHandlers[0].writeDescriptorSet(0);
+	descriptorSetHandlers[0].writeDescriptorSet();
 }
 
 void mtd::ComputePipeline::shareRenderTargetImageDescriptor
@@ -114,7 +114,7 @@ void mtd::ComputePipeline::shareRenderTargetImageDescriptor
 	outputImage.defineDescriptorImageInfo(&descriptorImageInfo);
 	descriptorImageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 
-	descriptorSetHandler.createImageDescriptorResources(0, binding, descriptorImageInfo);
+	descriptorSetHandler.createImageDescriptorResources(binding, descriptorImageInfo);
 }
 
 void mtd::ComputePipeline::resize(const Device& mtdDevice, vk::Extent2D swapchainExtent)
@@ -201,14 +201,14 @@ void mtd::ComputePipeline::createPipelineLayout(const vk::DescriptorSetLayout& g
 
 	vk::PushConstantRange pushConstantRange{};
 	pushConstantRange.stageFlags = vk::ShaderStageFlagBits::eCompute;
-	pushConstantRange.offset = 0;
+	pushConstantRange.offset = 0U;
 	pushConstantRange.size = sizeof(ComputeShaderPushConstantData);
 
 	vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
 	pipelineLayoutCreateInfo.flags = vk::PipelineLayoutCreateFlags();
 	pipelineLayoutCreateInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
 	pipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayouts.data();
-	pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
+	pipelineLayoutCreateInfo.pushConstantRangeCount = 1U;
 	pipelineLayoutCreateInfo.pPushConstantRanges = &pushConstantRange;
 
 	vk::Result result = device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &pipelineLayout);
@@ -231,7 +231,7 @@ void mtd::ComputePipeline::createComputePipeline()
 	pipelineCreateInfo.basePipelineHandle = nullptr;
 	pipelineCreateInfo.basePipelineIndex = 0;
 
-	vk::Result result = device.createComputePipelines(nullptr, 1, &pipelineCreateInfo, nullptr, &pipeline);
+	vk::Result result = device.createComputePipelines(nullptr, 1U, &pipelineCreateInfo, nullptr, &pipeline);
 	if(result != vk::Result::eSuccess)
 	{
 		LOG_ERROR("Failed to create compute pipeline. Vulkan result: %d", result);
