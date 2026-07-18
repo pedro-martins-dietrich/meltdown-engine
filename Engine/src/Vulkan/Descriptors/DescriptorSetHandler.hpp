@@ -54,6 +54,11 @@ namespace mtd
 			(
 				uint32_t binding, const GpuBuffer& buffer, const void* pNext = nullptr
 			);
+			// Assigns an external GPU buffer to a descriptor
+			void assignBuffer
+			(
+				uint32_t binding, const vk::DescriptorBufferInfo& bufferInfo, const void* pNext = nullptr
+			);
 
 			// Updates all the descriptors in the set
 			void writeDescriptorSet();

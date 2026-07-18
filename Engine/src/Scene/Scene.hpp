@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "InstanceManager.hpp"
+#include "ResourceManager.hpp"
 #include "../AssetManager/TexturePool.hpp"
 #include "../AssetManager/MaterialManager.hpp"
 #include "../AssetManager/MeshPool.hpp"
@@ -26,6 +27,7 @@ namespace mtd
 			const MeshPool& getMeshPool() const { return meshPool; }
 			const std::vector<SceneInstance>& getInstances() const { return instanceManager.getInstances(); }
 			const DescriptorPool& getDescriptorPool() const { return descriptorPool; }
+			const ResourceManager& getResourceManager() const { return resourceManager; }
 
 			// Loads scene from file
 			void loadScene
@@ -40,7 +42,7 @@ namespace mtd
 			// Allocates resources and loads all mesh data
 			void allocateResources(PipelineBundle& pipelines);
 			// Configures the scene descriptor set with the scene data
-			void configureSceneDescriptorSet(DescriptorSetHandler& descriptorSetHandler) const;
+			void configureSceneDescriptorSet(DescriptorSetHandler& descriptorSetHandler);
 
 			// Executes starting code on scene
 			void start() const;
@@ -59,6 +61,8 @@ namespace mtd
 			MeshPool meshPool;
 			// Scene instances
 			InstanceManager instanceManager;
+			// GPU resources
+			ResourceManager resourceManager;
 
 			// Descriptor pool for the pipelines descriptor sets
 			DescriptorPool descriptorPool;

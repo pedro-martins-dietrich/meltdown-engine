@@ -98,6 +98,20 @@ void mtd::DescriptorSetHandler::assignExternalResourcesToDescriptor
 	writeOperations[binding].pNext = pNext;
 }
 
+void mtd::DescriptorSetHandler::assignBuffer
+(
+	uint32_t binding, const vk::DescriptorBufferInfo& bufferInfo, const void* pNext
+)
+{
+	assert(binding < resourcesList.size() && "Descriptor out of bounds for GPU buffer assignment.");
+
+	resourcesList[binding].descriptorBufferInfo = bufferInfo;
+
+	writeOperations[binding].dstSet = descriptorSet;
+	writeOperations[binding].pBufferInfo = &(resourcesList[binding].descriptorBufferInfo);
+	writeOperations[binding].pNext = pNext;
+}
+
 void mtd::DescriptorSetHandler::writeDescriptorSet()
 {
 	for(vk::WriteDescriptorSet& writeOp: writeOperations)

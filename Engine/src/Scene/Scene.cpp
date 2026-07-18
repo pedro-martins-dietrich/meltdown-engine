@@ -7,6 +7,7 @@
 
 mtd::Scene::Scene(const Device& mtdDevice)
 	: texturePool{mtdDevice}, materialManager{mtdDevice}, meshPool{mtdDevice},
+	instanceManager{}, resourceManager{mtdDevice},
 	descriptorPool{mtdDevice.getDevice()}
 {}
 
@@ -21,6 +22,7 @@ void mtd::Scene::loadScene
 {
 	renderOrder.clear();
 	meshManagers.clear();
+	resourceManager.clearResources();
 
 	SceneLoader::load
 	(
@@ -70,7 +72,7 @@ void mtd::Scene::allocateResources(PipelineBundle& pipelines)
 	}
 
 	std::vector<PoolSizeData> poolSizesInfo{totalDescriptorTypeCount.size()};
-	uint32_t i = 0;
+	uint32_t i = 0U;
 	for(const auto& [type, count]: totalDescriptorTypeCount)
 	{
 		poolSizesInfo[i].descriptorCount = count;
@@ -104,7 +106,7 @@ void mtd::Scene::allocateResources(PipelineBundle& pipelines)
 	LOG_INFO("Meshes loaded to the GPU.\n");
 }
 
-void mtd::Scene::configureSceneDescriptorSet(DescriptorSetHandler& descriptorSetHandler) const
+void mtd::Scene::configureSceneDescriptorSet(DescriptorSetHandler& descriptorSetHandler)
 {
 	meshPool.createMeshDescriptors(descriptorSetHandler, 1U, 2U, 3U);
 	texturePool.createTextureListDescriptor(descriptorSetHandler, 4U);

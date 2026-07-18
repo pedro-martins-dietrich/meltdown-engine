@@ -8,6 +8,26 @@ mtd::Image::Image(const vk::Device& device)
 	: device{device}, image{nullptr}, imageMemory{nullptr}, view{nullptr}, sampler{nullptr}
 {}
 
+mtd::Image::Image
+(
+	const Device& mtdDevice,
+	UIntVec2 dimensions,
+	vk::Format imageFormat,
+	vk::ImageTiling tiling,
+	vk::ImageUsageFlags usage,
+	vk::MemoryPropertyFlags memoryProperties,
+	vk::ImageAspectFlags aspect,
+	vk::ImageViewType viewType,
+	vk::Filter samplingFilter,
+	vk::ImageCreateFlags imageFlags
+) : device{mtdDevice.getDevice()}, image{nullptr}, imageMemory{nullptr}, view{nullptr}, sampler{nullptr}
+{
+	createImage(dimensions, imageFormat, tiling, usage, imageFlags);
+	createImageMemory(mtdDevice, memoryProperties);
+	createImageView(aspect, viewType);
+	createImageSampler(samplingFilter);
+}
+
 mtd::Image::~Image()
 {
 	device.destroySampler(sampler);
@@ -183,13 +203,13 @@ void mtd::Image::resize
 	createImageView(aspect, viewType);
 }
 
-void mtd::Image::defineDescriptorImageInfo(vk::DescriptorImageInfo* descriptorImageInfo) const
+void mtd::Image::updateDescriptorInfo(vk::DescriptorImageInfo& descriptorImageInfo) const
 {
-	assert(image != nullptr && "The image view must be created before defining the descriptor image info.");
+	assert(view != nullptr && "The image and its view must be created before updating the descriptor image info.");
 
-	descriptorImageInfo->sampler = sampler;
-	descriptorImageInfo->imageView = view;
-	descriptorImageInfo->imageLayout = layout;
+	descriptorImageInfo.sampler = sampler;
+	descriptorImageInfo.imageView = view;
+	descriptorImageInfo.imageLayout = layout;
 }
 
 void mtd::Image::transitionImageLayout
@@ -286,7 +306,7 @@ void mtd::Image::copyBufferToImage(const CommandHandler& commandHandler, vk::Buf
 	subresource.layerCount = 1U;
 
 	vk::BufferImageCopy bufferImageCopy{};
-	bufferImageCopy.bufferOffset = 0;
+	bufferImageCopy.bufferOffset = 0UL;
 	bufferImageCopy.bufferRowLength = 0U;
 	bufferImageCopy.bufferImageHeight = 0U;
 	bufferImageCopy.imageSubresource = subresource;

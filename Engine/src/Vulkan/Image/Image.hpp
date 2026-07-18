@@ -9,6 +9,19 @@ namespace mtd
 	{
 		public:
 			Image(const vk::Device& device);
+			Image
+			(
+				const Device& mtdDevice,
+				UIntVec2 dimensions,
+				vk::Format imageFormat,
+				vk::ImageTiling tiling,
+				vk::ImageUsageFlags usage,
+				vk::MemoryPropertyFlags memoryProperties,
+				vk::ImageAspectFlags aspect,
+				vk::ImageViewType viewType,
+				vk::Filter samplingFilter,
+				vk::ImageCreateFlags imageFlags = vk::ImageCreateFlags()
+			);
 			~Image();
 
 			Image(const Image&) = delete;
@@ -54,8 +67,10 @@ namespace mtd
 				vk::ImageCreateFlags imageFlags = vk::ImageCreateFlags()
 			);
 
-			// Defines the fields of the descriptor image info with the image data
-			void defineDescriptorImageInfo(vk::DescriptorImageInfo* descriptorImageInfo) const;
+			// Updates the descriptor image info with the image data
+			void updateDescriptorInfo(vk::DescriptorImageInfo& descriptorImageInfo) const;
+			void defineDescriptorImageInfo(vk::DescriptorImageInfo* descriptorImageInfo) const
+				{ updateDescriptorInfo(*descriptorImageInfo); } // TODO: Remove this version of the function
 
 			// Changes the Vulkan image layout
 			void transitionImageLayout
@@ -74,7 +89,7 @@ namespace mtd
 		private:
 			// Vulkan image data
 			vk::Image image;
-			// GPU memory of the image
+			// GPU memory region of the image
 			vk::DeviceMemory imageMemory;
 			// Image description
 			vk::ImageView view;

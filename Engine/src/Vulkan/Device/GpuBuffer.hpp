@@ -40,6 +40,9 @@ namespace mtd
 			// Copies data to the buffer
 			void copyMemoryToBuffer(vk::DeviceSize copySize, const void* srcData, vk::DeviceSize bufferOffset = 0);
 
+			// Updates the descriptor info with the buffer data
+			void updateDescriptorInfo(vk::DescriptorBufferInfo& descriptorInfo) const;
+
 		private:
 			// Vulkan buffer handles
 			vk::Buffer buffer;
