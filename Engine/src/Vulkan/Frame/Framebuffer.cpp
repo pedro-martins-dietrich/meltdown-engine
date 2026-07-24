@@ -262,7 +262,7 @@ void mtd::Framebuffer::createAttachments(const Device& mtdDevice, vk::Extent2D s
 	for(uint32_t i = 0U; i < descriptorInfos.size(); i++)
 	{
 		descriptorInfos[i].sampler = sampler;
-		descriptorInfos[i].imageView = attachmentImages[i].getImageView();
+		descriptorInfos[i].imageView = attachmentImages[i].getView();
 		descriptorInfos[i].imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 	}
 }
@@ -271,7 +271,7 @@ void mtd::Framebuffer::createFramebuffer()
 {
 	std::vector<vk::ImageView> attachments(attachmentImages.size());
 	for(uint32_t i = 0U; i < attachmentImages.size(); i++)
-		attachments[i] = attachmentImages[i].getImageView();
+		attachments[i] = attachmentImages[i].getView();
 
 	vk::FramebufferCreateInfo framebufferCreateInfo{};
 	framebufferCreateInfo.flags = vk::FramebufferCreateFlags();

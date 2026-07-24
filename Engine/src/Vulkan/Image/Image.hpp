@@ -32,21 +32,10 @@ namespace mtd
 
 			// Getters
 			vk::Image getImage() const { return image; }
-			vk::ImageView getImageView() const { return view; }
+			vk::ImageView getView() const { return view; }
 			vk::Format getFormat() const { return format; }
 			UIntVec2 getDimensions() const { return dimensions; }
 
-			// Creates the Vulkan image and image memory of the resource
-			void create
-			(
-				UIntVec2 imageDimensions,
-				vk::Format imageFormat,
-				vk::ImageTiling imageTiling,
-				vk::ImageUsageFlags usage,
-				vk::MemoryPropertyFlags memoryPropertyFlags,
-				SamplerType sampler = SamplerType::Linear,
-				vk::ImageCreateFlags imageFlags = vk::ImageCreateFlags()
-			);
 			// Creates the Vulkan image, image memory and image view of the resource
 			void create
 			(
@@ -60,9 +49,6 @@ namespace mtd
 				SamplerType sampler = SamplerType::Linear,
 				vk::ImageCreateFlags imageFlags = vk::ImageCreateFlags()
 			);
-
-			// Creates the image view if not yet created
-			void createView(vk::ImageAspectFlags aspects, vk::ImageViewType imageViewType);
 
 			// Recreates the image, image memory and image view with a new resolution
 			void resize(UIntVec2 newDimensions);

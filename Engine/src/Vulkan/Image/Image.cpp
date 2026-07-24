@@ -68,29 +68,6 @@ void mtd::Image::create
 	vk::ImageTiling imageTiling,
 	vk::ImageUsageFlags usage,
 	vk::MemoryPropertyFlags memoryPropertyFlags,
-	SamplerType sampler,
-	vk::ImageCreateFlags imageFlags
-)
-{
-	dimensions = imageDimensions;
-	format = imageFormat;
-	tiling = imageTiling;
-	usageFlags = usage;
-	memoryProperties = memoryPropertyFlags;
-	samplerType = sampler;
-	createFlags = imageFlags;
-
-	createImage();
-	createMemory();
-}
-
-void mtd::Image::create
-(
-	UIntVec2 imageDimensions,
-	vk::Format imageFormat,
-	vk::ImageTiling imageTiling,
-	vk::ImageUsageFlags usage,
-	vk::MemoryPropertyFlags memoryPropertyFlags,
 	vk::ImageAspectFlags aspects,
 	vk::ImageViewType imageViewType,
 	SamplerType sampler,
@@ -109,14 +86,6 @@ void mtd::Image::create
 
 	createImage();
 	createMemory();
-	createView();
-}
-
-void mtd::Image::createView(vk::ImageAspectFlags aspects, vk::ImageViewType imageViewType)
-{
-	aspectFlags = aspects;
-	viewType = imageViewType;
-
 	createView();
 }
 
@@ -250,12 +219,15 @@ void mtd::Image::copyBufferToImage(const CommandHandler& commandHandler, vk::Buf
 
 	vk::CommandBuffer commandBuffer = commandHandler.beginSingleTimeCommand();
 
+	transitionImageLayout(commandBuffer, vk::ImageLayout::eTransferDstOptimal);
 	commandBuffer.copyBufferToImage
 	(
-		srcBuffer,
-		image,
-		vk::ImageLayout::eTransferDstOptimal,
-		bufferImageCopy
+		srcBuffer, image, vk::ImageLayout::eTransferDstOptimal, bufferImageCopy
+	);
+	transitionImageLayout
+	(
+		commandBuffer, vk::ImageLayout::eShaderReadOnlyOptimal,
+		vk::PipelineStageFlagBits::eNone, vk::PipelineStageFlagBits::eAllGraphics
 	);
 
 	commandHandler.endSingleTimeCommand(commandBuffer);

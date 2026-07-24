@@ -57,7 +57,7 @@ void mtd::Frame::fetchFrameDrawData(DrawInfo& drawInfo) const
 
 void mtd::Frame::createFramebuffer(const vk::RenderPass& renderPass)
 {
-	std::vector<vk::ImageView> attachments{colorBufferView, depthBuffer.getImageView()};
+	std::vector<vk::ImageView> attachments{colorBufferView, depthBuffer.getView()};
 
 	vk::FramebufferCreateInfo framebufferCreateInfo{};
 	framebufferCreateInfo.flags = vk::FramebufferCreateFlags();

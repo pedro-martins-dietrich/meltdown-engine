@@ -39,6 +39,8 @@ mtd::Texture::Texture(const Device& mtdDevice, const CommandHandler& commandHand
 		vk::ImageTiling::eOptimal,
 		vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
 		vk::MemoryPropertyFlagBits::eDeviceLocal,
+		vk::ImageAspectFlagBits::eColor,
+		vk::ImageViewType::e2D,
 		SamplerType::Linear
 	);
 
@@ -82,24 +84,10 @@ void mtd::Texture::loadToGpu(const Device& mtdDevice, const CommandHandler& comm
 	};
 	stagingBuffer.copyMemoryToBuffer(imageSize, pixels);
 
-	vk::CommandBuffer commandBuffer = commandHandler.beginSingleTimeCommand();
-	image.transitionImageLayout(commandBuffer, vk::ImageLayout::eTransferDstOptimal);
-	commandHandler.endSingleTimeCommand(commandBuffer);
-
 	image.copyBufferToImage(commandHandler, stagingBuffer.getBuffer());
-
-	commandBuffer = commandHandler.beginSingleTimeCommand();
-	image.transitionImageLayout
-	(
-		commandBuffer, vk::ImageLayout::eShaderReadOnlyOptimal,
-		vk::PipelineStageFlagBits::eNone, vk::PipelineStageFlagBits::eFragmentShader
-	);
-	commandHandler.endSingleTimeCommand(commandBuffer);
 
 	if(!isPlaceholderTexture)
 		free(pixels);
-
-	image.createView(vk::ImageAspectFlagBits::eColor, vk::ImageViewType::e2D);
 }
 
 void mtd::Texture::loadFromFile(const Device& mtdDevice, std::string_view fileName)
@@ -122,6 +110,8 @@ void mtd::Texture::loadFromFile(const Device& mtdDevice, std::string_view fileNa
 		vk::ImageTiling::eOptimal,
 		vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
 		vk::MemoryPropertyFlagBits::eDeviceLocal,
+		vk::ImageAspectFlagBits::eColor,
+		vk::ImageViewType::e2D,
 		SamplerType::Linear
 	);
 }

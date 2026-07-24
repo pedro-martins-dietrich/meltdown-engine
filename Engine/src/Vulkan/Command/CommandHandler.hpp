@@ -9,7 +9,7 @@ namespace mtd
 	class CommandHandler
 	{
 		public:
-			CommandHandler(const Device& device);
+			CommandHandler(const Device& mtdDevice);
 			~CommandHandler();
 
 			CommandHandler(const CommandHandler&) = delete;
@@ -17,7 +17,7 @@ namespace mtd
 
 			CommandHandler(CommandHandler&& otherCommandHandler) noexcept;
 
-			// Getter
+			// Fetches the main command buffer
 			const vk::CommandBuffer& getCommandBuffer() const { return mainCommandBuffer; }
 
 			// Allocates a command buffer in the command pool
@@ -28,13 +28,13 @@ namespace mtd
 			// Submits and finalizes the single time command
 			void endSingleTimeCommand(const vk::CommandBuffer& commandBuffer) const;
 
-			// Begins main command buffer
+			// Begins the main command buffer
 			void beginCommand() const;
-			// Ends main command buffer
+			// Ends the main command buffer
 			void endCommand() const;
 
 			// Submits recorded draw command
-			void submitDrawCommandBuffer(const SynchronizationBundle& syncBudle) const;
+			void submitDrawCommandBuffer(const SynchronizationBundle& syncBundle) const;
 
 		private:
 			// Command buffer allocator
@@ -43,6 +43,6 @@ namespace mtd
 			vk::CommandBuffer mainCommandBuffer;
 
 			// Device reference
-			const Device& device;
+			const Device& mtdDevice;
 	};
 }
