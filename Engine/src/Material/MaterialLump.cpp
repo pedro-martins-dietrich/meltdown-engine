@@ -37,7 +37,11 @@ void mtd::MaterialLump::assignTexturesToDescriptor
 {
 	std::vector<vk::DescriptorImageInfo> descriptorImageInfos;
 	for(const Texture& texture: textures)
-		descriptorImageInfos.emplace_back(texture.getDescriptorImageInfo());
+	{
+		vk::DescriptorImageInfo descriptorInfo;
+		texture.updateDescriptorImageInfo(descriptorInfo);
+		descriptorImageInfos.emplace_back(descriptorInfo);
+	}
 
 	descriptorSetHandler.createImagesDescriptorResources(bindingIndex, descriptorImageInfos);
 }

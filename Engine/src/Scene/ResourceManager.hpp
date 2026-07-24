@@ -35,7 +35,7 @@ namespace mtd
                 vk::MemoryPropertyFlags memoryProperties,
                 vk::ImageAspectFlags aspect,
                 vk::ImageViewType viewType,
-                vk::Filter samplingFilter = vk::Filter::eLinear
+                SamplerType samplerType = SamplerType::Linear
             );
 
             // Updates buffer data

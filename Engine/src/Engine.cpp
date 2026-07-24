@@ -5,6 +5,7 @@
 #include "Utils/Profiler.hpp"
 #include "Input/InputHandler.hpp"
 #include "Event/EventManager.hpp"
+#include "Vulkan/Image/SamplerManager.hpp"
 
 mtd::Engine::Engine(const EngineInfo& info, Window& window)
 	: vulkanInstance{info},
@@ -17,6 +18,7 @@ mtd::Engine::Engine(const EngineInfo& info, Window& window)
 	scene{device},
 	imGuiHandler{device.getDevice()}
 {
+	SamplerManager::createSamplers(device.getDevice());
 	configureEventCallbacks();
 	configureGlobalDescriptorSetHandler();
 
@@ -26,6 +28,7 @@ mtd::Engine::Engine(const EngineInfo& info, Window& window)
 mtd::Engine::~Engine()
 {
 	device.getDevice().waitIdle();
+	SamplerManager::destroySamplers(device.getDevice());
 
 	LOG_INFO("Engine shut down.");
 }

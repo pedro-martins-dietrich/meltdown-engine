@@ -1,5 +1,6 @@
 #pragma once
 
+#include "SamplerManager.hpp"
 #include "../Command/CommandHandler.hpp"
 
 namespace mtd
@@ -8,18 +9,18 @@ namespace mtd
 	class Image
 	{
 		public:
-			Image(const vk::Device& device);
+			Image(const Device& mtdDevice);
 			Image
 			(
 				const Device& mtdDevice,
-				UIntVec2 dimensions,
+				UIntVec2 imageDimensions,
 				vk::Format imageFormat,
-				vk::ImageTiling tiling,
+				vk::ImageTiling imageTiling,
 				vk::ImageUsageFlags usage,
-				vk::MemoryPropertyFlags memoryProperties,
-				vk::ImageAspectFlags aspect,
-				vk::ImageViewType viewType,
-				vk::Filter samplingFilter,
+				vk::MemoryPropertyFlags memoryPropertyFlags,
+				vk::ImageAspectFlags aspects,
+				vk::ImageViewType imageViewType = vk::ImageViewType::e2D,
+				SamplerType sampler = SamplerType::Linear,
 				vk::ImageCreateFlags imageFlags = vk::ImageCreateFlags()
 			);
 			~Image();
@@ -35,42 +36,39 @@ namespace mtd
 			vk::Format getFormat() const { return format; }
 			UIntVec2 getDimensions() const { return dimensions; }
 
-			// Setter
-			void setVulkanImage(vk::Image newImage, vk::Format newFormat, UIntVec2 newDimensions);
-
-			// Creates the Vulkan image
-			void createImage
+			// Creates the Vulkan image and image memory of the resource
+			void create
 			(
 				UIntVec2 imageDimensions,
 				vk::Format imageFormat,
-				vk::ImageTiling tiling,
+				vk::ImageTiling imageTiling,
 				vk::ImageUsageFlags usage,
+				vk::MemoryPropertyFlags memoryPropertyFlags,
+				SamplerType sampler = SamplerType::Linear,
 				vk::ImageCreateFlags imageFlags = vk::ImageCreateFlags()
 			);
-			// Allocates GPU memory for Vulkan image
-			void createImageMemory(const Device& mtdDevice, vk::MemoryPropertyFlags memoryProperties);
-			// Creates a description for the Vulkan image
-			void createImageView(vk::ImageAspectFlags aspect, vk::ImageViewType viewType);
-			// Creates a sampler for the image
-			void createImageSampler(vk::Filter samplingFilter);
+			// Creates the Vulkan image, image memory and image view of the resource
+			void create
+			(
+				UIntVec2 imageDimensions,
+				vk::Format imageFormat,
+				vk::ImageTiling imageTiling,
+				vk::ImageUsageFlags usage,
+				vk::MemoryPropertyFlags memoryPropertyFlags,
+				vk::ImageAspectFlags aspects,
+				vk::ImageViewType imageViewType = vk::ImageViewType::e2D,
+				SamplerType sampler = SamplerType::Linear,
+				vk::ImageCreateFlags imageFlags = vk::ImageCreateFlags()
+			);
+
+			// Creates the image view if not yet created
+			void createView(vk::ImageAspectFlags aspects, vk::ImageViewType imageViewType);
 
 			// Recreates the image, image memory and image view with a new resolution
-			void resize
-			(
-				const Device& mtdDevice,
-				UIntVec2 newDimensions,
-				vk::ImageTiling tiling,
-				vk::ImageUsageFlags usage,
-				vk::MemoryPropertyFlags memoryProperties,
-				vk::ImageAspectFlags aspect,
-				vk::ImageViewType viewType,
-				vk::ImageCreateFlags imageFlags = vk::ImageCreateFlags()
-			);
+			void resize(UIntVec2 newDimensions);
 
 			// Updates the descriptor image info with the image data
 			void updateDescriptorInfo(vk::DescriptorImageInfo& descriptorImageInfo) const;
-			void defineDescriptorImageInfo(vk::DescriptorImageInfo* descriptorImageInfo) const
-				{ updateDescriptorInfo(*descriptorImageInfo); } // TODO: Remove this version of the function
 
 			// Changes the Vulkan image layout
 			void transitionImageLayout
@@ -83,9 +81,6 @@ namespace mtd
 			// Copies buffer data to Vulkan image
 			void copyBufferToImage(const CommandHandler& commandHandler, vk::Buffer srcBuffer);
 
-			// Deletes all the image data
-			void destroy();
-
 		private:
 			// Vulkan image data
 			vk::Image image;
@@ -93,17 +88,36 @@ namespace mtd
 			vk::DeviceMemory imageMemory;
 			// Image description
 			vk::ImageView view;
-			// Method for image sampling
-			vk::Sampler sampler;
 
 			// Image resolution
 			UIntVec2 dimensions = UIntVec2{0U, 0U};
 			// Image pixel format
 			vk::Format format = vk::Format::eUndefined;
+			// Image tiling
+			vk::ImageTiling tiling = vk::ImageTiling::eOptimal;
+			// Image usages
+			vk::ImageUsageFlags usageFlags = vk::ImageUsageFlags();
+			// Image memory properties
+			vk::MemoryPropertyFlags memoryProperties = vk::MemoryPropertyFlagBits::eDeviceLocal;
+			// Image aspects
+			vk::ImageAspectFlags aspectFlags = vk::ImageAspectFlags();
+			// Image view type
+			vk::ImageViewType viewType = vk::ImageViewType::e2D;
+			// Method for image sampling
+			SamplerType samplerType = SamplerType::Linear;
+			// Image creation flags
+			vk::ImageCreateFlags createFlags = vk::ImageCreateFlags();
 			// Image GPU memory layout
 			mutable vk::ImageLayout layout = vk::ImageLayout::eUndefined;
 
-			// Vulkan device reference
-			const vk::Device& device;
+			// Device reference
+			const Device& mtdDevice;
+
+			// Creates the Vulkan image
+			void createImage();
+			// Allocates GPU memory for Vulkan image
+			void createMemory();
+			// Creates a description for the Vulkan image
+			void createView();
 	};
 }

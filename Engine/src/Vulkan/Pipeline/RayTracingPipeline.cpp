@@ -13,14 +13,14 @@ mtd::RayTracingPipeline::RayTracingPipeline
 	const vk::DescriptorSetLayout& globalDescriptorSetLayout,
 	vk::Extent2D swapchainExtent
 ) : Pipeline{mtdDevice.getDevice(), info},
-	outputImage{mtdDevice.getDevice()},
-	accumulationImage{mtdDevice.getDevice()},
+	outputImage{mtdDevice},
+	accumulationImage{mtdDevice},
 	windowResolutionDependant{false},
 	sbtBuffer
 	{
 		mtdDevice,
-		vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddress |
-			vk::BufferUsageFlagBits::eTransferDst,
+		vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddress
+			| vk::BufferUsageFlagBits::eTransferDst,
 		vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
 	},
 	shaderRenderingInfo{2U, 4U, 1U, 0U, 0U}
@@ -114,11 +114,11 @@ void mtd::RayTracingPipeline::traceRays
 void mtd::RayTracingPipeline::configurePipelineDescriptorSet()
 {
 	vk::DescriptorImageInfo descriptorImageInfo{};
-	outputImage.defineDescriptorImageInfo(&descriptorImageInfo);
+	outputImage.updateDescriptorInfo(descriptorImageInfo);
 	descriptorImageInfo.imageLayout = vk::ImageLayout::eGeneral;
 	descriptorSetHandlers[0].createImageDescriptorResources(1U, descriptorImageInfo);
 
-	accumulationImage.defineDescriptorImageInfo(&descriptorImageInfo);
+	accumulationImage.updateDescriptorInfo(descriptorImageInfo);
 	descriptorImageInfo.imageLayout = vk::ImageLayout::eGeneral;
 	descriptorSetHandlers[0].createImageDescriptorResources(2U, descriptorImageInfo);
 
@@ -131,7 +131,7 @@ void mtd::RayTracingPipeline::shareRenderTargetImageDescriptor
 ) const
 {
 	vk::DescriptorImageInfo descriptorImageInfo{};
-	outputImage.defineDescriptorImageInfo(&descriptorImageInfo);
+	outputImage.updateDescriptorInfo(descriptorImageInfo);
 	descriptorImageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 
 	descriptorSetHandler.createImageDescriptorResources(binding, descriptorImageInfo);
@@ -146,26 +146,8 @@ void mtd::RayTracingPipeline::resize(const Device& mtdDevice, vk::Extent2D swapc
 	if(info.windowResolutionRatio.y > 0.0f)
 		info.height = static_cast<uint32_t>(info.windowResolutionRatio.y * swapchainExtent.height);
 
-	outputImage.resize
-	(
-		mtdDevice,
-		{info.width, info.height},
-		vk::ImageTiling::eOptimal,
-		vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled,
-		vk::MemoryPropertyFlagBits::eDeviceLocal,
-		vk::ImageAspectFlagBits::eColor,
-		vk::ImageViewType::e2D
-	);
-	accumulationImage.resize
-	(
-		mtdDevice,
-		{info.width, info.height},
-		vk::ImageTiling::eOptimal,
-		vk::ImageUsageFlagBits::eStorage,
-		vk::MemoryPropertyFlagBits::eDeviceLocal,
-		vk::ImageAspectFlagBits::eColor,
-		vk::ImageViewType::e2D
-	);
+	outputImage.resize({info.width, info.height});
+	accumulationImage.resize({info.width, info.height});
 	configurePipelineDescriptorSet();
 
 	resetAccumulation();
@@ -261,27 +243,28 @@ void mtd::RayTracingPipeline::createStorageImages(const Device& mtdDevice, vk::E
 		windowResolutionDependant = true;
 	}
 
-	outputImage.createImage
+	outputImage.create
 	(
 		{info.width, info.height},
 		vk::Format::eR8G8B8A8Unorm,
 		vk::ImageTiling::eOptimal,
-		vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled
+		vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled,
+		vk::MemoryPropertyFlagBits::eDeviceLocal,
+		vk::ImageAspectFlagBits::eColor,
+		vk::ImageViewType::e2D,
+		SamplerType::Linear
 	);
-	outputImage.createImageMemory(mtdDevice, vk::MemoryPropertyFlagBits::eDeviceLocal);
-	outputImage.createImageView(vk::ImageAspectFlagBits::eColor, vk::ImageViewType::e2D);
-	outputImage.createImageSampler(vk::Filter::eLinear);
-
-	accumulationImage.createImage
+	accumulationImage.create
 	(
 		{info.width, info.height},
 		vk::Format::eR32G32B32A32Sfloat,
 		vk::ImageTiling::eOptimal,
-		vk::ImageUsageFlagBits::eStorage
+		vk::ImageUsageFlagBits::eStorage,
+		vk::MemoryPropertyFlagBits::eDeviceLocal,
+		vk::ImageAspectFlagBits::eColor,
+		vk::ImageViewType::e2D,
+		SamplerType::Linear
 	);
-	accumulationImage.createImageMemory(mtdDevice, vk::MemoryPropertyFlagBits::eDeviceLocal);
-	accumulationImage.createImageView(vk::ImageAspectFlagBits::eColor, vk::ImageViewType::e2D);
-	accumulationImage.createImageSampler(vk::Filter::eLinear);
 }
 
 void mtd::RayTracingPipeline::createPipelineLayout(const vk::DescriptorSetLayout& globalDescriptorSetLayout)

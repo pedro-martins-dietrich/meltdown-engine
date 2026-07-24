@@ -29,12 +29,9 @@ namespace mtd
 
 			Texture(Texture&& other) noexcept;
 
-			// Getter
-			vk::DescriptorImageInfo getDescriptorImageInfo() const;
-
 			// Updates the descriptor image info with the texture information
 			void updateDescriptorImageInfo(vk::DescriptorImageInfo& descriptorImageInfo) const
-				{ image.defineDescriptorImageInfo(&descriptorImageInfo); }
+				{ image.updateDescriptorInfo(descriptorImageInfo); }
 
 			// Sends the texture data to the GPU
 			void loadToGpu(const Device& mtdDevice, const CommandHandler& commandHandler);

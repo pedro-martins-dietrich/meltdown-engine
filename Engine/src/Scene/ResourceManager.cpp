@@ -31,13 +31,13 @@ mtd::ResourceID mtd::ResourceManager::createImage
     vk::MemoryPropertyFlags memoryProperties,
     vk::ImageAspectFlags aspect,
     vk::ImageViewType viewType,
-    vk::Filter samplingFilter
+    SamplerType samplerType
 )
 {
     resources.emplace
     (
         nextID,
-        Image{device, imageDimensions, imageFormat, tiling, usage, memoryProperties, aspect, viewType, samplingFilter}
+        Image{device, imageDimensions, imageFormat, tiling, usage, memoryProperties, aspect, viewType, samplerType}
     );
     return nextID++;
 }

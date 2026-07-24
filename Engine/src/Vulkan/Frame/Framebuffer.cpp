@@ -232,26 +232,30 @@ void mtd::Framebuffer::createAttachments(const Device& mtdDevice, vk::Extent2D s
 
 	for(uint32_t i = 0U; i < colorAttachmentCount; i++)
 	{
-		attachmentImages.emplace_back(device);
-		createAttachment
+		attachmentImages.emplace_back(mtdDevice);
+		attachmentImages[i].create
 		(
-			mtdDevice,
-			attachmentImages[i],
+			{info.width, info.height},
 			vk::Format::eB8G8R8A8Unorm,
+			vk::ImageTiling::eOptimal,
 			vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
-			vk::ImageAspectFlagBits::eColor
+			vk::MemoryPropertyFlagBits::eDeviceLocal,
+			vk::ImageAspectFlagBits::eColor,
+			vk::ImageViewType::e2D
 		);
 	}
 	if(useDepth)
 	{
-		attachmentImages.emplace_back(device);
-		createAttachment
+		attachmentImages.emplace_back(mtdDevice);
+		attachmentImages.back().create
 		(
-			mtdDevice,
-			attachmentImages.back(),
+			{info.width, info.height},
 			vk::Format::eD32Sfloat,
+			vk::ImageTiling::eOptimal,
 			vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled,
-			vk::ImageAspectFlagBits::eDepth
+			vk::MemoryPropertyFlagBits::eDeviceLocal,
+			vk::ImageAspectFlagBits::eDepth,
+			vk::ImageViewType::e2D
 		);
 	}
 
@@ -261,20 +265,6 @@ void mtd::Framebuffer::createAttachments(const Device& mtdDevice, vk::Extent2D s
 		descriptorInfos[i].imageView = attachmentImages[i].getImageView();
 		descriptorInfos[i].imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 	}
-}
-
-void mtd::Framebuffer::createAttachment
-(
-	const Device& mtdDevice,
-	Image& attachmentImage,
-	vk::Format format,
-	vk::ImageUsageFlags usage,
-	vk::ImageAspectFlags aspect
-) const
-{
-	attachmentImage.createImage({info.width, info.height}, format, vk::ImageTiling::eOptimal, usage);
-	attachmentImage.createImageMemory(mtdDevice, vk::MemoryPropertyFlagBits::eDeviceLocal);
-	attachmentImage.createImageView(aspect, vk::ImageViewType::e2D);
 }
 
 void mtd::Framebuffer::createFramebuffer()
