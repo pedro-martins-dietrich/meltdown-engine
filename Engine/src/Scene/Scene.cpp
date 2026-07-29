@@ -7,8 +7,7 @@
 
 mtd::Scene::Scene(const Device& mtdDevice)
 	: texturePool{mtdDevice}, materialManager{mtdDevice}, meshPool{mtdDevice},
-	instanceManager{}, resourceManager{mtdDevice},
-	descriptorPool{mtdDevice.getDevice()}
+	instanceManager{}, descriptorPool{mtdDevice.getDevice()}
 {}
 
 void mtd::Scene::loadScene
@@ -22,7 +21,6 @@ void mtd::Scene::loadScene
 {
 	renderOrder.clear();
 	meshManagers.clear();
-	resourceManager.clearResources();
 
 	SceneLoader::load
 	(

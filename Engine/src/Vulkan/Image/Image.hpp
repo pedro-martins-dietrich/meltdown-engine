@@ -21,6 +21,7 @@ namespace mtd
 				vk::ImageAspectFlags aspects,
 				vk::ImageViewType imageViewType = vk::ImageViewType::e2D,
 				SamplerType sampler = SamplerType::Linear,
+				Vec2 windowResolutionRatio = Vec2{-1.0f, -1.0f},
 				vk::ImageCreateFlags imageFlags = vk::ImageCreateFlags()
 			);
 			~Image();
@@ -35,6 +36,7 @@ namespace mtd
 			vk::ImageView getView() const { return view; }
 			vk::Format getFormat() const { return format; }
 			UIntVec2 getDimensions() const { return dimensions; }
+			Vec2 getWindowResolutionRatio() const { return windowResolutionRatio; }
 
 			// Creates the Vulkan image, image memory and image view of the resource
 			void create
@@ -95,6 +97,9 @@ namespace mtd
 			vk::ImageCreateFlags createFlags = vk::ImageCreateFlags();
 			// Image GPU memory layout
 			mutable vk::ImageLayout layout = vk::ImageLayout::eUndefined;
+
+			// Ratio between the image resolution and the window resolution
+			Vec2 windowResolutionRatio = Vec2{-1.0f, -1.0f};
 
 			// Device reference
 			const Device& mtdDevice;

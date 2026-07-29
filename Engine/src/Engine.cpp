@@ -16,7 +16,8 @@ mtd::Engine::Engine(const EngineInfo& info, Window& window)
 	camera{window.getAspectRatio()},
 	renderer{device},
 	scene{device},
-	imGuiHandler{device.getDevice()}
+	imGuiHandler{device.getDevice()},
+	resourceManager{device, window.getDimensions()}
 {
 	SamplerManager::createSamplers(device.getDevice());
 	configureEventCallbacks();
@@ -100,6 +101,7 @@ void mtd::Engine::loadScene(const char* sceneFile)
 	pipelines.computePipelines.clear();
 	pipelines.rayTracingPipelines.clear();
 	pipelines.framebufferPipelines.clear();
+	resourceManager.clearResources();
 	Profiler::clearStages();
 
 	std::vector<FramebufferInfo> framebufferInfos;
@@ -367,6 +369,8 @@ void mtd::Engine::updateEngine(WindowHandler* const pWindowHandler)
 
 	swapchain.recreate(device, surface.getSurface(), pWindowHandler->getDimensions());
 
+	resourceManager.updateWindowResolutionLinkedImages({swapchain.getExtent().width, swapchain.getExtent().height});
+
 	for(Framebuffer& framebuffer: framebuffers)
 		framebuffer.resize(device, swapchain.getExtent());
 	for(RasterizationPipeline& rasterizationPipeline: pipelines.rasterizationPipelines)
@@ -379,8 +383,8 @@ void mtd::Engine::updateEngine(WindowHandler* const pWindowHandler)
 	}
 	for(ComputePipeline& computePipeline: pipelines.computePipelines)
 		computePipeline.resize(device, swapchain.getExtent());
-	for(RayTracingPipeline& rtPipeline: pipelines.rayTracingPipelines)
-		rtPipeline.resize(device, swapchain.getExtent());
+	for(RayTracingPipeline& rayTracingPipeline: pipelines.rayTracingPipelines)
+		rayTracingPipeline.resize(device, swapchain.getExtent());
 	for(FramebufferPipeline& fbPipeline: pipelines.framebufferPipelines)
 	{
 		fbPipeline.recreate(swapchain.getExtent(), swapchain.getRenderPass());

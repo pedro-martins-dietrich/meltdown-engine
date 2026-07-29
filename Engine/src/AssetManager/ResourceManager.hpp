@@ -5,14 +5,14 @@
 
 namespace mtd
 {
+    // ID used for all GPU resources
     using ResourceID = uint32_t;
-    using Resource = std::variant<GpuBuffer, Image>;
 
     // Centralized manager for GPU resources
     class ResourceManager
     {
         public:
-            ResourceManager(const Device& device);
+            ResourceManager(const Device& device, UIntVec2 windowResolution);
             ~ResourceManager() = default;
 
             ResourceManager(const ResourceManager&) = delete;
@@ -30,18 +30,19 @@ namespace mtd
             (
                 UIntVec2 imageDimensions,
 				vk::Format imageFormat,
-				vk::ImageTiling tiling,
 				vk::ImageUsageFlags usage,
-                vk::MemoryPropertyFlags memoryProperties,
-                vk::ImageAspectFlags aspect,
-                vk::ImageViewType viewType,
-                SamplerType samplerType = SamplerType::Linear
+                Vec2 windowResolutionRatio = Vec2{-1.0f, -1.0f},
+                SamplerType samplerType = SamplerType::Linear,
+				vk::ImageTiling tiling = vk::ImageTiling::eOptimal,
+                vk::ImageAspectFlags aspect = vk::ImageAspectFlagBits::eColor,
+                vk::ImageViewType viewType = vk::ImageViewType::e2D,
+                vk::MemoryPropertyFlags memoryProperties = vk::MemoryPropertyFlagBits::eDeviceLocal
             );
 
             // Updates buffer data
             bool updateBufferData
             (
-                ResourceID id, vk::DeviceSize copySize, const void* srcData, vk::DeviceSize bufferOffset = 0
+                ResourceID id, vk::DeviceSize copySize, const void* srcData, vk::DeviceSize bufferOffset = 0UL
             );
             // Transitions the specified image layout
             bool transitionImageLayout
@@ -52,6 +53,9 @@ namespace mtd
 				vk::PipelineStageFlags srcStage = vk::PipelineStageFlagBits::eNone,
 				vk::PipelineStageFlags dstStage = vk::PipelineStageFlagBits::eNone
             ) const;
+
+            // Updates resolution of all images where the resolution is linked to the window size
+            void updateWindowResolutionLinkedImages(UIntVec2 newWindowResolution);
 
             // Deletes the specified GPU resource
             bool deleteResource(ResourceID id);
@@ -65,10 +69,14 @@ namespace mtd
 
         private:
             // GPU resources
-            std::unordered_map<ResourceID, Resource> resources;
+            std::unordered_map<ResourceID, GpuBuffer> buffers;
+            std::unordered_map<ResourceID, Image> images;
 
             // Resource ID counter
             ResourceID nextID = 1U;
+
+            // Window resolution saved for creating images associated with the window resolution
+            UIntVec2 windowResolution;
 
             // Device reference
             const Device& device;

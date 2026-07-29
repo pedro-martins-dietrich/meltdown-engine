@@ -19,11 +19,12 @@ mtd::Image::Image
 	vk::ImageAspectFlags aspects,
 	vk::ImageViewType imageViewType,
 	SamplerType sampler,
+	Vec2 windowResolutionRatio,
 	vk::ImageCreateFlags imageFlags
 ) : mtdDevice{mtdDevice}, image{nullptr}, imageMemory{nullptr}, view{nullptr},
-	dimensions{imageDimensions}, format{imageFormat}, tiling{imageTiling},
-	usageFlags{usage}, memoryProperties{memoryPropertyFlags}, aspectFlags{aspects},
-	viewType{imageViewType}, samplerType{sampler}, createFlags{imageFlags}
+	dimensions{imageDimensions}, format{imageFormat}, tiling{imageTiling}, usageFlags{usage},
+	memoryProperties{memoryPropertyFlags}, aspectFlags{aspects}, viewType{imageViewType},
+	samplerType{sampler}, createFlags{imageFlags}, windowResolutionRatio{windowResolutionRatio}
 {
 	createImage();
 	createMemory();

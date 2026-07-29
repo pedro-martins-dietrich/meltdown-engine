@@ -4,10 +4,11 @@
 
 #include <meltdown/window.hpp>
 
+#include "Camera/Camera.hpp"
+#include "AssetManager/ResourceManager.hpp"
 #include "Vulkan/ImGui/ImGuiHandler.hpp"
 #include "Vulkan/Render/Renderer.hpp"
 #include "Vulkan/Frame/Surface.hpp"
-#include "Camera/Camera.hpp"
 
 // Meltdown (mtd) engine namespace
 namespace mtd
@@ -54,6 +55,7 @@ namespace mtd
 			Camera camera;
 			Renderer renderer;
 			ImGuiHandler imGuiHandler;
+			ResourceManager resourceManager;
 
 			// All pipelines in use by the scene
 			PipelineBundle pipelines;
