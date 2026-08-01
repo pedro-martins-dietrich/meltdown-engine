@@ -113,6 +113,7 @@ void mtd::Engine::loadScene(const char* sceneFile)
 		sceneFile,
 		framebufferInfos,
 		pipelineInfos,
+		resourceManager,
 		renderer.getRenderOrder()
 	);
 

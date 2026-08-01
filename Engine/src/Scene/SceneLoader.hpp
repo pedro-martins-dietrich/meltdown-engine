@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "InstanceManager.hpp"
+#include "../AssetManager/ResourceManager.hpp"
 #include "../AssetManager/TexturePool.hpp"
 #include "../AssetManager/MaterialManager.hpp"
 #include "../AssetManager/MeshPool.hpp"
@@ -21,6 +22,7 @@ namespace mtd::SceneLoader
 		PipelineInfoBundle& pipelineInfos,
 		std::vector<RenderPassInfo>& renderOrder,
 		std::vector<std::unique_ptr<MeshManager>>& meshManagers,
+		ResourceManager& resourceManager,
 		InstanceManager& instanceManager,
 		TexturePool& texturePool,
 		MaterialManager& materialManager,

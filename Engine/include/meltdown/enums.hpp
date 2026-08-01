@@ -2,6 +2,45 @@
 
 namespace mtd
 {
+	template<typename E>
+	struct EnableBitMaskOperators : std::false_type {};
+
+	template<typename E>
+	concept BitMaskEnum = std::is_enum_v<E> && EnableBitMaskOperators<E>::value;
+
+	template<BitMaskEnum E>
+	constexpr E operator|(E a, E b)
+	{
+		using T = std::underlying_type_t<E>;
+		return static_cast<E>(static_cast<T>(a) | static_cast<T>(b));
+	}
+
+	template<BitMaskEnum E>
+	constexpr E operator&(E a, E b)
+	{
+		using T = std::underlying_type_t<E>;
+		return static_cast<E>(static_cast<T>(a) & static_cast<T>(b));
+	}
+
+	template<BitMaskEnum E>
+	constexpr E& operator|=(E& a, E b)
+	{
+		return a = a | b;
+	}
+
+	template<BitMaskEnum E>
+	constexpr E& operator&=(E& a, E b)
+	{
+		return a = a & b;
+	}
+
+	/*
+	* @brief Enables the usage of bit mask operators on the enum class.
+	*
+	* @param Enum The enum class type to enable the bit mask operators.
+	*/
+	#define ENABLE_ENUM_FLAGS(Enum) template<> struct EnableBitMaskOperators<Enum> : std::true_type {};
+
 	/*
 	* @brief Identifier for the pipeline shader stage.
 	*/
@@ -26,6 +65,31 @@ namespace mtd
 		RayGeneration_AnyHit_Miss,
 		ClosestHit_AnyHit_Miss,
 		RayGeneration_ClosestHit_AnyHit_Miss
+	};
+
+	/*
+	* @brief Possible usages for GPU buffers.
+	*/
+	enum class GpuBufferType : uint32_t
+	{
+		None = 0U,
+		Uniform = 1U << 0,
+		Storage = 1U << 1,
+		TransferSource = 1U << 2,
+		TransferDestination = 1U << 3
+	};
+	ENABLE_ENUM_FLAGS(GpuBufferType)
+
+	/*
+	* @brief Type of GPU memory usages.
+	*/
+	enum class GpuMemoryUsage
+	{
+		Auto,
+		GpuOnly,
+		CpuUpload,
+		CpuUploadOnce,
+		CpuReadback
 	};
 
 	/*

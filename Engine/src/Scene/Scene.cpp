@@ -16,6 +16,7 @@ void mtd::Scene::loadScene
 	std::string_view sceneFileName,
 	std::vector<FramebufferInfo>& framebufferInfos,
 	PipelineInfoBundle& pipelineInfos,
+	ResourceManager& resourceManager,
 	std::vector<RenderPassInfo>& renderOrder
 )
 {
@@ -30,6 +31,7 @@ void mtd::Scene::loadScene
 		pipelineInfos,
 		renderOrder,
 		meshManagers,
+		resourceManager,
 		instanceManager,
 		texturePool,
 		materialManager,

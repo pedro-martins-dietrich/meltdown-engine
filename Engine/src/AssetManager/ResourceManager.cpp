@@ -1,8 +1,12 @@
 #include <pch.hpp>
 #include "ResourceManager.hpp"
 
+#include "../Utils/Logger.hpp"
+#include "../Vulkan/EnumMapping/EnumMapping.hpp"
+
 namespace mtd
 {
+    using ResourceIdConstIterator = std::unordered_map<std::string, ResourceID>::const_iterator;
     using BufferIterator = std::unordered_map<ResourceID, GpuBuffer>::iterator;
     using BufferConstIterator = std::unordered_map<ResourceID, GpuBuffer>::const_iterator;
     using ImageIterator = std::unordered_map<ResourceID, Image>::iterator;
@@ -13,20 +17,48 @@ mtd::ResourceManager::ResourceManager(const Device& device, UIntVec2 windowResol
     : device{device}, windowResolution{windowResolution}
 {}
 
+mtd::ResourceID mtd::ResourceManager::getResourceID(std::string_view resourceName) const
+{
+    ResourceIdConstIterator ni = nameIdMap.find(resourceName.data());
+    if(ni == nameIdMap.cend()) return 0U;
+
+    return ni->second;
+}
+
 mtd::ResourceID mtd::ResourceManager::createBuffer
 (
-    vk::BufferUsageFlags bufferUsage, vk::MemoryPropertyFlags memoryProperties, vk::DeviceSize bufferSize
+    std::string resourceName, GpuBufferType type, GpuMemoryUsage memoryUsage, uint64_t bufferSize, const void* pData
 )
 {
-    if(bufferSize == 0U)
+    if(resourceName.length() == 0UL)
+    {
+        LOG_ERROR("Valid name for the GPU resource has not been provided. GPU buffer will not be created.");
+        return 0U;
+    }
+
+    if(memoryUsage == GpuMemoryUsage::Auto)
+        memoryUsage = EnumMapping::defaultMemoryUsage(type);
+    vk::BufferUsageFlags bufferUsage = EnumMapping::getBufferUsage(type);
+    vk::MemoryPropertyFlags memoryProperties = EnumMapping::getMemoryProperties(memoryUsage);
+
+    if(bufferSize == 0UL)
         buffers.emplace(nextID, GpuBuffer{device, bufferUsage, memoryProperties});
     else
+    {
         buffers.emplace(nextID, GpuBuffer{device, bufferSize, bufferUsage, memoryProperties});
+        if(pData)
+            buffers.at(nextID).copyMemoryToBuffer(bufferSize, pData);
+    }
+
+
+    nameIdMap.emplace(std::move(resourceName), nextID);
+
     return nextID++;
 }
 
 mtd::ResourceID mtd::ResourceManager::createImage
 (
+    std::string resourceName,
     UIntVec2 imageDimensions,
     vk::Format imageFormat,
     vk::ImageUsageFlags usage,
@@ -38,6 +70,12 @@ mtd::ResourceID mtd::ResourceManager::createImage
     vk::MemoryPropertyFlags memoryProperties
 )
 {
+    if(resourceName.length() == 0UL)
+    {
+        LOG_ERROR("Valid name for the GPU resource has not been provided. GPU image will not be created.");
+        return 0U;
+    }
+
     if(windowResolutionRatio.x > 0.0f)
         imageDimensions.x = static_cast<uint32_t>(windowResolutionRatio.x * windowResolution.x);
     if(windowResolutionRatio.y > 0.0f)
@@ -61,6 +99,8 @@ mtd::ResourceID mtd::ResourceManager::createImage
         }
     );
 
+    nameIdMap.emplace(std::move(resourceName), nextID);
+
     return nextID++;
 }
 
@@ -70,7 +110,7 @@ bool mtd::ResourceManager::updateBufferData
 )
 {
     BufferIterator b = buffers.find(id);
-    if(b == buffers.end()) return false;
+    if(b == buffers.cend()) return false;
 
     b->second.copyMemoryToBuffer(copySize, srcData, bufferOffset);
     return true;
@@ -86,7 +126,7 @@ bool mtd::ResourceManager::transitionImageLayout
 ) const
 {
     ImageConstIterator i = images.find(id);
-    if(i == images.end()) return false;
+    if(i == images.cend()) return false;
 
     i->second.transitionImageLayout(commandBuffer, newLayout, srcStage, dstStage);
     return true;
@@ -121,19 +161,19 @@ void mtd::ResourceManager::clearResources()
     nextID = 1U;
 }
 
-bool mtd::ResourceManager::updateDescriptorBufferInfo(ResourceID id, vk::DescriptorBufferInfo& info) const
+bool mtd::ResourceManager::fetchDescriptorBufferInfo(ResourceID id, vk::DescriptorBufferInfo& info) const
 {
     BufferConstIterator b = buffers.find(id);
-    if(b == buffers.end()) return false;
+    if(b == buffers.cend()) return false;
 
     b->second.updateDescriptorInfo(info);
     return true;
 }
 
-bool mtd::ResourceManager::updateDescriptorImageInfo(ResourceID id, vk::DescriptorImageInfo& info) const
+bool mtd::ResourceManager::fetchDescriptorImageInfo(ResourceID id, vk::DescriptorImageInfo& info) const
 {
     ImageConstIterator i = images.find(id);
-    if(i == images.end()) return false;
+    if(i == images.cend()) return false;
 
     i->second.updateDescriptorInfo(info);
     return true;

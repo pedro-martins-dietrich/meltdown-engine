@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "InstanceManager.hpp"
+#include "../AssetManager/ResourceManager.hpp"
 #include "../AssetManager/TexturePool.hpp"
 #include "../AssetManager/MaterialManager.hpp"
 #include "../AssetManager/MeshPool.hpp"
@@ -34,6 +35,7 @@ namespace mtd
 				std::string_view sceneFileName,
 				std::vector<FramebufferInfo>& framebufferInfos,
 				PipelineInfoBundle& pipelineInfos,
+				ResourceManager& resourceManager,
 				std::vector<RenderPassInfo>& renderOrder
 			);
 

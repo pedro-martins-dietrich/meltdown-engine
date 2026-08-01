@@ -1,5 +1,5 @@
 {
-	"scene-loader-version": "0.2.0",
+	"scene-loader-version": "0.2.1",
 	"camera":
 	{
 		"orthographic": false,
@@ -10,6 +10,11 @@
 		"position": [0.0, -2.0, -6.0],
 		"yaw": 0.0,
 		"pitch": 0.4
+	},
+	"gpu-resources":
+	{
+		"buffers": [],
+		"images": []
 	},
 	"framebuffers": [],
 	"rasterization-pipelines": [],

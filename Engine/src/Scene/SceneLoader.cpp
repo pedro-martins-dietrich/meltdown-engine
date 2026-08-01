@@ -11,16 +11,16 @@
 
 namespace mtd::SceneLoader
 {
-	static constexpr const char* SCENE_LOADER_VERSION = "0.2.0";
+	static constexpr const char* SCENE_LOADER_VERSION = "0.2.1";
 
 	// Loads initial camera data for the scene
 	static void loadCamera(const nlohmann::json& cameraJson);
+
+	// Loads the GPU resources from the scene file and allocates them
+	static void loadGpuResources(const nlohmann::json& resourcesInfoJson, ResourceManager& resourceManager);
+
 	// Fetches the framebuffer info from the scene file
-	static void loadFramebuffer
-	(
-		const nlohmann::json& framebufferJson,
-		std::vector<FramebufferInfo>& framebufferInfos
-	);
+	static void loadFramebuffer(const nlohmann::json& framebufferJson, std::vector<FramebufferInfo>& framebufferInfos);
 	// Fetches the rasterization pipeline infos from the scene file
 	static void loadRasterizationPipelines
 	(
@@ -31,14 +31,12 @@ namespace mtd::SceneLoader
 	// Fetches the ray tracing pipeline infos from the scene file
 	static void loadRayTracingPipelines
 	(
-		const nlohmann::json& rayTracingPipelineJson,
-		std::vector<RayTracingPipelineInfo>& rayTracingPipelineInfos
+		const nlohmann::json& rayTracingPipelineJson, std::vector<RayTracingPipelineInfo>& rayTracingPipelineInfos
 	);
 	// Fetches the compute pipeline infos from the scene file
 	static void loadComputePipelines
 	(
-		const nlohmann::json& computePipelineJson,
-		std::vector<ComputePipelineInfo>& computePipelineInfos
+		const nlohmann::json& computePipelineJson, std::vector<ComputePipelineInfo>& computePipelineInfos
 	);
 	// Fetches the framebuffer pipeline info from the scene file
 	static void loadFramebufferPipelines
@@ -51,8 +49,7 @@ namespace mtd::SceneLoader
 	// Loads the descriptor set info for a pipeline
 	static void loadDescriptorInfos
 	(
-		const nlohmann::json& descriptorSetInfoJson,
-		std::vector<DescriptorInfo>& descriptorInfos
+		const nlohmann::json& descriptorSetInfoJson, std::vector<DescriptorInfo>& descriptorInfos
 	);
 
 	// Fetches ray tracing meshes from the scene file
@@ -86,6 +83,7 @@ void mtd::SceneLoader::load
 	PipelineInfoBundle& pipelineInfos,
 	std::vector<RenderPassInfo>& renderOrder,
 	std::vector<std::unique_ptr<MeshManager>>& meshManagers,
+	ResourceManager& resourceManager,
 	InstanceManager& instanceManager,
 	TexturePool& texturePool,
 	MaterialManager& materialManager,
@@ -107,6 +105,7 @@ void mtd::SceneLoader::load
 	}
 
 	loadCamera(sceneJson["camera"]);
+	loadGpuResources(sceneJson["gpu-resources"], resourceManager);
 
 	const nlohmann::json& framebuffersJson = sceneJson["framebuffers"];
 	const nlohmann::json& rasterPipelinesJson = sceneJson["rasterization-pipelines"];
@@ -342,25 +341,49 @@ void mtd::SceneLoader::loadFramebufferPipelines
 	);
 }
 
+void mtd::SceneLoader::loadGpuResources(const nlohmann::json& resourcesInfoJson, ResourceManager& resourceManager)
+{
+	const nlohmann::json& buffersJson = resourcesInfoJson["buffers"];
+	const nlohmann::json& imagesJson = resourcesInfoJson["images"];
+
+	for(const nlohmann::json& bufferJson: buffersJson)
+	{
+		resourceManager.createBuffer
+		(
+			bufferJson.value("name", ""),
+			static_cast<GpuBufferType>(bufferJson.value("type", 0U)),
+			static_cast<GpuMemoryUsage>(bufferJson.value("memory-usage", 0U)),
+			bufferJson.value("size", 0UL)
+		);
+	}
+	for(const nlohmann::json& imageJson: imagesJson)
+	{
+		resourceManager.createImage
+		(
+			imageJson.value("name", ""),
+			UIntVec2{imageJson.value("size-x", 0U), imageJson.value("size-y", 0U)},
+			static_cast<vk::Format>(imageJson.value("format", 37U)),
+			static_cast<vk::ImageUsageFlags>(imageJson.value("type", 4U)),
+			Vec2{imageJson.value("resolution-ratio-x", -1.0f), imageJson.value("resolution-ratio-y", -1.0f)}
+		);
+	}
+}
+
 void mtd::SceneLoader::loadDescriptorInfos
 (
-	const nlohmann::json& descriptorSetInfoJson,
-	std::vector<DescriptorInfo>& descriptorInfos
+	const nlohmann::json& descriptorSetInfoJson, std::vector<DescriptorInfo>& descriptorInfos
 )
 {
 	descriptorInfos.reserve(descriptorSetInfoJson.size());
 	for(const nlohmann::json& descriptorInfoJson: descriptorSetInfoJson)
 	{
-		descriptorInfos.emplace_back
-		(
-			DescriptorInfo
-			{
-				static_cast<DescriptorType>(descriptorInfoJson["descriptor-type"]),
-				static_cast<ShaderStage>(descriptorInfoJson["shader-stage"]),
-				descriptorInfoJson["total-descriptor-size"],
-				descriptorInfoJson["descriptor-count"]
-			}
-		);
+		descriptorInfos.emplace_back(DescriptorInfo
+		{
+			static_cast<DescriptorType>(descriptorInfoJson.value("descriptor-type", 0U)),
+			static_cast<ShaderStage>(descriptorInfoJson.value("shader-stage", 2U)),
+			descriptorInfoJson.value("total-descriptor-size", 0UL),
+			descriptorInfoJson.value("descriptor-count", 1U)
+		});
 	}
 }
 

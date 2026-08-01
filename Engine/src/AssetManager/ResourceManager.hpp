@@ -18,16 +18,22 @@ namespace mtd
             ResourceManager(const ResourceManager&) = delete;
             ResourceManager& operator=(const ResourceManager&) = delete;
 
+            // Getter
+            ResourceID getResourceID(std::string_view resourceName) const;
+
             // Creates a new GPU buffer
             ResourceID createBuffer
             (
-                vk::BufferUsageFlags usage,
-                vk::MemoryPropertyFlags memoryProperties,
-                vk::DeviceSize bufferSize = 0U
+                std::string resourceName,
+                GpuBufferType type,
+                GpuMemoryUsage memoryUsage,
+                uint64_t bufferSize = 0UL,
+                const void* pData = nullptr
             );
             // Creates a new image on the GPU
             ResourceID createImage
             (
+                std::string resourceName,
                 UIntVec2 imageDimensions,
 				vk::Format imageFormat,
 				vk::ImageUsageFlags usage,
@@ -62,15 +68,18 @@ namespace mtd
             // Deletes all resources and resets the ID counter
             void clearResources();
 
-            // Updates the descriptor buffer info with the specified buffer data
-            bool updateDescriptorBufferInfo(ResourceID id, vk::DescriptorBufferInfo& info) const;
-            // Updates the descriptor image info with the specified image data
-            bool updateDescriptorImageInfo(ResourceID id, vk::DescriptorImageInfo& info) const;
+            // Fetches the descriptor buffer info for the specified buffer data
+            bool fetchDescriptorBufferInfo(ResourceID id, vk::DescriptorBufferInfo& info) const;
+            // Fetches the descriptor image info for the specified image data
+            bool fetchDescriptorImageInfo(ResourceID id, vk::DescriptorImageInfo& info) const;
 
         private:
             // GPU resources
             std::unordered_map<ResourceID, GpuBuffer> buffers;
             std::unordered_map<ResourceID, Image> images;
+
+            // Map linking the resource name to its ID
+            std::unordered_map<std::string, ResourceID> nameIdMap;
 
             // Resource ID counter
             ResourceID nextID = 1U;

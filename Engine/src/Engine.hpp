@@ -5,8 +5,6 @@
 #include <meltdown/window.hpp>
 
 #include "Camera/Camera.hpp"
-#include "AssetManager/ResourceManager.hpp"
-#include "Vulkan/ImGui/ImGuiHandler.hpp"
 #include "Vulkan/Render/Renderer.hpp"
 #include "Vulkan/Frame/Surface.hpp"
 
