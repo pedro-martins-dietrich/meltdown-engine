@@ -17,7 +17,8 @@ mtd::Engine::Engine(const EngineInfo& info, Window& window)
 	renderer{device},
 	scene{device},
 	imGuiHandler{device.getDevice()},
-	resourceManager{device, window.getDimensions()}
+	resourceManager{device, window.getDimensions()},
+	descriptorManager{device, resourceManager}
 {
 	SamplerManager::createSamplers(device.getDevice());
 	configureEventCallbacks();
@@ -64,7 +65,7 @@ void mtd::Engine::run(Window& window, const std::function<void(double)>& onUpdat
 
 		PROFILER_START_FRAME("Update descriptors");
 		updateDescriptors();
-		
+
 		renderer.render
 		(
 			swapchain,
@@ -102,6 +103,7 @@ void mtd::Engine::loadScene(const char* sceneFile)
 	pipelines.rayTracingPipelines.clear();
 	pipelines.framebufferPipelines.clear();
 	resourceManager.clearResources();
+	descriptorManager.clear();
 	Profiler::clearStages();
 
 	std::vector<FramebufferInfo> framebufferInfos;
@@ -114,6 +116,7 @@ void mtd::Engine::loadScene(const char* sceneFile)
 		framebufferInfos,
 		pipelineInfos,
 		resourceManager,
+		descriptorManager,
 		renderer.getRenderOrder()
 	);
 
@@ -284,11 +287,12 @@ void mtd::Engine::createRenderResources
 	for(const RasterizationPipelineInfo& rasterizationPipelineInfo: pipelineInfos.rasterizerInfos)
 	{
 		int32_t fbIndex = rasterizationPipelineInfo.targetFramebufferIndex;
-		bool targetSwapchain = fbIndex == -1;
+		bool targetSwapchain = (fbIndex == -1);
 
 		pipelines.rasterizationPipelines.emplace_back
 		(
 			device.getDevice(),
+			descriptorManager,
 			rasterizationPipelineInfo,
 			globalDescriptorSetHandler->getLayout(),
 			targetSwapchain ? swapchain.getExtent() : framebuffers[fbIndex].getExtent(),
@@ -300,11 +304,12 @@ void mtd::Engine::createRenderResources
 	for(const FramebufferPipelineInfo& fbPipelineInfo: pipelineInfos.framebufferInfos)
 	{
 		int32_t fbIndex = fbPipelineInfo.targetFramebufferIndex;
-		bool targetSwapchain = fbIndex == -1;
+		bool targetSwapchain = (fbIndex == -1);
 
 		pipelines.framebufferPipelines.emplace_back
 		(
 			device.getDevice(),
+			descriptorManager,
 			fbPipelineInfo,
 			globalDescriptorSetHandler->getLayout(),
 			targetSwapchain ? swapchain.getExtent() : framebuffers[fbIndex].getExtent(),
@@ -317,7 +322,8 @@ void mtd::Engine::createRenderResources
 	{
 		pipelines.computePipelines.emplace_back
 		(
-			device, computePipelineInfo, globalDescriptorSetHandler->getLayout(), swapchain.getExtent()
+			device, descriptorManager, computePipelineInfo,
+			globalDescriptorSetHandler->getLayout(), swapchain.getExtent()
 		);
 	}
 
@@ -327,7 +333,7 @@ void mtd::Engine::createRenderResources
 	{
 		pipelines.rayTracingPipelines.emplace_back
 		(
-			device, rtPipelineInfo, globalDescriptorSetHandler->getLayout(), swapchain.getExtent()
+			device, descriptorManager, rtPipelineInfo, globalDescriptorSetHandler->getLayout(), swapchain.getExtent()
 		);
 	}
 }

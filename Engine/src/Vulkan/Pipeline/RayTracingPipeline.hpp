@@ -14,6 +14,7 @@ namespace mtd
 			RayTracingPipeline
 			(
 				const Device& mtdDevice,
+				const DescriptorManager& descriptorManager,
 				const RayTracingPipelineInfo& info,
 				const vk::DescriptorSetLayout& globalDescriptorSetLayout,
 				vk::Extent2D swapchainExtent

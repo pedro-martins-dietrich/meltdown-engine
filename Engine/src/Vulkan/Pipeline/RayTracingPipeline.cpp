@@ -9,10 +9,11 @@ static constexpr uint32_t MAX_TEXTURE_COUNT = 1024U;
 mtd::RayTracingPipeline::RayTracingPipeline
 (
 	const Device& mtdDevice,
+	const DescriptorManager& descriptorManager,
 	const RayTracingPipelineInfo& info,
 	const vk::DescriptorSetLayout& globalDescriptorSetLayout,
 	vk::Extent2D swapchainExtent
-) : Pipeline{mtdDevice.getDevice(), info},
+) : Pipeline{mtdDevice.getDevice(), descriptorManager, info},
 	outputImage{mtdDevice},
 	accumulationImage{mtdDevice},
 	windowResolutionDependant{false},

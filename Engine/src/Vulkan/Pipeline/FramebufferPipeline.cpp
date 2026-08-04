@@ -8,11 +8,12 @@
 mtd::FramebufferPipeline::FramebufferPipeline
 (
 	const vk::Device& device,
+	const DescriptorManager& descriptorManager,
 	const FramebufferPipelineInfo& info,
 	const vk::DescriptorSetLayout& globalDescriptorSetLayout,
 	vk::Extent2D extent,
 	vk::RenderPass renderPass
-) : Pipeline{device, info}
+) : Pipeline{device, descriptorManager, info}
 {
 	createDescriptorSetLayouts();
 	loadShaderModules();

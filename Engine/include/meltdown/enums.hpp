@@ -41,31 +41,26 @@ namespace mtd
 	*/
 	#define ENABLE_ENUM_FLAGS(Enum) template<> struct EnableBitMaskOperators<Enum> : std::true_type {};
 
+	/* @brief ID for handling GPU resources. */
+	using ResourceID = uint32_t;
+	/* @brief ID for handling descriptor sets. */
+	using DescriptorSetID = uint32_t;
+
 	/*
 	* @brief Identifier for the pipeline shader stage.
 	*/
-	enum class ShaderStage
+	enum class ShaderStage : uint32_t
 	{
-		Vertex,
-		Fragment,
-		Vertex_Fragment,
-		Compute,
-		RayGeneration,
-		ClosestHit,
-		AnyHit,
-		Miss,
-		RayGeneration_ClosestHit,
-		RayGeneration_AnyHit,
-		RayGeneration_Miss,
-		ClosestHit_AnyHit,
-		ClosestHit_Miss,
-		AnyHit_Miss,
-		RayGeneration_ClosestHit_AnyHit,
-		RayGeneration_ClosestHit_Miss,
-		RayGeneration_AnyHit_Miss,
-		ClosestHit_AnyHit_Miss,
-		RayGeneration_ClosestHit_AnyHit_Miss
+		None = 0U,
+		Vertex = 1U << 0,
+		Fragment = 1U << 1,
+		Compute = 1U << 2,
+		RayGeneration = 1U << 3,
+		ClosestHit = 1U << 4,
+		AnyHit = 1U << 5,
+		Miss = 1U << 6
 	};
+	ENABLE_ENUM_FLAGS(ShaderStage);
 
 	/*
 	* @brief Possible usages for GPU buffers.
@@ -98,6 +93,7 @@ namespace mtd
 	enum class DescriptorType
 	{
 		UniformBuffer,
+		StorageBuffer,
 		StorageImage
 	};
 

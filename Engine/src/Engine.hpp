@@ -54,6 +54,7 @@ namespace mtd
 			Renderer renderer;
 			ImGuiHandler imGuiHandler;
 			ResourceManager resourceManager;
+			DescriptorManager descriptorManager;
 
 			// All pipelines in use by the scene
 			PipelineBundle pipelines;

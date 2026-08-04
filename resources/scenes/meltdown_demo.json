@@ -16,13 +16,28 @@
 		"buffers":
 		[
 			{
-				"name": "LightningData",
+				"name": "LightData",
 				"type": 1,
 				"size": 16
 			}
 		],
 		"images": []
 	},
+	"descriptor-sets":
+	[
+		{
+			"descriptors":
+			[
+				{
+					"binding": 0,
+					"type": 0,
+					"shader-stage": 63,
+					"count": 1,
+					"resource-name": "LightData"
+				}
+			]
+		}
+	],
 	"framebuffers":
 	[
 		{
@@ -40,6 +55,7 @@
 			"fragment-shader": "default.frag.spv",
 			"mesh-type": 0,
 			"target-framebuffer": 0,
+			"descriptor-sets": [0],
 			"descriptor-set-info":
 			[
 				{
@@ -59,6 +75,7 @@
 			"fragment-shader": "billboard.frag.spv",
 			"mesh-type": 2,
 			"target-framebuffer": 0,
+			"descriptor-sets": [],
 			"descriptor-set-info": [],
 			"shader-primitive-topology": 5,
 			"shader-face-culling": 2,
@@ -74,6 +91,7 @@
 			"vertex-shader": "framebuffer.vert.spv",
 			"fragment-shader": "framebuffer.frag.spv",
 			"target-framebuffer": -1,
+			"descriptor-sets": [],
 			"descriptor-set-info": [],
 			"input-attachments":
 			[

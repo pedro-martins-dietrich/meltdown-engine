@@ -8,8 +8,8 @@
 #include "Models/RotatingModel.hpp"
 
 Application::Application()
-	: window{mtd::WindowInfo{1280, 720, 640, 360, "Meltdown"}},
-	meltdownEngine{mtd::EngineInfo{"Meltdown Application", 1, 0, 0, true}, window}
+	: window{mtd::WindowInfo{1280U, 720U, 640, 360, "Meltdown"}},
+	meltdownEngine{mtd::EngineInfo{"Meltdown Application", 1U, 0U, 0U, true}, window}
 {
 	mapActions();
 	mtd::ModelHandler::registerModel<SpinningModel>("spinning");
@@ -40,6 +40,8 @@ Application::Application()
 	});
 }
 
+static mtd::Vec4 lightData{0.6f, 0.8f, 0.0f, 0.2f};
+
 void Application::run()
 {
 	meltdownEngine.run
@@ -50,9 +52,15 @@ void Application::run()
 			cameraController.update(deltaTime);
 			if(changeScene)
 			{
-				currentSceneIndex = (currentSceneIndex + 1U) % static_cast<uint32_t>(scenes.size());
+				currentSceneIndex = (currentSceneIndex + 1U) % scenes.size();
 				mtd::EventManager::dispatch<mtd::ChangeSceneEvent>(scenes[currentSceneIndex]);
 				changeScene = false;
+			}
+
+			if(currentSceneIndex == 0U)
+			{
+				lightData += deltaTime * mtd::Vec4{-lightData.z, 0.0f, lightData.x, 0.0f};
+				mtd::EventManager::dispatch<mtd::UpdateGpuBufferEvent>("LightData", sizeof(LightData), &lightData);
 			}
 		}
 	);

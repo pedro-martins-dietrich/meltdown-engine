@@ -112,6 +112,12 @@ void mtd::DescriptorSetHandler::assignBuffer
 	writeOperations[binding].pNext = pNext;
 }
 
+void mtd::DescriptorSetHandler::defineDescriptorSet(vk::DescriptorSet set)
+{
+	assert(!descriptorSet && "The descriptor set is already defined and cannot be overwritten.");
+	descriptorSet = set;
+}
+
 void mtd::DescriptorSetHandler::writeDescriptorSet()
 {
 	for(vk::WriteDescriptorSet& writeOp: writeOperations)
@@ -149,7 +155,7 @@ void mtd::DescriptorSetHandler::createDescriptorSetLayout
 		writeOperations[bindingIndex].dstSet = descriptorSet;
 		writeOperations[bindingIndex].dstBinding = bindingIndex;
 		writeOperations[bindingIndex].dstArrayElement = 0U;
-		writeOperations[bindingIndex].descriptorCount = 1U;
+		writeOperations[bindingIndex].descriptorCount = bindings[bindingIndex].descriptorCount;
 		writeOperations[bindingIndex].descriptorType = bindings[bindingIndex].descriptorType;
 		writeOperations[bindingIndex].pImageInfo = nullptr;
 		writeOperations[bindingIndex].pBufferInfo = nullptr;

@@ -3,7 +3,6 @@
 #include <meltdown/event.hpp>
 
 #include "Pipeline.hpp"
-#include "../Image/Image.hpp"
 
 namespace mtd
 {
@@ -13,6 +12,7 @@ namespace mtd
 			ComputePipeline
 			(
 				const Device& mtdDevice,
+				const DescriptorManager& descriptorManager,
 				const ComputePipelineInfo& info,
 				const vk::DescriptorSetLayout& globalDescriptorSetLayout,
 				vk::Extent2D swapchainExtent

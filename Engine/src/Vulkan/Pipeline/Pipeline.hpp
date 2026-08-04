@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ShaderModule.hpp"
+#include "../Descriptors/DescriptorManager.hpp"
 #include "../Descriptors/DescriptorPool.hpp"
 
 #include "Builders/PipelineMapping.hpp"
@@ -17,8 +18,14 @@ namespace mtd
 		);
 
 		public:
-			Pipeline(const vk::Device& device, const PipelineInfoType& info)
-				: device{device}, pipeline{nullptr}, pipelineLayout{nullptr}, info{info}
+			Pipeline
+			(
+				const vk::Device& device, const DescriptorManager& descriptorManager, const PipelineInfoType& info
+			) : device{device},
+				descriptorManager{descriptorManager},
+				pipeline{nullptr},
+				pipelineLayout{nullptr},
+				info{info}
 			{}
 
 			~Pipeline()
@@ -32,6 +39,7 @@ namespace mtd
 
 			Pipeline(Pipeline&& other) noexcept
 				: device{other.device},
+				descriptorManager{other.descriptorManager},
 				pipeline{std::move(other.pipeline)},
 				pipelineLayout{std::move(other.pipelineLayout)},
 				shaders{std::move(other.shaders)},
@@ -108,5 +116,7 @@ namespace mtd
 
 			// Vulkan device reference
 			const vk::Device& device;
+			// Descriptor manager reference
+			const DescriptorManager& descriptorManager;
 	};
 }

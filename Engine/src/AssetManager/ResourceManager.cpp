@@ -15,7 +15,9 @@ namespace mtd
 
 mtd::ResourceManager::ResourceManager(const Device& device, UIntVec2 windowResolution)
     : device{device}, windowResolution{windowResolution}
-{}
+{
+    configureEventCallbacks();
+}
 
 mtd::ResourceID mtd::ResourceManager::getResourceID(std::string_view resourceName) const
 {
@@ -177,4 +179,15 @@ bool mtd::ResourceManager::fetchDescriptorImageInfo(ResourceID id, vk::Descripto
 
     i->second.updateDescriptorInfo(info);
     return true;
+}
+
+void mtd::ResourceManager::configureEventCallbacks()
+{
+    updateGpuBufferHandle = EventManager::addCallback([this](const UpdateGpuBufferEvent& event)
+	{
+        ResourceIdConstIterator nameIdIter = nameIdMap.find(event.name);
+        if(nameIdIter == nameIdMap.cend()) return;
+
+        updateBufferData(nameIdIter->second, event.copySize, event.pData, event.offset);
+	});
 }

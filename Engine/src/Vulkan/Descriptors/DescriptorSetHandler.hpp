@@ -60,6 +60,9 @@ namespace mtd
 				uint32_t binding, const vk::DescriptorBufferInfo& bufferInfo, const void* pNext = nullptr
 			);
 
+			// Manually defines the descriptor set if not currently allocated
+			void defineDescriptorSet(vk::DescriptorSet set);
+
 			// Updates all the descriptors in the set
 			void writeDescriptorSet();
 			// Updates a specific descriptor in the set

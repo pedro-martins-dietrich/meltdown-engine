@@ -36,6 +36,7 @@ namespace mtd
 				std::vector<FramebufferInfo>& framebufferInfos,
 				PipelineInfoBundle& pipelineInfos,
 				ResourceManager& resourceManager,
+				DescriptorManager& descriptorManager,
 				std::vector<RenderPassInfo>& renderOrder
 			);
 

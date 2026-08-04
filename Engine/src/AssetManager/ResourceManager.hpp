@@ -1,13 +1,12 @@
 #pragma once
 
+#include <meltdown/event.hpp>
+
 #include "../Vulkan/Device/GpuBuffer.hpp"
 #include "../Vulkan/Image/Image.hpp"
 
 namespace mtd
 {
-    // ID used for all GPU resources
-    using ResourceID = uint32_t;
-
     // Centralized manager for GPU resources
     class ResourceManager
     {
@@ -87,7 +86,12 @@ namespace mtd
             // Window resolution saved for creating images associated with the window resolution
             UIntVec2 windowResolution;
 
+            EventCallbackHandle updateGpuBufferHandle;
+
             // Device reference
             const Device& device;
+
+            // Configures the event callbacks
+            void configureEventCallbacks();
     };
 }

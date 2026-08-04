@@ -19,6 +19,9 @@ namespace mtd::SceneLoader
 	// Loads the GPU resources from the scene file and allocates them
 	static void loadGpuResources(const nlohmann::json& resourcesInfoJson, ResourceManager& resourceManager);
 
+	// Loads descriptor info from the scene file
+	static void loadDescriptors(const nlohmann::json& descriptorsJson, DescriptorManager& descriptorManager);
+
 	// Fetches the framebuffer info from the scene file
 	static void loadFramebuffer(const nlohmann::json& framebufferJson, std::vector<FramebufferInfo>& framebufferInfos);
 	// Fetches the rasterization pipeline infos from the scene file
@@ -26,7 +29,8 @@ namespace mtd::SceneLoader
 	(
 		const nlohmann::json& rasterizationPipelineJson,
 		std::vector<RasterizationPipelineInfo>& rasterizationPipelineInfos,
-		std::vector<RenderPassInfo>& renderOrder
+		std::vector<RenderPassInfo>& renderOrder,
+		const DescriptorManager& descriptorManager
 	);
 	// Fetches the ray tracing pipeline infos from the scene file
 	static void loadRayTracingPipelines
@@ -84,6 +88,7 @@ void mtd::SceneLoader::load
 	std::vector<RenderPassInfo>& renderOrder,
 	std::vector<std::unique_ptr<MeshManager>>& meshManagers,
 	ResourceManager& resourceManager,
+	DescriptorManager& descriptorManager,
 	InstanceManager& instanceManager,
 	TexturePool& texturePool,
 	MaterialManager& materialManager,
@@ -106,6 +111,7 @@ void mtd::SceneLoader::load
 
 	loadCamera(sceneJson["camera"]);
 	loadGpuResources(sceneJson["gpu-resources"], resourceManager);
+	loadDescriptors(sceneJson["descriptor-sets"], descriptorManager);
 
 	const nlohmann::json& framebuffersJson = sceneJson["framebuffers"];
 	const nlohmann::json& rasterPipelinesJson = sceneJson["rasterization-pipelines"];
@@ -133,7 +139,7 @@ void mtd::SceneLoader::load
 	renderOrder.emplace_back(-1);
 
 	for(const nlohmann::json& rasterPipelineJson: rasterPipelinesJson)
-		loadRasterizationPipelines(rasterPipelineJson, pipelineInfos.rasterizerInfos, renderOrder);
+		loadRasterizationPipelines(rasterPipelineJson, pipelineInfos.rasterizerInfos, renderOrder, descriptorManager);
 	for(const nlohmann::json& computePipelineJson: computePipelinesJson)
 		loadComputePipelines(computePipelineJson, pipelineInfos.computeInfos);
 	for(const nlohmann::json& rtPipelineJson: rtPipelinesJson)
@@ -178,169 +184,6 @@ void mtd::SceneLoader::loadCamera(const nlohmann::json& cameraJson)
 	CameraHandler::setOrientation(cameraJson["yaw"], cameraJson["pitch"]);
 }
 
-void mtd::SceneLoader::loadFramebuffer(const nlohmann::json& fbJson, std::vector<FramebufferInfo>& framebufferInfos)
-{
-	framebufferInfos.emplace_back
-	(
-		FramebufferInfo
-		{
-			static_cast<FramebufferAttachments>(fbJson["attachments"]),
-			static_cast<TextureSamplingFilterType>(fbJson["sampling-filter"]),
-			{fbJson.value("resolution-ratio-horizontal", -1.0f), fbJson.value("resolution-ratio-vertical", -1.0f)},
-			fbJson.value("fixed-horizontal-resolution", 1280U), fbJson.value("fixed-vertical-resolution", 720U)
-		}
-	);
-}
-
-void mtd::SceneLoader::loadRasterizationPipelines
-(
-	const nlohmann::json& rasterizationPipelineJson,
-	std::vector<RasterizationPipelineInfo>& rasterizationPipelineInfos,
-	std::vector<RenderPassInfo>& renderOrder
-)
-{
-	std::vector<DescriptorInfo> descriptorInfos;
-	loadDescriptorInfos(rasterizationPipelineJson["descriptor-set-info"], descriptorInfos);
-
-	int32_t targetFramebuffer = rasterizationPipelineJson["target-framebuffer"];
-	if(targetFramebuffer == -1)
-		renderOrder.back().pipelineIndices.emplace_back(static_cast<uint32_t>(rasterizationPipelineInfos.size()));
-	else
-		renderOrder[targetFramebuffer].pipelineIndices
-			.emplace_back(static_cast<uint32_t>(rasterizationPipelineInfos.size()));
-
-	rasterizationPipelineInfos.emplace_back
-	(
-		RasterizationPipelineInfo
-		{
-			{rasterizationPipelineJson["name"], std::move(descriptorInfos)},
-			rasterizationPipelineJson["vertex-shader"],
-			rasterizationPipelineJson["fragment-shader"],
-			static_cast<MeshType>(rasterizationPipelineJson["mesh-type"]),
-			targetFramebuffer,
-			static_cast<ShaderPrimitiveTopology>(rasterizationPipelineJson["shader-primitive-topology"]),
-			static_cast<ShaderFaceCulling>(rasterizationPipelineJson["shader-face-culling"]),
-			rasterizationPipelineJson["transparency"],
-		}
-	);
-}
-
-void mtd::SceneLoader::loadRayTracingPipelines
-(
-	const nlohmann::json& rtPipelineJson, std::vector<RayTracingPipelineInfo>& rayTracingPipelineInfos
-)
-{
-	std::vector<DescriptorInfo> descriptorInfos;
-	loadDescriptorInfos(rtPipelineJson["descriptor-set-info"], descriptorInfos);
-
-	std::vector<MaterialFloatDataType> floatDataTypes;
-	floatDataTypes.reserve(rtPipelineJson["material-float-data-types"].size());
-	for(const nlohmann::json& floatDataType: rtPipelineJson["material-float-data-types"])
-		floatDataTypes.emplace_back(static_cast<MaterialFloatDataType>(floatDataType));
-
-	std::vector<MaterialTextureType> textureTypes;
-	textureTypes.reserve(rtPipelineJson["material-texture-types"].size());
-	for(const nlohmann::json& textureType: rtPipelineJson["material-texture-types"])
-		textureTypes.emplace_back(static_cast<MaterialTextureType>(textureType));
-
-	rayTracingPipelineInfos.emplace_back
-	(
-		RayTracingPipelineInfo
-		{
-			{rtPipelineJson["name"], std::move(descriptorInfos)},
-			rtPipelineJson["ray-gen-shader"],
-			rtPipelineJson["closest-hit-shader"],
-			rtPipelineJson["miss-shader"],
-			{
-				rtPipelineJson.value("resolution-ratio-horizontal", -1.0f),
-				rtPipelineJson.value("resolution-ratio-vertical", -1.0f)
-			},
-			rtPipelineJson.value("fixed-horizontal-resolution", 1280U),
-			rtPipelineJson.value("fixed-vertical-resolution", 720U),
-			std::move(floatDataTypes),
-			std::move(textureTypes)
-		}
-	);
-}
-
-void mtd::SceneLoader::loadComputePipelines
-(
-	const nlohmann::json& computePipelineJson,
-	std::vector<ComputePipelineInfo>& computePipelineInfos
-)
-{
-	std::vector<DescriptorInfo> descriptorInfos;
-	loadDescriptorInfos(computePipelineJson["descriptor-set-info"], descriptorInfos);
-
-	computePipelineInfos.emplace_back
-	(
-		ComputePipelineInfo
-		{
-			{computePipelineJson["name"], std::move(descriptorInfos)},
-			computePipelineJson["compute-shader"],
-		{
-			computePipelineJson.value("resolution-ratio-horizontal", -1.0f),
-			computePipelineJson.value("resolution-ratio-vertical", -1.0f)
-		},
-			{
-				computePipelineJson.value("fixed-horizontal-resolution", 1280U),
-				computePipelineJson.value("fixed-vertical-resolution", 720U),
-			},
-			{
-				computePipelineJson["workgroups"][0],
-				computePipelineJson["workgroups"][1],
-				computePipelineJson["workgroups"][2]
-			},
-			{
-				computePipelineJson["workgroup-size"][0],
-				computePipelineJson["workgroup-size"][1],
-				computePipelineJson["workgroup-size"][2]
-			},
-			{(computePipelineJson["workgroups"][0] == -1), (computePipelineJson["workgroups"][1] == -1)}
-		}
-	);
-}
-
-void mtd::SceneLoader::loadFramebufferPipelines
-(
-	const nlohmann::json& fbPipelineJson,
-	std::vector<FramebufferPipelineInfo>& framebufferPipelineInfos,
-	std::vector<RenderPassInfo>& renderOrder
-)
-{
-	std::vector<DescriptorInfo> descriptorInfos;
-	loadDescriptorInfos(fbPipelineJson["descriptor-set-info"], descriptorInfos);
-
-	const nlohmann::json& inputAttachmentsJson = fbPipelineJson["input-attachments"];
-	std::vector<AttachmentIdentifier> inputAttachments(inputAttachmentsJson.size());
-	for(uint32_t i = 0; i < inputAttachmentsJson.size(); i++)
-	{
-		inputAttachments[i].framebufferIndex = inputAttachmentsJson[i]["framebuffer-index"];
-		inputAttachments[i].attachmentIndex = inputAttachmentsJson[i]["attachment-index"];
-	}
-
-	int32_t targetFramebuffer = fbPipelineJson["target-framebuffer"];
-	if(targetFramebuffer == -1)
-		renderOrder.back().framebufferPipelineIndex = static_cast<uint32_t>(framebufferPipelineInfos.size());
-	else
-		renderOrder[targetFramebuffer].framebufferPipelineIndex = static_cast<uint32_t>(framebufferPipelineInfos.size());
-
-	framebufferPipelineInfos.emplace_back
-	(
-		FramebufferPipelineInfo
-		{
-			{fbPipelineJson["name"], std::move(descriptorInfos)},
-			fbPipelineJson["vertex-shader"],
-			fbPipelineJson["fragment-shader"],
-			targetFramebuffer,
-			std::move(inputAttachments),
-			fbPipelineJson["compute-storage-images"],
-			fbPipelineJson["ray-tracing-storage-images"],
-			fbPipelineJson["dependencies"]
-		}
-	);
-}
-
 void mtd::SceneLoader::loadGpuResources(const nlohmann::json& resourcesInfoJson, ResourceManager& resourceManager)
 {
 	const nlohmann::json& buffersJson = resourcesInfoJson["buffers"];
@@ -367,6 +210,203 @@ void mtd::SceneLoader::loadGpuResources(const nlohmann::json& resourcesInfoJson,
 			Vec2{imageJson.value("resolution-ratio-x", -1.0f), imageJson.value("resolution-ratio-y", -1.0f)}
 		);
 	}
+
+	LOG_VERBOSE
+	(
+		"Loaded %d GPU resources: %d buffers - %d images.",
+		(buffersJson.size() + imagesJson.size()),
+		buffersJson.size(), imagesJson.size()
+	);
+}
+
+void mtd::SceneLoader::loadDescriptors(const nlohmann::json& descriptorsJson, DescriptorManager& descriptorManager)
+{
+	std::vector<DescriptorInfo> descriptors;
+	for(const nlohmann::json& setJson: descriptorsJson)
+	{
+		for(const nlohmann::json& descJson: setJson.at("descriptors"))
+		{
+			descriptors.emplace_back
+			(
+				descJson.value("resource-name", ""),
+				descJson.value<DescriptorType>("type", DescriptorType::UniformBuffer),
+				static_cast<ShaderStage>(descJson.value("shader-stage", 63U)),
+				descJson.value("count", 1U)
+			);
+		}
+		descriptorManager.createSet(descriptors);
+		descriptors.clear();
+	}
+	descriptorManager.allocate();
+
+	LOG_VERBOSE("Loaded %d descriptor sets.", descriptorsJson.size());
+}
+
+void mtd::SceneLoader::loadFramebuffer(const nlohmann::json& fbJson, std::vector<FramebufferInfo>& framebufferInfos)
+{
+	framebufferInfos.emplace_back
+	(
+		FramebufferInfo
+		{
+			static_cast<FramebufferAttachments>(fbJson["attachments"]),
+			static_cast<TextureSamplingFilterType>(fbJson["sampling-filter"]),
+			{fbJson.value("resolution-ratio-horizontal", -1.0f), fbJson.value("resolution-ratio-vertical", -1.0f)},
+			fbJson.value("fixed-horizontal-resolution", 1280U), fbJson.value("fixed-vertical-resolution", 720U)
+		}
+	);
+}
+
+void mtd::SceneLoader::loadRasterizationPipelines
+(
+	const nlohmann::json& rasterizationPipelineJson,
+	std::vector<RasterizationPipelineInfo>& rasterizationPipelineInfos,
+	std::vector<RenderPassInfo>& renderOrder,
+	const DescriptorManager& descriptorManager
+)
+{
+	std::vector<DescriptorInfo> descriptorInfos;
+	loadDescriptorInfos(rasterizationPipelineJson["descriptor-set-info"], descriptorInfos);
+
+	int32_t targetFramebuffer = rasterizationPipelineJson["target-framebuffer"];
+	if(targetFramebuffer == -1)
+		renderOrder.back().pipelineIndices.emplace_back(static_cast<uint32_t>(rasterizationPipelineInfos.size()));
+	else
+		renderOrder[targetFramebuffer].pipelineIndices
+			.emplace_back(static_cast<uint32_t>(rasterizationPipelineInfos.size()));
+
+	rasterizationPipelineInfos.emplace_back(RasterizationPipelineInfo
+	{
+		{
+			rasterizationPipelineJson["name"],
+			rasterizationPipelineJson.value<std::vector<DescriptorSetID>>("descriptor-sets", {}),
+			std::move(descriptorInfos)
+		},
+		rasterizationPipelineJson["vertex-shader"],
+		rasterizationPipelineJson["fragment-shader"],
+		static_cast<MeshType>(rasterizationPipelineJson["mesh-type"]),
+		targetFramebuffer,
+		static_cast<ShaderPrimitiveTopology>(rasterizationPipelineJson["shader-primitive-topology"]),
+		static_cast<ShaderFaceCulling>(rasterizationPipelineJson["shader-face-culling"]),
+		rasterizationPipelineJson["transparency"],
+	});
+}
+
+void mtd::SceneLoader::loadRayTracingPipelines
+(
+	const nlohmann::json& rtPipelineJson, std::vector<RayTracingPipelineInfo>& rayTracingPipelineInfos
+)
+{
+	std::vector<DescriptorInfo> descriptorInfos;
+	loadDescriptorInfos(rtPipelineJson["descriptor-set-info"], descriptorInfos);
+
+	std::vector<MaterialFloatDataType> floatDataTypes;
+	floatDataTypes.reserve(rtPipelineJson["material-float-data-types"].size());
+	for(const nlohmann::json& floatDataType: rtPipelineJson["material-float-data-types"])
+		floatDataTypes.emplace_back(static_cast<MaterialFloatDataType>(floatDataType));
+
+	std::vector<MaterialTextureType> textureTypes;
+	textureTypes.reserve(rtPipelineJson["material-texture-types"].size());
+	for(const nlohmann::json& textureType: rtPipelineJson["material-texture-types"])
+		textureTypes.emplace_back(static_cast<MaterialTextureType>(textureType));
+
+	rayTracingPipelineInfos.emplace_back(RayTracingPipelineInfo
+	{
+		{
+			rtPipelineJson["name"],
+			rtPipelineJson.value<std::vector<DescriptorSetID>>("descriptor-sets", {}),
+			std::move(descriptorInfos)
+		},
+		rtPipelineJson["ray-gen-shader"],
+		rtPipelineJson["closest-hit-shader"],
+		rtPipelineJson["miss-shader"],
+		{
+			rtPipelineJson.value("resolution-ratio-horizontal", -1.0f),
+			rtPipelineJson.value("resolution-ratio-vertical", -1.0f)
+		},
+		rtPipelineJson.value("fixed-horizontal-resolution", 1280U),
+		rtPipelineJson.value("fixed-vertical-resolution", 720U),
+		std::move(floatDataTypes),
+		std::move(textureTypes)
+	});
+}
+
+void mtd::SceneLoader::loadComputePipelines
+(
+	const nlohmann::json& computePipelineJson, std::vector<ComputePipelineInfo>& computePipelineInfos
+)
+{
+	std::vector<DescriptorInfo> descriptorInfos;
+	loadDescriptorInfos(computePipelineJson["descriptor-set-info"], descriptorInfos);
+
+	computePipelineInfos.emplace_back(ComputePipelineInfo
+	{
+		{
+			computePipelineJson["name"],
+			computePipelineJson.value<std::vector<DescriptorSetID>>("descriptor-sets", {}),
+			std::move(descriptorInfos)
+		},
+		computePipelineJson["compute-shader"],
+		{
+			computePipelineJson.value("resolution-ratio-horizontal", -1.0f),
+			computePipelineJson.value("resolution-ratio-vertical", -1.0f)
+		},
+		{
+			computePipelineJson.value("fixed-horizontal-resolution", 1280U),
+			computePipelineJson.value("fixed-vertical-resolution", 720U),
+		},
+		{
+			computePipelineJson["workgroups"][0],
+			computePipelineJson["workgroups"][1],
+			computePipelineJson["workgroups"][2]
+		},
+		{
+			computePipelineJson["workgroup-size"][0],
+			computePipelineJson["workgroup-size"][1],
+			computePipelineJson["workgroup-size"][2]
+		},
+		{(computePipelineJson["workgroups"][0] == -1), (computePipelineJson["workgroups"][1] == -1)}
+	});
+}
+
+void mtd::SceneLoader::loadFramebufferPipelines
+(
+	const nlohmann::json& fbPipelineJson,
+	std::vector<FramebufferPipelineInfo>& framebufferPipelineInfos,
+	std::vector<RenderPassInfo>& renderOrder
+)
+{
+	std::vector<DescriptorInfo> descriptorInfos;
+	loadDescriptorInfos(fbPipelineJson["descriptor-set-info"], descriptorInfos);
+
+	const nlohmann::json& inputAttachmentsJson = fbPipelineJson["input-attachments"];
+	std::vector<AttachmentIdentifier> inputAttachments(inputAttachmentsJson.size());
+	for(uint32_t i = 0; i < inputAttachmentsJson.size(); i++)
+	{
+		inputAttachments[i].framebufferIndex = inputAttachmentsJson[i]["framebuffer-index"];
+		inputAttachments[i].attachmentIndex = inputAttachmentsJson[i]["attachment-index"];
+	}
+
+	int32_t targetFramebuffer = fbPipelineJson["target-framebuffer"];
+	if(targetFramebuffer == -1)
+		renderOrder.back().framebufferPipelineIndex = static_cast<uint32_t>(framebufferPipelineInfos.size());
+	else
+		renderOrder[targetFramebuffer].framebufferPipelineIndex = static_cast<uint32_t>(framebufferPipelineInfos.size());
+
+	framebufferPipelineInfos.emplace_back(FramebufferPipelineInfo
+	{
+		{
+			fbPipelineJson["name"],
+			fbPipelineJson.value<std::vector<DescriptorSetID>>("descriptor-sets", {}),
+			std::move(descriptorInfos)
+		},
+		fbPipelineJson["vertex-shader"],
+		fbPipelineJson["fragment-shader"],
+		targetFramebuffer,
+		std::move(inputAttachments),
+		fbPipelineJson["compute-storage-images"],
+		fbPipelineJson["ray-tracing-storage-images"],
+		fbPipelineJson["dependencies"]
+	});
 }
 
 void mtd::SceneLoader::loadDescriptorInfos
@@ -379,9 +419,9 @@ void mtd::SceneLoader::loadDescriptorInfos
 	{
 		descriptorInfos.emplace_back(DescriptorInfo
 		{
+			"",
 			static_cast<DescriptorType>(descriptorInfoJson.value("descriptor-type", 0U)),
 			static_cast<ShaderStage>(descriptorInfoJson.value("shader-stage", 2U)),
-			descriptorInfoJson.value("total-descriptor-size", 0UL),
 			descriptorInfoJson.value("descriptor-count", 1U)
 		});
 	}

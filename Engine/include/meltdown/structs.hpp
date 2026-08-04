@@ -20,11 +20,11 @@ namespace mtd
 		/* @brief Name of the application. Will be shown in the window titlebar. */
 		const char* appName = "Meltdown Application";
 		/* @brief Major version of the application. */
-		uint32_t appVersionMajor = 1;
+		uint32_t appVersionMajor = 1U;
 		/* @brief Minor version of the application. */
-		uint32_t appVersionMinor = 0;
+		uint32_t appVersionMinor = 0U;
 		/* @brief Patch version of the application. */
-		uint32_t appVersionPatch = 0;
+		uint32_t appVersionPatch = 0U;
 		/* @brief Flag to enable ray tracing if the hardware supports it. */
 		bool enableRayTracing = false;
 	};
@@ -68,14 +68,16 @@ namespace mtd
 	*/
 	struct DescriptorInfo
 	{
+		/* @brief Name of the GPU resource to link to this descriptor. */
+		std::string resourceName;
 		/* @brief Data type that will be used in the binding. */
 		DescriptorType descriptorType;
 		/* @brief Shader stage(s) where the descriptor can be accessed. */
 		ShaderStage shaderStage;
-		/* @brief Size, in bytes, of the descriptor data. If used as an array, the size of the whole array. */
-		size_t totalDescriptorSize;
 		/* @brief Array size of the descriptor, if accessed as an array. */
-		uint32_t descriptorCount = 1;
+		uint32_t descriptorCount = 1U;
+		/* @brief Size, in bytes, of the descriptor data. If used as an array, the size of the whole array. */
+		size_t totalDescriptorSize = 16UL;
 	};
 
 	/*
@@ -113,6 +115,8 @@ namespace mtd
 	{
 		/* @brief Exhibition name for the pipeline. */
 		std::string pipelineName;
+		/* @brief Pipeline's descriptor set ID. */
+		std::vector<DescriptorSetID> descriptorSetIDs;
 		/* @brief Info about each binding for the user defined descriptor set (set = 2). */
 		std::vector<DescriptorInfo> descriptorSetInfo = {};
 	};
