@@ -21,10 +21,18 @@ mtd::ResourceManager::ResourceManager(const Device& device, UIntVec2 windowResol
 
 mtd::ResourceID mtd::ResourceManager::getResourceID(std::string_view resourceName) const
 {
-    ResourceIdConstIterator ni = nameIdMap.find(resourceName.data());
-    if(ni == nameIdMap.cend()) return 0U;
+    ResourceIdConstIterator nameIdIterator = nameIdMap.find(resourceName.data());
+    if(nameIdIterator == nameIdMap.cend()) return 0U;
 
-    return ni->second;
+    return nameIdIterator->second;
+}
+
+vk::Buffer mtd::ResourceManager::getVulkanBuffer(ResourceID bufferID) const
+{
+    BufferConstIterator bufferIterator = buffers.find(bufferID);
+    if(bufferIterator == buffers.cend()) return nullptr;
+
+    return bufferIterator->second.getBuffer();
 }
 
 mtd::ResourceID mtd::ResourceManager::createBuffer
@@ -160,7 +168,7 @@ void mtd::ResourceManager::clearResources()
 {
     buffers.clear();
     images.clear();
-    nextID = 1U;
+    nameIdMap.clear();
 }
 
 bool mtd::ResourceManager::fetchDescriptorBufferInfo(ResourceID id, vk::DescriptorBufferInfo& info) const

@@ -13,9 +13,9 @@ mtd::Engine::Engine(const EngineInfo& info, Window& window)
 	device{vulkanInstance.getInstance(), surface.getSurface(), info.enableRayTracing},
 	swapchain{device, surface.getSurface(), window.getDimensions()},
 	commandHandler{device},
-	camera{window.getAspectRatio()},
 	renderer{device},
 	scene{device},
+	camera{window.getAspectRatio()},
 	imGuiHandler{device.getDevice()},
 	resourceManager{device, window.getDimensions()},
 	descriptorManager{device, resourceManager}
@@ -73,6 +73,7 @@ void mtd::Engine::run(Window& window, const std::function<void(double)>& onUpdat
 			framebuffers,
 			pipelines,
 			scene,
+			resourceManager,
 			*globalDescriptorSetHandler,
 			drawInfo,
 			shouldUpdateEngine
@@ -179,7 +180,7 @@ void mtd::Engine::updateLoop(const std::function<void(double)>& onUpdateCallback
 
 void mtd::Engine::updateDescriptors()
 {
-	globalDescriptorSetHandler->updateDescriptorData(0U, camera.fetchUpdatedMatrices(), sizeof(CameraMatrices));
+	resourceManager.updateBufferData(cameraResourceID, sizeof(CameraMatrices), camera.fetchUpdatedMatrices());
 
 	std::lock_guard lock{pendingDescriptorUpdateMutex};
 	for(const auto& [key, data]: pendingDescriptorUpdates)
@@ -279,6 +280,11 @@ void mtd::Engine::createRenderResources
 	const PipelineInfoBundle& pipelineInfos
 )
 {
+	cameraResourceID = resourceManager.createBuffer
+	(
+		"Camera", GpuBufferType::Uniform, GpuMemoryUsage::Auto, sizeof(CameraMatrices)
+	);
+
 	framebuffers.reserve(framebufferInfos.size());
 	for(const FramebufferInfo& framebufferInfo: framebufferInfos)
 		framebuffers.emplace_back(device, framebufferInfo, swapchain.getExtent());
@@ -341,10 +347,17 @@ void mtd::Engine::createRenderResources
 void mtd::Engine::configureDescriptors()
 {
 	scene.getDescriptorPool().allocateDescriptorSet(*globalDescriptorSetHandler);
-	globalDescriptorSetHandler->createDescriptorResources
-	(
-		device, sizeof(CameraMatrices), vk::BufferUsageFlagBits::eUniformBuffer, 0U
-	);
+
+	vk::DescriptorBufferInfo bufferInfo{};
+	resourceManager.fetchDescriptorBufferInfo(cameraResourceID, bufferInfo);
+	globalDescriptorSetHandler->assignBuffer(0U, bufferInfo);
+	resourceManager.fetchDescriptorBufferInfo(resourceManager.getResourceID("VertexBuffer"), bufferInfo);
+	globalDescriptorSetHandler->assignBuffer(1U, bufferInfo);
+	resourceManager.fetchDescriptorBufferInfo(resourceManager.getResourceID("IndexBuffer"), bufferInfo);
+	globalDescriptorSetHandler->assignBuffer(2U, bufferInfo);
+	resourceManager.fetchDescriptorBufferInfo(resourceManager.getResourceID("SubmeshBuffer"), bufferInfo);
+	globalDescriptorSetHandler->assignBuffer(3U, bufferInfo);
+
 	scene.configureSceneDescriptorSet(*globalDescriptorSetHandler);
 	renderer.configureRendererDescriptor(*globalDescriptorSetHandler);
 

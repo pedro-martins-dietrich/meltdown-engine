@@ -50,7 +50,6 @@ namespace mtd
 			std::vector<Framebuffer> framebuffers;
 			std::unique_ptr<DescriptorSetHandler> globalDescriptorSetHandler;
 			CommandHandler commandHandler;
-			Camera camera;
 			Renderer renderer;
 			ImGuiHandler imGuiHandler;
 			ResourceManager resourceManager;
@@ -61,6 +60,10 @@ namespace mtd
 
 			// Scene being currently rendered
 			Scene scene;
+
+			// Scene's main camera
+			Camera camera;
+			ResourceID cameraResourceID = 0U;
 
 			// Event callback handles
 			EventCallbackHandle changeSceneCallbackHandle;

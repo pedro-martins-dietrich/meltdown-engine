@@ -22,6 +22,7 @@ void mtd::Renderer::render
 	const std::vector<Framebuffer>& framebuffers,
 	const PipelineBundle& pipelines,
 	const Scene& scene,
+	const ResourceManager& resourceManager,
 	DescriptorSetHandler& globalDescriptorSet,
 	DrawInfo& drawInfo,
 	std::atomic<bool>& shouldUpdateEngine
@@ -79,6 +80,7 @@ void mtd::Renderer::render
 		framebuffers,
 		pipelines,
 		scene,
+		resourceManager,
 		commandHandler,
 		drawInfo,
 		drawBatches,
@@ -107,6 +109,7 @@ void mtd::Renderer::recordDrawCommands
 	const std::vector<Framebuffer>& framebuffers,
 	const PipelineBundle& pipelines,
 	const Scene& scene,
+	const ResourceManager& resourceManager,
 	const CommandHandler& commandHandler,
 	const DrawInfo& drawInfo,
 	const std::vector<DrawBatch>& drawBatches,
@@ -140,7 +143,12 @@ void mtd::Renderer::recordDrawCommands
 	}
 
 	const MeshPool& meshPool = scene.getMeshPool();
-	meshPool.bindBuffers(commandBuffer);
+	vk::DeviceSize offset{0UL};
+    vk::Buffer vertexBuffer = resourceManager.getVulkanBuffer(meshPool.getVertexBufferID());
+    vk::Buffer indexBuffer = resourceManager.getVulkanBuffer(meshPool.getIndexBufferID());
+
+    commandBuffer.bindVertexBuffers(0U, 1U, &vertexBuffer, &offset);
+    commandBuffer.bindIndexBuffer(indexBuffer, offset, vk::IndexType::eUint32);
 
 	for(const ComputePipeline& computePipeline: pipelines.computePipelines)
 	{

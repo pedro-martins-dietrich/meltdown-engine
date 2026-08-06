@@ -17,15 +17,16 @@ namespace mtd
             ResourceManager(const ResourceManager&) = delete;
             ResourceManager& operator=(const ResourceManager&) = delete;
 
-            // Getter
+            // Getters
             ResourceID getResourceID(std::string_view resourceName) const;
+            vk::Buffer getVulkanBuffer(ResourceID bufferID) const;
 
             // Creates a new GPU buffer
             ResourceID createBuffer
             (
                 std::string resourceName,
                 GpuBufferType type,
-                GpuMemoryUsage memoryUsage,
+                GpuMemoryUsage memoryUsage = GpuMemoryUsage::Auto,
                 uint64_t bufferSize = 0UL,
                 const void* pData = nullptr
             );
@@ -49,6 +50,7 @@ namespace mtd
             (
                 ResourceID id, vk::DeviceSize copySize, const void* srcData, vk::DeviceSize bufferOffset = 0UL
             );
+
             // Transitions the specified image layout
             bool transitionImageLayout
             (

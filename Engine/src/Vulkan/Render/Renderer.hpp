@@ -33,6 +33,7 @@ namespace mtd
 				const std::vector<Framebuffer>& framebuffers,
 				const PipelineBundle& pipelines,
 				const Scene& scene,
+				const ResourceManager& resourceManager,
 				DescriptorSetHandler& globalDescriptorSet,
 				DrawInfo& drawInfo,
 				std::atomic<bool>& shouldUpdateEngine
@@ -61,6 +62,7 @@ namespace mtd
 				const std::vector<Framebuffer>& framebuffers,
 				const PipelineBundle& pipelines,
 				const Scene& scene,
+				const ResourceManager& resourceManager,
 				const CommandHandler& commandHandler,
 				const DrawInfo& drawInfo,
 				const std::vector<DrawBatch>& drawBatches,

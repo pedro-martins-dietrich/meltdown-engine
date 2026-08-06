@@ -11,6 +11,10 @@ vk::BufferUsageFlags mtd::EnumMapping::getBufferUsage(GpuBufferType bufferType)
         bufferUsage |= vk::BufferUsageFlagBits::eUniformBuffer;
     if((bufferType & GpuBufferType::Storage) != GpuBufferType::None)
         bufferUsage |= vk::BufferUsageFlagBits::eStorageBuffer;
+    if((bufferType & GpuBufferType::Vertex) != GpuBufferType::None)
+        bufferUsage |= (vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eStorageBuffer);
+    if((bufferType & GpuBufferType::Index) != GpuBufferType::None)
+        bufferUsage |= (vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eStorageBuffer);
 
     if((bufferType & GpuBufferType::TransferSource) != GpuBufferType::None)
         bufferUsage |= vk::BufferUsageFlagBits::eTransferSrc;
@@ -41,7 +45,7 @@ mtd::GpuMemoryUsage mtd::EnumMapping::defaultMemoryUsage(GpuBufferType bufferTyp
 {
     if((bufferType & GpuBufferType::Uniform) != GpuBufferType::None)
         return GpuMemoryUsage::CpuUpload;
-    if((bufferType & GpuBufferType::Storage) != GpuBufferType::None)
+    if((bufferType & (GpuBufferType::Storage | GpuBufferType::Vertex | GpuBufferType::Index)) != GpuBufferType::None)
         return GpuMemoryUsage::GpuOnly;
 
     return GpuMemoryUsage::GpuOnly;

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ResourceManager.hpp"
 #include "../Vulkan/Descriptors/DescriptorSetHandler.hpp"
 
 namespace mtd
@@ -8,46 +9,38 @@ namespace mtd
     class MeshPool
     {
         public:
-            MeshPool(const Device& mtdDevice);
+            MeshPool() = default;
             ~MeshPool() = default;
 
             MeshPool(const MeshPool&) = delete;
             MeshPool& operator=(const MeshPool&) = delete;
 
-            // Getter
+            // Getters
             const MeshData& getMesh(uint32_t meshID) const { return meshes[meshID]; }
+            ResourceID getVertexBufferID() const { return vertexBufferID; }
+            ResourceID getIndexBufferID() const { return indexBufferID; }
+            ResourceID getSubmeshBufferID() const { return submeshBufferID; }
 
             // Loads all scene mesh data to the GPU
-            void loadMeshes(const std::vector<std::string>& meshFiles);
-
-            // Creates the descriptors for the mesh data
-            void createMeshDescriptors
-            (
-                DescriptorSetHandler& descriptorSetHandler,
-                uint32_t vertexBinding, uint32_t indexBinding, uint32_t submeshBinding
-            ) const;
-            // Binds the vertex and index buffers
-            void bindBuffers(const vk::CommandBuffer& commandBuffer) const;
+            void loadMeshes(ResourceManager& resourceManager, const std::vector<std::string>& meshFiles);
 
         private:
-            // GPU buffer for the vertex data
-            GpuBuffer vertexBuffer;
-            // GPU buffer for the index data
-            GpuBuffer indexBuffer;
-            // GPU buffer for mapping each mesh to its submeshes
-            GpuBuffer submeshBuffer;
-            // Mesh pool command handler
-			CommandHandler commandHandler;
+            // GPU buffer ID for the vertex data
+            ResourceID vertexBufferID = 0U;
+            // GPU buffer ID for the index data
+            ResourceID indexBufferID = 0U;
+            // GPU buffer ID for mapping each mesh to its submeshes
+            ResourceID submeshBufferID = 0U;
 
             // Mesh data for the CPU side
             std::vector<MeshData> meshes;
 
-            // Flag to indicate if the GPU buffers have been created
-            bool gpuBuffersCreated = false;
-            // Flag to indicate if there is any mesh was loaded to the GPU
-            bool anyMeshLoaded = false;
-
             // Loads all the mesh data from the CPU to the GPU
-            void loadToGpu(const std::vector<std::byte>& vertexData, const std::vector<uint32_t>& indexData);
+            void loadToGpu
+            (
+                ResourceManager& resourceManager,
+                const std::vector<std::byte>& vertexData,
+                const std::vector<uint32_t>& indexData
+            );
     };
 }

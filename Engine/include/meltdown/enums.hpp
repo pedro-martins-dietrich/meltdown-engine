@@ -70,8 +70,10 @@ namespace mtd
 		None = 0U,
 		Uniform = 1U << 0,
 		Storage = 1U << 1,
-		TransferSource = 1U << 2,
-		TransferDestination = 1U << 3
+		Vertex = 1U << 2,
+		Index = 1U << 3,
+		TransferSource = 1U << 4,
+		TransferDestination = 1U << 5
 	};
 	ENABLE_ENUM_FLAGS(GpuBufferType)
 

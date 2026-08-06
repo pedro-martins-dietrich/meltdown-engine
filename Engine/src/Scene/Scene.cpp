@@ -6,7 +6,7 @@
 #include "../Vulkan/Mesh/MeshManager.hpp"
 
 mtd::Scene::Scene(const Device& mtdDevice)
-	: texturePool{mtdDevice}, materialManager{mtdDevice}, meshPool{mtdDevice},
+	: texturePool{mtdDevice}, materialManager{mtdDevice}, meshPool{},
 	instanceManager{}, descriptorPool{mtdDevice.getDevice()}
 {}
 
@@ -110,7 +110,6 @@ void mtd::Scene::allocateResources(PipelineBundle& pipelines)
 
 void mtd::Scene::configureSceneDescriptorSet(DescriptorSetHandler& descriptorSetHandler)
 {
-	meshPool.createMeshDescriptors(descriptorSetHandler, 1U, 2U, 3U);
 	texturePool.createTextureListDescriptor(descriptorSetHandler, 4U);
 	materialManager.createMaterialDescriptor(descriptorSetHandler, 5U, 6U, 7U);
 }

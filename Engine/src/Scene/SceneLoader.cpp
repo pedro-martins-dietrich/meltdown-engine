@@ -73,7 +73,7 @@ namespace mtd::SceneLoader
 		const nlohmann::json& materialsJson, const nlohmann::json& materialSetsJson, MaterialManager& materialManager
 	);
 	// Fetches all mesh files from the scene file and loads them
-	static void loadMeshes(const nlohmann::json& meshJson, MeshPool& meshPool);
+	static void loadMeshes(const nlohmann::json& meshJson, ResourceManager& resourceManager, MeshPool& meshPool);
 
 	// Loads all instances from the scene file
 	static void loadInstances(const nlohmann::json& instancesJson, InstanceManager& instanceManager);
@@ -159,7 +159,7 @@ void mtd::SceneLoader::load
 
 	loadTextures(sceneJson["textures"], texturePool);
 	loadMaterials(sceneJson["materials"], sceneJson["material-sets"], materialManager);
-	loadMeshes(sceneJson["meshes"], meshPool);
+	loadMeshes(sceneJson["meshes"], resourceManager, meshPool);
 
 	loadInstances(sceneJson["instances"], instanceManager);
 
@@ -480,14 +480,14 @@ void mtd::SceneLoader::loadMaterials
 	materialManager.loadMaterials(materialPaths, materialSets);
 }
 
-void mtd::SceneLoader::loadMeshes(const nlohmann::json& meshJson, MeshPool& meshPool)
+void mtd::SceneLoader::loadMeshes(const nlohmann::json& meshJson, ResourceManager& resourceManager, MeshPool& meshPool)
 {
 	std::vector<std::string> meshPaths;
 	meshPaths.reserve(meshJson.size());
 	for(const std::string& path: meshJson)
 		meshPaths.emplace_back(MTD_RESOURCES_PATH + path);
 
-	meshPool.loadMeshes(meshPaths);
+	meshPool.loadMeshes(resourceManager, meshPaths);
 }
 
 void mtd::SceneLoader::loadInstances(const nlohmann::json& instancesJson, InstanceManager& instanceManager)
