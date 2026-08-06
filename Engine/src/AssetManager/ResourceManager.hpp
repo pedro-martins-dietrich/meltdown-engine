@@ -11,7 +11,7 @@ namespace mtd
     class ResourceManager
     {
         public:
-            ResourceManager(const Device& device, UIntVec2 windowResolution);
+            ResourceManager(const Device& mtdDevice, UIntVec2 windowResolution);
             ~ResourceManager() = default;
 
             ResourceManager(const ResourceManager&) = delete;
@@ -40,7 +40,22 @@ namespace mtd
                 Vec2 windowResolutionRatio = Vec2{-1.0f, -1.0f},
                 SamplerType samplerType = SamplerType::Linear,
 				vk::ImageTiling tiling = vk::ImageTiling::eOptimal,
-                vk::ImageAspectFlags aspect = vk::ImageAspectFlagBits::eColor,
+                vk::ImageAspectFlags aspects = vk::ImageAspectFlagBits::eColor,
+                vk::ImageViewType viewType = vk::ImageViewType::e2D,
+                vk::MemoryPropertyFlags memoryProperties = vk::MemoryPropertyFlagBits::eDeviceLocal
+            );
+            // Creates loads an image and creates the GPU resource from it
+            ResourceID loadImage
+            (
+                std::string resourceName,
+                UIntVec2 imageDimensions,
+                const void* pData,
+                size_t dataSize,
+				vk::Format imageFormat,
+				vk::ImageUsageFlags usage,
+                SamplerType samplerType = SamplerType::Linear,
+				vk::ImageTiling tiling = vk::ImageTiling::eOptimal,
+                vk::ImageAspectFlags aspects = vk::ImageAspectFlagBits::eColor,
                 vk::ImageViewType viewType = vk::ImageViewType::e2D,
                 vk::MemoryPropertyFlags memoryProperties = vk::MemoryPropertyFlagBits::eDeviceLocal
             );
@@ -81,17 +96,20 @@ namespace mtd
 
             // Map linking the resource name to its ID
             std::unordered_map<std::string, ResourceID> nameIdMap;
-
             // Resource ID counter
             ResourceID nextID = 1U;
 
             // Window resolution saved for creating images associated with the window resolution
             UIntVec2 windowResolution;
 
+            // Resource manager's command handler
+            CommandHandler commandHandler;
+
+            // Callback handle to update buffers as requested
             EventCallbackHandle updateGpuBufferHandle;
 
             // Device reference
-            const Device& device;
+            const Device& mtdDevice;
 
             // Configures the event callbacks
             void configureEventCallbacks();

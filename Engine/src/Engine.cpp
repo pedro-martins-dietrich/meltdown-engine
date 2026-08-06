@@ -358,7 +358,7 @@ void mtd::Engine::configureDescriptors()
 	resourceManager.fetchDescriptorBufferInfo(resourceManager.getResourceID("SubmeshBuffer"), bufferInfo);
 	globalDescriptorSetHandler->assignBuffer(3U, bufferInfo);
 
-	scene.configureSceneDescriptorSet(*globalDescriptorSetHandler);
+	scene.configureSceneDescriptorSet(resourceManager, *globalDescriptorSetHandler);
 	renderer.configureRendererDescriptor(*globalDescriptorSetHandler);
 
 	globalDescriptorSetHandler->writeDescriptorSet();

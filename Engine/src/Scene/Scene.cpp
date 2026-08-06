@@ -6,7 +6,7 @@
 #include "../Vulkan/Mesh/MeshManager.hpp"
 
 mtd::Scene::Scene(const Device& mtdDevice)
-	: texturePool{mtdDevice}, materialManager{mtdDevice}, meshPool{},
+	: texturePool{}, materialManager{mtdDevice}, meshPool{},
 	instanceManager{}, descriptorPool{mtdDevice.getDevice()}
 {}
 
@@ -108,9 +108,15 @@ void mtd::Scene::allocateResources(PipelineBundle& pipelines)
 	LOG_INFO("Meshes loaded to the GPU.\n");
 }
 
-void mtd::Scene::configureSceneDescriptorSet(DescriptorSetHandler& descriptorSetHandler)
+void mtd::Scene::configureSceneDescriptorSet
+(
+	const ResourceManager& resourceManager, DescriptorSetHandler& descriptorSetHandler
+)
 {
-	texturePool.createTextureListDescriptor(descriptorSetHandler, 4U);
+	std::vector<vk::DescriptorImageInfo> descriptorImageInfos;
+	texturePool.fetchTextureDescriptorInfos(resourceManager, descriptorImageInfos);
+	descriptorSetHandler.createImagesDescriptorResources(4U, descriptorImageInfos);
+
 	materialManager.createMaterialDescriptor(descriptorSetHandler, 5U, 6U, 7U);
 }
 

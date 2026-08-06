@@ -13,8 +13,8 @@ namespace mtd
     using ImageConstIterator = std::unordered_map<ResourceID, Image>::const_iterator;
 }
 
-mtd::ResourceManager::ResourceManager(const Device& device, UIntVec2 windowResolution)
-    : device{device}, windowResolution{windowResolution}
+mtd::ResourceManager::ResourceManager(const Device& mtdDevice, UIntVec2 windowResolution)
+    : mtdDevice{mtdDevice}, windowResolution{windowResolution}, commandHandler{mtdDevice}
 {
     configureEventCallbacks();
 }
@@ -40,28 +40,22 @@ mtd::ResourceID mtd::ResourceManager::createBuffer
     std::string resourceName, GpuBufferType type, GpuMemoryUsage memoryUsage, uint64_t bufferSize, const void* pData
 )
 {
-    if(resourceName.length() == 0UL)
-    {
-        LOG_ERROR("Valid name for the GPU resource has not been provided. GPU buffer will not be created.");
-        return 0U;
-    }
-
     if(memoryUsage == GpuMemoryUsage::Auto)
         memoryUsage = EnumMapping::defaultMemoryUsage(type);
     vk::BufferUsageFlags bufferUsage = EnumMapping::getBufferUsage(type);
     vk::MemoryPropertyFlags memoryProperties = EnumMapping::getMemoryProperties(memoryUsage);
 
     if(bufferSize == 0UL)
-        buffers.emplace(nextID, GpuBuffer{device, bufferUsage, memoryProperties});
+        buffers.emplace(nextID, GpuBuffer{mtdDevice, bufferUsage, memoryProperties});
     else
     {
-        buffers.emplace(nextID, GpuBuffer{device, bufferSize, bufferUsage, memoryProperties});
+        buffers.emplace(nextID, GpuBuffer{mtdDevice, bufferSize, bufferUsage, memoryProperties});
         if(pData)
             buffers.at(nextID).copyMemoryToBuffer(bufferSize, pData);
     }
 
-
-    nameIdMap.emplace(std::move(resourceName), nextID);
+    if(resourceName.length() != 0UL)
+        nameIdMap.emplace(std::move(resourceName), nextID);
 
     return nextID++;
 }
@@ -75,17 +69,11 @@ mtd::ResourceID mtd::ResourceManager::createImage
     Vec2 windowResolutionRatio,
     SamplerType samplerType,
     vk::ImageTiling tiling,
-    vk::ImageAspectFlags aspect,
+    vk::ImageAspectFlags aspects,
     vk::ImageViewType viewType,
     vk::MemoryPropertyFlags memoryProperties
 )
 {
-    if(resourceName.length() == 0UL)
-    {
-        LOG_ERROR("Valid name for the GPU resource has not been provided. GPU image will not be created.");
-        return 0U;
-    }
-
     if(windowResolutionRatio.x > 0.0f)
         imageDimensions.x = static_cast<uint32_t>(windowResolutionRatio.x * windowResolution.x);
     if(windowResolutionRatio.y > 0.0f)
@@ -96,20 +84,61 @@ mtd::ResourceID mtd::ResourceManager::createImage
         nextID,
         Image
         {
-            device,
+            mtdDevice,
             imageDimensions,
             imageFormat,
             tiling,
             usage,
             memoryProperties,
-            aspect,
+            aspects,
             viewType,
             samplerType,
             windowResolutionRatio
         }
     );
 
-    nameIdMap.emplace(std::move(resourceName), nextID);
+    if(resourceName.length() != 0UL)
+        nameIdMap.emplace(std::move(resourceName), nextID);
+
+    return nextID++;
+}
+
+mtd::ResourceID mtd::ResourceManager::loadImage
+(
+    std::string resourceName,
+    UIntVec2 imageDimensions,
+    const void* pData,
+    size_t dataSize,
+    vk::Format imageFormat,
+    vk::ImageUsageFlags usage,
+    SamplerType samplerType,
+    vk::ImageTiling tiling,
+    vk::ImageAspectFlags aspects,
+    vk::ImageViewType viewType,
+    vk::MemoryPropertyFlags memoryProperties
+)
+{
+    if(!pData || dataSize == 0UL || imageDimensions.x == 0U || imageDimensions.y == 0U)
+    {
+        LOG_ERROR("Cannot create GPU image resource from an invalid image.");
+        return 0U;
+    }
+
+    images.emplace
+    (
+        nextID,
+        Image{mtdDevice, imageDimensions, imageFormat, tiling, usage, memoryProperties, aspects, viewType, samplerType}
+    );
+    GpuBuffer stagingBuffer
+    {
+        mtdDevice, dataSize, vk::BufferUsageFlagBits::eTransferSrc,
+        vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible
+    };
+    stagingBuffer.copyMemoryToBuffer(dataSize, pData);
+    images.at(nextID).copyBufferToImage(commandHandler, stagingBuffer.getBuffer());
+
+    if(resourceName.length() != 0UL)
+        nameIdMap.emplace(std::move(resourceName), nextID);
 
     return nextID++;
 }

@@ -1,9 +1,8 @@
 #pragma once
 
-#include <string>
-#include <vector>
-
 #include <nlohmann/json.hpp>
+
+#include <meltdown/math.hpp>
 
 #ifndef MTD_RESOURCES_PATH
 	#define MTD_RESOURCES_PATH "./resources/"
@@ -13,8 +12,11 @@
 namespace mtd::FileHandler
 {
 	// Reads file data in the specified path
-	bool readFile(const char* filePath, std::vector<char>& fileData);
+	bool readFile(std::string_view filePath, std::vector<char>& fileData);
 
 	// Reads a file and return its content as a JSON
-	bool readJSON(const char* filePath, nlohmann::json& json);
+	bool readJSON(std::string_view filePath, nlohmann::json& json);
+
+	// Reads an image file and returns the pointer data or a `nullptr` if it fails
+	void* readImage(std::string_view path, UIntVec2& dimensions, uint32_t& channels);
 }

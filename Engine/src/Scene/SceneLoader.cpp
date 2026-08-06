@@ -66,7 +66,10 @@ namespace mtd::SceneLoader
 	);
 
 	// Fetches all textures from the scene file
-	static void loadTextures(const nlohmann::json& texturesJson, TexturePool& texturePool);
+	static void loadTextures
+	(
+		const nlohmann::json& texturesJson, ResourceManager& resourceManager, TexturePool& texturePool
+	);
 	// Fetches all material files and material sets from the scene file and loads them
 	static void loadMaterials
 	(
@@ -157,7 +160,7 @@ void mtd::SceneLoader::load
 		}
 	}
 
-	loadTextures(sceneJson["textures"], texturePool);
+	loadTextures(sceneJson["textures"], resourceManager, texturePool);
 	loadMaterials(sceneJson["materials"], sceneJson["material-sets"], materialManager);
 	loadMeshes(sceneJson["meshes"], resourceManager, meshPool);
 
@@ -452,14 +455,17 @@ void mtd::SceneLoader::loadRayTracingMeshes
 	}
 }
 
-void mtd::SceneLoader::loadTextures(const nlohmann::json& texturesJson, TexturePool& texturePool)
+void mtd::SceneLoader::loadTextures
+(
+	const nlohmann::json& texturesJson, ResourceManager& resourceManager, TexturePool& texturePool
+)
 {
-	std::vector<TextureInfo> textureInfos;
+	std::vector<std::string> textureInfos;
 	textureInfos.reserve(texturesJson.size());
 	for(const std::string& path: texturesJson)
 		textureInfos.emplace_back(MTD_RESOURCES_PATH + path);
 
-	texturePool.loadTextures(textureInfos);
+	texturePool.loadTextures(resourceManager, textureInfos);
 
 	LOG_VERBOSE("Loaded %d textures.", textureInfos.size());
 }

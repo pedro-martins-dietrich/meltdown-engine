@@ -3,7 +3,6 @@
 #include <memory>
 
 #include "InstanceManager.hpp"
-#include "../AssetManager/ResourceManager.hpp"
 #include "../AssetManager/TexturePool.hpp"
 #include "../AssetManager/MaterialManager.hpp"
 #include "../AssetManager/MeshPool.hpp"
@@ -43,7 +42,10 @@ namespace mtd
 			// Allocates resources and loads all mesh data
 			void allocateResources(PipelineBundle& pipelines);
 			// Configures the scene descriptor set with the scene data
-			void configureSceneDescriptorSet(DescriptorSetHandler& descriptorSetHandler);
+			void configureSceneDescriptorSet
+			(
+				const ResourceManager& resourceManager, DescriptorSetHandler& descriptorSetHandler
+			);
 
 			// Executes starting code on scene
 			void start() const;
