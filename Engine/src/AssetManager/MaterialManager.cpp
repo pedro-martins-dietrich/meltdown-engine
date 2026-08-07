@@ -1,24 +1,30 @@
 #include <pch.hpp>
 #include "MaterialManager.hpp"
 
-#include "AssetLoad/MaterialLoader.hpp"
+#include "../Utils/EngineStructs.hpp"
 #include "../Utils/Logger.hpp"
+#include "../Utils/StringParser.hpp"
 
-mtd::MaterialManager::MaterialManager(const Device& device)
-    : materialBuffer{device, vk::BufferUsageFlagBits::eStorageBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal},
-    materialIndexingBuffer{device, vk::BufferUsageFlagBits::eStorageBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal},
-    materialSetBuffer{device, vk::BufferUsageFlagBits::eStorageBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal},
-    commandHandler{device}
-{}
+namespace mtd
+{
+    constexpr uint64_t MATERIAL_MAGIC = "MTD_MTRL"_u64;
+    constexpr uint64_t MATERIAL_FILE_VERSION = 1UL;
+    constexpr size_t MATERIAL_ALIGNMENT = 16UL;
+}
 
 void mtd::MaterialManager::loadMaterials
 (
-    const std::vector<std::string>& materialFiles, const std::vector<std::vector<uint32_t>>& sets
+    ResourceManager& resourceManager,
+    const std::vector<std::string>& materialFiles,
+    const std::vector<std::vector<uint32_t>>& sets
 )
 {
-    if(materialFiles.size() == 0)
+    if(materialFiles.size() == 0UL)
     {
         anyMaterialLoaded = false;
+        materialBufferID = 0U;
+        materialIndexingBufferID = 0U;
+        materialSetBufferID = 0U;
         return;
     }
 
@@ -31,7 +37,7 @@ void mtd::MaterialManager::loadMaterials
     for(std::string_view materialPath: materialFiles)
     {
         materialIndexing.push_back(currentMaterialOffset);
-        MaterialLoader::loadMaterial(materialPath, materialData);
+        loadFromFile(materialPath, materialData);
         currentMaterialOffset = static_cast<uint32_t>(materialData.size() >> 4);
     }
 
@@ -40,58 +46,66 @@ void mtd::MaterialManager::loadMaterials
     if(materialSetData.empty())
         materialSetData.push_back(0U);
 
-    loadToGpu(materialData, materialIndexing, materialSetData);
-    anyMaterialLoaded = true;
+    materialBufferID = resourceManager.createBuffer
+    (
+        "MaterialBuffer", GpuBufferType::Storage, GpuMemoryUsage::GpuOnly, materialData.size(), materialData.data()
+    );
+    materialIndexingBufferID = resourceManager.createBuffer
+    (
+        "MaterialIndexingBuffer", GpuBufferType::Storage, GpuMemoryUsage::GpuOnly,
+        sizeof(uint32_t) * materialIndexing.size(), materialIndexing.data()
+    );
+    materialSetBufferID = resourceManager.createBuffer
+    (
+        "MaterialSetBuffer", GpuBufferType::Storage, GpuMemoryUsage::GpuOnly,
+        sizeof(uint32_t) * materialSetData.size(), materialSetData.data()
+    );
 
     LOG_INFO("Loaded %d materials.", materialFiles.size());
 }
 
-void mtd::MaterialManager::createMaterialDescriptor
-(
-    DescriptorSetHandler& descriptorSetHandler,
-    uint32_t materialDataBinding,
-    uint32_t materialIndexingBinding,
-    uint32_t materialSetBinding
-) const
+bool mtd::MaterialManager::loadFromFile(std::string_view filePath, std::vector<std::byte>& materialData)
 {
-    if(!anyMaterialLoaded)
+    std::ifstream materialFile{filePath.data(), std::ios::binary | std::ios::ate};
+    if(!materialFile)
     {
-        LOG_VERBOSE("No materials loaded. Material descriptors will not be used.");
-        return;
+        LOG_WARNING("Failed to find material file \"%s\" for loading.", filePath.data());
+        return false;
     }
 
-    descriptorSetHandler.assignExternalResourcesToDescriptor(materialDataBinding, materialBuffer);
-    descriptorSetHandler.assignExternalResourcesToDescriptor(materialIndexingBinding, materialIndexingBuffer);
-    descriptorSetHandler.assignExternalResourcesToDescriptor(materialSetBinding, materialSetBuffer);
-}
-
-void mtd::MaterialManager::loadToGpu
-(
-    const std::vector<std::byte>& materialData,
-    const std::vector<uint32_t>& materialIndexing,
-    const std::vector<uint32_t>& materialSetData
-)
-{
-    if(!gpuBuffersCreated)
+    std::streamsize materialFileSize = materialFile.tellg();
+    if(materialFileSize < static_cast<std::streamsize>(sizeof(AssetHeader)))
     {
-        materialBuffer.createDeviceLocal(commandHandler, materialData.size(), materialData.data());
-        materialIndexingBuffer.createDeviceLocal
-        (
-            commandHandler, sizeof(uint32_t) * materialIndexing.size(), materialIndexing.data()
-        );
-        materialSetBuffer.createDeviceLocal
-        (
-            commandHandler, sizeof(uint32_t) * materialSetData.size(), materialSetData.data()
-        );
+        LOG_WARNING("Invalid header for material file \"%s\".", filePath.data());
+        return false;
+    }
+    size_t materialSize = materialFileSize - sizeof(AssetHeader);
 
-        gpuBuffersCreated = true;
-        return;
+    AssetHeader materialHeader{};
+    materialFile.seekg(0, std::ios::beg);
+    materialFile.read(reinterpret_cast<char*>(&materialHeader), sizeof(AssetHeader));
+
+    bool validMaterialFile = true;
+    validMaterialFile &= (materialHeader.magic == MATERIAL_MAGIC);
+    validMaterialFile &= (materialHeader.version == MATERIAL_FILE_VERSION);
+    validMaterialFile &= (materialSize > 0UL);
+    if(!validMaterialFile)
+    {
+        LOG_WARNING("Invalid material file \"%s\".", filePath.data());
+        return false;
     }
 
-    materialBuffer.resizeBuffer(commandHandler, materialData.size());
-    materialBuffer.copyMemoryToBuffer(materialData.size(), materialData.data());
-    materialIndexingBuffer.resizeBuffer(commandHandler, sizeof(uint32_t) * materialIndexing.size());
-    materialIndexingBuffer.copyMemoryToBuffer(sizeof(uint32_t) * materialIndexing.size(), materialIndexing.data());
-    materialSetBuffer.resizeBuffer(commandHandler, sizeof(uint32_t) * materialSetData.size());
-    materialSetBuffer.copyMemoryToBuffer(sizeof(uint32_t) * materialSetData.size(), materialSetData.data());
+    size_t oldMaterialLumpSize = materialData.size();
+    size_t newMaterialLumpSize = oldMaterialLumpSize + materialSize;
+    size_t padding = (MATERIAL_ALIGNMENT - (newMaterialLumpSize % MATERIAL_ALIGNMENT)) % MATERIAL_ALIGNMENT;
+
+    materialData.resize(newMaterialLumpSize + padding);
+    std::span<std::byte> loadTarget{materialData.data() + oldMaterialLumpSize, materialSize};
+
+    materialFile.seekg(sizeof(AssetHeader), std::ios::beg);
+    materialFile.read(reinterpret_cast<char*>(loadTarget.data()), loadTarget.size());
+    materialFile.close();
+
+    LOG_VERBOSE("Material loaded from \"%s\".", filePath.data());
+    return true;
 }

@@ -73,7 +73,10 @@ namespace mtd::SceneLoader
 	// Fetches all material files and material sets from the scene file and loads them
 	static void loadMaterials
 	(
-		const nlohmann::json& materialsJson, const nlohmann::json& materialSetsJson, MaterialManager& materialManager
+		const nlohmann::json& materialsJson,
+		const nlohmann::json& materialSetsJson,
+		ResourceManager& resourceManager,
+		MaterialManager& materialManager
 	);
 	// Fetches all mesh files from the scene file and loads them
 	static void loadMeshes(const nlohmann::json& meshJson, ResourceManager& resourceManager, MeshPool& meshPool);
@@ -161,7 +164,7 @@ void mtd::SceneLoader::load
 	}
 
 	loadTextures(sceneJson["textures"], resourceManager, texturePool);
-	loadMaterials(sceneJson["materials"], sceneJson["material-sets"], materialManager);
+	loadMaterials(sceneJson["materials"], sceneJson["material-sets"], resourceManager, materialManager);
 	loadMeshes(sceneJson["meshes"], resourceManager, meshPool);
 
 	loadInstances(sceneJson["instances"], instanceManager);
@@ -472,7 +475,10 @@ void mtd::SceneLoader::loadTextures
 
 void mtd::SceneLoader::loadMaterials
 (
-	const nlohmann::json& materialsJson, const nlohmann::json& materialSetsJson, MaterialManager& materialManager
+	const nlohmann::json& materialsJson,
+	const nlohmann::json& materialSetsJson,
+	ResourceManager& resourceManager,
+	MaterialManager& materialManager
 )
 {
 	std::vector<std::string> materialPaths;
@@ -483,7 +489,7 @@ void mtd::SceneLoader::loadMaterials
 	std::vector<std::vector<uint32_t>> materialSets;
 	materialSetsJson.get_to(materialSets);
 
-	materialManager.loadMaterials(materialPaths, materialSets);
+	materialManager.loadMaterials(resourceManager, materialPaths, materialSets);
 }
 
 void mtd::SceneLoader::loadMeshes(const nlohmann::json& meshJson, ResourceManager& resourceManager, MeshPool& meshPool)

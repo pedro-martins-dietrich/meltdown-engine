@@ -358,6 +358,13 @@ void mtd::Engine::configureDescriptors()
 	resourceManager.fetchDescriptorBufferInfo(resourceManager.getResourceID("SubmeshBuffer"), bufferInfo);
 	globalDescriptorSetHandler->assignBuffer(3U, bufferInfo);
 
+	resourceManager.fetchDescriptorBufferInfo(resourceManager.getResourceID("MaterialBuffer"), bufferInfo);
+	globalDescriptorSetHandler->assignBuffer(5U, bufferInfo);
+	resourceManager.fetchDescriptorBufferInfo(resourceManager.getResourceID("MaterialIndexingBuffer"), bufferInfo);
+	globalDescriptorSetHandler->assignBuffer(6U, bufferInfo);
+	resourceManager.fetchDescriptorBufferInfo(resourceManager.getResourceID("MaterialSetBuffer"), bufferInfo);
+	globalDescriptorSetHandler->assignBuffer(7U, bufferInfo);
+
 	scene.configureSceneDescriptorSet(resourceManager, *globalDescriptorSetHandler);
 	renderer.configureRendererDescriptor(*globalDescriptorSetHandler);
 
