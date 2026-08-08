@@ -33,7 +33,7 @@ void mtd::Renderer::render
 	std::vector<DrawBatch> drawBatches;
 	renderObjectManager.createFrameRenderObjects
 	(
-		scene.getMeshPool(), scene.getInstances(), drawBatches, globalDescriptorSet
+		scene.getMeshes(), scene.getInstances(), drawBatches, globalDescriptorSet
 	);
 
 	PROFILER_NEXT_STAGE("Render - Acquire frame");
@@ -142,13 +142,7 @@ void mtd::Renderer::recordDrawCommands
 		);
 	}
 
-	const MeshPool& meshPool = scene.getMeshPool();
-	vk::DeviceSize offset{0UL};
-    vk::Buffer vertexBuffer = resourceManager.getVulkanBuffer(meshPool.getVertexBufferID());
-    vk::Buffer indexBuffer = resourceManager.getVulkanBuffer(meshPool.getIndexBufferID());
-
-    commandBuffer.bindVertexBuffers(0U, 1U, &vertexBuffer, &offset);
-    commandBuffer.bindIndexBuffer(indexBuffer, offset, vk::IndexType::eUint32);
+	scene.bindMeshData(resourceManager, commandBuffer);
 
 	for(const ComputePipeline& computePipeline: pipelines.computePipelines)
 	{
@@ -228,6 +222,7 @@ void mtd::Renderer::recordDrawCommands
 		}
 
 		renderObjectManager.bindBuffer(commandBuffer);
+		const std::vector<MeshData>& meshes = scene.getMeshes();
 
 		for(uint32_t pipelineIndex: renderPassInfo.pipelineIndices)
 		{
@@ -239,7 +234,7 @@ void mtd::Renderer::recordDrawCommands
 			for(const DrawBatch& drawBatch: drawBatches)
 			{
 				if(drawBatch.pipelineID != pipelineIndex) continue;
-				const MeshData& mesh = meshPool.getMesh(drawBatch.meshID);
+				const MeshData& mesh = meshes[drawBatch.meshID];
 
 				for(const SubmeshData& submesh: mesh.submeshes)
 				{

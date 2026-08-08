@@ -153,6 +153,20 @@ namespace mtd
 		const SynchronizationBundle* syncBundle;
 	};
 
+	// Resource IDs of the GPU resources managed by the engine
+	struct SceneResources
+	{
+		ResourceID cameraResourceID = 0U;
+		ResourceID vertexBufferID = 0U;
+		ResourceID indexBufferID = 0U;
+		ResourceID submeshBufferID = 0U;
+		ResourceID materialBufferID = 0U;
+		ResourceID materialIndexingBufferID = 0U;
+		ResourceID materialSetBufferID = 0U;
+        ResourceID missingTextureID = 0U;
+		std::vector<ResourceID> textureIDs = {};
+	};
+
 	// Compute shader push constant struct
 	struct ComputeShaderPushConstantData
 	{

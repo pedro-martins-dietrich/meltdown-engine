@@ -1,27 +1,31 @@
 #include <pch.hpp>
-#include "MaterialManager.hpp"
+#include "MaterialLoader.hpp"
 
 #include "../Utils/EngineStructs.hpp"
 #include "../Utils/Logger.hpp"
 #include "../Utils/StringParser.hpp"
 
-namespace mtd
+namespace mtd::MaterialLoader
 {
     constexpr uint64_t MATERIAL_MAGIC = "MTD_MTRL"_u64;
     constexpr uint64_t MATERIAL_FILE_VERSION = 1UL;
     constexpr size_t MATERIAL_ALIGNMENT = 16UL;
+
+    static bool loadFromFile(std::string_view filePath, std::vector<std::byte>& materialData);
 }
 
-void mtd::MaterialManager::loadMaterials
+void mtd::MaterialLoader::loadMaterials
 (
     ResourceManager& resourceManager,
     const std::vector<std::string>& materialFiles,
-    const std::vector<std::vector<uint32_t>>& sets
+    const std::vector<std::vector<uint32_t>>& sets,
+    ResourceID& materialBufferID,
+    ResourceID& materialIndexingBufferID,
+    ResourceID& materialSetBufferID
 )
 {
     if(materialFiles.size() == 0UL)
     {
-        anyMaterialLoaded = false;
         materialBufferID = 0U;
         materialIndexingBufferID = 0U;
         materialSetBufferID = 0U;
@@ -36,8 +40,8 @@ void mtd::MaterialManager::loadMaterials
     uint32_t currentMaterialOffset = 0U;
     for(std::string_view materialPath: materialFiles)
     {
+        if(!loadFromFile(materialPath, materialData)) continue;
         materialIndexing.push_back(currentMaterialOffset);
-        loadFromFile(materialPath, materialData);
         currentMaterialOffset = static_cast<uint32_t>(materialData.size() >> 4);
     }
 
@@ -64,7 +68,7 @@ void mtd::MaterialManager::loadMaterials
     LOG_INFO("Loaded %d materials.", materialFiles.size());
 }
 
-bool mtd::MaterialManager::loadFromFile(std::string_view filePath, std::vector<std::byte>& materialData)
+bool mtd::MaterialLoader::loadFromFile(std::string_view filePath, std::vector<std::byte>& materialData)
 {
     std::ifstream materialFile{filePath.data(), std::ios::binary | std::ios::ate};
     if(!materialFile)

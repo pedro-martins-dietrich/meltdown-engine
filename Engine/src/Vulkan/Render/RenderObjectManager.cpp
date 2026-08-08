@@ -15,7 +15,7 @@ mtd::RenderObjectManager::RenderObjectManager(const Device& mtdDevice)
 
 void mtd::RenderObjectManager::createFrameRenderObjects
 (
-    const MeshPool& meshPool,
+    const std::vector<MeshData>& meshes,
     const std::vector<SceneInstance>& sceneInstances,
     std::vector<DrawBatch>& drawBatches,
     DescriptorSetHandler& descriptorSetHandler
@@ -42,7 +42,7 @@ void mtd::RenderObjectManager::createFrameRenderObjects
     );
 
     const SceneInstance* firstInstance = visibleInstances.front();
-    const MeshData& firstMesh = meshPool.getMesh(firstInstance->meshID);
+    const MeshData& firstMesh = meshes[firstInstance->meshID];
     renderObjects.push_back(RenderObject
     {
         firstInstance->transform,
@@ -57,10 +57,10 @@ void mtd::RenderObjectManager::createFrameRenderObjects
     drawBatches.push_back(DrawBatch{firstInstance->pipelineID, firstInstance->meshID, 0U, 0U});
     DrawBatch* pCurrentBatch = &(drawBatches.back());
 
-    for(size_t i = 1; i < visibleInstances.size(); i++)
+    for(size_t i = 1UL; i < visibleInstances.size(); i++)
     {
         const SceneInstance* pInstance = visibleInstances[i];
-        const MeshData& mesh = meshPool.getMesh(firstInstance->meshID);
+        const MeshData& mesh = meshes[firstInstance->meshID];
         renderObjects.push_back(RenderObject{
             pInstance->transform,
             pInstance->materialSetID,

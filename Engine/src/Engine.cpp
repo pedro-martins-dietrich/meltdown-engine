@@ -284,6 +284,7 @@ void mtd::Engine::createRenderResources
 	(
 		"Camera", GpuBufferType::Uniform, GpuMemoryUsage::Auto, sizeof(CameraMatrices)
 	);
+	scene.setCameraResourceID(cameraResourceID);
 
 	framebuffers.reserve(framebufferInfos.size());
 	for(const FramebufferInfo& framebufferInfo: framebufferInfos)
@@ -347,24 +348,6 @@ void mtd::Engine::createRenderResources
 void mtd::Engine::configureDescriptors()
 {
 	scene.getDescriptorPool().allocateDescriptorSet(*globalDescriptorSetHandler);
-
-	vk::DescriptorBufferInfo bufferInfo{};
-	resourceManager.fetchDescriptorBufferInfo(cameraResourceID, bufferInfo);
-	globalDescriptorSetHandler->assignBuffer(0U, bufferInfo);
-	resourceManager.fetchDescriptorBufferInfo(resourceManager.getResourceID("VertexBuffer"), bufferInfo);
-	globalDescriptorSetHandler->assignBuffer(1U, bufferInfo);
-	resourceManager.fetchDescriptorBufferInfo(resourceManager.getResourceID("IndexBuffer"), bufferInfo);
-	globalDescriptorSetHandler->assignBuffer(2U, bufferInfo);
-	resourceManager.fetchDescriptorBufferInfo(resourceManager.getResourceID("SubmeshBuffer"), bufferInfo);
-	globalDescriptorSetHandler->assignBuffer(3U, bufferInfo);
-
-	resourceManager.fetchDescriptorBufferInfo(resourceManager.getResourceID("MaterialBuffer"), bufferInfo);
-	globalDescriptorSetHandler->assignBuffer(5U, bufferInfo);
-	resourceManager.fetchDescriptorBufferInfo(resourceManager.getResourceID("MaterialIndexingBuffer"), bufferInfo);
-	globalDescriptorSetHandler->assignBuffer(6U, bufferInfo);
-	resourceManager.fetchDescriptorBufferInfo(resourceManager.getResourceID("MaterialSetBuffer"), bufferInfo);
-	globalDescriptorSetHandler->assignBuffer(7U, bufferInfo);
-
 	scene.configureSceneDescriptorSet(resourceManager, *globalDescriptorSetHandler);
 	renderer.configureRendererDescriptor(*globalDescriptorSetHandler);
 

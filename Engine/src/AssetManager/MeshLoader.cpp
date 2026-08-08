@@ -1,16 +1,75 @@
 #include <pch.hpp>
 #include "MeshLoader.hpp"
 
-#include "../../Utils/Logger.hpp"
-#include "../../Utils/StringParser.hpp"
+#include "../Utils/Logger.hpp"
+#include "../Utils/StringParser.hpp"
 
-namespace mtd
+namespace mtd::MeshLoader
 {
     constexpr uint64_t MESH_MAGIC = "MTD_MESH"_u64;
     constexpr uint64_t MESH_FILE_VERSION = 1UL;
+
+    // Mesh asset file header
+    struct MeshHeader : AssetHeader
+    {
+        uint32_t vertexStride;
+        Vec3 centerAABB = Vec3{0.0f};
+        Vec3 extentAABB = Vec3{0.0f};
+    };
+
+    // Loads a .mesh file and appends it to the mesh data
+    static bool loadFromFile
+    (
+        const std::string_view filePath,
+        std::vector<std::byte>& vertexData,
+        std::vector<uint32_t>& indexData,
+        std::vector<MeshData>& meshes
+    );
 }
 
-bool mtd::MeshLoader::loadMesh
+void mtd::MeshLoader::loadMeshes
+(
+    ResourceManager& resourceManager,
+    const std::vector<std::string>& meshFiles,
+    std::vector<MeshData>& meshes,
+    ResourceID& vertexBufferID,
+    ResourceID& indexBufferID,
+    ResourceID& submeshBufferID
+)
+{
+    std::vector<std::byte> vertexData;
+    std::vector<uint32_t> indexData;
+    meshes.clear();
+
+    for(const std::string_view file: meshFiles)
+        MeshLoader::loadFromFile(file, vertexData, indexData, meshes);
+    if(meshes.empty()) return;
+
+    std::vector<SubmeshData> submeshes;
+    submeshes.reserve(meshes.back().submeshOffset + meshes.back().submeshes.size());
+    for(const MeshData& mesh: meshes)
+        submeshes.insert(submeshes.end(), mesh.submeshes.begin(), mesh.submeshes.end());
+
+    vertexBufferID = resourceManager.createBuffer
+    (
+        "VertexBuffer", GpuBufferType::Vertex, GpuMemoryUsage::GpuOnly,
+        vertexData.size(), vertexData.data()
+    );
+    indexBufferID = resourceManager.createBuffer
+    (
+        "IndexBuffer", GpuBufferType::Index, GpuMemoryUsage::GpuOnly,
+        sizeof(uint32_t) * indexData.size(), indexData.data()
+    );
+    submeshBufferID = resourceManager.createBuffer
+    (
+        "SubmeshBuffer", GpuBufferType::Index, GpuMemoryUsage::GpuOnly,
+        sizeof(SubmeshData) * submeshes.size(), submeshes.data()
+    );
+
+    LOG_INFO("Loaded %d meshes.", meshFiles.size());
+}
+
+bool mtd::MeshLoader::loadFromFile
 (
     const std::string_view filePath,
     std::vector<std::byte>& vertexData,

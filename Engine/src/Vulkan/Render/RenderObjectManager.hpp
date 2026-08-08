@@ -1,7 +1,7 @@
 #pragma once
 
+#include "../Descriptors/DescriptorSetHandler.hpp"
 #include "../../Scene/InstanceManager.hpp"
-#include "../../AssetManager/MeshPool.hpp"
 
 namespace mtd
 {
@@ -21,7 +21,7 @@ namespace mtd
             // Creates the render objects and the draw batches from the scene instances
             void createFrameRenderObjects
             (
-                const MeshPool& meshPool,
+                const std::vector<MeshData>& meshes,
                 const std::vector<SceneInstance>& sceneInstances,
                 std::vector<DrawBatch>& drawBatches,
                 DescriptorSetHandler& descriptorSetHandler

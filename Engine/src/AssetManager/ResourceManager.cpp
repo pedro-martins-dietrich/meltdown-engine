@@ -29,6 +29,7 @@ mtd::ResourceID mtd::ResourceManager::getResourceID(std::string_view resourceNam
 
 vk::Buffer mtd::ResourceManager::getVulkanBuffer(ResourceID bufferID) const
 {
+    if(bufferID == 0U) return nullptr;
     BufferConstIterator bufferIterator = buffers.find(bufferID);
     if(bufferIterator == buffers.cend()) return nullptr;
 
@@ -148,6 +149,7 @@ bool mtd::ResourceManager::updateBufferData
     ResourceID id, vk::DeviceSize copySize, const void* srcData, vk::DeviceSize bufferOffset
 )
 {
+    if(id == 0U) return false;
     BufferIterator b = buffers.find(id);
     if(b == buffers.cend()) return false;
 
@@ -164,6 +166,7 @@ bool mtd::ResourceManager::transitionImageLayout
     vk::PipelineStageFlags dstStage
 ) const
 {
+    if(id == 0U) return false;
     ImageConstIterator i = images.find(id);
     if(i == images.cend()) return false;
 
@@ -202,6 +205,7 @@ void mtd::ResourceManager::clearResources()
 
 bool mtd::ResourceManager::fetchDescriptorBufferInfo(ResourceID id, vk::DescriptorBufferInfo& info) const
 {
+    if(id == 0U) return false;
     BufferConstIterator b = buffers.find(id);
     if(b == buffers.cend()) return false;
 
@@ -211,6 +215,7 @@ bool mtd::ResourceManager::fetchDescriptorBufferInfo(ResourceID id, vk::Descript
 
 bool mtd::ResourceManager::fetchDescriptorImageInfo(ResourceID id, vk::DescriptorImageInfo& info) const
 {
+    if(id == 0U) return false;
     ImageConstIterator i = images.find(id);
     if(i == images.cend()) return false;
 

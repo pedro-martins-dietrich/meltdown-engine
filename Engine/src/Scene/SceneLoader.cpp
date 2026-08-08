@@ -5,9 +5,11 @@
 
 #include <Meltdown.hpp>
 
-#include "../Vulkan/Mesh/RayTracingMesh/RayTracingMeshManager.hpp"
+#include "../AssetManager/MeshLoader.hpp"
+#include "../AssetManager/MaterialLoader.hpp"
 #include "../Utils/FileHandler.hpp"
 #include "../Utils/Logger.hpp"
+#include "../Vulkan/Mesh/RayTracingMesh/RayTracingMeshManager.hpp"
 
 namespace mtd::SceneLoader
 {
@@ -76,10 +78,16 @@ namespace mtd::SceneLoader
 		const nlohmann::json& materialsJson,
 		const nlohmann::json& materialSetsJson,
 		ResourceManager& resourceManager,
-		MaterialManager& materialManager
+		SceneResources& sceneResources
 	);
 	// Fetches all mesh files from the scene file and loads them
-	static void loadMeshes(const nlohmann::json& meshJson, ResourceManager& resourceManager, MeshPool& meshPool);
+	static void loadMeshes
+	(
+		const nlohmann::json& meshJson,
+		ResourceManager& resourceManager,
+		SceneResources& sceneResources,
+		std::vector<MeshData>& meshes
+	);
 
 	// Loads all instances from the scene file
 	static void loadInstances(const nlohmann::json& instancesJson, InstanceManager& instanceManager);
@@ -93,12 +101,12 @@ void mtd::SceneLoader::load
 	PipelineInfoBundle& pipelineInfos,
 	std::vector<RenderPassInfo>& renderOrder,
 	std::vector<std::unique_ptr<MeshManager>>& meshManagers,
+	std::vector<MeshData>& meshes,
 	ResourceManager& resourceManager,
 	DescriptorManager& descriptorManager,
 	InstanceManager& instanceManager,
-	TexturePool& texturePool,
-	MaterialManager& materialManager,
-	MeshPool& meshPool
+	SceneResources& sceneResources,
+	TexturePool& texturePool
 )
 {
 	std::string scenePath{MTD_RESOURCES_PATH};
@@ -164,8 +172,8 @@ void mtd::SceneLoader::load
 	}
 
 	loadTextures(sceneJson["textures"], resourceManager, texturePool);
-	loadMaterials(sceneJson["materials"], sceneJson["material-sets"], resourceManager, materialManager);
-	loadMeshes(sceneJson["meshes"], resourceManager, meshPool);
+	loadMaterials(sceneJson["materials"], sceneJson["material-sets"], resourceManager, sceneResources);
+	loadMeshes(sceneJson["meshes"], resourceManager, sceneResources, meshes);
 
 	loadInstances(sceneJson["instances"], instanceManager);
 
@@ -478,7 +486,7 @@ void mtd::SceneLoader::loadMaterials
 	const nlohmann::json& materialsJson,
 	const nlohmann::json& materialSetsJson,
 	ResourceManager& resourceManager,
-	MaterialManager& materialManager
+	SceneResources& sceneResources
 )
 {
 	std::vector<std::string> materialPaths;
@@ -489,17 +497,37 @@ void mtd::SceneLoader::loadMaterials
 	std::vector<std::vector<uint32_t>> materialSets;
 	materialSetsJson.get_to(materialSets);
 
-	materialManager.loadMaterials(resourceManager, materialPaths, materialSets);
+	MaterialLoader::loadMaterials
+	(
+		resourceManager, materialPaths, materialSets,
+		sceneResources.materialBufferID,
+		sceneResources.materialIndexingBufferID,
+		sceneResources.materialSetBufferID
+	);
 }
 
-void mtd::SceneLoader::loadMeshes(const nlohmann::json& meshJson, ResourceManager& resourceManager, MeshPool& meshPool)
+void mtd::SceneLoader::loadMeshes
+(
+	const nlohmann::json& meshJson,
+	ResourceManager& resourceManager,
+	SceneResources& sceneResources,
+	std::vector<MeshData>& meshes
+)
 {
 	std::vector<std::string> meshPaths;
 	meshPaths.reserve(meshJson.size());
 	for(const std::string& path: meshJson)
 		meshPaths.emplace_back(MTD_RESOURCES_PATH + path);
 
-	meshPool.loadMeshes(resourceManager, meshPaths);
+	MeshLoader::loadMeshes
+	(
+		resourceManager,
+		meshPaths,
+		meshes,
+		sceneResources.vertexBufferID,
+		sceneResources.indexBufferID,
+		sceneResources.submeshBufferID
+	);
 }
 
 void mtd::SceneLoader::loadInstances(const nlohmann::json& instancesJson, InstanceManager& instanceManager)
