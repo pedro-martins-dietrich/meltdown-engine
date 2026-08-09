@@ -1,20 +1,22 @@
 #include <pch.hpp>
 #include "RenderObjectManager.hpp"
 
-mtd::RenderObjectManager::RenderObjectManager(const Device& mtdDevice)
-    : commandHandler{mtdDevice},
-    renderObjectBuffer
-    {
-        mtdDevice,
-        sizeof(RenderObject),
-        vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eStorageBuffer
-            | vk::BufferUsageFlagBits::eTransferSrc,
-		vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
-    }
-{}
+#include "../../Utils/Logger.hpp"
+
+void mtd::RenderObjectManager::createBuffer(ResourceManager& resourceManager)
+{
+    renderObjectBufferID = resourceManager.createBuffer
+    (
+        "RenderObjectsBuffer",
+        GpuBufferType::Vertex | GpuBufferType::TransferSource,
+        GpuMemoryUsage::CpuUpload,
+        sizeof(RenderObject)
+    );
+}
 
 void mtd::RenderObjectManager::createFrameRenderObjects
 (
+    ResourceManager& resourceManager,
     const std::vector<MeshData>& meshes,
     const std::vector<SceneInstance>& sceneInstances,
     std::vector<DrawBatch>& drawBatches,
@@ -82,33 +84,55 @@ void mtd::RenderObjectManager::createFrameRenderObjects
 
     visibleInstances.clear();
 
-    updateBufferData(descriptorSetHandler);
+    updateBufferData(resourceManager, descriptorSetHandler);
 
     renderObjectCount = renderObjects.size();
     renderObjects.clear();
 }
 
-void mtd::RenderObjectManager::bindBuffer(vk::CommandBuffer commandBuffer) const
+void mtd::RenderObjectManager::updateDescriptor
+(
+    const ResourceManager& resourceManager, DescriptorSetHandler& descriptorSetHandler
+) const
 {
+    vk::DescriptorBufferInfo bufferInfo{};
+    if(resourceManager.fetchDescriptorBufferInfo(renderObjectBufferID, bufferInfo))
+        descriptorSetHandler.assignBuffer(8U, bufferInfo);
+}
+
+void mtd::RenderObjectManager::bindBuffer
+(
+    const ResourceManager& resourceManager, vk::CommandBuffer commandBuffer
+) const
+{
+    assert(renderObjectBufferID != 0U && "The render objects buffer must be created before binding it.");
+
     vk::DeviceSize offset{0UL};
-    commandBuffer.bindVertexBuffers(1U, 1U, &(renderObjectBuffer.getBuffer()), &offset);
-}
-
-void mtd::RenderObjectManager::createDescriptor(DescriptorSetHandler& descriptorSetHandler, uint32_t binding) const
-{
-    bufferDescriptorBinding = binding;
-    descriptorSetHandler.assignExternalResourcesToDescriptor(binding, renderObjectBuffer);
-}
-
-void mtd::RenderObjectManager::updateBufferData(DescriptorSetHandler& descriptorSetHandler)
-{
-    vk::DeviceSize minimumBufferSize = renderObjects.size() * sizeof(RenderObject);
-	if(minimumBufferSize > renderObjectBuffer.getSize())
+    vk::Buffer buffer = resourceManager.getVulkanBuffer(renderObjectBufferID);
+    if(!buffer)
     {
-		renderObjectBuffer.resizeBuffer(commandHandler, minimumBufferSize);
-        descriptorSetHandler.assignExternalResourcesToDescriptor(bufferDescriptorBinding, renderObjectBuffer);
-        descriptorSetHandler.writeDescriptor(bufferDescriptorBinding);
+        LOG_ERROR("Failed to bind render objects buffer.");
+        return;
     }
 
-    renderObjectBuffer.copyMemoryToBuffer(renderObjects.size() * sizeof(RenderObject), renderObjects.data());
+    commandBuffer.bindVertexBuffers(1U, 1U, &buffer, &offset);
+}
+
+void mtd::RenderObjectManager::updateBufferData
+(
+    ResourceManager& resourceManager, DescriptorSetHandler& descriptorSetHandler
+)
+{
+    assert(renderObjectBufferID != 0U && "The render objects buffer must be created before updating it.");
+
+    uint64_t minimumBufferSize = renderObjects.size() * sizeof(RenderObject);
+    uint64_t currentBufferSize = resourceManager.getBufferSize(renderObjectBufferID);
+    if(currentBufferSize < minimumBufferSize)
+    {
+        resourceManager.resizeBuffer(renderObjectBufferID, minimumBufferSize);
+        updateDescriptor(resourceManager, descriptorSetHandler);
+    }
+
+    if(!resourceManager.updateBufferData(renderObjectBufferID, minimumBufferSize, renderObjects.data()))
+        LOG_ERROR("Failed to update render objects buffer data.");
 }

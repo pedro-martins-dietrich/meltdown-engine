@@ -349,7 +349,7 @@ void mtd::Engine::configureDescriptors()
 {
 	scene.getDescriptorPool().allocateDescriptorSet(*globalDescriptorSetHandler);
 	scene.configureSceneDescriptorSet(resourceManager, *globalDescriptorSetHandler);
-	renderer.configureRendererDescriptor(*globalDescriptorSetHandler);
+	renderer.configureRendererDescriptor(resourceManager, *globalDescriptorSetHandler);
 
 	globalDescriptorSetHandler->writeDescriptorSet();
 

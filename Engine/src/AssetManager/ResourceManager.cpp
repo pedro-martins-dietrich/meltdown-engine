@@ -36,6 +36,15 @@ vk::Buffer mtd::ResourceManager::getVulkanBuffer(ResourceID bufferID) const
     return bufferIterator->second.getBuffer();
 }
 
+uint64_t mtd::ResourceManager::getBufferSize(ResourceID bufferID) const
+{
+    if(bufferID == 0U) return 0UL;
+    BufferConstIterator bufferIterator = buffers.find(bufferID);
+    if(bufferIterator == buffers.cend()) return 0UL;
+
+    return bufferIterator->second.getSize();
+}
+
 mtd::ResourceID mtd::ResourceManager::createBuffer
 (
     std::string resourceName, GpuBufferType type, GpuMemoryUsage memoryUsage, uint64_t bufferSize, const void* pData
@@ -109,7 +118,7 @@ mtd::ResourceID mtd::ResourceManager::loadImage
     std::string resourceName,
     UIntVec2 imageDimensions,
     const void* pData,
-    size_t dataSize,
+    uint64_t dataSize,
     vk::Format imageFormat,
     vk::ImageUsageFlags usage,
     SamplerType samplerType,
@@ -146,7 +155,7 @@ mtd::ResourceID mtd::ResourceManager::loadImage
 
 bool mtd::ResourceManager::updateBufferData
 (
-    ResourceID id, vk::DeviceSize copySize, const void* srcData, vk::DeviceSize bufferOffset
+    ResourceID id, uint64_t copySize, const void* srcData, uint64_t bufferOffset
 )
 {
     if(id == 0U) return false;
@@ -154,6 +163,16 @@ bool mtd::ResourceManager::updateBufferData
     if(b == buffers.cend()) return false;
 
     b->second.copyMemoryToBuffer(copySize, srcData, bufferOffset);
+    return true;
+}
+
+bool mtd::ResourceManager::resizeBuffer(ResourceID id, uint64_t newSize)
+{
+    if(id == 0U) return false;
+    BufferIterator b = buffers.find(id);
+    if(b == buffers.cend()) return false;
+
+    b->second.resizeBuffer(commandHandler, newSize);
     return true;
 }
 

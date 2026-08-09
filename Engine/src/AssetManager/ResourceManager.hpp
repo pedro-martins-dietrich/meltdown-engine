@@ -20,6 +20,7 @@ namespace mtd
             // Getters
             ResourceID getResourceID(std::string_view resourceName) const;
             vk::Buffer getVulkanBuffer(ResourceID bufferID) const;
+            uint64_t getBufferSize(ResourceID bufferID) const;
 
             // Creates a new GPU buffer
             ResourceID createBuffer
@@ -50,7 +51,7 @@ namespace mtd
                 std::string resourceName,
                 UIntVec2 imageDimensions,
                 const void* pData,
-                size_t dataSize,
+                uint64_t dataSize,
 				vk::Format imageFormat,
 				vk::ImageUsageFlags usage,
                 SamplerType samplerType = SamplerType::Linear,
@@ -61,10 +62,9 @@ namespace mtd
             );
 
             // Updates buffer data
-            bool updateBufferData
-            (
-                ResourceID id, vk::DeviceSize copySize, const void* srcData, vk::DeviceSize bufferOffset = 0UL
-            );
+            bool updateBufferData(ResourceID id, uint64_t copySize, const void* srcData, uint64_t bufferOffset = 0UL);
+            // Resizes the specified GPU buffer
+            bool resizeBuffer(ResourceID id, uint64_t newSize);
 
             // Transitions the specified image layout
             bool transitionImageLayout

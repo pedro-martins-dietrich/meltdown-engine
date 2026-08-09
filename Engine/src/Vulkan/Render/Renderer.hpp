@@ -33,14 +33,17 @@ namespace mtd
 				const std::vector<Framebuffer>& framebuffers,
 				const PipelineBundle& pipelines,
 				const Scene& scene,
-				const ResourceManager& resourceManager,
+				ResourceManager& resourceManager,
 				DescriptorSetHandler& globalDescriptorSet,
 				DrawInfo& drawInfo,
 				std::atomic<bool>& shouldUpdateEngine
 			);
 
 			// Configures the descriptor for the render objects
-			void configureRendererDescriptor(DescriptorSetHandler& descriptorSetHandler) const;
+			void configureRendererDescriptor
+			(
+				ResourceManager& resourceManager, DescriptorSetHandler& descriptorSetHandler
+			);
 
 		private:
 			// Index of the frame being rendered

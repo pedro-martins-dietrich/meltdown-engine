@@ -6,8 +6,7 @@
 
 mtd::Renderer::Renderer(const Device& mtdDevice)
 	: mtdDevice{mtdDevice},
-	clearValues{vk::ClearColorValue{0.1f, 0.1f, 0.1f, 1.0f}, vk::ClearDepthStencilValue{1.0f, 0U}},
-	renderObjectManager{mtdDevice}
+	clearValues{vk::ClearColorValue{0.1f, 0.1f, 0.1f, 1.0f}, vk::ClearDepthStencilValue{1.0f, 0U}}
 {}
 
 void mtd::Renderer::setClearColor(const Vec4& color)
@@ -22,7 +21,7 @@ void mtd::Renderer::render
 	const std::vector<Framebuffer>& framebuffers,
 	const PipelineBundle& pipelines,
 	const Scene& scene,
-	const ResourceManager& resourceManager,
+	ResourceManager& resourceManager,
 	DescriptorSetHandler& globalDescriptorSet,
 	DrawInfo& drawInfo,
 	std::atomic<bool>& shouldUpdateEngine
@@ -33,7 +32,7 @@ void mtd::Renderer::render
 	std::vector<DrawBatch> drawBatches;
 	renderObjectManager.createFrameRenderObjects
 	(
-		scene.getMeshes(), scene.getInstances(), drawBatches, globalDescriptorSet
+		resourceManager, scene.getMeshes(), scene.getInstances(), drawBatches, globalDescriptorSet
 	);
 
 	PROFILER_NEXT_STAGE("Render - Acquire frame");
@@ -99,9 +98,13 @@ void mtd::Renderer::render
 	currentFrameIndex = shouldUpdateEngine.load() ? 0U : (currentFrameIndex + 1U) % swapchain.getFrameCount();
 }
 
-void mtd::Renderer::configureRendererDescriptor(DescriptorSetHandler& descriptorSetHandler) const
+void mtd::Renderer::configureRendererDescriptor
+(
+	ResourceManager& resourceManager, DescriptorSetHandler& descriptorSetHandler
+)
 {
-	renderObjectManager.createDescriptor(descriptorSetHandler, 8U);
+	renderObjectManager.createBuffer(resourceManager);
+	renderObjectManager.updateDescriptor(resourceManager, descriptorSetHandler);
 }
 
 void mtd::Renderer::recordDrawCommands
@@ -221,7 +224,7 @@ void mtd::Renderer::recordDrawCommands
 			commandBuffer.draw(3U, 1U, 0U, 0U);
 		}
 
-		renderObjectManager.bindBuffer(commandBuffer);
+		renderObjectManager.bindBuffer(resourceManager, commandBuffer);
 		const std::vector<MeshData>& meshes = scene.getMeshes();
 
 		for(uint32_t pipelineIndex: renderPassInfo.pipelineIndices)
