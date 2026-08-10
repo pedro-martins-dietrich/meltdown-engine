@@ -46,16 +46,26 @@ bool mtd::FileHandler::readJSON(std::string_view filePath, nlohmann::json& json)
 void* mtd::FileHandler::readImage(std::string_view path, UIntVec2& dimensions, uint32_t& channels)
 {
 	int w, h, c;
+
+	if(!stbi_info(path.data(), &w, &h, &c))
+	{
+		LOG_ERROR("Failed to find valid image file: \"%s\".", path.data());
+		return nullptr;
+	}
+
+	int desiredChannels = c;
+	if(c == 3) desiredChannels = 4;
+
 	stbi_set_flip_vertically_on_load(true);
-	stbi_uc* pixels = stbi_load(path.data(), &w, &h, &c, STBI_default);
+	stbi_uc* pixels = stbi_load(path.data(), &w, &h, &c, desiredChannels);
 	if(!pixels)
 	{
-		LOG_ERROR("Failed to read image file: \"%s\".", path.data());
+		LOG_ERROR("Failed to load image file: \"%s\".", path.data());
 		return nullptr;
 	}
 
 	dimensions = {static_cast<uint32_t>(w), static_cast<uint32_t>(h)};
-	channels = static_cast<uint32_t>(c);
+	channels = static_cast<uint32_t>(desiredChannels);
 
 	return pixels;
 }

@@ -48,9 +48,6 @@ void mtd::TexturePool::loadTextures(ResourceManager& resourceManager, const std:
             case 2U:
                 imageFormat = vk::Format::eR8G8Unorm;
                 break;
-            case 3U:
-                imageFormat = vk::Format::eR8G8B8Unorm;
-                break;
             case 4U:
                 imageFormat = vk::Format::eR8G8B8A8Unorm;
                 break;

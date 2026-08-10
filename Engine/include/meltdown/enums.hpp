@@ -96,7 +96,8 @@ namespace mtd
 	{
 		UniformBuffer,
 		StorageBuffer,
-		StorageImage
+		StorageImage,
+		CombinedImageSampler
 	};
 
 	/*

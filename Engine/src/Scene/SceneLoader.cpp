@@ -125,6 +125,10 @@ void mtd::SceneLoader::load
 
 	loadCamera(sceneJson["camera"]);
 	loadGpuResources(sceneJson["gpu-resources"], resourceManager);
+	loadTextures(sceneJson["textures"], resourceManager, texturePool);
+	loadMaterials(sceneJson["materials"], sceneJson["material-sets"], resourceManager, sceneResources);
+	loadMeshes(sceneJson["meshes"], resourceManager, sceneResources, meshes);
+
 	loadDescriptors(sceneJson["descriptor-sets"], descriptorManager);
 
 	const nlohmann::json& framebuffersJson = sceneJson["framebuffers"];
@@ -170,10 +174,6 @@ void mtd::SceneLoader::load
 			continue;
 		}
 	}
-
-	loadTextures(sceneJson["textures"], resourceManager, texturePool);
-	loadMaterials(sceneJson["materials"], sceneJson["material-sets"], resourceManager, sceneResources);
-	loadMeshes(sceneJson["meshes"], resourceManager, sceneResources, meshes);
 
 	loadInstances(sceneJson["instances"], instanceManager);
 
