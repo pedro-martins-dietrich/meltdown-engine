@@ -81,6 +81,30 @@ namespace mtd
 	};
 
 	/*
+	* @brief Information required to create a descriptor set layout.
+	*/
+	struct DescriptorLayoutBindingInfo
+	{
+		/* @brief Data type that will be used in the binding. */
+		DescriptorType type;
+		/* @brief Shader stage(s) where the descriptor can be accessed. */
+		ShaderStage shaderStage;
+		/* @brief Array size of the descriptor, if accessed as an array. */
+		uint32_t count = 1U;
+	};
+
+	/*
+	* @brief Information about a descriptor set data.
+	*/
+	struct DescriptorSetInfo
+	{
+		/* @brief ID of the descriptor set layout that will be used by this descriptor set. */
+		DescriptorLayoutID layoutID;
+		/* @brief List of resource IDs for each descriptor in the set. */
+		std::vector<std::vector<ResourceID>> resources;
+	};
+
+	/*
 	* @brief Parameters to create a custom framebuffer.
 	*/
 	struct FramebufferInfo
@@ -115,6 +139,8 @@ namespace mtd
 	{
 		/* @brief Exhibition name for the pipeline. */
 		std::string pipelineName;
+		/* @brief Descriptor layouts used for the pipeline. */
+		std::vector<DescriptorLayoutID> descriptorLayoutIDs;
 		/* @brief Pipeline's descriptor set ID. */
 		std::vector<DescriptorSetID> descriptorSetIDs;
 		/* @brief Info about each binding for the user defined descriptor set (set = 2). */

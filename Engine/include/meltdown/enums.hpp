@@ -43,6 +43,8 @@ namespace mtd
 
 	/* @brief ID for handling GPU resources. */
 	using ResourceID = uint32_t;
+	/* @brief ID for handling descriptor set layouts. */
+	using DescriptorLayoutID = uint32_t;
 	/* @brief ID for handling descriptor sets. */
 	using DescriptorSetID = uint32_t;
 

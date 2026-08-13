@@ -23,7 +23,7 @@
 		],
 		"images": []
 	},
-	"descriptor-sets":
+	"descriptor-layouts":
 	[
 		{
 			"descriptors":
@@ -32,9 +32,18 @@
 					"binding": 0,
 					"type": 0,
 					"shader-stage": 63,
-					"count": 1,
-					"resource-name": "LightData"
+					"count": 1
 				}
+			]
+		}
+	],
+	"descriptor-sets":
+	[
+		{
+			"layout": 0,
+			"resources":
+			[
+				["LightData"]
 			]
 		}
 	],
@@ -55,6 +64,7 @@
 			"fragment-shader": "default.frag.spv",
 			"mesh-type": 0,
 			"target-framebuffer": 0,
+			"descriptor-layouts": [0],
 			"descriptor-sets": [0],
 			"descriptor-set-info":
 			[
@@ -75,6 +85,7 @@
 			"fragment-shader": "billboard.frag.spv",
 			"mesh-type": 2,
 			"target-framebuffer": 0,
+			"descriptor-layouts": [],
 			"descriptor-sets": [],
 			"descriptor-set-info": [],
 			"shader-primitive-topology": 5,
@@ -91,6 +102,7 @@
 			"vertex-shader": "framebuffer.vert.spv",
 			"fragment-shader": "framebuffer.frag.spv",
 			"target-framebuffer": -1,
+			"descriptor-layouts": [],
 			"descriptor-sets": [],
 			"descriptor-set-info": [],
 			"input-attachments":

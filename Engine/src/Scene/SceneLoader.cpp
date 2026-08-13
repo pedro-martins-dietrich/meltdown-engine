@@ -21,8 +21,18 @@ namespace mtd::SceneLoader
 	// Loads the GPU resources from the scene file and allocates them
 	static void loadGpuResources(const nlohmann::json& resourcesInfoJson, ResourceManager& resourceManager);
 
-	// Loads descriptor info from the scene file
-	static void loadDescriptors(const nlohmann::json& descriptorsJson, DescriptorManager& descriptorManager);
+	// Loads descriptor set layout infos from the scene file
+	static void loadDescriptorLayouts
+	(
+		const nlohmann::json& descriptorLayoutsJson, DescriptorManager& descriptorManager
+	);
+	// Loads descriptor set infos from the scene file
+	static void loadDescriptorSets
+	(
+		const nlohmann::json& descriptorSetsJson,
+		DescriptorManager& descriptorManager,
+		const ResourceManager& resourceManager
+	);
 
 	// Fetches the framebuffer info from the scene file
 	static void loadFramebuffer(const nlohmann::json& framebufferJson, std::vector<FramebufferInfo>& framebufferInfos);
@@ -55,7 +65,7 @@ namespace mtd::SceneLoader
 	// Loads the descriptor set info for a pipeline
 	static void loadDescriptorInfos
 	(
-		const nlohmann::json& descriptorSetInfoJson, std::vector<DescriptorInfo>& descriptorInfos
+		const nlohmann::json& descriptorInfosJson, std::vector<DescriptorInfo>& descriptorInfos
 	);
 
 	// Fetches ray tracing meshes from the scene file
@@ -129,7 +139,8 @@ void mtd::SceneLoader::load
 	loadMaterials(sceneJson["materials"], sceneJson["material-sets"], resourceManager, sceneResources);
 	loadMeshes(sceneJson["meshes"], resourceManager, sceneResources, meshes);
 
-	loadDescriptors(sceneJson["descriptor-sets"], descriptorManager);
+	loadDescriptorLayouts(sceneJson["descriptor-layouts"], descriptorManager);
+	loadDescriptorSets(sceneJson["descriptor-sets"], descriptorManager, resourceManager);
 
 	const nlohmann::json& framebuffersJson = sceneJson["framebuffers"];
 	const nlohmann::json& rasterPipelinesJson = sceneJson["rasterization-pipelines"];
@@ -233,27 +244,65 @@ void mtd::SceneLoader::loadGpuResources(const nlohmann::json& resourcesInfoJson,
 	);
 }
 
-void mtd::SceneLoader::loadDescriptors(const nlohmann::json& descriptorsJson, DescriptorManager& descriptorManager)
+void mtd::SceneLoader::loadDescriptorLayouts
+(
+	const nlohmann::json& descriptorLayoutsJson, DescriptorManager& descriptorManager
+)
 {
-	std::vector<DescriptorInfo> descriptors;
-	for(const nlohmann::json& setJson: descriptorsJson)
+	std::vector<DescriptorLayoutBindingInfo> layoutBindingInfos;
+	for(const nlohmann::json& layoutJson: descriptorLayoutsJson)
 	{
-		for(const nlohmann::json& descJson: setJson.at("descriptors"))
+		for(const nlohmann::json& descJson: layoutJson.at("descriptors"))
 		{
-			descriptors.emplace_back
+			layoutBindingInfos.emplace_back
 			(
-				descJson.value("resource-name", ""),
 				descJson.value<DescriptorType>("type", DescriptorType::UniformBuffer),
 				static_cast<ShaderStage>(descJson.value("shader-stage", 63U)),
 				descJson.value("count", 1U)
 			);
 		}
-		descriptorManager.createSet(descriptors);
-		descriptors.clear();
+		descriptorManager.createLayout(layoutBindingInfos);
+		layoutBindingInfos.clear();
 	}
-	descriptorManager.allocate();
+	descriptorManager.createPool();
 
-	LOG_VERBOSE("Loaded %d descriptor sets.", descriptorsJson.size());
+	LOG_VERBOSE("Loaded %d descriptor set layouts.", descriptorLayoutsJson.size());
+}
+
+void mtd::SceneLoader::loadDescriptorSets
+(
+	const nlohmann::json& descriptorSetsJson,
+	DescriptorManager& descriptorManager,
+	const ResourceManager& resourceManager
+)
+{
+	for(const nlohmann::json& setJson: descriptorSetsJson)
+	{
+		DescriptorSetInfo setInfo;
+		setInfo.layoutID = setJson.at("layout");
+		setInfo.resources.reserve(setJson["resources"].size());
+
+		for(const nlohmann::json& resourceNames: setJson.at("resources"))
+		{
+			std::vector<ResourceID> ids;
+			ids.reserve(resourceNames.size());
+
+			for(const nlohmann::json& resourceName: resourceNames)
+			{
+				const std::string& name = resourceName.get_ref<const std::string&>();
+				ResourceID id = resourceManager.getResourceID(name);
+				if(id != 0U)
+					ids.emplace_back(id);
+				else
+					LOG_WARNING("Could not find resource with name \"%s\".", name.c_str());
+			}
+			setInfo.resources.emplace_back(std::move(ids));
+		}
+		DescriptorSetID setID = descriptorManager.allocateSet(setInfo, 1U);
+	}
+	descriptorManager.writeAll();
+
+	LOG_VERBOSE("Loaded %d descriptor sets.", descriptorSetsJson.size());
 }
 
 void mtd::SceneLoader::loadFramebuffer(const nlohmann::json& fbJson, std::vector<FramebufferInfo>& framebufferInfos)
@@ -292,6 +341,7 @@ void mtd::SceneLoader::loadRasterizationPipelines
 	{
 		{
 			rasterizationPipelineJson["name"],
+			rasterizationPipelineJson.value<std::vector<DescriptorLayoutID>>("descriptor-layouts", {}),
 			rasterizationPipelineJson.value<std::vector<DescriptorSetID>>("descriptor-sets", {}),
 			std::move(descriptorInfos)
 		},
@@ -327,6 +377,7 @@ void mtd::SceneLoader::loadRayTracingPipelines
 	{
 		{
 			rtPipelineJson["name"],
+			rtPipelineJson.value<std::vector<DescriptorLayoutID>>("descriptor-layouts", {}),
 			rtPipelineJson.value<std::vector<DescriptorSetID>>("descriptor-sets", {}),
 			std::move(descriptorInfos)
 		},
@@ -356,6 +407,7 @@ void mtd::SceneLoader::loadComputePipelines
 	{
 		{
 			computePipelineJson["name"],
+			computePipelineJson.value<std::vector<DescriptorLayoutID>>("descriptor-layouts", {}),
 			computePipelineJson.value<std::vector<DescriptorSetID>>("descriptor-sets", {}),
 			std::move(descriptorInfos)
 		},
@@ -410,6 +462,7 @@ void mtd::SceneLoader::loadFramebufferPipelines
 	{
 		{
 			fbPipelineJson["name"],
+			fbPipelineJson.value<std::vector<DescriptorLayoutID>>("descriptor-layouts", {}),
 			fbPipelineJson.value<std::vector<DescriptorSetID>>("descriptor-sets", {}),
 			std::move(descriptorInfos)
 		},
@@ -425,11 +478,11 @@ void mtd::SceneLoader::loadFramebufferPipelines
 
 void mtd::SceneLoader::loadDescriptorInfos
 (
-	const nlohmann::json& descriptorSetInfoJson, std::vector<DescriptorInfo>& descriptorInfos
+	const nlohmann::json& descriptorSetInfosJson, std::vector<DescriptorInfo>& descriptorInfos
 )
 {
-	descriptorInfos.reserve(descriptorSetInfoJson.size());
-	for(const nlohmann::json& descriptorInfoJson: descriptorSetInfoJson)
+	descriptorInfos.reserve(descriptorSetInfosJson.size());
+	for(const nlohmann::json& descriptorInfoJson: descriptorSetInfosJson)
 	{
 		descriptorInfos.emplace_back(DescriptorInfo
 		{

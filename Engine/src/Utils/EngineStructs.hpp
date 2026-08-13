@@ -167,6 +167,28 @@ namespace mtd
 		std::vector<ResourceID> textureIDs = {};
 	};
 
+	// Descriptor set layout binding data
+	struct DescriptorLayoutBindingData
+	{
+		uint32_t count;
+		vk::DescriptorType type;
+	};
+
+	// Descriptor set layout data
+	struct DescriptorLayoutData
+	{
+		vk::DescriptorSetLayout layout;
+		std::vector<DescriptorLayoutBindingData> bindings;
+	};
+
+	// Descriptor set data
+	struct DescriptorSetData
+	{
+		DescriptorLayoutID layoutID;
+		vk::DescriptorSet set;
+		std::vector<std::vector<ResourceID>> resources;
+	};
+
 	// Compute shader push constant struct
 	struct ComputeShaderPushConstantData
 	{
