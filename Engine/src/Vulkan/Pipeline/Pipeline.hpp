@@ -59,43 +59,6 @@ namespace mtd
 			const std::unordered_map<vk::DescriptorType, uint32_t>& getDescriptorTypeCount() const
 				{ return descriptorTypeCount; }
 
-			// Allocates user descriptor set data in the descriptor pool
-			void configureUserDescriptorData(const Device& mtdDevice, const DescriptorPool& pool)
-			{
-				if(descriptorSetHandlers.size() < userDescriptorSetIndex) return;
-
-				DescriptorSetHandler& descriptorSetHandler = descriptorSetHandlers[userDescriptorSetIndex - 1];
-				pool.allocateDescriptorSet(descriptorSetHandler);
-
-				for(uint32_t binding = 0U; binding < info.descriptorSetInfo.size(); binding++)
-				{
-					const DescriptorInfo& bindingInfo = info.descriptorSetInfo[binding];
-					descriptorSetHandler.createDescriptorResources
-					(
-						mtdDevice,
-						bindingInfo.totalDescriptorSize,
-						PipelineMapping::mapBufferUsageFlags(bindingInfo.descriptorType),
-						binding
-					);
-				}
-				descriptorSetHandler.writeDescriptorSet();
-			}
-
-			// Updates the user descriptor data for the specified binding
-			void updateDescriptorData(uint32_t bindingIndex, const void* data) const
-			{
-				if
-				(
-					descriptorSetHandlers.size() < userDescriptorSetIndex
-					|| descriptorSetHandlers[userDescriptorSetIndex - 1].getBindingCount() <= bindingIndex
-				) return;
-
-				descriptorSetHandlers[userDescriptorSetIndex - 1].updateDescriptorData
-				(
-					bindingIndex, data, info.descriptorSetInfo[bindingIndex].totalDescriptorSize
-				);
-			}
-
 		protected:
 			// Vulkan graphics pipeline
 			vk::Pipeline pipeline;
@@ -111,8 +74,6 @@ namespace mtd
 
 			// Pipeline specific configurations
 			PipelineInfoType info;
-			// Index for the user defined descriptor set
-			uint32_t userDescriptorSetIndex = 2U;
 
 			// Vulkan device reference
 			const vk::Device& device;

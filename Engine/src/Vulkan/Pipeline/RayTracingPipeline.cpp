@@ -1,7 +1,6 @@
 #include <pch.hpp>
 #include "RayTracingPipeline.hpp"
 
-#include "Builders/DescriptorSetBuilder.hpp"
 #include "../../Utils/Logger.hpp"
 
 static constexpr uint32_t MAX_TEXTURE_COUNT = 1024U;
@@ -164,8 +163,6 @@ void mtd::RayTracingPipeline::loadShaderModules()
 
 void mtd::RayTracingPipeline::createDescriptorSetLayouts()
 {
-	descriptorSetHandlers.reserve(info.descriptorSetInfo.size() == 0 ? 1 : 2);
-
 	const uint32_t bindingCount = info.materialTextureTypes.empty() ? 7U : 8U;
 	uint32_t bindingIndex = 0U;
 	std::vector<vk::DescriptorSetLayoutBinding> layoutBindings(bindingCount);
@@ -223,12 +220,6 @@ void mtd::RayTracingPipeline::createDescriptorSetLayouts()
 	}
 
 	descriptorSetHandlers.emplace_back(device, layoutBindings, pDescriptorSetLayoutBindingsCreateInfo);
-
-	if(info.descriptorSetInfo.size() == 0) return;
-	layoutBindings.clear();
-
-	DescriptorSetBuilder::buildDescriptorSetLayout(layoutBindings, info.descriptorSetInfo, descriptorTypeCount);
-	descriptorSetHandlers.emplace_back(device, layoutBindings);
 }
 
 void mtd::RayTracingPipeline::createStorageImages(const Device& mtdDevice, vk::Extent2D swapchainExtent)
@@ -273,6 +264,8 @@ void mtd::RayTracingPipeline::createPipelineLayout(const vk::DescriptorSetLayout
 	std::vector<vk::DescriptorSetLayout> descriptorSetLayouts{globalDescriptorSetLayout};
 	for(const DescriptorSetHandler& descriptorSetHandler: descriptorSetHandlers)
 		descriptorSetLayouts.push_back(descriptorSetHandler.getLayout());
+	for(DescriptorLayoutID layoutID: info.descriptorLayoutIDs)
+		descriptorSetLayouts.push_back(descriptorManager.getLayout(layoutID));
 
 	vk::PushConstantRange pushConstantRange{};
 	pushConstantRange.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eClosestHitKHR;

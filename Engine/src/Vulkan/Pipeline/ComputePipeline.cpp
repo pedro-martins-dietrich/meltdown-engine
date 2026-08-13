@@ -1,7 +1,6 @@
 #include <pch.hpp>
 #include "ComputePipeline.hpp"
 
-#include "Builders/DescriptorSetBuilder.hpp"
 #include "../../Utils/Logger.hpp"
 
 mtd::ComputePipeline::ComputePipeline
@@ -149,8 +148,6 @@ void mtd::ComputePipeline::loadShaderModule()
 
 void mtd::ComputePipeline::createDescriptorSetLayouts()
 {
-	descriptorSetHandlers.reserve(info.descriptorSetInfo.size() == 0 ? 1 : 2);
-
 	std::vector<vk::DescriptorSetLayoutBinding> bindings(2);
 	bindings[0].binding = 0U;
 	bindings[0].descriptorType = vk::DescriptorType::eStorageImage;
@@ -166,12 +163,6 @@ void mtd::ComputePipeline::createDescriptorSetLayouts()
 
 	descriptorSetHandlers.emplace_back(device, bindings);
 	descriptorTypeCount[vk::DescriptorType::eStorageImage] += 3U;
-
-	if(info.descriptorSetInfo.size() == 0) return;
-	bindings.clear();
-
-	DescriptorSetBuilder::buildDescriptorSetLayout(bindings, info.descriptorSetInfo, descriptorTypeCount);
-	descriptorSetHandlers.emplace_back(device, bindings);
 }
 
 void mtd::ComputePipeline::createPipelineLayout(const vk::DescriptorSetLayout& globalDescriptorSetLayout)
@@ -179,6 +170,8 @@ void mtd::ComputePipeline::createPipelineLayout(const vk::DescriptorSetLayout& g
 	std::vector<vk::DescriptorSetLayout> descriptorSetLayouts{globalDescriptorSetLayout};
 	for(const DescriptorSetHandler& descriptorSetHandler: descriptorSetHandlers)
 		descriptorSetLayouts.push_back(descriptorSetHandler.getLayout());
+	for(DescriptorLayoutID layoutID: info.descriptorLayoutIDs)
+		descriptorSetLayouts.push_back(descriptorManager.getLayout(layoutID));
 
 	vk::PushConstantRange pushConstantRange{};
 	pushConstantRange.stageFlags = vk::ShaderStageFlagBits::eCompute;

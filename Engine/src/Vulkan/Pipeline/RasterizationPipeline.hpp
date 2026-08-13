@@ -44,9 +44,6 @@ namespace mtd
 			// Creates the rasterization pipeline
 			void createPipeline(vk::Extent2D extent, vk::RenderPass renderPass);
 
-			// Configures the descriptor set handlers to be used
-			void createDescriptorSetLayouts();
-
 			// Sets the input assembly create info
 			void setInputAssembly(vk::PipelineInputAssemblyStateCreateInfo& inputAssemblyInfo) const;
 			// Sets the viewport create info

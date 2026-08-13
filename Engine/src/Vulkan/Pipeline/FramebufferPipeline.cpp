@@ -2,7 +2,6 @@
 #include "FramebufferPipeline.hpp"
 
 #include "Builders/ColorBlendBuilder.hpp"
-#include "Builders/DescriptorSetBuilder.hpp"
 #include "../../Utils/Logger.hpp"
 
 mtd::FramebufferPipeline::FramebufferPipeline
@@ -111,6 +110,8 @@ void mtd::FramebufferPipeline::createPipelineLayout(const vk::DescriptorSetLayou
 	std::vector<vk::DescriptorSetLayout> descriptorSetLayouts{globalDescriptorSetLayout};
 	for(const DescriptorSetHandler& descriptorSetHandler: descriptorSetHandlers)
 		descriptorSetLayouts.push_back(descriptorSetHandler.getLayout());
+	for(DescriptorLayoutID layoutID: info.descriptorLayoutIDs)
+		descriptorSetLayouts.push_back(descriptorManager.getLayout(layoutID));
 
 	vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
 	pipelineLayoutCreateInfo.flags = vk::PipelineLayoutCreateFlags();
@@ -185,8 +186,6 @@ void mtd::FramebufferPipeline::createPipeline(vk::Extent2D extent, vk::RenderPas
 
 void mtd::FramebufferPipeline::createDescriptorSetLayouts()
 {
-	descriptorSetHandlers.reserve(info.descriptorSetInfo.size() == 0 ? 1 : 2);
-
 	uint32_t imageDescriptorsCount = info.inputAttachments.size()
 		+ info.rayTracingStorageImages.size() + info.computeStorageImages.size();
 	std::vector<vk::DescriptorSetLayoutBinding> layoutBindings(imageDescriptorsCount);
@@ -199,12 +198,6 @@ void mtd::FramebufferPipeline::createDescriptorSetLayouts()
 		layoutBindings[i].pImmutableSamplers = nullptr;
 	}
 
-	descriptorSetHandlers.emplace_back(device, layoutBindings);
-
-	if(info.descriptorSetInfo.size() == 0) return;
-	layoutBindings.clear();
-
-	DescriptorSetBuilder::buildDescriptorSetLayout(layoutBindings, info.descriptorSetInfo, descriptorTypeCount);
 	descriptorSetHandlers.emplace_back(device, layoutBindings);
 }
 

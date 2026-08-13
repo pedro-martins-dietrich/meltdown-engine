@@ -13,7 +13,7 @@
 
 namespace mtd::SceneLoader
 {
-	static constexpr const char* SCENE_LOADER_VERSION = "0.2.1";
+	static constexpr const char* SCENE_LOADER_VERSION = "0.2.2";
 
 	// Loads initial camera data for the scene
 	static void loadCamera(const nlohmann::json& cameraJson);
@@ -60,12 +60,6 @@ namespace mtd::SceneLoader
 		const nlohmann::json& framebufferPipelineJson,
 		std::vector<FramebufferPipelineInfo>& framebufferPipelineInfos,
 		std::vector<RenderPassInfo>& renderOrder
-	);
-
-	// Loads the descriptor set info for a pipeline
-	static void loadDescriptorInfos
-	(
-		const nlohmann::json& descriptorInfosJson, std::vector<DescriptorInfo>& descriptorInfos
 	);
 
 	// Fetches ray tracing meshes from the scene file
@@ -327,9 +321,6 @@ void mtd::SceneLoader::loadRasterizationPipelines
 	const DescriptorManager& descriptorManager
 )
 {
-	std::vector<DescriptorInfo> descriptorInfos;
-	loadDescriptorInfos(rasterizationPipelineJson["descriptor-set-info"], descriptorInfos);
-
 	int32_t targetFramebuffer = rasterizationPipelineJson["target-framebuffer"];
 	if(targetFramebuffer == -1)
 		renderOrder.back().pipelineIndices.emplace_back(static_cast<uint32_t>(rasterizationPipelineInfos.size()));
@@ -342,8 +333,7 @@ void mtd::SceneLoader::loadRasterizationPipelines
 		{
 			rasterizationPipelineJson["name"],
 			rasterizationPipelineJson.value<std::vector<DescriptorLayoutID>>("descriptor-layouts", {}),
-			rasterizationPipelineJson.value<std::vector<DescriptorSetID>>("descriptor-sets", {}),
-			std::move(descriptorInfos)
+			rasterizationPipelineJson.value<std::vector<DescriptorSetID>>("descriptor-sets", {})
 		},
 		rasterizationPipelineJson["vertex-shader"],
 		rasterizationPipelineJson["fragment-shader"],
@@ -360,9 +350,6 @@ void mtd::SceneLoader::loadRayTracingPipelines
 	const nlohmann::json& rtPipelineJson, std::vector<RayTracingPipelineInfo>& rayTracingPipelineInfos
 )
 {
-	std::vector<DescriptorInfo> descriptorInfos;
-	loadDescriptorInfos(rtPipelineJson["descriptor-set-info"], descriptorInfos);
-
 	std::vector<MaterialFloatDataType> floatDataTypes;
 	floatDataTypes.reserve(rtPipelineJson["material-float-data-types"].size());
 	for(const nlohmann::json& floatDataType: rtPipelineJson["material-float-data-types"])
@@ -378,8 +365,7 @@ void mtd::SceneLoader::loadRayTracingPipelines
 		{
 			rtPipelineJson["name"],
 			rtPipelineJson.value<std::vector<DescriptorLayoutID>>("descriptor-layouts", {}),
-			rtPipelineJson.value<std::vector<DescriptorSetID>>("descriptor-sets", {}),
-			std::move(descriptorInfos)
+			rtPipelineJson.value<std::vector<DescriptorSetID>>("descriptor-sets", {})
 		},
 		rtPipelineJson["ray-gen-shader"],
 		rtPipelineJson["closest-hit-shader"],
@@ -400,16 +386,12 @@ void mtd::SceneLoader::loadComputePipelines
 	const nlohmann::json& computePipelineJson, std::vector<ComputePipelineInfo>& computePipelineInfos
 )
 {
-	std::vector<DescriptorInfo> descriptorInfos;
-	loadDescriptorInfos(computePipelineJson["descriptor-set-info"], descriptorInfos);
-
 	computePipelineInfos.emplace_back(ComputePipelineInfo
 	{
 		{
 			computePipelineJson["name"],
 			computePipelineJson.value<std::vector<DescriptorLayoutID>>("descriptor-layouts", {}),
-			computePipelineJson.value<std::vector<DescriptorSetID>>("descriptor-sets", {}),
-			std::move(descriptorInfos)
+			computePipelineJson.value<std::vector<DescriptorSetID>>("descriptor-sets", {})
 		},
 		computePipelineJson["compute-shader"],
 		{
@@ -441,9 +423,6 @@ void mtd::SceneLoader::loadFramebufferPipelines
 	std::vector<RenderPassInfo>& renderOrder
 )
 {
-	std::vector<DescriptorInfo> descriptorInfos;
-	loadDescriptorInfos(fbPipelineJson["descriptor-set-info"], descriptorInfos);
-
 	const nlohmann::json& inputAttachmentsJson = fbPipelineJson["input-attachments"];
 	std::vector<AttachmentIdentifier> inputAttachments(inputAttachmentsJson.size());
 	for(uint32_t i = 0; i < inputAttachmentsJson.size(); i++)
@@ -463,8 +442,7 @@ void mtd::SceneLoader::loadFramebufferPipelines
 		{
 			fbPipelineJson["name"],
 			fbPipelineJson.value<std::vector<DescriptorLayoutID>>("descriptor-layouts", {}),
-			fbPipelineJson.value<std::vector<DescriptorSetID>>("descriptor-sets", {}),
-			std::move(descriptorInfos)
+			fbPipelineJson.value<std::vector<DescriptorSetID>>("descriptor-sets", {})
 		},
 		fbPipelineJson["vertex-shader"],
 		fbPipelineJson["fragment-shader"],
@@ -474,24 +452,6 @@ void mtd::SceneLoader::loadFramebufferPipelines
 		fbPipelineJson["ray-tracing-storage-images"],
 		fbPipelineJson["dependencies"]
 	});
-}
-
-void mtd::SceneLoader::loadDescriptorInfos
-(
-	const nlohmann::json& descriptorSetInfosJson, std::vector<DescriptorInfo>& descriptorInfos
-)
-{
-	descriptorInfos.reserve(descriptorSetInfosJson.size());
-	for(const nlohmann::json& descriptorInfoJson: descriptorSetInfosJson)
-	{
-		descriptorInfos.emplace_back(DescriptorInfo
-		{
-			"",
-			static_cast<DescriptorType>(descriptorInfoJson.value("descriptor-type", 0U)),
-			static_cast<ShaderStage>(descriptorInfoJson.value("shader-stage", 2U)),
-			descriptorInfoJson.value("descriptor-count", 1U)
-		});
-	}
 }
 
 void mtd::SceneLoader::loadRayTracingMeshes

@@ -4,7 +4,6 @@
 #include "Builders/PipelineMapping.hpp"
 #include "Builders/VertexInputBuilder.hpp"
 #include "Builders/ColorBlendBuilder.hpp"
-#include "Builders/DescriptorSetBuilder.hpp"
 #include "../../Utils/Logger.hpp"
 
 mtd::RasterizationPipeline::RasterizationPipeline
@@ -17,7 +16,6 @@ mtd::RasterizationPipeline::RasterizationPipeline
 	vk::RenderPass renderPass
 ) : Pipeline{device, descriptorManager, info}
 {
-	createDescriptorSetLayouts();
 	loadShaderModules();
 	createPipelineLayout(globalDescriptorSetLayout);
 	createPipeline(extent, renderPass);
@@ -58,7 +56,8 @@ void mtd::RasterizationPipeline::pushConstant(vk::CommandBuffer commandBuffer, c
 {
 	commandBuffer.pushConstants
 	(
-		pipelineLayout, vk::ShaderStageFlagBits::eVertex, 0U, sizeof(uint32_t), &constantData
+		pipelineLayout, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
+		0U, sizeof(uint32_t), &constantData
 	);
 }
 
@@ -72,11 +71,11 @@ void mtd::RasterizationPipeline::loadShaderModules()
 void mtd::RasterizationPipeline::createPipelineLayout(vk::DescriptorSetLayout globalDescriptorSetLayout)
 {
 	std::vector<vk::DescriptorSetLayout> descriptorSetLayouts{globalDescriptorSetLayout};
-	for(DescriptorSetID setID: info.descriptorSetIDs)
-		descriptorSetLayouts.emplace_back(descriptorManager.getLayout(setID));
+	for(DescriptorLayoutID layoutID: info.descriptorLayoutIDs)
+		descriptorSetLayouts.emplace_back(descriptorManager.getLayout(layoutID));
 
 	vk::PushConstantRange pushConstantRange{};
-	pushConstantRange.stageFlags = vk::ShaderStageFlagBits::eVertex;
+	pushConstantRange.stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment;
 	pushConstantRange.offset = 0U;
 	pushConstantRange.size = sizeof(uint32_t);
 
@@ -149,16 +148,6 @@ void mtd::RasterizationPipeline::createPipeline(vk::Extent2D extent, vk::RenderP
 		return;
 	}
 	LOG_INFO("Created graphics pipeline.\n");
-}
-
-void mtd::RasterizationPipeline::createDescriptorSetLayouts()
-{
-	userDescriptorSetIndex = 1U;
-	if(info.descriptorSetInfo.size() == 0) return;
-	
-	std::vector<vk::DescriptorSetLayoutBinding> bindings;
-	DescriptorSetBuilder::buildDescriptorSetLayout(bindings, info.descriptorSetInfo, descriptorTypeCount);
-	descriptorSetHandlers.emplace_back(device, bindings);
 }
 
 void mtd::RasterizationPipeline::setInputAssembly(vk::PipelineInputAssemblyStateCreateInfo& inputAssemblyInfo) const

@@ -64,24 +64,7 @@ namespace mtd
 	}
 
 	/*
-	* @brief Information about how a descriptor set binding will be used.
-	*/
-	struct DescriptorInfo
-	{
-		/* @brief Name of the GPU resource to link to this descriptor. */
-		std::string resourceName;
-		/* @brief Data type that will be used in the binding. */
-		DescriptorType descriptorType;
-		/* @brief Shader stage(s) where the descriptor can be accessed. */
-		ShaderStage shaderStage;
-		/* @brief Array size of the descriptor, if accessed as an array. */
-		uint32_t descriptorCount = 1U;
-		/* @brief Size, in bytes, of the descriptor data. If used as an array, the size of the whole array. */
-		size_t totalDescriptorSize = 16UL;
-	};
-
-	/*
-	* @brief Information required to create a descriptor set layout.
+	* @brief Information required to create the descriptor binding for a layout.
 	*/
 	struct DescriptorLayoutBindingInfo
 	{
@@ -143,8 +126,6 @@ namespace mtd
 		std::vector<DescriptorLayoutID> descriptorLayoutIDs;
 		/* @brief Pipeline's descriptor set ID. */
 		std::vector<DescriptorSetID> descriptorSetIDs;
-		/* @brief Info about each binding for the user defined descriptor set (set = 2). */
-		std::vector<DescriptorInfo> descriptorSetInfo = {};
 	};
 
 	/*

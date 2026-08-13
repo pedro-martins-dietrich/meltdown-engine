@@ -64,7 +64,7 @@ void mtd::Engine::run(Window& window, const std::function<void(double)>& onUpdat
 			loadScene(sceneFileToLoad.c_str());
 
 		PROFILER_START_FRAME("Update descriptors");
-		updateDescriptors();
+		resourceManager.updateBufferData(cameraResourceID, sizeof(CameraMatrices), camera.fetchUpdatedMatrices());
 
 		renderer.render
 		(
@@ -93,10 +93,6 @@ void mtd::Engine::run(Window& window, const std::function<void(double)>& onUpdat
 
 void mtd::Engine::loadScene(const char* sceneFile)
 {
-	{
-		std::lock_guard lock{pendingDescriptorUpdateMutex};
-		pendingDescriptorUpdates.clear();
-	}
 	device.getDevice().waitIdle();
 	framebuffers.clear();
 	pipelines.rasterizationPipelines.clear();
@@ -178,34 +174,12 @@ void mtd::Engine::updateLoop(const std::function<void(double)>& onUpdateCallback
 	}
 }
 
-void mtd::Engine::updateDescriptors()
-{
-	resourceManager.updateBufferData(cameraResourceID, sizeof(CameraMatrices), camera.fetchUpdatedMatrices());
-
-	std::lock_guard lock{pendingDescriptorUpdateMutex};
-	for(const auto& [key, data]: pendingDescriptorUpdates)
-	{
-		uint32_t pipelineIndex = key >> 32;
-		if(pipelineIndex >= pipelines.rasterizationPipelines.size()) continue;
-
-		uint32_t binding = key & 0xFFFFFFFF;
-		pipelines.rasterizationPipelines[pipelineIndex].updateDescriptorData(binding, data);
-	}
-	pendingDescriptorUpdates.clear();
-}
-
 void mtd::Engine::configureEventCallbacks()
 {
 	changeSceneCallbackHandle = EventManager::addCallback([this](const ChangeSceneEvent& event)
 	{
 		sceneFileToLoad = event.getSceneName();
 		shouldLoadScene.store(true);
-	});
-	updateDescriptorDataCallbackHandle = EventManager::addCallback([this](const UpdateDescriptorDataEvent& event)
-	{
-		uint64_t key = static_cast<uint64_t>(event.getPipelineIndex()) << 32 | event.getBinding();
-		std::lock_guard lock{pendingDescriptorUpdateMutex};
-		pendingDescriptorUpdates[key] = event.getData();
 	});
 	windowResizeCallbackHandle = EventManager::addCallback([this](const WindowResizeEvent& event)
 	{
@@ -353,23 +327,12 @@ void mtd::Engine::configureDescriptors()
 
 	globalDescriptorSetHandler->writeDescriptorSet();
 
-	for(RasterizationPipeline& rasterizationPipeline: pipelines.rasterizationPipelines)
-		rasterizationPipeline.configureUserDescriptorData(device, scene.getDescriptorPool());
 	for(ComputePipeline& computePipeline: pipelines.computePipelines)
-	{
-		computePipeline.configureUserDescriptorData(device, scene.getDescriptorPool());
 		computePipeline.configurePipelineDescriptorSet();
-	}
 	for(RayTracingPipeline& rtPipeline: pipelines.rayTracingPipelines)
-	{
-		rtPipeline.configureUserDescriptorData(device, scene.getDescriptorPool());
 		rtPipeline.configurePipelineDescriptorSet();
-	}
 	for(FramebufferPipeline& fbPipeline: pipelines.framebufferPipelines)
-	{
-		fbPipeline.configureUserDescriptorData(device, scene.getDescriptorPool());
 		fbPipeline.updateInputImagesDescriptors(framebuffers, pipelines.computePipelines, pipelines.rayTracingPipelines);
-	}
 }
 
 void mtd::Engine::updateEngine(WindowHandler* const pWindowHandler)
