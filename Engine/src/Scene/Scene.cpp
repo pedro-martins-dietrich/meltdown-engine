@@ -5,8 +5,7 @@
 #include "../Utils/Logger.hpp"
 #include "../Vulkan/Mesh/MeshManager.hpp"
 
-mtd::Scene::Scene(const Device& mtdDevice)
-	: texturePool{}, instanceManager{}, descriptorPool{mtdDevice.getDevice()}
+mtd::Scene::Scene(const Device& mtdDevice) : instanceManager{}, descriptorPool{mtdDevice.getDevice()}
 {}
 
 void mtd::Scene::loadScene
@@ -35,8 +34,7 @@ void mtd::Scene::loadScene
 		resourceManager,
 		descriptorManager,
 		instanceManager,
-		gpuResources,
-		texturePool
+		gpuResources
 	);
 }
 
@@ -113,6 +111,12 @@ void mtd::Scene::configureSceneDescriptorSet
 )
 {
 	vk::DescriptorBufferInfo bufferInfo{};
+	std::vector<vk::DescriptorImageInfo> descriptorImageInfos;
+
+	gpuResources.materialBufferID = resourceManager.getResourceID("MaterialBuffer");
+	gpuResources.materialIndexingBufferID = resourceManager.getResourceID("MaterialIndexingBuffer");
+	gpuResources.materialSetBufferID = resourceManager.getResourceID("MaterialSetBuffer");
+
 	if(resourceManager.fetchDescriptorBufferInfo(gpuResources.cameraResourceID, bufferInfo))
 		descriptorSetHandler.assignBuffer(0U, bufferInfo);
 	if(resourceManager.fetchDescriptorBufferInfo(gpuResources.vertexBufferID, bufferInfo))
@@ -121,15 +125,8 @@ void mtd::Scene::configureSceneDescriptorSet
 		descriptorSetHandler.assignBuffer(2U, bufferInfo);
 	if(resourceManager.fetchDescriptorBufferInfo(gpuResources.submeshBufferID, bufferInfo))
 		descriptorSetHandler.assignBuffer(3U, bufferInfo);
-
-	std::vector<vk::DescriptorImageInfo> descriptorImageInfos;
-	texturePool.fetchTextureDescriptorInfos(resourceManager, descriptorImageInfos);
-	descriptorSetHandler.createImagesDescriptorResources(4U, descriptorImageInfos);
-
-	gpuResources.materialBufferID = resourceManager.getResourceID("MaterialBuffer");
-	gpuResources.materialIndexingBufferID = resourceManager.getResourceID("MaterialIndexingBuffer");
-	gpuResources.materialSetBufferID = resourceManager.getResourceID("MaterialSetBuffer");
-
+	if(resourceManager.fetchDescriptorImageInfos(gpuResources.textureIDs, descriptorImageInfos))
+		descriptorSetHandler.createImagesDescriptorResources(4U, descriptorImageInfos);
 	if(resourceManager.fetchDescriptorBufferInfo(gpuResources.materialBufferID, bufferInfo))
 		descriptorSetHandler.assignBuffer(5U, bufferInfo);
 	if(resourceManager.fetchDescriptorBufferInfo(gpuResources.materialIndexingBufferID, bufferInfo))
@@ -172,7 +169,7 @@ uint32_t mtd::Scene::getTotalTextureCount() const
 	for(const std::unique_ptr<MeshManager>& pMeshManager: meshManagers)
 		count += pMeshManager->getTextureCount();
 
-	count += MAX_TEXTURE_POOL_SIZE;
+	count += gpuResources.textureIDs.size() + 1U;
 
 	return count;
 }

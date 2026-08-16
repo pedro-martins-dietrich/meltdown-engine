@@ -21,6 +21,24 @@ namespace mtd::SceneLoader
 	// Loads the GPU resources from the scene file and allocates them
 	static void loadGpuResources(const nlohmann::json& resourcesInfoJson, ResourceManager& resourceManager);
 
+	// Fetches all material files and material sets from the scene file and loads them
+	static void loadMaterials
+	(
+		const nlohmann::json& texturesJson,
+		const nlohmann::json& materialsJson,
+		const nlohmann::json& materialSetsJson,
+		ResourceManager& resourceManager,
+		SceneResources& sceneResources
+	);
+	// Fetches all mesh files from the scene file and loads them
+	static void loadMeshes
+	(
+		const nlohmann::json& meshJson,
+		ResourceManager& resourceManager,
+		SceneResources& sceneResources,
+		std::vector<MeshData>& meshes
+	);
+
 	// Loads descriptor set layout infos from the scene file
 	static void loadDescriptorLayouts
 	(
@@ -31,7 +49,8 @@ namespace mtd::SceneLoader
 	(
 		const nlohmann::json& descriptorSetsJson,
 		DescriptorManager& descriptorManager,
-		const ResourceManager& resourceManager
+		const ResourceManager& resourceManager,
+		const SceneResources& sceneResources
 	);
 
 	// Fetches the framebuffer info from the scene file
@@ -71,28 +90,6 @@ namespace mtd::SceneLoader
 		std::vector<std::unique_ptr<MeshManager>>& meshManagers
 	);
 
-	// Fetches all textures from the scene file
-	static void loadTextures
-	(
-		const nlohmann::json& texturesJson, ResourceManager& resourceManager, TexturePool& texturePool
-	);
-	// Fetches all material files and material sets from the scene file and loads them
-	static void loadMaterials
-	(
-		const nlohmann::json& materialsJson,
-		const nlohmann::json& materialSetsJson,
-		ResourceManager& resourceManager,
-		SceneResources& sceneResources
-	);
-	// Fetches all mesh files from the scene file and loads them
-	static void loadMeshes
-	(
-		const nlohmann::json& meshJson,
-		ResourceManager& resourceManager,
-		SceneResources& sceneResources,
-		std::vector<MeshData>& meshes
-	);
-
 	// Loads all instances from the scene file
 	static void loadInstances(const nlohmann::json& instancesJson, InstanceManager& instanceManager);
 }
@@ -109,8 +106,7 @@ void mtd::SceneLoader::load
 	ResourceManager& resourceManager,
 	DescriptorManager& descriptorManager,
 	InstanceManager& instanceManager,
-	SceneResources& sceneResources,
-	TexturePool& texturePool
+	SceneResources& sceneResources
 )
 {
 	std::string scenePath{MTD_RESOURCES_PATH};
@@ -129,12 +125,14 @@ void mtd::SceneLoader::load
 
 	loadCamera(sceneJson["camera"]);
 	loadGpuResources(sceneJson["gpu-resources"], resourceManager);
-	loadTextures(sceneJson["textures"], resourceManager, texturePool);
-	loadMaterials(sceneJson["materials"], sceneJson["material-sets"], resourceManager, sceneResources);
+	loadMaterials
+	(
+		sceneJson["textures"], sceneJson["materials"], sceneJson["material-sets"], resourceManager, sceneResources
+	);
 	loadMeshes(sceneJson["meshes"], resourceManager, sceneResources, meshes);
 
 	loadDescriptorLayouts(sceneJson["descriptor-layouts"], descriptorManager);
-	loadDescriptorSets(sceneJson["descriptor-sets"], descriptorManager, resourceManager);
+	loadDescriptorSets(sceneJson["descriptor-sets"], descriptorManager, resourceManager, sceneResources);
 
 	const nlohmann::json& framebuffersJson = sceneJson["framebuffers"];
 	const nlohmann::json& rasterPipelinesJson = sceneJson["rasterization-pipelines"];
@@ -238,6 +236,65 @@ void mtd::SceneLoader::loadGpuResources(const nlohmann::json& resourcesInfoJson,
 	);
 }
 
+void mtd::SceneLoader::loadMaterials
+(
+	const nlohmann::json& texturesJson,
+	const nlohmann::json& materialsJson,
+	const nlohmann::json& materialSetsJson,
+	ResourceManager& resourceManager,
+	SceneResources& sceneResources
+)
+{
+	std::vector<std::string> textureInfos;
+	textureInfos.reserve(texturesJson.size());
+	for(const std::string& path: texturesJson)
+		textureInfos.emplace_back(MTD_RESOURCES_PATH + path);
+
+	MaterialLoader::loadTextures(resourceManager, textureInfos, sceneResources.textureIDs);
+
+	std::vector<std::string> materialPaths;
+	materialPaths.reserve(materialsJson.size());
+	for(const std::string& path: materialsJson)
+		materialPaths.emplace_back(MTD_RESOURCES_PATH + path);
+
+	std::vector<std::vector<uint32_t>> materialSets;
+	materialSetsJson.get_to(materialSets);
+
+	MaterialLoader::loadMaterials
+	(
+		resourceManager, materialPaths, materialSets,
+		sceneResources.materialBufferID,
+		sceneResources.materialIndexingBufferID,
+		sceneResources.materialSetBufferID
+	);
+
+	LOG_INFO("Loaded %d textures and %d materials.", textureInfos.size(), materialPaths.size());
+}
+
+void mtd::SceneLoader::loadMeshes
+(
+	const nlohmann::json& meshJson,
+	ResourceManager& resourceManager,
+	SceneResources& sceneResources,
+	std::vector<MeshData>& meshes
+)
+{
+	std::vector<std::string> meshPaths;
+	meshPaths.reserve(meshJson.size());
+	for(const std::string& path: meshJson)
+		meshPaths.emplace_back(MTD_RESOURCES_PATH + path);
+
+	MeshLoader::loadMeshes
+	(
+		resourceManager,
+		meshPaths,
+		meshes,
+		sceneResources.vertexBufferID,
+		sceneResources.indexBufferID,
+		sceneResources.submeshBufferID
+	);
+}
+
 void mtd::SceneLoader::loadDescriptorLayouts
 (
 	const nlohmann::json& descriptorLayoutsJson, DescriptorManager& descriptorManager
@@ -267,7 +324,8 @@ void mtd::SceneLoader::loadDescriptorSets
 (
 	const nlohmann::json& descriptorSetsJson,
 	DescriptorManager& descriptorManager,
-	const ResourceManager& resourceManager
+	const ResourceManager& resourceManager,
+	const SceneResources& sceneResources
 )
 {
 	for(const nlohmann::json& setJson: descriptorSetsJson)
@@ -281,9 +339,16 @@ void mtd::SceneLoader::loadDescriptorSets
 			std::vector<ResourceID> ids;
 			ids.reserve(resourceNames.size());
 
+			if(resourceNames.size() == 1 && resourceNames[0].get_ref<const std::string&>() == "Textures")
+			{
+				setInfo.resources.emplace_back(sceneResources.textureIDs);
+				continue;
+			}
+
 			for(const nlohmann::json& resourceName: resourceNames)
 			{
 				const std::string& name = resourceName.get_ref<const std::string&>();
+
 				ResourceID id = resourceManager.getResourceID(name);
 				if(id != 0U)
 					ids.emplace_back(id);
@@ -477,70 +542,6 @@ void mtd::SceneLoader::loadRayTracingMeshes
 
 		pMeshManager->createNewMesh(i, id.c_str(), file.c_str(), *pPreTransforms);
 	}
-}
-
-void mtd::SceneLoader::loadTextures
-(
-	const nlohmann::json& texturesJson, ResourceManager& resourceManager, TexturePool& texturePool
-)
-{
-	std::vector<std::string> textureInfos;
-	textureInfos.reserve(texturesJson.size());
-	for(const std::string& path: texturesJson)
-		textureInfos.emplace_back(MTD_RESOURCES_PATH + path);
-
-	texturePool.loadTextures(resourceManager, textureInfos);
-
-	LOG_VERBOSE("Loaded %d textures.", textureInfos.size());
-}
-
-void mtd::SceneLoader::loadMaterials
-(
-	const nlohmann::json& materialsJson,
-	const nlohmann::json& materialSetsJson,
-	ResourceManager& resourceManager,
-	SceneResources& sceneResources
-)
-{
-	std::vector<std::string> materialPaths;
-	materialPaths.reserve(materialsJson.size());
-	for(const std::string& path: materialsJson)
-		materialPaths.emplace_back(MTD_RESOURCES_PATH + path);
-
-	std::vector<std::vector<uint32_t>> materialSets;
-	materialSetsJson.get_to(materialSets);
-
-	MaterialLoader::loadMaterials
-	(
-		resourceManager, materialPaths, materialSets,
-		sceneResources.materialBufferID,
-		sceneResources.materialIndexingBufferID,
-		sceneResources.materialSetBufferID
-	);
-}
-
-void mtd::SceneLoader::loadMeshes
-(
-	const nlohmann::json& meshJson,
-	ResourceManager& resourceManager,
-	SceneResources& sceneResources,
-	std::vector<MeshData>& meshes
-)
-{
-	std::vector<std::string> meshPaths;
-	meshPaths.reserve(meshJson.size());
-	for(const std::string& path: meshJson)
-		meshPaths.emplace_back(MTD_RESOURCES_PATH + path);
-
-	MeshLoader::loadMeshes
-	(
-		resourceManager,
-		meshPaths,
-		meshes,
-		sceneResources.vertexBufferID,
-		sceneResources.indexBufferID,
-		sceneResources.submeshBufferID
-	);
 }
 
 void mtd::SceneLoader::loadInstances(const nlohmann::json& instancesJson, InstanceManager& instanceManager)

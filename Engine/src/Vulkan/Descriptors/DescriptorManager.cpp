@@ -6,6 +6,9 @@
 
 namespace mtd
 {
+    using ResourceDescriptorsMapIterator
+        = std::unordered_map<ResourceID, std::vector<DescriptorIdentifier>>::const_iterator;
+
     // Checks if the descriptor type corresponds to a GPU buffer
     static bool isBufferDescriptor(vk::DescriptorType type);
     // Checks if the descriptor type corresponds to a GPU image
@@ -60,6 +63,7 @@ mtd::DescriptorLayoutID mtd::DescriptorManager::createLayout
         layoutData.bindings[i].count = bindings[i].descriptorCount;
 
         totalDescriptorTypeCount[bindings[i].descriptorType] += bindings[i].descriptorCount;
+        totalBindingsCount++;
     }
 
     vk::DescriptorSetLayoutCreateInfo layoutCreateInfo{};
@@ -88,11 +92,13 @@ mtd::DescriptorSetID mtd::DescriptorManager::allocateSet(DescriptorSetInfo& desc
         return UINT32_MAX;
     }
 
+    const DescriptorLayoutData& layout = layouts[descriptorSetInfo.layoutID];
+
     DescriptorSetData setData;
     setData.layoutID = descriptorSetInfo.layoutID;
     setData.resources = std::move(descriptorSetInfo.resources);
 
-    std::vector<vk::DescriptorSetLayout> vulkanLayouts(count, layouts[setData.layoutID].layout);
+    std::vector<vk::DescriptorSetLayout> vulkanLayouts(count, layout.layout);
     std::vector<vk::DescriptorSet> vulkanSets(count);
 
     vk::DescriptorSetAllocateInfo setAllocateInfo{};
@@ -110,6 +116,24 @@ mtd::DescriptorSetID mtd::DescriptorManager::allocateSet(DescriptorSetInfo& desc
     {
         setData.set = vulkanSets[i];
         sets.emplace_back(setData);
+
+        for(uint32_t bindingIndex = 0U; bindingIndex < setData.resources.size(); bindingIndex++)
+        {
+            if(isBufferDescriptor(layout.bindings[bindingIndex].type))
+                totalBufferResourcesCount += layout.bindings[bindingIndex].count;
+            else if(isImageDescriptor(layout.bindings[bindingIndex].type))
+                totalImageResourcesCount += layout.bindings[bindingIndex].count;
+
+            DescriptorIdentifier descriptorIdentity{setID, bindingIndex};
+            for(ResourceID resourceID: setData.resources[bindingIndex])
+            {
+                ResourceDescriptorsMapIterator it = resourceDescriptorsMap.find(resourceID);
+                if(it == resourceDescriptorsMap.cend())
+                    resourceDescriptorsMap[resourceID] = {descriptorIdentity};
+                else
+                    resourceDescriptorsMap.at(resourceID).emplace_back(descriptorIdentity);
+            }
+        }
     }
 
     return setID;
@@ -119,28 +143,15 @@ void mtd::DescriptorManager::writeAll()
 {
     if(sets.size() == 0) return;
 
-    assert(totalDescriptorCount > 0U && "Cannot write descriptors if none have been allocated.");
+    assert(totalBindingsCount > 0U && "Cannot write descriptors if none have been allocated.");
 
-    std::vector<vk::WriteDescriptorSet> writeOperations(totalDescriptorCount);
+    std::vector<vk::WriteDescriptorSet> writeOperations(totalBindingsCount);
     size_t operationIndex = 0;
 
     std::vector<vk::DescriptorBufferInfo> bufferInfos;
     std::vector<vk::DescriptorImageInfo> imageInfos;
-    bufferInfos.reserve
-    (
-        totalDescriptorTypeCount[vk::DescriptorType::eUniformBuffer]
-        + totalDescriptorTypeCount[vk::DescriptorType::eStorageBuffer]
-        + totalDescriptorTypeCount[vk::DescriptorType::eUniformBufferDynamic]
-        + totalDescriptorTypeCount[vk::DescriptorType::eStorageBufferDynamic]
-    );
-    imageInfos.reserve
-    (
-        totalDescriptorTypeCount[vk::DescriptorType::eSampler]
-        + totalDescriptorTypeCount[vk::DescriptorType::eCombinedImageSampler]
-        + totalDescriptorTypeCount[vk::DescriptorType::eSampledImage]
-        + totalDescriptorTypeCount[vk::DescriptorType::eStorageImage]
-        + totalDescriptorTypeCount[vk::DescriptorType::eInputAttachment]
-    );
+    bufferInfos.reserve(totalBufferResourcesCount);
+    imageInfos.reserve(totalImageResourcesCount);
 
     for(DescriptorSetID setID = 0U; setID < sets.size(); setID++)
     {
@@ -170,12 +181,24 @@ void mtd::DescriptorManager::write(DescriptorSetID setID, uint32_t binding)
     mtdDevice.getDevice().updateDescriptorSets(1U, &writeOperation, 0U, nullptr);
 }
 
+void mtd::DescriptorManager::updateResourceDescriptors(ResourceID resourceID)
+{
+    ResourceDescriptorsMapIterator it = resourceDescriptorsMap.find(resourceID);
+    if(it == resourceDescriptorsMap.cend()) return;
+
+    for(DescriptorIdentifier descriptorIdentity: it->second)
+        write(descriptorIdentity.setID, descriptorIdentity.binding);
+}
+
 void mtd::DescriptorManager::clear()
 {
     if(pool)
         mtdDevice.getDevice().destroyDescriptorPool(pool);
     pool = nullptr;
 
+    totalBindingsCount = 0;
+    totalBufferResourcesCount = 0;
+    totalImageResourcesCount = 0;
     totalDescriptorTypeCount.clear();
 
     for(DescriptorLayoutData& layoutData: layouts)
@@ -188,7 +211,6 @@ void mtd::DescriptorManager::createPool()
 {
     assert(!pool && "The descriptor pool has already been created.");
 
-    totalDescriptorCount = 0U;
     std::vector<vk::DescriptorPoolSize> poolSizes;
     poolSizes.reserve(totalDescriptorTypeCount.size());
 
@@ -196,10 +218,9 @@ void mtd::DescriptorManager::createPool()
     {
         if(count == 0U) continue;
         poolSizes.emplace_back(type, count);
-        totalDescriptorCount += count;
     }
 
-    if(totalDescriptorCount == 0U)
+    if(poolSizes.size() == 0U)
     {
         LOG_VERBOSE("No descriptors being used. Descriptor pool will not be created.");
         return;
@@ -227,6 +248,7 @@ void mtd::DescriptorManager::buildWriteOperation
     
     assert(binding < layouts[layoutID].bindings.size() && "Binding out of bounds for descriptor layout.");
     const DescriptorLayoutBindingData& bindingData = layouts[layoutID].bindings[binding];
+    const std::vector<ResourceID>& descriptorResources = sets[setID].resources[binding];
 
     writeOperation.dstSet = sets[setID].set;
     writeOperation.dstBinding = binding;
@@ -240,23 +262,25 @@ void mtd::DescriptorManager::buildWriteOperation
 
     if(isBufferDescriptor(bindingData.type))
     {
-        for(ResourceID resourceID: sets[setID].resources[binding])
+        size_t offset = bufferInfos.size();
+        for(ResourceID resourceID: descriptorResources)
         {
             vk::DescriptorBufferInfo bufferInfo;
             if(resourceManager.fetchDescriptorBufferInfo(resourceID, bufferInfo))
                 bufferInfos.emplace_back(bufferInfo);
         }
-        writeOperation.pBufferInfo = bufferInfos.data();
+        writeOperation.pBufferInfo = &(bufferInfos[offset]);
     }
     else if(isImageDescriptor(bindingData.type))
     {
-        for(ResourceID resourceID: sets[setID].resources[binding])
+        size_t offset = imageInfos.size();
+        for(ResourceID resourceID: descriptorResources)
         {
             vk::DescriptorImageInfo imageInfo;
             if(resourceManager.fetchDescriptorImageInfo(resourceID, imageInfo))
                 imageInfos.emplace_back(imageInfo);
         }
-        writeOperation.pImageInfo = imageInfos.data();
+        writeOperation.pImageInfo = &(imageInfos[offset]);
     }
     else
     {

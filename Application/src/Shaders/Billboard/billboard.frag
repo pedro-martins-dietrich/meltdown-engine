@@ -13,7 +13,7 @@ layout(location = 1) flat in uint materialIdOffset;
 
 layout(location = 0) out vec4 outColor;
 
-layout(set = 0, binding = 4) uniform sampler2D textures[1024];
+layout(set = 0, binding = 4) uniform sampler2D textures[8];
 layout(set = 0, binding = 5) readonly buffer Materials
 {
 	MaterialData materialData[];

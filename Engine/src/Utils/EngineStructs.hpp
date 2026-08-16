@@ -189,6 +189,13 @@ namespace mtd
 		std::vector<std::vector<ResourceID>> resources;
 	};
 
+	// Indentifier for a single descriptor
+	struct DescriptorIdentifier
+	{
+		DescriptorSetID setID;
+		uint32_t binding;
+	};
+
 	// Compute shader push constant struct
 	struct ComputeShaderPushConstantData
 	{

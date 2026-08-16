@@ -20,6 +20,7 @@ void mtd::RenderObjectManager::createFrameRenderObjects
     const std::vector<MeshData>& meshes,
     const std::vector<SceneInstance>& sceneInstances,
     std::vector<DrawBatch>& drawBatches,
+    DescriptorManager& descriptorManager,
     DescriptorSetHandler& descriptorSetHandler
 )
 {
@@ -84,7 +85,7 @@ void mtd::RenderObjectManager::createFrameRenderObjects
 
     visibleInstances.clear();
 
-    updateBufferData(resourceManager, descriptorSetHandler);
+    updateBufferData(resourceManager, descriptorManager, descriptorSetHandler);
 
     renderObjectCount = renderObjects.size();
     renderObjects.clear();
@@ -120,7 +121,7 @@ void mtd::RenderObjectManager::bindBuffer
 
 void mtd::RenderObjectManager::updateBufferData
 (
-    ResourceManager& resourceManager, DescriptorSetHandler& descriptorSetHandler
+    ResourceManager& resourceManager, DescriptorManager& descriptorManager, DescriptorSetHandler& descriptorSetHandler
 )
 {
     assert(renderObjectBufferID != 0U && "The render objects buffer must be created before updating it.");
@@ -131,6 +132,7 @@ void mtd::RenderObjectManager::updateBufferData
     {
         resourceManager.resizeBuffer(renderObjectBufferID, minimumBufferSize);
         updateDescriptor(resourceManager, descriptorSetHandler);
+        descriptorManager.updateResourceDescriptors(renderObjectBufferID);
     }
 
     if(!resourceManager.updateBufferData(renderObjectBufferID, minimumBufferSize, renderObjects.data()))

@@ -22,6 +22,7 @@ void mtd::Renderer::render
 	const PipelineBundle& pipelines,
 	const Scene& scene,
 	ResourceManager& resourceManager,
+	DescriptorManager& descriptorManager,
 	DescriptorSetHandler& globalDescriptorSet,
 	DrawInfo& drawInfo,
 	std::atomic<bool>& shouldUpdateEngine
@@ -32,7 +33,7 @@ void mtd::Renderer::render
 	std::vector<DrawBatch> drawBatches;
 	renderObjectManager.createFrameRenderObjects
 	(
-		resourceManager, scene.getMeshes(), scene.getInstances(), drawBatches, globalDescriptorSet
+		resourceManager, scene.getMeshes(), scene.getInstances(), drawBatches, descriptorManager, globalDescriptorSet
 	);
 
 	PROFILER_NEXT_STAGE("Render - Acquire frame");
@@ -98,12 +99,16 @@ void mtd::Renderer::render
 	currentFrameIndex = shouldUpdateEngine.load() ? 0U : (currentFrameIndex + 1U) % swapchain.getFrameCount();
 }
 
-void mtd::Renderer::configureRendererDescriptor
-(
-	ResourceManager& resourceManager, DescriptorSetHandler& descriptorSetHandler
-)
+void mtd::Renderer::createRenderObjectsBuffer(ResourceManager& resourceManager)
 {
 	renderObjectManager.createBuffer(resourceManager);
+}
+
+void mtd::Renderer::configureRendererDescriptor
+(
+	const ResourceManager& resourceManager, DescriptorSetHandler& descriptorSetHandler
+)
+{
 	renderObjectManager.updateDescriptor(resourceManager, descriptorSetHandler);
 }
 

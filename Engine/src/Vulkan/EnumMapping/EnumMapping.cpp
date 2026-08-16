@@ -61,6 +61,8 @@ vk::DescriptorType mtd::EnumMapping::getDescriptorType(DescriptorType descriptor
             return vk::DescriptorType::eStorageBuffer;
         case DescriptorType::StorageImage:
             return vk::DescriptorType::eStorageImage;
+        case DescriptorType::CombinedImageSampler:
+            return vk::DescriptorType::eCombinedImageSampler;
         default:
             LOG_ERROR("Unhandled descriptor type enum: %d", static_cast<uint32_t>(descriptorType));
     }

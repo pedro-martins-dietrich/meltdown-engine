@@ -2,6 +2,7 @@
 #include "MaterialLoader.hpp"
 
 #include "../Utils/EngineStructs.hpp"
+#include "../Utils/FileHandler.hpp"
 #include "../Utils/Logger.hpp"
 #include "../Utils/StringParser.hpp"
 
@@ -11,7 +12,73 @@ namespace mtd::MaterialLoader
     constexpr uint64_t MATERIAL_FILE_VERSION = 1UL;
     constexpr size_t MATERIAL_ALIGNMENT = 16UL;
 
+    static constexpr UIntVec2 MISSING_TEXTURE_DIMENSIONS{16U, 16U};
+    static constexpr std::array<uint32_t, 256> MISSING_TEXTURE = []() constexpr
+    {
+        std::array<uint32_t, 256> texture{};
+        for(size_t i = 0; i < 256; i++)
+            texture[i] = (i % 2 ^ (i >> 4) % 2) ? 0xFF000000 : 0xFFFF00FF;
+        return texture;
+    }();
+
     static bool loadFromFile(std::string_view filePath, std::vector<std::byte>& materialData);
+}
+
+void mtd::MaterialLoader::loadTextures
+(
+    ResourceManager& resourceManager,
+    const std::vector<std::string>& texturePaths,
+    std::vector<ResourceID>& textureIDs
+)
+{
+    textureIDs.clear();
+    textureIDs.reserve(texturePaths.size());
+
+    ResourceID missingTextureID = resourceManager.loadImage
+    (
+        "MissingTexture",
+        MISSING_TEXTURE_DIMENSIONS,
+        MISSING_TEXTURE.data(),
+        MISSING_TEXTURE.size() * sizeof(uint32_t),
+        vk::Format::eR8G8B8A8Unorm,
+        vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled
+    );
+
+    for(size_t i = 0U; i < texturePaths.size(); i++)
+    {
+        UIntVec2 dimensions{0U, 0U};
+        uint32_t channels = 0U;
+        void* pImageData = FileHandler::readImage(texturePaths[i], dimensions, channels);
+        if(!pImageData)
+        {
+            textureIDs.emplace_back(missingTextureID);
+            continue;
+        }
+
+        vk::Format imageFormat = vk::Format::eUndefined;
+        switch(channels)
+        {
+            case 1U:
+                imageFormat = vk::Format::eR8Unorm;
+                break;
+            case 2U:
+                imageFormat = vk::Format::eR8G8Unorm;
+                break;
+            case 4U:
+                imageFormat = vk::Format::eR8G8B8A8Unorm;
+                break;
+            default:
+                LOG_ERROR("Image \"%s\" is unsupported: %d channel format.", texturePaths[i].c_str(), channels);
+        }
+
+        textureIDs.emplace_back(resourceManager.loadImage
+        (
+            "", dimensions, pImageData, static_cast<size_t>(dimensions.x * dimensions.y * channels),
+            imageFormat, vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled
+        ));
+
+        free(pImageData);
+    }
 }
 
 void mtd::MaterialLoader::loadMaterials
@@ -64,8 +131,6 @@ void mtd::MaterialLoader::loadMaterials
         "MaterialSetBuffer", GpuBufferType::Storage, GpuMemoryUsage::GpuOnly,
         sizeof(uint32_t) * materialSetData.size(), materialSetData.data()
     );
-
-    LOG_INFO("Loaded %d materials.", materialFiles.size());
 }
 
 bool mtd::MaterialLoader::loadFromFile(std::string_view filePath, std::vector<std::byte>& materialData)

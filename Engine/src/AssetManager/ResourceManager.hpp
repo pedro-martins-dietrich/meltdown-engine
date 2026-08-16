@@ -84,10 +84,15 @@ namespace mtd
             // Deletes all resources and resets the ID counter
             void clearResources();
 
-            // Fetches the descriptor buffer info for the specified buffer data
+            // Fetches the descriptor buffer info for the specified buffer
             bool fetchDescriptorBufferInfo(ResourceID id, vk::DescriptorBufferInfo& info) const;
-            // Fetches the descriptor image info for the specified image data
+            // Fetches the descriptor image info for the specified image
             bool fetchDescriptorImageInfo(ResourceID id, vk::DescriptorImageInfo& info) const;
+            // Fetches the descriptor image infos for multiple images
+            bool fetchDescriptorImageInfos
+            (
+                const std::vector<ResourceID>& ids, std::vector<vk::DescriptorImageInfo>& infos
+            ) const;
 
         private:
             // GPU resources

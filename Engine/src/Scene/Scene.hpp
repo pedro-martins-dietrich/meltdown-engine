@@ -3,7 +3,6 @@
 #include <memory>
 
 #include "InstanceManager.hpp"
-#include "../AssetManager/TexturePool.hpp"
 #include "../Vulkan/Mesh/MeshManager.hpp"
 #include "../Vulkan/Descriptors/DescriptorPool.hpp"
 #include "../Vulkan/Pipeline/PipelineBundles.hpp"
@@ -62,8 +61,6 @@ namespace mtd
 
 			// GPU resources managed by the engine
 			SceneResources gpuResources;
-			// Scene textures
-			TexturePool texturePool;
 			// Scene instances
 			InstanceManager instanceManager;
 

@@ -32,6 +32,9 @@ namespace mtd
             // Write a specific descriptor binding
             void write(DescriptorSetID setID, uint32_t binding);
 
+            // Updates all descriptors associated with the specified resource
+            void updateResourceDescriptors(ResourceID resourceID);
+
             // Clears all descriptor data stored
             void clear();
 
@@ -44,8 +47,16 @@ namespace mtd
             // Descriptor pool to allocate the descriptor sets
             vk::DescriptorPool pool;
 
+            // Registry of which descriptors are associated with a specific resource
+            std::unordered_map<ResourceID, std::vector<DescriptorIdentifier>> resourceDescriptorsMap;
+
+            // Number of descriptor bindings from all descriptor layouts
+            size_t totalBindingsCount = 0;
+            // Number of buffer resource references from all created descriptor sets
+            size_t totalBufferResourcesCount = 0;
+            // Number of image resource references from all created descriptor sets
+            size_t totalImageResourcesCount = 0;
             // Register of descriptors to be allocated in the pool
-            uint32_t totalDescriptorCount = 0U;
             std::unordered_map<vk::DescriptorType, uint32_t> totalDescriptorTypeCount;
 
             // Device reference

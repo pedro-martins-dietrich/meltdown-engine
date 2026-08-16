@@ -34,15 +34,18 @@ namespace mtd
 				const PipelineBundle& pipelines,
 				const Scene& scene,
 				ResourceManager& resourceManager,
+				DescriptorManager& descriptorManager,
 				DescriptorSetHandler& globalDescriptorSet,
 				DrawInfo& drawInfo,
 				std::atomic<bool>& shouldUpdateEngine
 			);
 
+			// Creates the render objects GPU buffer
+			void createRenderObjectsBuffer(ResourceManager& resourceManager);
 			// Configures the descriptor for the render objects
 			void configureRendererDescriptor
 			(
-				ResourceManager& resourceManager, DescriptorSetHandler& descriptorSetHandler
+				const ResourceManager& resourceManager, DescriptorSetHandler& descriptorSetHandler
 			);
 
 		private:

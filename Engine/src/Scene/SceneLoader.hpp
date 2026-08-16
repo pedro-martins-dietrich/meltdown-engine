@@ -3,7 +3,6 @@
 #include <memory>
 
 #include "InstanceManager.hpp"
-#include "../AssetManager/TexturePool.hpp"
 #include "../Vulkan/Descriptors/DescriptorManager.hpp"
 #include "../Vulkan/Mesh/MeshManager.hpp"
 #include "../Vulkan/Pipeline/PipelineBundles.hpp"
@@ -24,7 +23,6 @@ namespace mtd::SceneLoader
 		ResourceManager& resourceManager,
 		DescriptorManager& descriptorManager,
 		InstanceManager& instanceManager,
-		SceneResources& sceneResources,
-		TexturePool& texturePool
+		SceneResources& sceneResources
 	);
 }

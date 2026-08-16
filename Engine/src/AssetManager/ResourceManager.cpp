@@ -159,20 +159,20 @@ bool mtd::ResourceManager::updateBufferData
 )
 {
     if(id == 0U) return false;
-    BufferIterator b = buffers.find(id);
-    if(b == buffers.cend()) return false;
+    BufferIterator bufferIterator = buffers.find(id);
+    if(bufferIterator == buffers.cend()) return false;
 
-    b->second.copyMemoryToBuffer(copySize, srcData, bufferOffset);
+    bufferIterator->second.copyMemoryToBuffer(copySize, srcData, bufferOffset);
     return true;
 }
 
 bool mtd::ResourceManager::resizeBuffer(ResourceID id, uint64_t newSize)
 {
     if(id == 0U) return false;
-    BufferIterator b = buffers.find(id);
-    if(b == buffers.cend()) return false;
+    BufferIterator bufferIterator = buffers.find(id);
+    if(bufferIterator == buffers.cend()) return false;
 
-    b->second.resizeBuffer(commandHandler, newSize);
+    bufferIterator->second.resizeBuffer(commandHandler, newSize);
     return true;
 }
 
@@ -186,10 +186,10 @@ bool mtd::ResourceManager::transitionImageLayout
 ) const
 {
     if(id == 0U) return false;
-    ImageConstIterator i = images.find(id);
-    if(i == images.cend()) return false;
+    ImageConstIterator imageIterator = images.find(id);
+    if(imageIterator == images.cend()) return false;
 
-    i->second.transitionImageLayout(commandBuffer, newLayout, srcStage, dstStage);
+    imageIterator->second.transitionImageLayout(commandBuffer, newLayout, srcStage, dstStage);
     return true;
 }
 
@@ -225,20 +225,45 @@ void mtd::ResourceManager::clearResources()
 bool mtd::ResourceManager::fetchDescriptorBufferInfo(ResourceID id, vk::DescriptorBufferInfo& info) const
 {
     if(id == 0U) return false;
-    BufferConstIterator b = buffers.find(id);
-    if(b == buffers.cend()) return false;
+    BufferConstIterator bufferIterator = buffers.find(id);
+    if(bufferIterator == buffers.cend()) return false;
 
-    b->second.updateDescriptorInfo(info);
+    bufferIterator->second.updateDescriptorInfo(info);
     return true;
 }
 
 bool mtd::ResourceManager::fetchDescriptorImageInfo(ResourceID id, vk::DescriptorImageInfo& info) const
 {
     if(id == 0U) return false;
-    ImageConstIterator i = images.find(id);
-    if(i == images.cend()) return false;
+    ImageConstIterator imageIterator = images.find(id);
+    if(imageIterator == images.cend()) return false;
 
-    i->second.updateDescriptorInfo(info);
+    imageIterator->second.updateDescriptorInfo(info);
+    return true;
+}
+
+bool mtd::ResourceManager::fetchDescriptorImageInfos
+(
+    const std::vector<ResourceID>& ids, std::vector<vk::DescriptorImageInfo>& infos
+) const
+{
+    uint32_t fails = 0U;
+    infos.resize(ids.size());
+
+    for(size_t i = 0; i < ids.size(); i++)
+    {
+        if(ids[i] == 0U) fails++;
+        ImageConstIterator imageIterator = images.find(ids[i]);
+        if(imageIterator == images.cend()) fails++;
+
+        imageIterator->second.updateDescriptorInfo(infos[i]);
+    }
+    if(fails != 0U)
+    {
+        LOG_ERROR("Failed to fetch the descriptor image infos from %d out of %d images.", fails, ids.size());
+        return false;
+    }
+
     return true;
 }
 

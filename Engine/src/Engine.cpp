@@ -74,6 +74,7 @@ void mtd::Engine::run(Window& window, const std::function<void(double)>& onUpdat
 			pipelines,
 			scene,
 			resourceManager,
+			descriptorManager,
 			*globalDescriptorSetHandler,
 			drawInfo,
 			shouldUpdateEngine
@@ -105,6 +106,12 @@ void mtd::Engine::loadScene(const char* sceneFile)
 
 	std::vector<FramebufferInfo> framebufferInfos;
 	PipelineInfoBundle pipelineInfos;
+
+	cameraResourceID = resourceManager.createBuffer
+	(
+		"Camera", GpuBufferType::Uniform, GpuMemoryUsage::Auto, sizeof(CameraMatrices)
+	);
+	renderer.createRenderObjectsBuffer(resourceManager);
 
 	scene.loadScene
 	(
@@ -217,7 +224,7 @@ void mtd::Engine::configureGlobalDescriptorSetHandler()
 	// Scene textures data
 	bindings[4].binding = 4U;
 	bindings[4].descriptorType = vk::DescriptorType::eCombinedImageSampler;
-	bindings[4].descriptorCount = MAX_TEXTURE_POOL_SIZE;
+	bindings[4].descriptorCount = 8U;
 	bindings[4].stageFlags = vk::ShaderStageFlagBits::eAll;
 	bindings[4].pImmutableSamplers = nullptr;
 	// Scene materials data
@@ -254,10 +261,6 @@ void mtd::Engine::createRenderResources
 	const PipelineInfoBundle& pipelineInfos
 )
 {
-	cameraResourceID = resourceManager.createBuffer
-	(
-		"Camera", GpuBufferType::Uniform, GpuMemoryUsage::Auto, sizeof(CameraMatrices)
-	);
 	scene.setCameraResourceID(cameraResourceID);
 
 	framebuffers.reserve(framebufferInfos.size());

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../Descriptors/DescriptorSetHandler.hpp"
-#include "../../AssetManager/ResourceManager.hpp"
+#include "../Descriptors/DescriptorManager.hpp"
 #include "../../Scene/InstanceManager.hpp"
 
 namespace mtd
@@ -29,6 +29,7 @@ namespace mtd
                 const std::vector<MeshData>& meshes,
                 const std::vector<SceneInstance>& sceneInstances,
                 std::vector<DrawBatch>& drawBatches,
+                DescriptorManager& descriptorManager,
                 DescriptorSetHandler& descriptorSetHandler
             );
             // Updates the descriptor data for the render objects buffer
@@ -52,6 +53,10 @@ namespace mtd
             uint32_t renderObjectCount = 0U;
 
             // Updates the render objects buffer contents
-            void updateBufferData(ResourceManager& resourceManager, DescriptorSetHandler& descriptorSetHandler);
+            void updateBufferData
+            (
+                ResourceManager& resourceManager, DescriptorManager& descriptorManager,
+                DescriptorSetHandler& descriptorSetHandler
+            );
     };
 }
