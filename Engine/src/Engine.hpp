@@ -4,10 +4,9 @@
 
 #include <meltdown/window.hpp>
 
-#include "Vulkan/ImGui/ImGuiHandler.hpp"
+#include "Camera/Camera.hpp"
 #include "Vulkan/Render/Renderer.hpp"
 #include "Vulkan/Frame/Surface.hpp"
-#include "Camera/Camera.hpp"
 
 // Meltdown (mtd) engine namespace
 namespace mtd
@@ -49,11 +48,11 @@ namespace mtd
 			Device device;
 			Swapchain swapchain;
 			std::vector<Framebuffer> framebuffers;
-			std::unique_ptr<DescriptorSetHandler> globalDescriptorSetHandler;
 			CommandHandler commandHandler;
-			Camera camera;
 			Renderer renderer;
 			ImGuiHandler imGuiHandler;
+			ResourceManager resourceManager;
+			DescriptorManager descriptorManager;
 
 			// All pipelines in use by the scene
 			PipelineBundle pipelines;
@@ -61,9 +60,12 @@ namespace mtd
 			// Scene being currently rendered
 			Scene scene;
 
+			// Scene's main camera
+			Camera camera;
+			ResourceID cameraResourceID = 0U;
+
 			// Event callback handles
 			EventCallbackHandle changeSceneCallbackHandle;
-			EventCallbackHandle updateDescriptorDataCallbackHandle;
 			EventCallbackHandle windowResizeCallbackHandle;
 
 			// Flag for updating the engine
@@ -77,20 +79,11 @@ namespace mtd
 			std::mutex sceneLoadMutex;
 			std::condition_variable sceneLoadCV;
 
-			// Descriptors to update before rendering the next frame
-			std::unordered_map<uint64_t, const void*> pendingDescriptorUpdates;
-			std::mutex pendingDescriptorUpdateMutex;
-
 			// Runs the update loop (update thread)
 			void updateLoop(const std::function<void(double)>& onUpdateCallback);
 
-			// Applies all the pending updates for the descriptors
-			void updateDescriptors();
-
 			// Sets up event callback functions
 			void configureEventCallbacks();
-			// Sets up descriptor set shared across pipelines
-			void configureGlobalDescriptorSetHandler();
 			// Creates the framebuffers and pipelines to be used in the scene
 			void createRenderResources
 			(

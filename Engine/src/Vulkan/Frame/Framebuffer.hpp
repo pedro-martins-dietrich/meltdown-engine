@@ -69,15 +69,6 @@ namespace mtd
 
 			// Creates the attachment objects
 			void createAttachments(const Device& mtdDevice, vk::Extent2D swapchainExtent);
-			// Creates the image for a single attachment
-			void createAttachment
-			(
-				const Device& mtdDevice,
-				Image& attachmentImage,
-				vk::Format format,
-				vk::ImageUsageFlags usage,
-				vk::ImageAspectFlags aspect
-			) const;
 
 			// Creates the Vulkan framebuffer object
 			void createFramebuffer();

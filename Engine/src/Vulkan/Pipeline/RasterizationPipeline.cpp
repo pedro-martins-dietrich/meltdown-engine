@@ -4,21 +4,19 @@
 #include "Builders/PipelineMapping.hpp"
 #include "Builders/VertexInputBuilder.hpp"
 #include "Builders/ColorBlendBuilder.hpp"
-#include "Builders/DescriptorSetBuilder.hpp"
 #include "../../Utils/Logger.hpp"
 
 mtd::RasterizationPipeline::RasterizationPipeline
 (
 	const vk::Device& device,
+	const DescriptorManager& descriptorManager,
 	const RasterizationPipelineInfo& info,
-	const vk::DescriptorSetLayout& globalDescriptorSetLayout,
 	vk::Extent2D extent,
 	vk::RenderPass renderPass
-) : Pipeline{device, info}
+) : Pipeline{device, descriptorManager, info}
 {
-	createDescriptorSetLayouts();
 	loadShaderModules();
-	createPipelineLayout(globalDescriptorSetLayout);
+	createPipelineLayout();
 	createPipeline(extent, renderPass);
 }
 
@@ -36,14 +34,19 @@ void mtd::RasterizationPipeline::bind(vk::CommandBuffer commandBuffer) const
 {
 	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
 
-	if(descriptorSetHandlers.empty() || descriptorSetHandlers[0].getSetCount() == 0U) return;
+	if(info.descriptorSetIDs.empty()) return;
+
+	std::vector<vk::DescriptorSet> descriptorSets;
+	descriptorSets.reserve(info.descriptorSetIDs.size());
+	for(DescriptorSetID setID: info.descriptorSetIDs)
+		descriptorSets.emplace_back(descriptorManager.getSet(setID));
 
 	commandBuffer.bindDescriptorSets
 	(
 		vk::PipelineBindPoint::eGraphics,
 		pipelineLayout,
-		1U,
-		1U, &(descriptorSetHandlers[0].getSet(0U)),
+		0U,
+		static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(),
 		0U, nullptr
 	);
 }
@@ -52,7 +55,8 @@ void mtd::RasterizationPipeline::pushConstant(vk::CommandBuffer commandBuffer, c
 {
 	commandBuffer.pushConstants
 	(
-		pipelineLayout, vk::ShaderStageFlagBits::eVertex, 0U, sizeof(uint32_t), &constantData
+		pipelineLayout, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
+		0U, sizeof(uint32_t), &constantData
 	);
 }
 
@@ -63,14 +67,15 @@ void mtd::RasterizationPipeline::loadShaderModules()
 	shaders.emplace_back(device, vk::ShaderStageFlagBits::eFragment, info.fragmentShaderPath.c_str());
 }
 
-void mtd::RasterizationPipeline::createPipelineLayout(const vk::DescriptorSetLayout& globalDescriptorSetLayout)
+void mtd::RasterizationPipeline::createPipelineLayout()
 {
-	std::vector<vk::DescriptorSetLayout> descriptorSetLayouts{globalDescriptorSetLayout};
-	for(const DescriptorSetHandler& descriptorSetHandler: descriptorSetHandlers)
-		descriptorSetLayouts.push_back(descriptorSetHandler.getLayout());
+	std::vector<vk::DescriptorSetLayout> descriptorSetLayouts;
+	descriptorSetLayouts.reserve(info.descriptorLayoutIDs.size());
+	for(DescriptorLayoutID layoutID: info.descriptorLayoutIDs)
+		descriptorSetLayouts.emplace_back(descriptorManager.getLayout(layoutID));
 
 	vk::PushConstantRange pushConstantRange{};
-	pushConstantRange.stageFlags = vk::ShaderStageFlagBits::eVertex;
+	pushConstantRange.stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment;
 	pushConstantRange.offset = 0U;
 	pushConstantRange.size = sizeof(uint32_t);
 
@@ -143,16 +148,6 @@ void mtd::RasterizationPipeline::createPipeline(vk::Extent2D extent, vk::RenderP
 		return;
 	}
 	LOG_INFO("Created graphics pipeline.\n");
-}
-
-void mtd::RasterizationPipeline::createDescriptorSetLayouts()
-{
-	userDescriptorSetIndex = 1U;
-	if(info.descriptorSetInfo.size() == 0) return;
-	
-	std::vector<vk::DescriptorSetLayoutBinding> bindings;
-	DescriptorSetBuilder::buildDescriptorSetLayout(bindings, info.descriptorSetInfo, descriptorTypeCount);
-	descriptorSetHandlers.emplace_back(device, bindings);
 }
 
 void mtd::RasterizationPipeline::setInputAssembly(vk::PipelineInputAssemblyStateCreateInfo& inputAssemblyInfo) const

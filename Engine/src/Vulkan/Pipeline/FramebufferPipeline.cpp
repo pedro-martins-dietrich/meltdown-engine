@@ -2,21 +2,20 @@
 #include "FramebufferPipeline.hpp"
 
 #include "Builders/ColorBlendBuilder.hpp"
-#include "Builders/DescriptorSetBuilder.hpp"
 #include "../../Utils/Logger.hpp"
 
 mtd::FramebufferPipeline::FramebufferPipeline
 (
 	const vk::Device& device,
+	const DescriptorManager& descriptorManager,
 	const FramebufferPipelineInfo& info,
-	const vk::DescriptorSetLayout& globalDescriptorSetLayout,
 	vk::Extent2D extent,
 	vk::RenderPass renderPass
-) : Pipeline{device, info}
+) : Pipeline{device, descriptorManager, info}
 {
 	createDescriptorSetLayouts();
 	loadShaderModules();
-	createPipelineLayout(globalDescriptorSetLayout);
+	createPipelineLayout();
 	createPipeline(extent, renderPass);
 }
 
@@ -40,24 +39,19 @@ void mtd::FramebufferPipeline::bind(const vk::CommandBuffer& commandBuffer) cons
 {
 	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
 
-	commandBuffer.bindDescriptorSets
-	(
-		vk::PipelineBindPoint::eGraphics,
-		pipelineLayout,
-		1,
-		1, &(descriptorSetHandlers[0].getSet(0)),
-		0, nullptr
-	);
-
-	if(descriptorSetHandlers.size() == 1 || descriptorSetHandlers[1].getSetCount() == 0) return;
+	std::vector<vk::DescriptorSet> descriptorSets;
+	descriptorSets.reserve(info.descriptorSetIDs.size() + 1);
+	for(DescriptorSetID setID: info.descriptorSetIDs)
+		descriptorSets.emplace_back(descriptorManager.getSet(setID));
+	descriptorSets.emplace_back(descriptorSetHandlers[0].getSet());
 
 	commandBuffer.bindDescriptorSets
 	(
 		vk::PipelineBindPoint::eGraphics,
 		pipelineLayout,
-		2,
-		1, &(descriptorSetHandlers[1].getSet(0)),
-		0, nullptr
+		0U,
+		static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(),
+		0U, nullptr
 	);
 }
 
@@ -69,7 +63,7 @@ void mtd::FramebufferPipeline::updateInputImagesDescriptors
 )
 {
 	DescriptorSetHandler& descriptorSetHandler = descriptorSetHandlers[0];
-	uint32_t binding = 0;
+	uint32_t binding = 0U;
 
 	for(const AttachmentIdentifier& attachmentIdentifier: info.inputAttachments)
 	{
@@ -95,7 +89,7 @@ void mtd::FramebufferPipeline::updateInputImagesDescriptors
 		binding++;
 	}
 
-	descriptorSetHandler.writeDescriptorSet(0);
+	descriptorSetHandler.writeDescriptorSet();
 }
 
 void mtd::FramebufferPipeline::loadShaderModules()
@@ -105,17 +99,20 @@ void mtd::FramebufferPipeline::loadShaderModules()
 	shaders.emplace_back(device, vk::ShaderStageFlagBits::eFragment, info.fragmentShaderPath.c_str());
 }
 
-void mtd::FramebufferPipeline::createPipelineLayout(const vk::DescriptorSetLayout& globalDescriptorSetLayout)
+void mtd::FramebufferPipeline::createPipelineLayout()
 {
-	std::vector<vk::DescriptorSetLayout> descriptorSetLayouts{globalDescriptorSetLayout};
+	std::vector<vk::DescriptorSetLayout> descriptorSetLayouts;
+	descriptorSetLayouts.reserve(info.descriptorLayoutIDs.size() + 1);
+	for(DescriptorLayoutID layoutID: info.descriptorLayoutIDs)
+		descriptorSetLayouts.emplace_back(descriptorManager.getLayout(layoutID));
 	for(const DescriptorSetHandler& descriptorSetHandler: descriptorSetHandlers)
-		descriptorSetLayouts.push_back(descriptorSetHandler.getLayout());
+		descriptorSetLayouts.emplace_back(descriptorSetHandler.getLayout());
 
 	vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
 	pipelineLayoutCreateInfo.flags = vk::PipelineLayoutCreateFlags();
 	pipelineLayoutCreateInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
 	pipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayouts.data();
-	pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
+	pipelineLayoutCreateInfo.pushConstantRangeCount = 0U;
 	pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
 
 	vk::Result result = device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &pipelineLayout);
@@ -169,11 +166,11 @@ void mtd::FramebufferPipeline::createPipeline(vk::Extent2D extent, vk::RenderPas
 	graphicsPipelineCreateInfo.pDynamicState = nullptr;
 	graphicsPipelineCreateInfo.layout = pipelineLayout;
 	graphicsPipelineCreateInfo.renderPass = renderPass;
-	graphicsPipelineCreateInfo.subpass = 0;
+	graphicsPipelineCreateInfo.subpass = 0U;
 	graphicsPipelineCreateInfo.basePipelineHandle = nullptr;
 	graphicsPipelineCreateInfo.basePipelineIndex = 0;
 
-	vk::Result result = device.createGraphicsPipelines(nullptr, 1, &graphicsPipelineCreateInfo, nullptr, &pipeline);
+	vk::Result result = device.createGraphicsPipelines(nullptr, 1U, &graphicsPipelineCreateInfo, nullptr, &pipeline);
 	if(result != vk::Result::eSuccess)
 	{
 		LOG_ERROR("Failed to create framebuffer pipeline. Vulkan result: %d", result);
@@ -184,35 +181,27 @@ void mtd::FramebufferPipeline::createPipeline(vk::Extent2D extent, vk::RenderPas
 
 void mtd::FramebufferPipeline::createDescriptorSetLayouts()
 {
-	descriptorSetHandlers.reserve(info.descriptorSetInfo.size() == 0 ? 1 : 2);
-
 	uint32_t imageDescriptorsCount = info.inputAttachments.size()
 		+ info.rayTracingStorageImages.size() + info.computeStorageImages.size();
 	std::vector<vk::DescriptorSetLayoutBinding> layoutBindings(imageDescriptorsCount);
-	for(uint32_t i = 0; i < layoutBindings.size(); i++)
+	for(uint32_t i = 0U; i < layoutBindings.size(); i++)
 	{
 		layoutBindings[i].binding = i;
 		layoutBindings[i].descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		layoutBindings[i].descriptorCount = 1;
+		layoutBindings[i].descriptorCount = 1U;
 		layoutBindings[i].stageFlags = vk::ShaderStageFlagBits::eFragment;
 		layoutBindings[i].pImmutableSamplers = nullptr;
 	}
 
-	descriptorSetHandlers.emplace_back(device, layoutBindings);
-
-	if(info.descriptorSetInfo.size() == 0) return;
-	layoutBindings.clear();
-
-	DescriptorSetBuilder::buildDescriptorSetLayout(layoutBindings, info.descriptorSetInfo, descriptorTypeCount);
 	descriptorSetHandlers.emplace_back(device, layoutBindings);
 }
 
 void mtd::FramebufferPipeline::setVertexInput(vk::PipelineVertexInputStateCreateInfo& vertexInputInfo) const
 {
 	vertexInputInfo.flags = vk::PipelineVertexInputStateCreateFlags();
-	vertexInputInfo.vertexBindingDescriptionCount = 0;
+	vertexInputInfo.vertexBindingDescriptionCount = 0U;
 	vertexInputInfo.pVertexBindingDescriptions = nullptr;
-	vertexInputInfo.vertexAttributeDescriptionCount = 0;
+	vertexInputInfo.vertexAttributeDescriptionCount = 0U;
 	vertexInputInfo.pVertexAttributeDescriptions = nullptr;
 }
 
@@ -243,9 +232,9 @@ void mtd::FramebufferPipeline::setViewport
 	scissor.extent = extent;
 
 	viewportInfo.flags = vk::PipelineViewportStateCreateFlags();
-	viewportInfo.viewportCount = 1;
+	viewportInfo.viewportCount = 1U;
 	viewportInfo.pViewports = &viewport;
-	viewportInfo.scissorCount = 1;
+	viewportInfo.scissorCount = 1U;
 	viewportInfo.pScissors = &scissor;
 }
 

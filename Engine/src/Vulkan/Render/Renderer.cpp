@@ -6,8 +6,7 @@
 
 mtd::Renderer::Renderer(const Device& mtdDevice)
 	: mtdDevice{mtdDevice},
-	clearValues{vk::ClearColorValue{0.1f, 0.1f, 0.1f, 1.0f}, vk::ClearDepthStencilValue{1.0f, 0U}},
-	renderObjectManager{mtdDevice}
+	clearValues{vk::ClearColorValue{0.1f, 0.1f, 0.1f, 1.0f}, vk::ClearDepthStencilValue{1.0f, 0U}}
 {}
 
 void mtd::Renderer::setClearColor(const Vec4& color)
@@ -22,7 +21,8 @@ void mtd::Renderer::render
 	const std::vector<Framebuffer>& framebuffers,
 	const PipelineBundle& pipelines,
 	const Scene& scene,
-	DescriptorSetHandler& globalDescriptorSet,
+	ResourceManager& resourceManager,
+	DescriptorManager& descriptorManager,
 	DrawInfo& drawInfo,
 	std::atomic<bool>& shouldUpdateEngine
 )
@@ -32,7 +32,7 @@ void mtd::Renderer::render
 	std::vector<DrawBatch> drawBatches;
 	renderObjectManager.createFrameRenderObjects
 	(
-		scene.getMeshPool(), scene.getInstances(), drawBatches, globalDescriptorSet
+		resourceManager, scene.getMeshes(), scene.getInstances(), drawBatches, descriptorManager
 	);
 
 	PROFILER_NEXT_STAGE("Render - Acquire frame");
@@ -79,6 +79,7 @@ void mtd::Renderer::render
 		framebuffers,
 		pipelines,
 		scene,
+		resourceManager,
 		commandHandler,
 		drawInfo,
 		drawBatches,
@@ -97,9 +98,17 @@ void mtd::Renderer::render
 	currentFrameIndex = shouldUpdateEngine.load() ? 0U : (currentFrameIndex + 1U) % swapchain.getFrameCount();
 }
 
-void mtd::Renderer::configureRendererDescriptor(DescriptorSetHandler& descriptorSetHandler) const
+void mtd::Renderer::createRenderObjectsBuffer(ResourceManager& resourceManager)
 {
-	renderObjectManager.createDescriptor(descriptorSetHandler, 8U);
+	renderObjectManager.createBuffer(resourceManager);
+}
+
+void mtd::Renderer::configureRendererDescriptor
+(
+	const ResourceManager& resourceManager, DescriptorSetHandler& descriptorSetHandler
+)
+{
+	renderObjectManager.updateDescriptor(resourceManager, descriptorSetHandler);
 }
 
 void mtd::Renderer::recordDrawCommands
@@ -107,6 +116,7 @@ void mtd::Renderer::recordDrawCommands
 	const std::vector<Framebuffer>& framebuffers,
 	const PipelineBundle& pipelines,
 	const Scene& scene,
+	const ResourceManager& resourceManager,
 	const CommandHandler& commandHandler,
 	const DrawInfo& drawInfo,
 	const std::vector<DrawBatch>& drawBatches,
@@ -127,38 +137,13 @@ void mtd::Renderer::recordDrawCommands
 
 	commandHandler.beginCommand();
 
-	if(pipelines.computePipelines.size() > 0)
-	{
-		commandBuffer.bindDescriptorSets
-		(
-			vk::PipelineBindPoint::eCompute,
-			pipelines.computePipelines[0].getLayout(),
-			0U,
-			1U, &(drawInfo.globalDescriptorSet),
-			0U, nullptr
-		);
-	}
-
-	const MeshPool& meshPool = scene.getMeshPool();
-	meshPool.bindBuffers(commandBuffer);
+	scene.bindMeshData(resourceManager, commandBuffer);
 
 	for(const ComputePipeline& computePipeline: pipelines.computePipelines)
 	{
 		PROFILER_NEXT_STAGE(computePipeline.getName().c_str());
 		computePipeline.setInstanceCount(renderObjectManager.getRenderObjectCount());
 		computePipeline.dispatchCompute(commandBuffer);
-	}
-
-	if(pipelines.rayTracingPipelines.size() > 0)
-	{
-		commandBuffer.bindDescriptorSets
-		(
-			vk::PipelineBindPoint::eRayTracingKHR,
-			pipelines.rayTracingPipelines[0].getLayout(),
-			0U,
-			1U, &(drawInfo.globalDescriptorSet),
-			0U, nullptr
-		);
 	}
 
 	for(const RayTracingPipeline& rayTracingPipeline: pipelines.rayTracingPipelines)
@@ -169,15 +154,6 @@ void mtd::Renderer::recordDrawCommands
 
 	vk::Rect2D renderArea{};
 	renderArea.offset = vk::Offset2D{0, 0};
-
-	commandBuffer.bindDescriptorSets
-	(
-		vk::PipelineBindPoint::eGraphics,
-		firstPipelineLayout,
-		0U,
-		1U, &(drawInfo.globalDescriptorSet),
-		0U, nullptr
-	);
 
 	for(const RenderPassInfo& renderPassInfo: renderOrder)
 	{
@@ -219,7 +195,8 @@ void mtd::Renderer::recordDrawCommands
 			commandBuffer.draw(3U, 1U, 0U, 0U);
 		}
 
-		renderObjectManager.bindBuffer(commandBuffer);
+		renderObjectManager.bindBuffer(resourceManager, commandBuffer);
+		const std::vector<MeshData>& meshes = scene.getMeshes();
 
 		for(uint32_t pipelineIndex: renderPassInfo.pipelineIndices)
 		{
@@ -231,7 +208,7 @@ void mtd::Renderer::recordDrawCommands
 			for(const DrawBatch& drawBatch: drawBatches)
 			{
 				if(drawBatch.pipelineID != pipelineIndex) continue;
-				const MeshData& mesh = meshPool.getMesh(drawBatch.meshID);
+				const MeshData& mesh = meshes[drawBatch.meshID];
 
 				for(const SubmeshData& submesh: mesh.submeshes)
 				{

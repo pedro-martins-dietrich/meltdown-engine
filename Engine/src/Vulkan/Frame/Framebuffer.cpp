@@ -39,16 +39,14 @@ mtd::Framebuffer::Framebuffer(Framebuffer&& other) noexcept
 	other.sampler = nullptr;
 }
 
-// Configures the specified attachment to be used as a descriptor
 void mtd::Framebuffer::configureAttachmentAsDescriptor
 (
 	DescriptorSetHandler& descriptorSetHandler, uint32_t binding, uint32_t attachmentIndex
 ) const
 {
-	descriptorSetHandler.createImageDescriptorResources(0, binding, descriptorInfos[attachmentIndex]);
+	descriptorSetHandler.createImageDescriptorResources(binding, descriptorInfos[attachmentIndex]);
 }
 
-// Creates an image barrier to transition the attachment layout
 void mtd::Framebuffer::transitionAttachmentLayout
 (
 	bool toShaderReadOnly,
@@ -114,22 +112,21 @@ void mtd::Framebuffer::transitionAttachmentLayout
 	barrier.srcQueueFamilyIndex = vk::QueueFamilyIgnored;
 	barrier.dstQueueFamilyIndex = vk::QueueFamilyIgnored;
 	barrier.image = attachmentImage.getImage();
-	barrier.subresourceRange.baseMipLevel = 0;
-	barrier.subresourceRange.levelCount = 1;
-	barrier.subresourceRange.baseArrayLayer = 0;
-	barrier.subresourceRange.layerCount = 1;
+	barrier.subresourceRange.baseMipLevel = 0U;
+	barrier.subresourceRange.levelCount = 1U;
+	barrier.subresourceRange.baseArrayLayer = 0U;
+	barrier.subresourceRange.layerCount = 1U;
 
 	commandBuffer.pipelineBarrier
 	(
 		pipelineSrcStage, pipelineDstStage,
 		vk::DependencyFlags(),
-		0, nullptr,
-		0, nullptr,
-		1, &barrier
+		0U, nullptr,
+		0U, nullptr,
+		1U, &barrier
 	);
 }
 
-// Resizes the framebuffer resolution if needed
 void mtd::Framebuffer::resize(const Device& mtdDevice, vk::Extent2D swapchainExtent)
 {
 	if(!windowResolutionDependant) return;
@@ -141,17 +138,16 @@ void mtd::Framebuffer::resize(const Device& mtdDevice, vk::Extent2D swapchainExt
 	createFramebuffer();
 }
 
-// Creates the Vulkan render pass for the framebuffer
 void mtd::Framebuffer::createRenderPass()
 {
 	uint32_t colorAttachmentCount = 1U + (static_cast<uint32_t>(info.framebufferAttachments) >> 1);
 	bool useDepth = static_cast<uint32_t>(info.framebufferAttachments) & 0x01U;
-	uint32_t totalAttachmentCount = useDepth ? (colorAttachmentCount + 1) : colorAttachmentCount;
+	uint32_t totalAttachmentCount = useDepth ? (colorAttachmentCount + 1U) : colorAttachmentCount;
 
 	std::vector<vk::AttachmentDescription> attachments(totalAttachmentCount);
 	std::vector<vk::AttachmentReference> colorAttachmentReferences(colorAttachmentCount);
 
-	for(uint32_t i = 0; i < colorAttachmentCount; i++)
+	for(uint32_t i = 0U; i < colorAttachmentCount; i++)
 	{
 		attachments[i].flags = vk::AttachmentDescriptionFlags();
 		attachments[i].format = vk::Format::eB8G8R8A8Unorm;
@@ -187,22 +183,22 @@ void mtd::Framebuffer::createRenderPass()
 	vk::SubpassDescription subpassDescription{};
 	subpassDescription.flags = vk::SubpassDescriptionFlags();
 	subpassDescription.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
-	subpassDescription.inputAttachmentCount = 0;
+	subpassDescription.inputAttachmentCount = 0U;
 	subpassDescription.pInputAttachments = nullptr;
 	subpassDescription.colorAttachmentCount = static_cast<uint32_t>(colorAttachmentReferences.size());
 	subpassDescription.pColorAttachments = colorAttachmentReferences.data();
 	subpassDescription.pResolveAttachments = nullptr;
 	subpassDescription.pDepthStencilAttachment = useDepth ? &depthAttachmentReference : nullptr;
-	subpassDescription.preserveAttachmentCount = 0;
+	subpassDescription.preserveAttachmentCount = 0U;
 	subpassDescription.pPreserveAttachments = nullptr;
 
 	vk::RenderPassCreateInfo renderPassCreateInfo{};
 	renderPassCreateInfo.flags = vk::RenderPassCreateFlags();
 	renderPassCreateInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
 	renderPassCreateInfo.pAttachments = attachments.data();
-	renderPassCreateInfo.subpassCount = 1;
+	renderPassCreateInfo.subpassCount = 1U;
 	renderPassCreateInfo.pSubpasses = &subpassDescription;
-	renderPassCreateInfo.dependencyCount = 0;
+	renderPassCreateInfo.dependencyCount = 0U;
 	renderPassCreateInfo.pDependencies = nullptr;
 
 	vk::Result result = device.createRenderPass(&renderPassCreateInfo, nullptr, &renderPass);
@@ -214,7 +210,6 @@ void mtd::Framebuffer::createRenderPass()
 	LOG_VERBOSE("Created framebuffer render pass.");
 }
 
-// Creates the attachment objects
 void mtd::Framebuffer::createAttachments(const Device& mtdDevice, vk::Extent2D swapchainExtent)
 {
 	if(info.windowResolutionRatio.x > 0.0f)
@@ -230,65 +225,53 @@ void mtd::Framebuffer::createAttachments(const Device& mtdDevice, vk::Extent2D s
 
 	uint32_t colorAttachmentCount = 1U + (static_cast<uint32_t>(info.framebufferAttachments) >> 1);
 	bool useDepth = static_cast<uint32_t>(info.framebufferAttachments) & 0x01U;
-	uint32_t totalAttachmentCount = useDepth ? (colorAttachmentCount + 1) : colorAttachmentCount;
+	uint32_t totalAttachmentCount = useDepth ? (colorAttachmentCount + 1U) : colorAttachmentCount;
 
 	attachmentImages.reserve(totalAttachmentCount);
 	descriptorInfos.resize(totalAttachmentCount);
 
-	for(uint32_t i = 0; i < colorAttachmentCount; i++)
+	for(uint32_t i = 0U; i < colorAttachmentCount; i++)
 	{
-		attachmentImages.emplace_back(device);
-		createAttachment
+		attachmentImages.emplace_back(mtdDevice);
+		attachmentImages[i].create
 		(
-			mtdDevice,
-			attachmentImages[i],
+			{info.width, info.height},
 			vk::Format::eB8G8R8A8Unorm,
+			vk::ImageTiling::eOptimal,
 			vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
-			vk::ImageAspectFlagBits::eColor
+			vk::MemoryPropertyFlagBits::eDeviceLocal,
+			vk::ImageAspectFlagBits::eColor,
+			vk::ImageViewType::e2D
 		);
 	}
 	if(useDepth)
 	{
-		attachmentImages.emplace_back(device);
-		createAttachment
+		attachmentImages.emplace_back(mtdDevice);
+		attachmentImages.back().create
 		(
-			mtdDevice,
-			attachmentImages.back(),
+			{info.width, info.height},
 			vk::Format::eD32Sfloat,
+			vk::ImageTiling::eOptimal,
 			vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled,
-			vk::ImageAspectFlagBits::eDepth
+			vk::MemoryPropertyFlagBits::eDeviceLocal,
+			vk::ImageAspectFlagBits::eDepth,
+			vk::ImageViewType::e2D
 		);
 	}
 
-	for(uint32_t i = 0; i < descriptorInfos.size(); i++)
+	for(uint32_t i = 0U; i < descriptorInfos.size(); i++)
 	{
 		descriptorInfos[i].sampler = sampler;
-		descriptorInfos[i].imageView = attachmentImages[i].getImageView();
+		descriptorInfos[i].imageView = attachmentImages[i].getView();
 		descriptorInfos[i].imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 	}
 }
 
-// Creates the data for a single attachment
-void mtd::Framebuffer::createAttachment
-(
-	const Device& mtdDevice,
-	Image& attachmentImage,
-	vk::Format format,
-	vk::ImageUsageFlags usage,
-	vk::ImageAspectFlags aspect
-) const
-{
-	attachmentImage.createImage({info.width, info.height}, format, vk::ImageTiling::eOptimal, usage);
-	attachmentImage.createImageMemory(mtdDevice, vk::MemoryPropertyFlagBits::eDeviceLocal);
-	attachmentImage.createImageView(aspect, vk::ImageViewType::e2D);
-}
-
-// Creates the Vulkan framebuffer object
 void mtd::Framebuffer::createFramebuffer()
 {
 	std::vector<vk::ImageView> attachments(attachmentImages.size());
-	for(uint32_t i = 0; i < attachmentImages.size(); i++)
-		attachments[i] = attachmentImages[i].getImageView();
+	for(uint32_t i = 0U; i < attachmentImages.size(); i++)
+		attachments[i] = attachmentImages[i].getView();
 
 	vk::FramebufferCreateInfo framebufferCreateInfo{};
 	framebufferCreateInfo.flags = vk::FramebufferCreateFlags();
@@ -297,7 +280,7 @@ void mtd::Framebuffer::createFramebuffer()
 	framebufferCreateInfo.pAttachments = attachments.data();
 	framebufferCreateInfo.width = info.width;
 	framebufferCreateInfo.height = info.height;
-	framebufferCreateInfo.layers = 1;
+	framebufferCreateInfo.layers = 1U;
 
 	vk::Result result = device.createFramebuffer(&framebufferCreateInfo, nullptr, &framebuffer);
 	if(result != vk::Result::eSuccess)
@@ -309,7 +292,6 @@ void mtd::Framebuffer::createFramebuffer()
 	LOG_VERBOSE("Created framebuffer.");
 }
 
-// Creates sampler to define how the attachments should be rendered
 void mtd::Framebuffer::createSampler()
 {
 	vk::Filter filter =

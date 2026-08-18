@@ -38,8 +38,7 @@ namespace mtd
 				const Device& device,
 				const CommandHandler& commandHandler,
 				DescriptorSetHandler& descriptorSetHandler,
-				uint32_t swappableSetIndex,
-				uint32_t bindingOffset = 0
+				uint32_t bindingOffset = 0U
 			);
 
 		private:
@@ -61,7 +60,6 @@ namespace mtd
 			(
 				const Device& device,
 				DescriptorSetHandler& descriptorSetHandler,
-				uint32_t swappableSetIndex,
 				uint32_t bindingOffset
 			) const;
 			// Loads all material textures
@@ -70,7 +68,6 @@ namespace mtd
 				const Device& device,
 				const CommandHandler& commandHandler,
 				DescriptorSetHandler& descriptorSetHandler,
-				uint32_t swappableSetIndex,
 				uint32_t bindingOffset
 			);
 

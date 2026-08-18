@@ -1,7 +1,8 @@
 #pragma once
 
+#include "../Descriptors/DescriptorSetHandler.hpp"
+#include "../Descriptors/DescriptorManager.hpp"
 #include "../../Scene/InstanceManager.hpp"
-#include "../../AssetManager/MeshPool.hpp"
 
 namespace mtd
 {
@@ -9,7 +10,7 @@ namespace mtd
     class RenderObjectManager
     {
         public:
-            RenderObjectManager(const Device& mtdDevice);
+            RenderObjectManager() = default;
             ~RenderObjectManager() = default;
 
             RenderObjectManager(const RenderObjectManager&) = delete;
@@ -18,28 +19,30 @@ namespace mtd
             // Getter
             uint32_t getRenderObjectCount() const { return renderObjectCount; }
 
+            // Creates the render objects GPU buffer at the beginning of the scene
+            void createBuffer(ResourceManager& resourceManager);
+
             // Creates the render objects and the draw batches from the scene instances
             void createFrameRenderObjects
             (
-                const MeshPool& meshPool,
+                ResourceManager& resourceManager,
+                const std::vector<MeshData>& meshes,
                 const std::vector<SceneInstance>& sceneInstances,
                 std::vector<DrawBatch>& drawBatches,
-                DescriptorSetHandler& descriptorSetHandler
+                DescriptorManager& descriptorManager
             );
+            // Updates the descriptor data for the render objects buffer
+            void updateDescriptor
+            (
+                const ResourceManager& resourceManager, DescriptorSetHandler& descriptorSetHandler
+            ) const;
 
             // Binds the render object buffer
-            void bindBuffer(vk::CommandBuffer commandBuffer) const;
-            // Creates the render object descriptor for the render object buffer
-            void createDescriptor(DescriptorSetHandler& descriptorSetHandler, uint32_t binding) const;
+            void bindBuffer(const ResourceManager& resourceManager, vk::CommandBuffer commandBuffer) const;
 
         private:
-            // GPU buffer for the render objects that will be used in the current frame
-            GpuBuffer renderObjectBuffer;
-            // Render object manager command handler
-            CommandHandler commandHandler;
-
-            // Descriptor binding used for the render object GPU buffer
-            mutable uint32_t bufferDescriptorBinding;
+            // Resource ID for the render objects that will be used in the current frame
+            ResourceID renderObjectBufferID = 0U;
 
             // List of instances visible in the current frame
             std::vector<const SceneInstance*> visibleInstances;
@@ -49,6 +52,6 @@ namespace mtd
             uint32_t renderObjectCount = 0U;
 
             // Updates the render objects buffer contents
-            void updateBufferData(DescriptorSetHandler& descriptorSetHandler);
+            void updateBufferData(ResourceManager& resourceManager, DescriptorManager& descriptorManager);
     };
 }

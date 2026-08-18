@@ -4,7 +4,8 @@
 #include "../../Utils/Logger.hpp"
 
 mtd::GpuBuffer::GpuBuffer(const Device& device, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags memoryProperties)
-	: device{device}, size{0}, usage{usage}, memoryProperties{memoryProperties}, buffer{nullptr}, bufferMemory{nullptr}
+	: device{device}, size{0UL}, usage{usage}, memoryProperties{memoryProperties},
+	buffer{nullptr}, bufferMemory{nullptr}
 {}
 
 mtd::GpuBuffer::GpuBuffer
@@ -20,7 +21,7 @@ mtd::GpuBuffer::GpuBuffer
 	bufferCreateInfo.size = size;
 	bufferCreateInfo.usage = usage;
 	bufferCreateInfo.sharingMode = vk::SharingMode::eExclusive;
-	bufferCreateInfo.queueFamilyIndexCount = 0;
+	bufferCreateInfo.queueFamilyIndexCount = 0U;
 	bufferCreateInfo.pQueueFamilyIndices = nullptr;
 
 	vk::Result result = device.getDevice().createBuffer(&bufferCreateInfo, nullptr, &buffer);
@@ -56,7 +57,7 @@ mtd::GpuBuffer::GpuBuffer(GpuBuffer&& other) noexcept
 
 vk::DeviceAddress mtd::GpuBuffer::getBufferAddress() const
 {
-	assert(bufferMemory && size != 0 && "Invalid GPU buffer address.");
+	assert(bufferMemory && size != 0UL && "Invalid GPU buffer address.");
 
 	vk::BufferDeviceAddressInfo addressInfo{buffer};
 	return device.getDevice().getBufferAddress(addressInfo);
@@ -73,7 +74,7 @@ void mtd::GpuBuffer::create(vk::DeviceSize dataSize)
 	bufferCreateInfo.size = size;
 	bufferCreateInfo.usage = usage;
 	bufferCreateInfo.sharingMode = vk::SharingMode::eExclusive;
-	bufferCreateInfo.queueFamilyIndexCount = 0;
+	bufferCreateInfo.queueFamilyIndexCount = 0U;
 	bufferCreateInfo.pQueueFamilyIndices = nullptr;
 
 	vk::Result result = device.getDevice().createBuffer(&bufferCreateInfo, nullptr, &buffer);
@@ -154,6 +155,15 @@ void mtd::GpuBuffer::copyMemoryToBuffer(vk::DeviceSize copySize, const void* src
 	device.getDevice().unmapMemory(bufferMemory);
 }
 
+void mtd::GpuBuffer::updateDescriptorInfo(vk::DescriptorBufferInfo& descriptorInfo) const
+{
+	assert(buffer && size != 0UL && "The buffer must be properly created before updating the descriptor info.");
+
+	descriptorInfo.buffer = buffer;
+	descriptorInfo.offset = 0UL;
+	descriptorInfo.range = size;
+}
+
 void mtd::GpuBuffer::allocateBufferMemory()
 {
 	const vk::Device& vulkanDevice = device.getDevice();
@@ -176,7 +186,7 @@ void mtd::GpuBuffer::allocateBufferMemory()
 		return;
 	}
 
-	vulkanDevice.bindBufferMemory(buffer, bufferMemory, 0);
+	vulkanDevice.bindBufferMemory(buffer, bufferMemory, 0UL);
 }
 
 void mtd::GpuBuffer::copyDataFromBuffer(const GpuBuffer& srcBuffer, const CommandHandler& commandHandler) const
@@ -186,11 +196,11 @@ void mtd::GpuBuffer::copyDataFromBuffer(const GpuBuffer& srcBuffer, const Comman
 	vk::CommandBuffer commandBuffer = commandHandler.beginSingleTimeCommand();
 
 	vk::BufferCopy bufferCopy{};
-	bufferCopy.srcOffset = 0;
-	bufferCopy.dstOffset = 0;
+	bufferCopy.srcOffset = 0UL;
+	bufferCopy.dstOffset = 0UL;
 	bufferCopy.size = copySize;
 
-	commandBuffer.copyBuffer(srcBuffer.buffer, buffer, 1, &bufferCopy);
+	commandBuffer.copyBuffer(srcBuffer.buffer, buffer, 1U, &bufferCopy);
 
 	commandHandler.endSingleTimeCommand(commandBuffer);
 }
@@ -204,7 +214,7 @@ uint32_t mtd::Memory::findMemoryTypeIndex
 {
 	vk::PhysicalDeviceMemoryProperties memoryProperties = physicalDevice.getMemoryProperties();
 
-	for(uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++)
+	for(uint32_t i = 0U; i < memoryProperties.memoryTypeCount; i++)
 	{
 		bool supported = static_cast<bool>(supportedMemoryIndex & (1U << i));
 		bool sufficient = (memoryProperties.memoryTypes[i].propertyFlags & requestedProperties) == requestedProperties;
@@ -213,5 +223,5 @@ uint32_t mtd::Memory::findMemoryTypeIndex
 	}
 
 	LOG_ERROR("Could not find memory type index with the requested properties.");
-	return 0;
+	return 0U;
 }

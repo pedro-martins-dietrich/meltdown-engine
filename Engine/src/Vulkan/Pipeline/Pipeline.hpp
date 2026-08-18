@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ShaderModule.hpp"
+#include "../Descriptors/DescriptorManager.hpp"
 #include "../Descriptors/DescriptorPool.hpp"
 
 #include "Builders/PipelineMapping.hpp"
@@ -17,8 +18,14 @@ namespace mtd
 		);
 
 		public:
-			Pipeline(const vk::Device& device, const PipelineInfoType& info)
-				: device{device}, pipeline{nullptr}, pipelineLayout{nullptr}, info{info}
+			Pipeline
+			(
+				const vk::Device& device, const DescriptorManager& descriptorManager, const PipelineInfoType& info
+			) : device{device},
+				descriptorManager{descriptorManager},
+				pipeline{nullptr},
+				pipelineLayout{nullptr},
+				info{info}
 			{}
 
 			~Pipeline()
@@ -32,6 +39,7 @@ namespace mtd
 
 			Pipeline(Pipeline&& other) noexcept
 				: device{other.device},
+				descriptorManager{other.descriptorManager},
 				pipeline{std::move(other.pipeline)},
 				pipelineLayout{std::move(other.pipelineLayout)},
 				shaders{std::move(other.shaders)},
@@ -51,44 +59,6 @@ namespace mtd
 			const std::unordered_map<vk::DescriptorType, uint32_t>& getDescriptorTypeCount() const
 				{ return descriptorTypeCount; }
 
-			// Allocates user descriptor set data in the descriptor pool
-			void configureUserDescriptorData(const Device& mtdDevice, const DescriptorPool& pool)
-			{
-				if(descriptorSetHandlers.size() < userDescriptorSetIndex) return;
-
-				DescriptorSetHandler& descriptorSetHandler = descriptorSetHandlers[userDescriptorSetIndex - 1];
-				descriptorSetHandler.defineDescriptorSetsAmount(1);
-				pool.allocateDescriptorSet(descriptorSetHandler);
-
-				for(uint32_t binding = 0U; binding < info.descriptorSetInfo.size(); binding++)
-				{
-					const DescriptorInfo& bindingInfo = info.descriptorSetInfo[binding];
-					descriptorSetHandler.createDescriptorResources
-					(
-						mtdDevice,
-						bindingInfo.totalDescriptorSize,
-						PipelineMapping::mapBufferUsageFlags(bindingInfo.descriptorType),
-						0, binding
-					);
-				}
-				descriptorSetHandler.writeDescriptorSet(0);
-			}
-
-			// Updates the user descriptor data for the specified binding
-			void updateDescriptorData(uint32_t bindingIndex, const void* data) const
-			{
-				if
-				(
-					descriptorSetHandlers.size() < userDescriptorSetIndex
-					|| descriptorSetHandlers[userDescriptorSetIndex - 1].getSetCount() <= bindingIndex
-				) return;
-
-				descriptorSetHandlers[userDescriptorSetIndex - 1].updateDescriptorData
-				(
-					0U, bindingIndex, data, info.descriptorSetInfo[bindingIndex].totalDescriptorSize
-				);
-			}
-
 		protected:
 			// Vulkan graphics pipeline
 			vk::Pipeline pipeline;
@@ -104,10 +74,10 @@ namespace mtd
 
 			// Pipeline specific configurations
 			PipelineInfoType info;
-			// Index for the user defined descriptor set
-			uint32_t userDescriptorSetIndex = 2U;
 
 			// Vulkan device reference
 			const vk::Device& device;
+			// Descriptor manager reference
+			const DescriptorManager& descriptorManager;
 	};
 }

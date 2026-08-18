@@ -23,11 +23,7 @@ mtd::ShaderModule::ShaderModule(const vk::Device& device, vk::ShaderStageFlagBit
 	vk::Result result = device.createShaderModule(&shaderModuleCreateInfo, nullptr, &shaderModule);
 	if(result != vk::Result::eSuccess)
 	{
-		LOG_ERROR
-		(
-			"Failed to create shader module for \"%s\". Vulkan result: %d",
-			shaderPath.c_str(), result
-		);
+		LOG_ERROR("Failed to create shader module for \"%s\". Vulkan result: %d", shaderPath.c_str(), result);
 		return;
 	}
 	LOG_VERBOSE("Loaded shader module: \"%s\"", shaderPath.c_str());
@@ -46,7 +42,6 @@ mtd::ShaderModule::ShaderModule(ShaderModule&& other) noexcept
 	shaderModule = nullptr;
 }
 
-// Creates the Vulkan pipeline shader stage create info
 vk::PipelineShaderStageCreateInfo mtd::ShaderModule::generatePipelineShaderCreateInfo() const
 {
 	return {vk::PipelineShaderStageCreateFlags(), shaderStage, shaderModule, "main", nullptr};

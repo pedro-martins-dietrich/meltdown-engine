@@ -1,21 +1,20 @@
 #include <pch.hpp>
 #include "ComputePipeline.hpp"
 
-#include "Builders/DescriptorSetBuilder.hpp"
 #include "../../Utils/Logger.hpp"
 
 mtd::ComputePipeline::ComputePipeline
 (
 	const Device& mtdDevice,
+	const DescriptorManager& descriptorManager,
 	const ComputePipelineInfo& info,
-	const vk::DescriptorSetLayout& globalDescriptorSetLayout,
 	vk::Extent2D swapchainExtent
-) : Pipeline{mtdDevice.getDevice(), info}, outputImage{mtdDevice.getDevice()},
+) : Pipeline{mtdDevice.getDevice(), descriptorManager, info}, outputImage{mtdDevice},
 	pushConstantData{UIntVec2{0U, 0U}, 0U, 4U, 4U, 4U, 0U, 0U, 0U}
 {
 	loadShaderModule();
 	createDescriptorSetLayouts();
-	createPipelineLayout(globalDescriptorSetLayout);
+	createPipelineLayout();
 	createComputePipeline();
 	createStorageImages(mtdDevice, swapchainExtent);
 
@@ -45,27 +44,21 @@ void mtd::ComputePipeline::dispatchCompute(const vk::CommandBuffer& commandBuffe
 			vk::PipelineStageFlagBits::eNone, vk::PipelineStageFlagBits::eComputeShader
 		);
 
+	std::vector<vk::DescriptorSet> descriptorSets;
+	descriptorSets.reserve(info.descriptorSetIDs.size() + 1);
+	for(DescriptorSetID setID: info.descriptorSetIDs)
+		descriptorSets.emplace_back(descriptorManager.getSet(setID));
+	descriptorSets.emplace_back(descriptorSetHandlers[0].getSet());
+
 	commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline);
 	commandBuffer.bindDescriptorSets
 	(
 		vk::PipelineBindPoint::eCompute,
 		pipelineLayout,
-		1,
-		1, &(descriptorSetHandlers[0].getSet(0)),
-		0, nullptr
+		0U,
+		static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(),
+		0U, nullptr
 	);
-
-	if(descriptorSetHandlers.size() > 1 && descriptorSetHandlers[1].getSetCount() > 0)
-	{
-		commandBuffer.bindDescriptorSets
-		(
-			vk::PipelineBindPoint::eCompute,
-			pipelineLayout,
-			2,
-			1, &(descriptorSetHandlers[1].getSet(0)),
-			0, nullptr
-		);
-	}
 
 	pushConstantData.randomSeed = rand();
 	commandBuffer.pushConstants
@@ -90,19 +83,19 @@ void mtd::ComputePipeline::dispatchCompute(const vk::CommandBuffer& commandBuffe
 void mtd::ComputePipeline::configurePipelineDescriptorSet()
 {
 	vk::DescriptorImageInfo descriptorImageInfo{};
-	outputImage.defineDescriptorImageInfo(&descriptorImageInfo);
+	outputImage.updateDescriptorInfo(descriptorImageInfo);
 	descriptorImageInfo.imageLayout = vk::ImageLayout::eGeneral;
-	descriptorSetHandlers[0].createImageDescriptorResources(0U, 0U, descriptorImageInfo);
+	descriptorSetHandlers[0].createImageDescriptorResources(0U, descriptorImageInfo);
 
 	std::vector<vk::DescriptorImageInfo> descriptorImageInfos(images.size());
-	for(size_t i = 0; i < images.size(); i++)
+	for(size_t i = 0UL; i < images.size(); i++)
 	{
-		images[i].defineDescriptorImageInfo(&descriptorImageInfos[i]);
+		images[i].updateDescriptorInfo(descriptorImageInfos[i]);
 		descriptorImageInfos[i].imageLayout = vk::ImageLayout::eGeneral;
 	}
-	descriptorSetHandlers[0].createImagesDescriptorResources(0U, 1U, descriptorImageInfos);
+	descriptorSetHandlers[0].createImagesDescriptorResources(1U, descriptorImageInfos);
 
-	descriptorSetHandlers[0].writeDescriptorSet(0);
+	descriptorSetHandlers[0].writeDescriptorSet();
 }
 
 void mtd::ComputePipeline::shareRenderTargetImageDescriptor
@@ -111,10 +104,10 @@ void mtd::ComputePipeline::shareRenderTargetImageDescriptor
 ) const
 {
 	vk::DescriptorImageInfo descriptorImageInfo{};
-	outputImage.defineDescriptorImageInfo(&descriptorImageInfo);
+	outputImage.updateDescriptorInfo(descriptorImageInfo);
 	descriptorImageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 
-	descriptorSetHandler.createImageDescriptorResources(0, binding, descriptorImageInfo);
+	descriptorSetHandler.createImageDescriptorResources(binding, descriptorImageInfo);
 }
 
 void mtd::ComputePipeline::resize(const Device& mtdDevice, vk::Extent2D swapchainExtent)
@@ -132,32 +125,12 @@ void mtd::ComputePipeline::resize(const Device& mtdDevice, vk::Extent2D swapchai
 	if(info.calculateWorkgroupsFromImage[1])
 		info.workgroups.y = (info.imageResolution.y + info.workgroupSize.y - 1U) / info.workgroupSize.y;
 
-	pushConstantData.iterationCounter = 0U;
+	pushConstantData.accumulatedFrames = 0U;
 
-	outputImage.resize
-	(
-		mtdDevice,
-		info.imageResolution,
-		vk::ImageTiling::eOptimal,
-		vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled,
-		vk::MemoryPropertyFlagBits::eDeviceLocal,
-		vk::ImageAspectFlagBits::eColor,
-		vk::ImageViewType::e2D
-	);
+	outputImage.resize(info.imageResolution);
 
 	for(Image& image: images)
-	{
-		image.resize
-		(
-			mtdDevice,
-			info.imageResolution,
-			vk::ImageTiling::eOptimal,
-			vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled,
-			vk::MemoryPropertyFlagBits::eDeviceLocal,
-			vk::ImageAspectFlagBits::eColor,
-			vk::ImageViewType::e2D
-		);
-	}
+		image.resize(info.imageResolution);
 	configurePipelineDescriptorSet();
 }
 
@@ -168,8 +141,6 @@ void mtd::ComputePipeline::loadShaderModule()
 
 void mtd::ComputePipeline::createDescriptorSetLayouts()
 {
-	descriptorSetHandlers.reserve(info.descriptorSetInfo.size() == 0 ? 1 : 2);
-
 	std::vector<vk::DescriptorSetLayoutBinding> bindings(2);
 	bindings[0].binding = 0U;
 	bindings[0].descriptorType = vk::DescriptorType::eStorageImage;
@@ -185,30 +156,27 @@ void mtd::ComputePipeline::createDescriptorSetLayouts()
 
 	descriptorSetHandlers.emplace_back(device, bindings);
 	descriptorTypeCount[vk::DescriptorType::eStorageImage] += 3U;
-
-	if(info.descriptorSetInfo.size() == 0) return;
-	bindings.clear();
-
-	DescriptorSetBuilder::buildDescriptorSetLayout(bindings, info.descriptorSetInfo, descriptorTypeCount);
-	descriptorSetHandlers.emplace_back(device, bindings);
 }
 
-void mtd::ComputePipeline::createPipelineLayout(const vk::DescriptorSetLayout& globalDescriptorSetLayout)
+void mtd::ComputePipeline::createPipelineLayout()
 {
-	std::vector<vk::DescriptorSetLayout> descriptorSetLayouts{globalDescriptorSetLayout};
+	std::vector<vk::DescriptorSetLayout> descriptorSetLayouts;
+	descriptorSetLayouts.reserve(info.descriptorLayoutIDs.size() + descriptorSetHandlers.size());
+	for(DescriptorLayoutID layoutID: info.descriptorLayoutIDs)
+		descriptorSetLayouts.emplace_back(descriptorManager.getLayout(layoutID));
 	for(const DescriptorSetHandler& descriptorSetHandler: descriptorSetHandlers)
-		descriptorSetLayouts.push_back(descriptorSetHandler.getLayout());
+		descriptorSetLayouts.emplace_back(descriptorSetHandler.getLayout());
 
 	vk::PushConstantRange pushConstantRange{};
 	pushConstantRange.stageFlags = vk::ShaderStageFlagBits::eCompute;
-	pushConstantRange.offset = 0;
+	pushConstantRange.offset = 0U;
 	pushConstantRange.size = sizeof(ComputeShaderPushConstantData);
 
 	vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
 	pipelineLayoutCreateInfo.flags = vk::PipelineLayoutCreateFlags();
 	pipelineLayoutCreateInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
 	pipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayouts.data();
-	pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
+	pipelineLayoutCreateInfo.pushConstantRangeCount = 1U;
 	pipelineLayoutCreateInfo.pPushConstantRanges = &pushConstantRange;
 
 	vk::Result result = device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &pipelineLayout);
@@ -231,7 +199,7 @@ void mtd::ComputePipeline::createComputePipeline()
 	pipelineCreateInfo.basePipelineHandle = nullptr;
 	pipelineCreateInfo.basePipelineIndex = 0;
 
-	vk::Result result = device.createComputePipelines(nullptr, 1, &pipelineCreateInfo, nullptr, &pipeline);
+	vk::Result result = device.createComputePipelines(nullptr, 1U, &pipelineCreateInfo, nullptr, &pipeline);
 	if(result != vk::Result::eSuccess)
 	{
 		LOG_ERROR("Failed to create compute pipeline. Vulkan result: %d", result);
@@ -243,8 +211,8 @@ void mtd::ComputePipeline::createComputePipeline()
 void mtd::ComputePipeline::createStorageImages(const Device& mtdDevice, vk::Extent2D swapchainExtent)
 {
 	images.reserve(2);
-	images.emplace_back(mtdDevice.getDevice());
-	images.emplace_back(mtdDevice.getDevice());
+	images.emplace_back(mtdDevice);
+	images.emplace_back(mtdDevice);
 
 	if(info.windowResolutionRatio.x > 0.0f)
 	{
@@ -263,29 +231,31 @@ void mtd::ComputePipeline::createStorageImages(const Device& mtdDevice, vk::Exte
 	if(info.calculateWorkgroupsFromImage[1])
 		info.workgroups.y = (info.imageResolution.y + info.workgroupSize.y - 1U) / info.workgroupSize.y;
 
-	outputImage.createImage
+	outputImage.create
 	(
 		info.imageResolution,
 		vk::Format::eR8G8B8A8Unorm,
 		vk::ImageTiling::eOptimal,
-		vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled
+		vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled,
+		vk::MemoryPropertyFlagBits::eDeviceLocal,
+		vk::ImageAspectFlagBits::eColor,
+		vk::ImageViewType::e2D,
+		SamplerType::Nearest
 	);
-	outputImage.createImageMemory(mtdDevice, vk::MemoryPropertyFlagBits::eDeviceLocal);
-	outputImage.createImageView(vk::ImageAspectFlagBits::eColor, vk::ImageViewType::e2D);
-	outputImage.createImageSampler(vk::Filter::eNearest);
 
 	for(Image& image: images)
 	{
-		image.createImage
+		image.create
 		(
 			info.imageResolution,
 			vk::Format::eR32G32B32A32Sfloat,
 			vk::ImageTiling::eOptimal,
-			vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled
+			vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled,
+			vk::MemoryPropertyFlagBits::eDeviceLocal,
+			vk::ImageAspectFlagBits::eColor,
+			vk::ImageViewType::e2D,
+			SamplerType::Linear
 		);
-		image.createImageMemory(mtdDevice, vk::MemoryPropertyFlagBits::eDeviceLocal);
-		image.createImageView(vk::ImageAspectFlagBits::eColor, vk::ImageViewType::e2D);
-		image.createImageSampler(vk::Filter::eLinear);
 	}
 }
 

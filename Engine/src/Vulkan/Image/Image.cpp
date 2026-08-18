@@ -4,203 +4,128 @@
 #include "../Device/GpuBuffer.hpp"
 #include "../../Utils/Logger.hpp"
 
-mtd::Image::Image(const vk::Device& device)
-	: device{device}, image{nullptr}, imageMemory{nullptr}, view{nullptr}, sampler{nullptr}
+mtd::Image::Image(const Device& mtdDevice)
+	: mtdDevice{mtdDevice}, image{nullptr}, imageMemory{nullptr}, view{nullptr}
 {}
+
+mtd::Image::Image
+(
+	const Device& mtdDevice,
+	UIntVec2 imageDimensions,
+	vk::Format imageFormat,
+	vk::ImageTiling imageTiling,
+	vk::ImageUsageFlags usage,
+	vk::MemoryPropertyFlags memoryPropertyFlags,
+	vk::ImageAspectFlags aspects,
+	vk::ImageViewType imageViewType,
+	SamplerType sampler,
+	Vec2 windowResolutionRatio,
+	vk::ImageCreateFlags imageFlags
+) : mtdDevice{mtdDevice}, image{nullptr}, imageMemory{nullptr}, view{nullptr},
+	dimensions{imageDimensions}, format{imageFormat}, tiling{imageTiling}, usageFlags{usage},
+	memoryProperties{memoryPropertyFlags}, aspectFlags{aspects}, viewType{imageViewType},
+	samplerType{sampler}, createFlags{imageFlags}, windowResolutionRatio{windowResolutionRatio}
+{
+	createImage();
+	createMemory();
+	createView();
+}
 
 mtd::Image::~Image()
 {
-	device.destroySampler(sampler);
+	const vk::Device& device = mtdDevice.getDevice();
 	device.destroyImageView(view);
 	device.freeMemory(imageMemory);
 	device.destroyImage(image);
 }
 
 mtd::Image::Image(Image&& other) noexcept
-	: device{other.device},
+	: mtdDevice{other.mtdDevice},
 	image{std::move(other.image)},
 	imageMemory{std::move(other.imageMemory)},
 	view{std::move(other.view)},
-	sampler{std::move(other.sampler)},
+	dimensions{other.dimensions},
 	format{other.format},
-	layout{other.layout},
-	dimensions{other.dimensions}
+	tiling{other.tiling},
+	usageFlags{other.usageFlags},
+	memoryProperties{other.memoryProperties},
+	aspectFlags{other.aspectFlags},
+	viewType{other.viewType},
+	samplerType{other.samplerType},
+	createFlags{other.createFlags},
+	layout{other.layout}
 {
 	other.image = nullptr;
 	other.imageMemory = nullptr;
 	other.view = nullptr;
-	other.sampler = nullptr;
+
+	other.dimensions = UIntVec2{0U, 0U};
 }
 
-void mtd::Image::setVulkanImage(vk::Image newImage, vk::Format newFormat, UIntVec2 newDimensions)
-{
-	image = newImage;
-	format = newFormat;
-	dimensions = newDimensions;
-}
-
-void mtd::Image::createImage
+void mtd::Image::create
 (
 	UIntVec2 imageDimensions,
 	vk::Format imageFormat,
-	vk::ImageTiling tiling,
+	vk::ImageTiling imageTiling,
 	vk::ImageUsageFlags usage,
+	vk::MemoryPropertyFlags memoryPropertyFlags,
+	vk::ImageAspectFlags aspects,
+	vk::ImageViewType imageViewType,
+	SamplerType sampler,
 	vk::ImageCreateFlags imageFlags
 )
 {
-	assert(image == nullptr && "The Vulkan image has already been created.");
-
-	format = imageFormat;
 	dimensions = imageDimensions;
+	format = imageFormat;
+	tiling = imageTiling;
+	usageFlags = usage;
+	memoryProperties = memoryPropertyFlags;
+	aspectFlags = aspects;
+	viewType = imageViewType;
+	samplerType = sampler;
+	createFlags = imageFlags;
 
-	vk::ImageCreateInfo imageCreateInfo{};
-	imageCreateInfo.flags = imageFlags;
-	imageCreateInfo.imageType = vk::ImageType::e2D;
-	imageCreateInfo.format = format;
-	imageCreateInfo.extent = vk::Extent3D{dimensions.x, dimensions.y, 1U};
-	imageCreateInfo.mipLevels = 1U;
-	imageCreateInfo.arrayLayers = 1U;
-	imageCreateInfo.samples = vk::SampleCountFlagBits::e1;
-	imageCreateInfo.tiling = tiling;
-	imageCreateInfo.usage = usage;
-	imageCreateInfo.sharingMode = vk::SharingMode::eExclusive;
-	imageCreateInfo.queueFamilyIndexCount = 0U;
-	imageCreateInfo.pQueueFamilyIndices = nullptr;
-	imageCreateInfo.initialLayout = layout;
-
-	vk::Result result = device.createImage(&imageCreateInfo, nullptr, &image);
-	if(result != vk::Result::eSuccess)
-		LOG_ERROR("Failed to create image. Vulkan result: %d", result);
+	createImage();
+	createMemory();
+	createView();
 }
 
-void mtd::Image::createImageMemory(const Device& mtdDevice, vk::MemoryPropertyFlags memoryProperties)
+void mtd::Image::resize(UIntVec2 newDimensions)
 {
-	assert(image != nullptr && "The image must be created before the image memory.");
-	assert(imageMemory == nullptr && "The Vulkan image memory has already been created.");
+	assert(image && "The Vulkan image must be created before resizing.");
 
-	vk::MemoryRequirements requirements = device.getImageMemoryRequirements(image);
-
-	vk::MemoryAllocateInfo allocationInfo{};
-	allocationInfo.allocationSize = requirements.size;
-	allocationInfo.memoryTypeIndex = Memory::findMemoryTypeIndex
-	(
-		mtdDevice.getPhysicalDevice(),
-		requirements.memoryTypeBits,
-		memoryProperties
-	);
-
-	vk::Result result = device.allocateMemory(&allocationInfo, nullptr, &imageMemory);
-	if(result != vk::Result::eSuccess)
-	{
-		LOG_ERROR("Failed to allocate memory for image. Vulkan result: %d", result);
-		return;
-	}
-
-	device.bindImageMemory(image, imageMemory, 0);
-}
-
-void mtd::Image::createImageView(vk::ImageAspectFlags aspect, vk::ImageViewType viewType)
-{
-	assert(image != nullptr && "The image must be created before the image view.");
-	assert(view == nullptr && "The Vulkan image view has already been created.");
-
-	vk::ComponentMapping componentMapping{};
-	componentMapping.r = vk::ComponentSwizzle::eIdentity;
-	componentMapping.g = vk::ComponentSwizzle::eIdentity;
-	componentMapping.b = vk::ComponentSwizzle::eIdentity;
-	componentMapping.a = vk::ComponentSwizzle::eIdentity;
-
-	vk::ImageSubresourceRange subresourceRange{};
-	subresourceRange.aspectMask = aspect;
-	subresourceRange.baseMipLevel = 0U;
-	subresourceRange.levelCount = 1U;
-	subresourceRange.baseArrayLayer = 0U;
-	subresourceRange.layerCount = 1U;
-
-	vk::ImageViewCreateInfo imageViewCreateInfo{};
-	imageViewCreateInfo.flags = vk::ImageViewCreateFlags();
-	imageViewCreateInfo.image = image;
-	imageViewCreateInfo.viewType = viewType;
-	imageViewCreateInfo.format = format;
-	imageViewCreateInfo.components = componentMapping;
-	imageViewCreateInfo.subresourceRange = subresourceRange;
-
-	vk::Result result = device.createImageView(&imageViewCreateInfo, nullptr, &view);
-	if(result != vk::Result::eSuccess)
-		LOG_ERROR("Failed to create image view. Vulkan result: %d", result);
-}
-
-void mtd::Image::createImageSampler(vk::Filter samplingFilter)
-{
-	assert(sampler == nullptr && "The Vulkan sampler has already been created.");
-
-	vk::SamplerCreateInfo samplerCreateInfo{};
-	samplerCreateInfo.flags = vk::SamplerCreateFlags();
-	samplerCreateInfo.magFilter = samplingFilter;
-	samplerCreateInfo.minFilter = samplingFilter;
-	samplerCreateInfo.mipmapMode = vk::SamplerMipmapMode::eLinear;
-	samplerCreateInfo.addressModeU = vk::SamplerAddressMode::eRepeat;
-	samplerCreateInfo.addressModeV = vk::SamplerAddressMode::eRepeat;
-	samplerCreateInfo.addressModeW = vk::SamplerAddressMode::eRepeat;
-	samplerCreateInfo.mipLodBias = 0.0f;
-	samplerCreateInfo.anisotropyEnable = vk::False;
-	samplerCreateInfo.maxAnisotropy = 1.0f;
-	samplerCreateInfo.compareEnable = vk::False;
-	samplerCreateInfo.compareOp = vk::CompareOp::eAlways;
-	samplerCreateInfo.minLod = 0.0f;
-	samplerCreateInfo.maxLod = 0.0f;
-	samplerCreateInfo.borderColor = vk::BorderColor::eIntOpaqueBlack;
-	samplerCreateInfo.unnormalizedCoordinates = vk::False;
-
-	vk::Result result = device.createSampler(&samplerCreateInfo, nullptr, &sampler);
-	if(result != vk::Result::eSuccess)
-		LOG_ERROR("Failed to create texture sampler. Vulkan result: %d", result);
-}
-
-void mtd::Image::resize
-(
-	const Device& mtdDevice,
-	UIntVec2 newDimensions,
-	vk::ImageTiling tiling,
-	vk::ImageUsageFlags usage,
-	vk::MemoryPropertyFlags memoryProperties,
-	vk::ImageAspectFlags aspect,
-	vk::ImageViewType viewType,
-	vk::ImageCreateFlags imageFlags
-)
-{
-	device.destroyImageView(view);
-	device.freeMemory(imageMemory);
-	device.destroyImage(image);
+	mtdDevice.getDevice().destroyImageView(view);
+	mtdDevice.getDevice().freeMemory(imageMemory);
+	mtdDevice.getDevice().destroyImage(image);
 
 	image = nullptr;
 	imageMemory = nullptr;
 	view = nullptr;
 	layout = vk::ImageLayout::eUndefined;
 
-	createImage(newDimensions, format, tiling, usage, imageFlags);
-	createImageMemory(mtdDevice, memoryProperties);
-	createImageView(aspect, viewType);
+	dimensions = newDimensions;
+
+	createImage();
+	createMemory();
+	createView();
 }
 
-void mtd::Image::defineDescriptorImageInfo(vk::DescriptorImageInfo* descriptorImageInfo) const
+void mtd::Image::updateDescriptorInfo(vk::DescriptorImageInfo& descriptorImageInfo) const
 {
-	assert(image != nullptr && "The image view must be created before defining the descriptor image info.");
+	assert(image && view && "The image and its view must be created before updating the descriptor image info.");
 
-	descriptorImageInfo->sampler = sampler;
-	descriptorImageInfo->imageView = view;
-	descriptorImageInfo->imageLayout = layout;
+	descriptorImageInfo.sampler = SamplerManager::getSampler(samplerType);
+	descriptorImageInfo.imageView = view;
+	descriptorImageInfo.imageLayout = layout;
 }
 
 void mtd::Image::transitionImageLayout
 (
-	vk::CommandBuffer commandBuffer,
-	vk::ImageLayout newLayout,
-	vk::PipelineStageFlags srcStage,
-	vk::PipelineStageFlags dstStage
+	vk::CommandBuffer commandBuffer, vk::ImageLayout newLayout,
+	vk::PipelineStageFlags srcStage, vk::PipelineStageFlags dstStage
 ) const
 {
-	assert(image != nullptr && "The image must be created before transitioning it.");
+	assert(image && "The image must be created before transitioning it.");
 
 	if(newLayout == layout) return;
 
@@ -277,7 +202,7 @@ void mtd::Image::transitionImageLayout
 
 void mtd::Image::copyBufferToImage(const CommandHandler& commandHandler, vk::Buffer srcBuffer)
 {
-	assert(image != nullptr && "The image must be created before copying to it.");
+	assert(image && "The image must be created before copying to it.");
 
 	vk::ImageSubresourceLayers subresource{};
 	subresource.aspectMask = vk::ImageAspectFlagBits::eColor;
@@ -286,7 +211,7 @@ void mtd::Image::copyBufferToImage(const CommandHandler& commandHandler, vk::Buf
 	subresource.layerCount = 1U;
 
 	vk::BufferImageCopy bufferImageCopy{};
-	bufferImageCopy.bufferOffset = 0;
+	bufferImageCopy.bufferOffset = 0UL;
 	bufferImageCopy.bufferRowLength = 0U;
 	bufferImageCopy.bufferImageHeight = 0U;
 	bufferImageCopy.imageSubresource = subresource;
@@ -295,30 +220,98 @@ void mtd::Image::copyBufferToImage(const CommandHandler& commandHandler, vk::Buf
 
 	vk::CommandBuffer commandBuffer = commandHandler.beginSingleTimeCommand();
 
+	transitionImageLayout(commandBuffer, vk::ImageLayout::eTransferDstOptimal);
 	commandBuffer.copyBufferToImage
 	(
-		srcBuffer,
-		image,
-		vk::ImageLayout::eTransferDstOptimal,
-		bufferImageCopy
+		srcBuffer, image, vk::ImageLayout::eTransferDstOptimal, bufferImageCopy
+	);
+	transitionImageLayout
+	(
+		commandBuffer, vk::ImageLayout::eShaderReadOnlyOptimal,
+		vk::PipelineStageFlagBits::eNone, vk::PipelineStageFlagBits::eAllGraphics
 	);
 
 	commandHandler.endSingleTimeCommand(commandBuffer);
 }
 
-void mtd::Image::destroy()
+void mtd::Image::createImage()
 {
-	device.destroySampler(sampler);
-	device.destroyImageView(view);
-	device.freeMemory(imageMemory);
-	device.destroyImage(image);
+	assert(!image && "The Vulkan image has already been created.");
+	assert(dimensions.x != 0U && dimensions.y != 0U && "The image must have a valid size to be created.");
 
-	image = nullptr;
-	imageMemory = nullptr;
-	view = nullptr;
-	sampler = nullptr;
+	vk::ImageCreateInfo imageCreateInfo{};
+	imageCreateInfo.flags = createFlags;
+	imageCreateInfo.imageType = vk::ImageType::e2D;
+	imageCreateInfo.format = format;
+	imageCreateInfo.extent = vk::Extent3D{dimensions.x, dimensions.y, 1U};
+	imageCreateInfo.mipLevels = 1U;
+	imageCreateInfo.arrayLayers = 1U;
+	imageCreateInfo.samples = vk::SampleCountFlagBits::e1;
+	imageCreateInfo.tiling = tiling;
+	imageCreateInfo.usage = usageFlags;
+	imageCreateInfo.sharingMode = vk::SharingMode::eExclusive;
+	imageCreateInfo.queueFamilyIndexCount = 0U;
+	imageCreateInfo.pQueueFamilyIndices = nullptr;
+	imageCreateInfo.initialLayout = layout;
 
-	format = vk::Format::eUndefined;
-	layout = vk::ImageLayout::eUndefined;
-	dimensions = {0U, 0U};
+	vk::Result result = mtdDevice.getDevice().createImage(&imageCreateInfo, nullptr, &image);
+	if(result != vk::Result::eSuccess)
+		LOG_ERROR("Failed to create image. Vulkan result: %d", result);
+}
+
+void mtd::Image::createMemory()
+{
+	assert(image && "The image must be created before the image memory.");
+	assert(!imageMemory && "The Vulkan image memory has already been created.");
+
+	vk::MemoryRequirements requirements = mtdDevice.getDevice().getImageMemoryRequirements(image);
+
+	vk::MemoryAllocateInfo allocationInfo{};
+	allocationInfo.allocationSize = requirements.size;
+	allocationInfo.memoryTypeIndex = Memory::findMemoryTypeIndex
+	(
+		mtdDevice.getPhysicalDevice(),
+		requirements.memoryTypeBits,
+		memoryProperties
+	);
+
+	vk::Result result = mtdDevice.getDevice().allocateMemory(&allocationInfo, nullptr, &imageMemory);
+	if(result != vk::Result::eSuccess)
+	{
+		LOG_ERROR("Failed to allocate memory for image. Vulkan result: %d", result);
+		return;
+	}
+
+	mtdDevice.getDevice().bindImageMemory(image, imageMemory, 0UL);
+}
+
+void mtd::Image::createView()
+{
+	assert(image && "The image must be created before the image view.");
+	assert(!view && "The Vulkan image view has already been created.");
+
+	vk::ComponentMapping componentMapping{};
+	componentMapping.r = vk::ComponentSwizzle::eIdentity;
+	componentMapping.g = vk::ComponentSwizzle::eIdentity;
+	componentMapping.b = vk::ComponentSwizzle::eIdentity;
+	componentMapping.a = vk::ComponentSwizzle::eIdentity;
+
+	vk::ImageSubresourceRange subresourceRange{};
+	subresourceRange.aspectMask = aspectFlags;
+	subresourceRange.baseMipLevel = 0U;
+	subresourceRange.levelCount = 1U;
+	subresourceRange.baseArrayLayer = 0U;
+	subresourceRange.layerCount = 1U;
+
+	vk::ImageViewCreateInfo imageViewCreateInfo{};
+	imageViewCreateInfo.flags = vk::ImageViewCreateFlags();
+	imageViewCreateInfo.image = image;
+	imageViewCreateInfo.viewType = viewType;
+	imageViewCreateInfo.format = format;
+	imageViewCreateInfo.components = componentMapping;
+	imageViewCreateInfo.subresourceRange = subresourceRange;
+
+	vk::Result result = mtdDevice.getDevice().createImageView(&imageViewCreateInfo, nullptr, &view);
+	if(result != vk::Result::eSuccess)
+		LOG_ERROR("Failed to create image view. Vulkan result: %d", result);
 }

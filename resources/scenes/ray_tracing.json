@@ -1,5 +1,5 @@
 {
-	"scene-loader-version": "0.2.0",
+	"scene-loader-version": "0.2.2",
 	"camera":
 	{
 		"orthographic": false,
@@ -11,6 +11,91 @@
 		"yaw": 0.0,
 		"pitch": 0.0
 	},
+	"gpu-resources":
+	{
+		"buffers": [],
+		"images": []
+	},
+	"descriptor-layouts":
+	[
+		{
+			"descriptors":
+			[
+				{
+					"binding": 0,
+					"type": 0,
+					"shader-stage": 127,
+					"count": 1
+				},
+				{
+					"binding": 1,
+					"type": 1,
+					"shader-stage": 127,
+					"count": 1
+				},
+				{
+					"binding": 2,
+					"type": 1,
+					"shader-stage": 127,
+					"count": 1
+				},
+				{
+					"binding": 3,
+					"type": 1,
+					"shader-stage": 127,
+					"count": 1
+				},
+				{
+					"binding": 4,
+					"type": 3,
+					"shader-stage": 127,
+					"count": 1
+				},
+				{
+					"binding": 5,
+					"type": 1,
+					"shader-stage": 127,
+					"count": 1
+				},
+				{
+					"binding": 6,
+					"type": 1,
+					"shader-stage": 127,
+					"count": 1
+				},
+				{
+					"binding": 7,
+					"type": 1,
+					"shader-stage": 127,
+					"count": 1
+				},
+				{
+					"binding": 8,
+					"type": 1,
+					"shader-stage": 127,
+					"count": 1
+				}
+			]
+		}
+	],
+	"descriptor-sets":
+	[
+		{
+			"layout": 0,
+			"resources":
+			[
+				["Camera"],
+				["VertexBuffer"],
+				["IndexBuffer"],
+				["SubmeshBuffer"],
+				["Textures"],
+				["MaterialBuffer"],
+				["MaterialIndexingBuffer"],
+				["MaterialSetBuffer"],
+				["RenderObjectsBuffer"]
+			]
+		}
+	],
 	"framebuffers": [],
 	"rasterization-pipelines": [],
 	"compute-pipelines": [],
@@ -21,7 +106,8 @@
 			"ray-gen-shader": "ray-tracing.rgen.spv",
 			"closest-hit-shader": "ray-tracing.rchit.spv",
 			"miss-shader": "ray-tracing.rmiss.spv",
-			"descriptor-set-info": [],
+			"descriptor-layouts": [0],
+			"descriptor-sets": [0],
 			"resolution-ratio-horizontal": 1.0,
 			"resolution-ratio-vertical": 1.0,
 			"material-float-data-types": [0, 1, 2, 3, 4],
@@ -35,7 +121,8 @@
 			"vertex-shader": "framebuffer.vert.spv",
 			"fragment-shader": "framebuffer.frag.spv",
 			"target-framebuffer": -1,
-			"descriptor-set-info": [],
+			"descriptor-layouts": [],
+			"descriptor-sets": [],
 			"input-attachments": [],
 			"compute-storage-images": [],
 			"ray-tracing-storage-images": [0],

@@ -12,13 +12,12 @@ mtd::DescriptorPool::~DescriptorPool()
 	clear();
 }
 
-// Creates a descriptor pool
 void mtd::DescriptorPool::createDescriptorPool
 (
 	const std::vector<PoolSizeData>& poolSizesInfo, vk::DescriptorPoolCreateFlags flags
 )
 {
-	uint32_t maxSets = 0;
+	uint32_t maxSets = 0U;
 
 	std::vector<vk::DescriptorPoolSize> poolSizes{poolSizesInfo.size()};
 	for(uint32_t i = 0; i < poolSizesInfo.size(); i++)
@@ -40,27 +39,22 @@ void mtd::DescriptorPool::createDescriptorPool
 		LOG_ERROR("Failed to create descriptor pool. Vulkan result: %d", result);
 }
 
-// Allocates descriptor sets in the pool
 void mtd::DescriptorPool::allocateDescriptorSet
 (
-	DescriptorSetHandler& descriptorSetHandler,
-	const void* pExtraAllocateInfo
+	DescriptorSetHandler& descriptorSetHandler, const void* pExtraAllocateInfo
 ) const
 {
-	std::vector<vk::DescriptorSetLayout> layouts{descriptorSetHandler.getSetCount(), descriptorSetHandler.getLayout()};
-
 	vk::DescriptorSetAllocateInfo setAllocateInfo{};
 	setAllocateInfo.descriptorPool = descriptorPool;
-	setAllocateInfo.descriptorSetCount = descriptorSetHandler.getSetCount();
-	setAllocateInfo.pSetLayouts = layouts.data();
+	setAllocateInfo.descriptorSetCount = 1U;
+	setAllocateInfo.pSetLayouts = &(descriptorSetHandler.getLayout());
 	setAllocateInfo.pNext = pExtraAllocateInfo;
 
-	vk::Result result = device.allocateDescriptorSets(&setAllocateInfo, descriptorSetHandler.getSets().data());
+	vk::Result result = device.allocateDescriptorSets(&setAllocateInfo, &(descriptorSetHandler.getSet()));
 	if(result != vk::Result::eSuccess)
 		LOG_ERROR("Failed to allocate descriptor set. Vulkan result: %d", result);
 }
 
-// Clears the descriptor pool and its sets
 void mtd::DescriptorPool::clear()
 {
 	if(isClear) return;

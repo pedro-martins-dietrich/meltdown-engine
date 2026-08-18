@@ -110,12 +110,6 @@ namespace mtd
 		Vec3 normal;
 	};
 
-	// Texture data for loading from the disk to the GPU
-	struct TextureInfo
-	{
-		std::string texturePath;
-	};
-
 	// Information about the attributes for a specific material type
 	struct MaterialInfo
 	{
@@ -154,9 +148,51 @@ namespace mtd
 	{
 		const vk::RenderPass& renderPass;
 		const vk::Extent2D& extent;
-		const vk::DescriptorSet& globalDescriptorSet;
 		const vk::Framebuffer* framebuffer;
 		const SynchronizationBundle* syncBundle;
+	};
+
+	// Resource IDs of the GPU resources managed by the engine
+	struct SceneResources
+	{
+		ResourceID cameraResourceID = 0U;
+		ResourceID vertexBufferID = 0U;
+		ResourceID indexBufferID = 0U;
+		ResourceID submeshBufferID = 0U;
+		ResourceID materialBufferID = 0U;
+		ResourceID materialIndexingBufferID = 0U;
+		ResourceID materialSetBufferID = 0U;
+        ResourceID missingTextureID = 0U;
+		std::vector<ResourceID> textureIDs = {};
+	};
+
+	// Descriptor set layout binding data
+	struct DescriptorLayoutBindingData
+	{
+		uint32_t count;
+		vk::DescriptorType type;
+	};
+
+	// Descriptor set layout data
+	struct DescriptorLayoutData
+	{
+		vk::DescriptorSetLayout layout;
+		std::vector<DescriptorLayoutBindingData> bindings;
+	};
+
+	// Descriptor set data
+	struct DescriptorSetData
+	{
+		DescriptorLayoutID layoutID;
+		vk::DescriptorSet set;
+		std::vector<std::vector<ResourceID>> resources;
+	};
+
+	// Indentifier for a single descriptor
+	struct DescriptorIdentifier
+	{
+		DescriptorSetID setID;
+		uint32_t binding;
 	};
 
 	// Compute shader push constant struct

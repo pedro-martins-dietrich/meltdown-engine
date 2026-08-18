@@ -2,30 +2,93 @@
 
 namespace mtd
 {
+	template<typename E>
+	struct EnableBitMaskOperators : std::false_type {};
+
+	template<typename E>
+	concept BitMaskEnum = std::is_enum_v<E> && EnableBitMaskOperators<E>::value;
+
+	template<BitMaskEnum E>
+	constexpr E operator|(E a, E b)
+	{
+		using T = std::underlying_type_t<E>;
+		return static_cast<E>(static_cast<T>(a) | static_cast<T>(b));
+	}
+
+	template<BitMaskEnum E>
+	constexpr E operator&(E a, E b)
+	{
+		using T = std::underlying_type_t<E>;
+		return static_cast<E>(static_cast<T>(a) & static_cast<T>(b));
+	}
+
+	template<BitMaskEnum E>
+	constexpr E& operator|=(E& a, E b)
+	{
+		return a = a | b;
+	}
+
+	template<BitMaskEnum E>
+	constexpr E& operator&=(E& a, E b)
+	{
+		return a = a & b;
+	}
+
+	/*
+	* @brief Enables the usage of bit mask operators on the enum class.
+	*
+	* @param Enum The enum class type to enable the bit mask operators.
+	*/
+	#define ENABLE_ENUM_FLAGS(Enum) template<> struct EnableBitMaskOperators<Enum> : std::true_type {};
+
+	/* @brief ID for handling GPU resources. */
+	using ResourceID = uint32_t;
+	/* @brief ID for handling descriptor set layouts. */
+	using DescriptorLayoutID = uint32_t;
+	/* @brief ID for handling descriptor sets. */
+	using DescriptorSetID = uint32_t;
+
 	/*
 	* @brief Identifier for the pipeline shader stage.
 	*/
-	enum class ShaderStage
+	enum class ShaderStage : uint32_t
 	{
-		Vertex,
-		Fragment,
-		Vertex_Fragment,
-		Compute,
-		RayGeneration,
-		ClosestHit,
-		AnyHit,
-		Miss,
-		RayGeneration_ClosestHit,
-		RayGeneration_AnyHit,
-		RayGeneration_Miss,
-		ClosestHit_AnyHit,
-		ClosestHit_Miss,
-		AnyHit_Miss,
-		RayGeneration_ClosestHit_AnyHit,
-		RayGeneration_ClosestHit_Miss,
-		RayGeneration_AnyHit_Miss,
-		ClosestHit_AnyHit_Miss,
-		RayGeneration_ClosestHit_AnyHit_Miss
+		None = 0U,
+		Vertex = 1U << 0,
+		Fragment = 1U << 1,
+		Compute = 1U << 2,
+		RayGeneration = 1U << 3,
+		ClosestHit = 1U << 4,
+		AnyHit = 1U << 5,
+		Miss = 1U << 6
+	};
+	ENABLE_ENUM_FLAGS(ShaderStage);
+
+	/*
+	* @brief Possible usages for GPU buffers.
+	*/
+	enum class GpuBufferType : uint32_t
+	{
+		None = 0U,
+		Uniform = 1U << 0,
+		Storage = 1U << 1,
+		Vertex = 1U << 2,
+		Index = 1U << 3,
+		TransferSource = 1U << 4,
+		TransferDestination = 1U << 5
+	};
+	ENABLE_ENUM_FLAGS(GpuBufferType)
+
+	/*
+	* @brief Type of GPU memory usages.
+	*/
+	enum class GpuMemoryUsage
+	{
+		Auto,
+		GpuOnly,
+		CpuUpload,
+		CpuUploadOnce,
+		CpuReadback
 	};
 
 	/*
@@ -34,7 +97,9 @@ namespace mtd
 	enum class DescriptorType
 	{
 		UniformBuffer,
-		StorageImage
+		StorageBuffer,
+		StorageImage,
+		CombinedImageSampler
 	};
 
 	/*

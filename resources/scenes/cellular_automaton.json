@@ -1,5 +1,5 @@
 {
-	"scene-loader-version": "0.2.0",
+	"scene-loader-version": "0.2.2",
 	"camera":
 	{
 		"orthographic": false,
@@ -11,6 +11,13 @@
 		"yaw": 0.0,
 		"pitch": 0.4
 	},
+	"gpu-resources":
+	{
+		"buffers": [],
+		"images": []
+	},
+	"descriptor-layouts": [],
+	"descriptor-sets": [],
 	"framebuffers": [],
 	"rasterization-pipelines": [],
 	"compute-pipelines":
@@ -18,7 +25,8 @@
 		{
 			"name": "Cellular Automaton Compute",
 			"compute-shader": "cellular-automaton.comp.spv",
-			"descriptor-set-info": [],
+			"descriptor-layouts": [],
+			"descriptor-sets": [],
 			"resolution-ratio-horizontal": 0.125,
 			"resolution-ratio-vertical": 0.125,
 			"workgroups": [-1, -1, 1],
@@ -33,7 +41,8 @@
 			"vertex-shader": "framebuffer.vert.spv",
 			"fragment-shader": "framebuffer.frag.spv",
 			"target-framebuffer": -1,
-			"descriptor-set-info": [],
+			"descriptor-layouts": [],
+			"descriptor-sets": [],
 			"input-attachments": [],
 			"compute-storage-images": [0],
 			"ray-tracing-storage-images": [],

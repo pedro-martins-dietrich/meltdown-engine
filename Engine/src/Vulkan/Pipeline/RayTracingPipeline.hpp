@@ -14,8 +14,8 @@ namespace mtd
 			RayTracingPipeline
 			(
 				const Device& mtdDevice,
+				const DescriptorManager& descriptorManager,
 				const RayTracingPipelineInfo& info,
-				const vk::DescriptorSetLayout& globalDescriptorSetLayout,
 				vk::Extent2D swapchainExtent
 			);
 			~RayTracingPipeline() = default;
@@ -77,7 +77,7 @@ namespace mtd
 			void createStorageImages(const Device& mtdDevice, vk::Extent2D swapchainExtent);
 
 			// Creates the layout for the pipeline
-			void createPipelineLayout(const vk::DescriptorSetLayout& globalDescriptorSetLayout);
+			void createPipelineLayout();
 			// Creates the Vulkan ray tracing pipeline
 			void createRayTracingPipeline(const vk::detail::DispatchLoaderDynamic& dldi);
 

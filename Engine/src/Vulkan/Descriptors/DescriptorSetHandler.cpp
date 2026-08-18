@@ -8,7 +8,7 @@ mtd::DescriptorSetHandler::DescriptorSetHandler
 	const vk::Device& device,
 	const std::vector<vk::DescriptorSetLayoutBinding>& setLayoutBindings,
 	const vk::DescriptorSetLayoutBindingFlagsCreateInfo* pFlags
-) : device{device}, descriptorSetLayout{nullptr}
+) : device{device}, descriptorSetLayout{nullptr}, descriptorSet{nullptr}
 {
 	createDescriptorSetLayout(setLayoutBindings, pFlags);
 }
@@ -21,41 +21,22 @@ mtd::DescriptorSetHandler::~DescriptorSetHandler()
 mtd::DescriptorSetHandler::DescriptorSetHandler(DescriptorSetHandler&& other) noexcept
 	: device{other.device},
 	descriptorSetLayout{std::move(other.descriptorSetLayout)},
-	descriptorSets{std::move(other.descriptorSets)},
-	descriptorTypes{std::move(other.descriptorTypes)},
-	resourcesList{std::move(other.resourcesList)},
-	writeOps{std::move(other.writeOps)}
+	descriptorSet{std::move(other.descriptorSet)},
+	writeOperations{std::move(other.writeOperations)},
+	resourcesList{std::move(other.resourcesList)}
 {
 	other.descriptorSetLayout = nullptr;
-	for(vk::DescriptorSet& set: other.descriptorSets)
-		set = nullptr;
-}
-
-void mtd::DescriptorSetHandler::defineDescriptorSetsAmount(uint32_t swappableSetsAmount)
-{
-	descriptorSets.resize(swappableSetsAmount);
-	resourcesList.resize(swappableSetsAmount);
-	for(std::vector<DescriptorResources>& setResourcesList: resourcesList)
-		setResourcesList.resize(descriptorTypes.size());
+	other.descriptorSet = nullptr;
 }
 
 void mtd::DescriptorSetHandler::createDescriptorResources
 (
-	const Device& mtdDevice,
-	vk::DeviceSize resourceSize,
-	vk::BufferUsageFlags usageFlags,
-	uint32_t swappableSetIndex,
-	uint32_t binding
+	const Device& mtdDevice, vk::DeviceSize resourceSize, vk::BufferUsageFlags usageFlags, uint32_t binding
 )
 {
-	assert
-	(
-		swappableSetIndex < resourcesList.size() &&
-		binding < resourcesList[swappableSetIndex].size() &&
-		"Descriptor out of bounds for resource creation."
-	);
+	assert(binding < resourcesList.size() && "Descriptor out of bounds for resource creation.");
 
-	DescriptorResources& resources = resourcesList[swappableSetIndex][binding];
+	DescriptorResources& resources = resourcesList[binding];
 	resources.descriptorBuffer = std::make_unique<GpuBuffer>
 	(
 		mtdDevice,
@@ -67,157 +48,97 @@ void mtd::DescriptorSetHandler::createDescriptorResources
 	resources.descriptorBufferInfo.buffer = resources.descriptorBuffer->getBuffer();
 	resources.descriptorBufferInfo.offset = 0UL;
 	resources.descriptorBufferInfo.range = resourceSize;
+
+	writeOperations[binding].dstSet = descriptorSet;
+	writeOperations[binding].pBufferInfo = &(resources.descriptorBufferInfo);
 }
 
 void mtd::DescriptorSetHandler::createImageDescriptorResources
 (
-	uint32_t swappableSetIndex, uint32_t binding, const vk::DescriptorImageInfo& descriptorImageInfo
+	uint32_t binding, const vk::DescriptorImageInfo& descriptorImageInfo
 )
 {
-	assert
-	(
-		swappableSetIndex < resourcesList.size() &&
-		binding < resourcesList[swappableSetIndex].size() &&
-		"Descriptor out of bounds for image resource creation."
-	);
+	assert(binding < resourcesList.size() && "Descriptor out of bounds for image resource creation.");
 
-	resourcesList[swappableSetIndex][binding].descriptorImagesInfo = {descriptorImageInfo};
+	resourcesList[binding].descriptorImagesInfo = {descriptorImageInfo};
+
+	writeOperations[binding].dstSet = descriptorSet;
+	writeOperations[binding].pImageInfo = resourcesList[binding].descriptorImagesInfo.data();
 }
 
 void mtd::DescriptorSetHandler::createImagesDescriptorResources
 (
-	uint32_t swappableSetIndex,
-	uint32_t binding,
-	std::vector<vk::DescriptorImageInfo>& descriptorImagesInfo
+	uint32_t binding, std::vector<vk::DescriptorImageInfo>& descriptorImagesInfo
 )
 {
-	assert
-	(
-		swappableSetIndex < resourcesList.size() &&
-		binding < resourcesList[swappableSetIndex].size() &&
-		"Descriptor out of bounds for image resource creation."
-	);
+	assert(binding < resourcesList.size() && "Descriptor out of bounds for image resource creation.");
 
-	resourcesList[swappableSetIndex][binding].descriptorImagesInfo = std::move(descriptorImagesInfo);
+	resourcesList[binding].descriptorImagesInfo = std::move(descriptorImagesInfo);
+
+	writeOperations[binding].dstSet = descriptorSet;
+	writeOperations[binding].descriptorCount
+		= static_cast<uint32_t>(resourcesList[binding].descriptorImagesInfo.size());
+	writeOperations[binding].pImageInfo = resourcesList[binding].descriptorImagesInfo.data();
 }
 
 void mtd::DescriptorSetHandler::assignExternalResourcesToDescriptor
 (
-	uint32_t swappableSetIndex, uint32_t binding, const GpuBuffer& buffer, const void* pNext
+	uint32_t binding, const GpuBuffer& buffer, const void* pNext
 )
 {
-	assert
-	(
-		swappableSetIndex < resourcesList.size() &&
-		binding < resourcesList[swappableSetIndex].size() &&
-		"Descriptor out of bounds for resource assignment."
-	);
+	assert(binding < resourcesList.size() && "Descriptor out of bounds for resource assignment.");
 
-	vk::DescriptorBufferInfo& descriptorBufferInfo = resourcesList[swappableSetIndex][binding].descriptorBufferInfo;
+	vk::DescriptorBufferInfo& descriptorBufferInfo = resourcesList[binding].descriptorBufferInfo;
 	descriptorBufferInfo.buffer = buffer.getBuffer();
 	descriptorBufferInfo.offset = 0UL;
 	descriptorBufferInfo.range = buffer.getSize();
 
-	resourcesList[swappableSetIndex][binding].pNext = pNext;
+	writeOperations[binding].dstSet = descriptorSet;
+	writeOperations[binding].pBufferInfo = &descriptorBufferInfo;
+	writeOperations[binding].pNext = pNext;
 }
 
-void mtd::DescriptorSetHandler::writeDescriptorSet(uint32_t swappableSetIndex)
-{
-	assert(swappableSetIndex < resourcesList.size() && "Swappable descriptor set not available to write data.");
-
-	const std::vector<DescriptorResources>& setResourcesList = resourcesList[swappableSetIndex];
-
-	writeOps.resize(setResourcesList.size());
-	for(uint32_t binding = 0U; binding < setResourcesList.size(); binding++)
-	{
-		const DescriptorResources& bindingResources = setResourcesList[binding];
-		uint32_t descriptorCount = 1U;
-
-		const vk::DescriptorImageInfo* pImageInfo = nullptr;
-		const vk::DescriptorBufferInfo* pBufferInfo = nullptr;
-		if
-		(
-			descriptorTypes[binding] == vk::DescriptorType::eCombinedImageSampler
-				|| descriptorTypes[binding] == vk::DescriptorType::eStorageImage
-		)
-		{
-			pImageInfo = bindingResources.descriptorImagesInfo.data();
-			descriptorCount = static_cast<uint32_t>(bindingResources.descriptorImagesInfo.size());
-		}
-		else
-		{
-			pBufferInfo = &(bindingResources.descriptorBufferInfo);
-		}
-
-		writeOps[binding].dstSet = descriptorSets[swappableSetIndex];
-		writeOps[binding].dstBinding = binding;
-		writeOps[binding].dstArrayElement = 0U;
-		writeOps[binding].descriptorCount = descriptorCount;
-		writeOps[binding].descriptorType = descriptorTypes[binding];
-		writeOps[binding].pImageInfo = pImageInfo;
-		writeOps[binding].pBufferInfo = pBufferInfo;
-		writeOps[binding].pTexelBufferView = nullptr;
-		writeOps[binding].pNext = bindingResources.pNext;
-	}
-
-	device.updateDescriptorSets(static_cast<uint32_t>(writeOps.size()), writeOps.data(), 0U, nullptr);
-}
-
-void mtd::DescriptorSetHandler::writeDescriptor(uint32_t swappableSetIndex, uint32_t binding) const
-{
-	assert
-	(
-		swappableSetIndex < resourcesList.size() &&
-		binding < resourcesList[swappableSetIndex].size() &&
-		"Descriptor out of bounds for descriptor writing."
-	);
-
-	const DescriptorResources& bindingResources = resourcesList[swappableSetIndex][binding];
-	uint32_t descriptorCount = 1U;
-
-	const vk::DescriptorImageInfo* pImageInfo = nullptr;
-	const vk::DescriptorBufferInfo* pBufferInfo = nullptr;
-	if
-	(
-		descriptorTypes[binding] == vk::DescriptorType::eCombinedImageSampler
-			|| descriptorTypes[binding] == vk::DescriptorType::eStorageImage
-	)
-	{
-		pImageInfo = bindingResources.descriptorImagesInfo.data();
-		descriptorCount = static_cast<uint32_t>(bindingResources.descriptorImagesInfo.size());
-	}
-	else
-	{
-		pBufferInfo = &(bindingResources.descriptorBufferInfo);
-	}
-
-	vk::WriteDescriptorSet writeOperation;
-	writeOperation.dstSet = descriptorSets[swappableSetIndex];
-	writeOperation.dstBinding = binding;
-	writeOperation.dstArrayElement = 0U;
-	writeOperation.descriptorCount = descriptorCount;
-	writeOperation.descriptorType = descriptorTypes[binding];
-	writeOperation.pImageInfo = pImageInfo;
-	writeOperation.pBufferInfo = pBufferInfo;
-	writeOperation.pTexelBufferView = nullptr;
-	writeOperation.pNext = bindingResources.pNext;
-
-	device.updateDescriptorSets(1U, &writeOperation, 0U, nullptr);
-}
-
-void mtd::DescriptorSetHandler::updateDescriptorData
+void mtd::DescriptorSetHandler::assignBuffer
 (
-	uint32_t swappableSetIndex, uint32_t binding, const void* data, vk::DeviceSize dataSize
-) const
+	uint32_t binding, const vk::DescriptorBufferInfo& bufferInfo, const void* pNext
+)
 {
-	assert
-	(
-		swappableSetIndex < resourcesList.size() &&
-		binding < resourcesList[swappableSetIndex].size() &&
-		"Descriptor out of bounds for data update."
-	);
+	assert(binding < resourcesList.size() && "Descriptor out of bounds for GPU buffer assignment.");
 
-	const std::unique_ptr<GpuBuffer>& buffer = resourcesList[swappableSetIndex][binding].descriptorBuffer;
+	resourcesList[binding].descriptorBufferInfo = bufferInfo;
+
+	writeOperations[binding].dstSet = descriptorSet;
+	writeOperations[binding].pBufferInfo = &(resourcesList[binding].descriptorBufferInfo);
+	writeOperations[binding].pNext = pNext;
+}
+
+void mtd::DescriptorSetHandler::defineDescriptorSet(vk::DescriptorSet set)
+{
+	assert(!descriptorSet && "The descriptor set is already defined and cannot be overwritten.");
+	descriptorSet = set;
+}
+
+void mtd::DescriptorSetHandler::writeDescriptorSet()
+{
+	for(vk::WriteDescriptorSet& writeOp: writeOperations)
+		writeOp.dstSet = descriptorSet;
+	device.updateDescriptorSets(static_cast<uint32_t>(writeOperations.size()), writeOperations.data(), 0U, nullptr);
+}
+
+void mtd::DescriptorSetHandler::writeDescriptor(uint32_t binding)
+{
+	assert(binding < writeOperations.size() && "Descriptor binding out of bounds for update.");
+
+	writeOperations[binding].dstSet = descriptorSet;
+	device.updateDescriptorSets(1U, &(writeOperations[binding]), 0U, nullptr);
+}
+
+void mtd::DescriptorSetHandler::updateDescriptorData(uint32_t binding, const void* data, vk::DeviceSize dataSize) const
+{
+	assert(binding < resourcesList.size() && "Descriptor out of bounds for data update.");
+	assert((resourcesList[binding].descriptorBuffer.get() != nullptr) && "Descriptor buffer is not updatable.");
+
+	const std::unique_ptr<GpuBuffer>& buffer = resourcesList[binding].descriptorBuffer;
 	buffer->copyMemoryToBuffer(dataSize, data);
 }
 
@@ -227,9 +148,20 @@ void mtd::DescriptorSetHandler::createDescriptorSetLayout
 	const vk::DescriptorSetLayoutBindingFlagsCreateInfo* pFlags
 )
 {
-	descriptorTypes.resize(bindings.size());
-	for(uint32_t i = 0U; i < bindings.size(); i++)
-		descriptorTypes[i] = bindings[i].descriptorType;
+	resourcesList.resize(bindings.size());
+	writeOperations.resize(bindings.size());
+	for(uint32_t bindingIndex = 0U; bindingIndex < bindings.size(); bindingIndex++)
+	{
+		writeOperations[bindingIndex].dstSet = descriptorSet;
+		writeOperations[bindingIndex].dstBinding = bindingIndex;
+		writeOperations[bindingIndex].dstArrayElement = 0U;
+		writeOperations[bindingIndex].descriptorCount = bindings[bindingIndex].descriptorCount;
+		writeOperations[bindingIndex].descriptorType = bindings[bindingIndex].descriptorType;
+		writeOperations[bindingIndex].pImageInfo = nullptr;
+		writeOperations[bindingIndex].pBufferInfo = nullptr;
+		writeOperations[bindingIndex].pTexelBufferView = nullptr;
+		writeOperations[bindingIndex].pNext = nullptr;
+	}
 
 	vk::DescriptorSetLayoutCreateInfo layoutCreateInfo{};
 	layoutCreateInfo.flags = vk::DescriptorSetLayoutCreateFlags();

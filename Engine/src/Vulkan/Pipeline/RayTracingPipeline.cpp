@@ -1,7 +1,6 @@
 #include <pch.hpp>
 #include "RayTracingPipeline.hpp"
 
-#include "Builders/DescriptorSetBuilder.hpp"
 #include "../../Utils/Logger.hpp"
 
 static constexpr uint32_t MAX_TEXTURE_COUNT = 1024U;
@@ -9,25 +8,25 @@ static constexpr uint32_t MAX_TEXTURE_COUNT = 1024U;
 mtd::RayTracingPipeline::RayTracingPipeline
 (
 	const Device& mtdDevice,
+	const DescriptorManager& descriptorManager,
 	const RayTracingPipelineInfo& info,
-	const vk::DescriptorSetLayout& globalDescriptorSetLayout,
 	vk::Extent2D swapchainExtent
-) : Pipeline{mtdDevice.getDevice(), info},
-	outputImage{mtdDevice.getDevice()},
-	accumulationImage{mtdDevice.getDevice()},
+) : Pipeline{mtdDevice.getDevice(), descriptorManager, info},
+	outputImage{mtdDevice},
+	accumulationImage{mtdDevice},
 	windowResolutionDependant{false},
 	sbtBuffer
 	{
 		mtdDevice,
-		vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddress |
-			vk::BufferUsageFlagBits::eTransferDst,
+		vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddress
+			| vk::BufferUsageFlagBits::eTransferDst,
 		vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
 	},
 	shaderRenderingInfo{2U, 4U, 1U, 0U, 0U}
 {
 	loadShaderModules();
 	createDescriptorSetLayouts();
-	createPipelineLayout(globalDescriptorSetLayout);
+	createPipelineLayout();
 	createRayTracingPipeline(mtdDevice.getDLDI());
 	createShaderBindingTable(mtdDevice);
 	createStorageImages(mtdDevice, swapchainExtent);
@@ -67,20 +66,20 @@ void mtd::RayTracingPipeline::traceRays
 	(
 		vk::PipelineBindPoint::eRayTracingKHR,
 		pipelineLayout,
-		1,
-		1, &(descriptorSetHandlers[0].getSet(0)),
-		0, nullptr
+		1U,
+		1U, &(descriptorSetHandlers[0].getSet()),
+		0U, nullptr
 	);
 
-	if(descriptorSetHandlers.size() > 1 && descriptorSetHandlers[1].getSetCount() > 0)
+	if(descriptorSetHandlers.size() > 1)
 	{
 		commandBuffer.bindDescriptorSets
 		(
 			vk::PipelineBindPoint::eRayTracingKHR,
 			pipelineLayout,
-			2,
-			1, &(descriptorSetHandlers[1].getSet(0)),
-			0, nullptr
+			2U,
+			1U, &(descriptorSetHandlers[1].getSet()),
+			0U, nullptr
 		);
 	}
 
@@ -89,7 +88,7 @@ void mtd::RayTracingPipeline::traceRays
 	(
 		pipelineLayout,
 		vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eClosestHitKHR,
-		0, sizeof(RayTracingRenderData), &shaderRenderingInfo
+		0U, sizeof(RayTracingRenderData), &shaderRenderingInfo
 	);
 
 	commandBuffer.traceRaysKHR
@@ -98,7 +97,7 @@ void mtd::RayTracingPipeline::traceRays
 		missRegionSBT,
 		hitRegionSBT,
 		callableRegionSBT,
-		info.width, info.height, 2,
+		info.width, info.height, 2U,
 		dldi
 	);
 
@@ -114,15 +113,15 @@ void mtd::RayTracingPipeline::traceRays
 void mtd::RayTracingPipeline::configurePipelineDescriptorSet()
 {
 	vk::DescriptorImageInfo descriptorImageInfo{};
-	outputImage.defineDescriptorImageInfo(&descriptorImageInfo);
+	outputImage.updateDescriptorInfo(descriptorImageInfo);
 	descriptorImageInfo.imageLayout = vk::ImageLayout::eGeneral;
-	descriptorSetHandlers[0].createImageDescriptorResources(0, 1, descriptorImageInfo);
+	descriptorSetHandlers[0].createImageDescriptorResources(1U, descriptorImageInfo);
 
-	accumulationImage.defineDescriptorImageInfo(&descriptorImageInfo);
+	accumulationImage.updateDescriptorInfo(descriptorImageInfo);
 	descriptorImageInfo.imageLayout = vk::ImageLayout::eGeneral;
-	descriptorSetHandlers[0].createImageDescriptorResources(0, 2, descriptorImageInfo);
+	descriptorSetHandlers[0].createImageDescriptorResources(2U, descriptorImageInfo);
 
-	descriptorSetHandlers[0].writeDescriptorSet(0);
+	descriptorSetHandlers[0].writeDescriptorSet();
 }
 
 void mtd::RayTracingPipeline::shareRenderTargetImageDescriptor
@@ -131,10 +130,10 @@ void mtd::RayTracingPipeline::shareRenderTargetImageDescriptor
 ) const
 {
 	vk::DescriptorImageInfo descriptorImageInfo{};
-	outputImage.defineDescriptorImageInfo(&descriptorImageInfo);
+	outputImage.updateDescriptorInfo(descriptorImageInfo);
 	descriptorImageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 
-	descriptorSetHandler.createImageDescriptorResources(0, binding, descriptorImageInfo);
+	descriptorSetHandler.createImageDescriptorResources(binding, descriptorImageInfo);
 }
 
 void mtd::RayTracingPipeline::resize(const Device& mtdDevice, vk::Extent2D swapchainExtent)
@@ -146,26 +145,8 @@ void mtd::RayTracingPipeline::resize(const Device& mtdDevice, vk::Extent2D swapc
 	if(info.windowResolutionRatio.y > 0.0f)
 		info.height = static_cast<uint32_t>(info.windowResolutionRatio.y * swapchainExtent.height);
 
-	outputImage.resize
-	(
-		mtdDevice,
-		{info.width, info.height},
-		vk::ImageTiling::eOptimal,
-		vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled,
-		vk::MemoryPropertyFlagBits::eDeviceLocal,
-		vk::ImageAspectFlagBits::eColor,
-		vk::ImageViewType::e2D
-	);
-	accumulationImage.resize
-	(
-		mtdDevice,
-		{info.width, info.height},
-		vk::ImageTiling::eOptimal,
-		vk::ImageUsageFlagBits::eStorage,
-		vk::MemoryPropertyFlagBits::eDeviceLocal,
-		vk::ImageAspectFlagBits::eColor,
-		vk::ImageViewType::e2D
-	);
+	outputImage.resize({info.width, info.height});
+	accumulationImage.resize({info.width, info.height});
 	configurePipelineDescriptorSet();
 
 	resetAccumulation();
@@ -181,8 +162,6 @@ void mtd::RayTracingPipeline::loadShaderModules()
 
 void mtd::RayTracingPipeline::createDescriptorSetLayouts()
 {
-	descriptorSetHandlers.reserve(info.descriptorSetInfo.size() == 0 ? 1 : 2);
-
 	const uint32_t bindingCount = info.materialTextureTypes.empty() ? 7U : 8U;
 	uint32_t bindingIndex = 0U;
 	std::vector<vk::DescriptorSetLayoutBinding> layoutBindings(bindingCount);
@@ -240,12 +219,6 @@ void mtd::RayTracingPipeline::createDescriptorSetLayouts()
 	}
 
 	descriptorSetHandlers.emplace_back(device, layoutBindings, pDescriptorSetLayoutBindingsCreateInfo);
-
-	if(info.descriptorSetInfo.size() == 0) return;
-	layoutBindings.clear();
-
-	DescriptorSetBuilder::buildDescriptorSetLayout(layoutBindings, info.descriptorSetInfo, descriptorTypeCount);
-	descriptorSetHandlers.emplace_back(device, layoutBindings);
 }
 
 void mtd::RayTracingPipeline::createStorageImages(const Device& mtdDevice, vk::Extent2D swapchainExtent)
@@ -261,45 +234,49 @@ void mtd::RayTracingPipeline::createStorageImages(const Device& mtdDevice, vk::E
 		windowResolutionDependant = true;
 	}
 
-	outputImage.createImage
+	outputImage.create
 	(
 		{info.width, info.height},
 		vk::Format::eR8G8B8A8Unorm,
 		vk::ImageTiling::eOptimal,
-		vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled
+		vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled,
+		vk::MemoryPropertyFlagBits::eDeviceLocal,
+		vk::ImageAspectFlagBits::eColor,
+		vk::ImageViewType::e2D,
+		SamplerType::Linear
 	);
-	outputImage.createImageMemory(mtdDevice, vk::MemoryPropertyFlagBits::eDeviceLocal);
-	outputImage.createImageView(vk::ImageAspectFlagBits::eColor, vk::ImageViewType::e2D);
-	outputImage.createImageSampler(vk::Filter::eLinear);
-
-	accumulationImage.createImage
+	accumulationImage.create
 	(
 		{info.width, info.height},
 		vk::Format::eR32G32B32A32Sfloat,
 		vk::ImageTiling::eOptimal,
-		vk::ImageUsageFlagBits::eStorage
+		vk::ImageUsageFlagBits::eStorage,
+		vk::MemoryPropertyFlagBits::eDeviceLocal,
+		vk::ImageAspectFlagBits::eColor,
+		vk::ImageViewType::e2D,
+		SamplerType::Linear
 	);
-	accumulationImage.createImageMemory(mtdDevice, vk::MemoryPropertyFlagBits::eDeviceLocal);
-	accumulationImage.createImageView(vk::ImageAspectFlagBits::eColor, vk::ImageViewType::e2D);
-	accumulationImage.createImageSampler(vk::Filter::eLinear);
 }
 
-void mtd::RayTracingPipeline::createPipelineLayout(const vk::DescriptorSetLayout& globalDescriptorSetLayout)
+void mtd::RayTracingPipeline::createPipelineLayout()
 {
-	std::vector<vk::DescriptorSetLayout> descriptorSetLayouts{globalDescriptorSetLayout};
+	std::vector<vk::DescriptorSetLayout> descriptorSetLayouts;
+	descriptorSetLayouts.reserve(info.descriptorLayoutIDs.size() + descriptorSetHandlers.size());
+	for(DescriptorLayoutID layoutID: info.descriptorLayoutIDs)
+		descriptorSetLayouts.emplace_back(descriptorManager.getLayout(layoutID));
 	for(const DescriptorSetHandler& descriptorSetHandler: descriptorSetHandlers)
-		descriptorSetLayouts.push_back(descriptorSetHandler.getLayout());
+		descriptorSetLayouts.emplace_back(descriptorSetHandler.getLayout());
 
 	vk::PushConstantRange pushConstantRange{};
 	pushConstantRange.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eClosestHitKHR;
-	pushConstantRange.offset = 0;
+	pushConstantRange.offset = 0U;
 	pushConstantRange.size = sizeof(RayTracingRenderData);
 
 	vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
 	pipelineLayoutCreateInfo.flags = vk::PipelineLayoutCreateFlags();
 	pipelineLayoutCreateInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
 	pipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayouts.data();
-	pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
+	pipelineLayoutCreateInfo.pushConstantRangeCount = 1U;
 	pipelineLayoutCreateInfo.pPushConstantRanges = &pushConstantRange;
 
 	vk::Result result = device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &pipelineLayout);
@@ -336,7 +313,7 @@ void mtd::RayTracingPipeline::createRayTracingPipeline(const vk::detail::Dispatc
 	pipelineCreateInfo.basePipelineIndex = 0;
 
 	vk::Result result =
-		device.createRayTracingPipelinesKHR(nullptr, nullptr, 1, &pipelineCreateInfo, nullptr, &pipeline, dldi);
+		device.createRayTracingPipelinesKHR(nullptr, nullptr, 1U, &pipelineCreateInfo, nullptr, &pipeline, dldi);
 	if(result != vk::Result::eSuccess)
 	{
 		LOG_ERROR("Failed to create ray tracing pipeline. Vulkan result: %d", result);
@@ -410,14 +387,14 @@ void mtd::RayTracingPipeline::defineShaderGroups
 {
 	shaderGroupCreateInfos.resize(3);
 	shaderGroupCreateInfos[0].type = vk::RayTracingShaderGroupTypeKHR::eGeneral;
-	shaderGroupCreateInfos[0].generalShader = 0;
+	shaderGroupCreateInfos[0].generalShader = 0U;
 	shaderGroupCreateInfos[0].closestHitShader = vk::ShaderUnusedKHR;
 	shaderGroupCreateInfos[0].anyHitShader = vk::ShaderUnusedKHR;
 	shaderGroupCreateInfos[0].intersectionShader = vk::ShaderUnusedKHR;
 	shaderGroupCreateInfos[0].pShaderGroupCaptureReplayHandle = nullptr;
 
 	shaderGroupCreateInfos[1].type = vk::RayTracingShaderGroupTypeKHR::eGeneral;
-	shaderGroupCreateInfos[1].generalShader = 1;
+	shaderGroupCreateInfos[1].generalShader = 1U;
 	shaderGroupCreateInfos[1].closestHitShader = vk::ShaderUnusedKHR;
 	shaderGroupCreateInfos[1].anyHitShader = vk::ShaderUnusedKHR;
 	shaderGroupCreateInfos[1].intersectionShader = vk::ShaderUnusedKHR;
@@ -425,7 +402,7 @@ void mtd::RayTracingPipeline::defineShaderGroups
 
 	shaderGroupCreateInfos[2].type = vk::RayTracingShaderGroupTypeKHR::eTrianglesHitGroup;
 	shaderGroupCreateInfos[2].generalShader = vk::ShaderUnusedKHR;
-	shaderGroupCreateInfos[2].closestHitShader = 2;
+	shaderGroupCreateInfos[2].closestHitShader = 2U;
 	shaderGroupCreateInfos[2].anyHitShader = vk::ShaderUnusedKHR;
 	shaderGroupCreateInfos[2].intersectionShader = vk::ShaderUnusedKHR;
 	shaderGroupCreateInfos[2].pShaderGroupCaptureReplayHandle = nullptr;

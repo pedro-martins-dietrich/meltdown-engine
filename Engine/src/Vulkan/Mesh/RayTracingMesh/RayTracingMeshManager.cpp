@@ -22,15 +22,15 @@ mtd::RayTracingMeshManager::RayTracingMeshManager(const Device& device, const Ma
 	tlas{device},
 	materialIndexBuffer{device, vk::BufferUsageFlagBits::eStorageBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal},
 	materialLump{device, materialInfo},
-	vertexCount{0},
-	triangleCount{0},
-	currentIndexOffset{0},
-	currentMaterialIndexOffset{0}
+	vertexCount{0U},
+	triangleCount{0U},
+	currentIndexOffset{0U},
+	currentMaterialIndexOffset{0U}
 {}
 
 void mtd::RayTracingMeshManager::loadMeshes(DescriptorSetHandler& meshDescriptorSetHandler)
 {
-	for(uint32_t i = 0; i < meshes.size(); i++)
+	for(uint32_t i = 0U; i < meshes.size(); i++)
 	{
 		loadMeshToLump(meshes[i]);
 		meshIndexMap[meshes[i].getModelID()] = i;
@@ -40,13 +40,13 @@ void mtd::RayTracingMeshManager::loadMeshes(DescriptorSetHandler& meshDescriptor
 	createAccelerationStructure();
 
 	meshDescriptorSetHandler
-		.assignExternalResourcesToDescriptor(0, 0, tlas.getBuffer(), &accelerationStructureWriteOp);
-	meshDescriptorSetHandler.assignExternalResourcesToDescriptor(0, 3, vertexBuffer);
-	meshDescriptorSetHandler.assignExternalResourcesToDescriptor(0, 4, indexBuffer);
-	meshDescriptorSetHandler.assignExternalResourcesToDescriptor(0, 5, materialIndexBuffer);
-	materialLump.assignFloatDataBufferToDescriptor(meshDescriptorSetHandler, 0, 6);
-	if(meshDescriptorSetHandler.getBindingCount() == 8)
-		materialLump.assignTexturesToDescriptor(meshDescriptorSetHandler, 0, 7);
+		.assignExternalResourcesToDescriptor(0U, tlas.getBuffer(), &accelerationStructureWriteOp);
+	meshDescriptorSetHandler.assignExternalResourcesToDescriptor(3U, vertexBuffer);
+	meshDescriptorSetHandler.assignExternalResourcesToDescriptor(4U, indexBuffer);
+	meshDescriptorSetHandler.assignExternalResourcesToDescriptor(5U, materialIndexBuffer);
+	materialLump.assignFloatDataBufferToDescriptor(meshDescriptorSetHandler, 6U);
+	if(meshDescriptorSetHandler.getBindingCount() == 8U)
+		materialLump.assignTexturesToDescriptor(meshDescriptorSetHandler, 7U);
 }
 
 void mtd::RayTracingMeshManager::createNewMesh
@@ -117,10 +117,10 @@ void mtd::RayTracingMeshManager::loadMeshesToGPU(const CommandHandler& traceRays
 		mesh.createInstanceBuffer();
 
 	vertexCount = vertexLump.size();
-	triangleCount = indexLump.size() / 3;
+	triangleCount = indexLump.size() / 3U;
 
 	vertexLump.clear();
 	indexLump.clear();
 	materialIndexLump.clear();
-	currentIndexOffset = 0;
+	currentIndexOffset = 0U;
 }

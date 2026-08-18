@@ -1,24 +1,26 @@
 #include <pch.hpp>
 #include "RenderObjectManager.hpp"
 
-mtd::RenderObjectManager::RenderObjectManager(const Device& mtdDevice)
-    : commandHandler{mtdDevice},
-    renderObjectBuffer
-    {
-        mtdDevice,
-        sizeof(RenderObject),
-        vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eStorageBuffer
-            | vk::BufferUsageFlagBits::eTransferSrc,
-		vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
-    }
-{}
+#include "../../Utils/Logger.hpp"
+
+void mtd::RenderObjectManager::createBuffer(ResourceManager& resourceManager)
+{
+    renderObjectBufferID = resourceManager.createBuffer
+    (
+        "RenderObjectsBuffer",
+        GpuBufferType::Vertex | GpuBufferType::TransferSource,
+        GpuMemoryUsage::CpuUpload,
+        sizeof(RenderObject)
+    );
+}
 
 void mtd::RenderObjectManager::createFrameRenderObjects
 (
-    const MeshPool& meshPool,
+    ResourceManager& resourceManager,
+    const std::vector<MeshData>& meshes,
     const std::vector<SceneInstance>& sceneInstances,
     std::vector<DrawBatch>& drawBatches,
-    DescriptorSetHandler& descriptorSetHandler
+    DescriptorManager& descriptorManager
 )
 {
     for(const SceneInstance& instance: sceneInstances)
@@ -42,7 +44,7 @@ void mtd::RenderObjectManager::createFrameRenderObjects
     );
 
     const SceneInstance* firstInstance = visibleInstances.front();
-    const MeshData& firstMesh = meshPool.getMesh(firstInstance->meshID);
+    const MeshData& firstMesh = meshes[firstInstance->meshID];
     renderObjects.push_back(RenderObject
     {
         firstInstance->transform,
@@ -57,10 +59,10 @@ void mtd::RenderObjectManager::createFrameRenderObjects
     drawBatches.push_back(DrawBatch{firstInstance->pipelineID, firstInstance->meshID, 0U, 0U});
     DrawBatch* pCurrentBatch = &(drawBatches.back());
 
-    for(size_t i = 1; i < visibleInstances.size(); i++)
+    for(size_t i = 1UL; i < visibleInstances.size(); i++)
     {
         const SceneInstance* pInstance = visibleInstances[i];
-        const MeshData& mesh = meshPool.getMesh(firstInstance->meshID);
+        const MeshData& mesh = meshes[firstInstance->meshID];
         renderObjects.push_back(RenderObject{
             pInstance->transform,
             pInstance->materialSetID,
@@ -82,33 +84,52 @@ void mtd::RenderObjectManager::createFrameRenderObjects
 
     visibleInstances.clear();
 
-    updateBufferData(descriptorSetHandler);
+    updateBufferData(resourceManager, descriptorManager);
 
     renderObjectCount = renderObjects.size();
     renderObjects.clear();
 }
 
-void mtd::RenderObjectManager::bindBuffer(vk::CommandBuffer commandBuffer) const
+void mtd::RenderObjectManager::updateDescriptor
+(
+    const ResourceManager& resourceManager, DescriptorSetHandler& descriptorSetHandler
+) const
 {
+    vk::DescriptorBufferInfo bufferInfo{};
+    if(resourceManager.fetchDescriptorBufferInfo(renderObjectBufferID, bufferInfo))
+        descriptorSetHandler.assignBuffer(8U, bufferInfo);
+}
+
+void mtd::RenderObjectManager::bindBuffer
+(
+    const ResourceManager& resourceManager, vk::CommandBuffer commandBuffer
+) const
+{
+    assert(renderObjectBufferID != 0U && "The render objects buffer must be created before binding it.");
+
     vk::DeviceSize offset{0UL};
-    commandBuffer.bindVertexBuffers(1U, 1U, &(renderObjectBuffer.getBuffer()), &offset);
-}
-
-void mtd::RenderObjectManager::createDescriptor(DescriptorSetHandler& descriptorSetHandler, uint32_t binding) const
-{
-    bufferDescriptorBinding = binding;
-    descriptorSetHandler.assignExternalResourcesToDescriptor(0U, binding, renderObjectBuffer);
-}
-
-void mtd::RenderObjectManager::updateBufferData(DescriptorSetHandler& descriptorSetHandler)
-{
-    vk::DeviceSize minimumBufferSize = renderObjects.size() * sizeof(RenderObject);
-	if(minimumBufferSize > renderObjectBuffer.getSize())
+    vk::Buffer buffer = resourceManager.getVulkanBuffer(renderObjectBufferID);
+    if(!buffer)
     {
-		renderObjectBuffer.resizeBuffer(commandHandler, minimumBufferSize);
-        descriptorSetHandler.assignExternalResourcesToDescriptor(0U, bufferDescriptorBinding, renderObjectBuffer);
-        descriptorSetHandler.writeDescriptor(0U, bufferDescriptorBinding);
+        LOG_ERROR("Failed to bind render objects buffer.");
+        return;
     }
 
-    renderObjectBuffer.copyMemoryToBuffer(renderObjects.size() * sizeof(RenderObject), renderObjects.data());
+    commandBuffer.bindVertexBuffers(1U, 1U, &buffer, &offset);
+}
+
+void mtd::RenderObjectManager::updateBufferData(ResourceManager& resourceManager, DescriptorManager& descriptorManager)
+{
+    assert(renderObjectBufferID != 0U && "The render objects buffer must be created before updating it.");
+
+    uint64_t minimumBufferSize = renderObjects.size() * sizeof(RenderObject);
+    uint64_t currentBufferSize = resourceManager.getBufferSize(renderObjectBufferID);
+    if(currentBufferSize < minimumBufferSize)
+    {
+        resourceManager.resizeBuffer(renderObjectBufferID, minimumBufferSize);
+        descriptorManager.updateResourceDescriptors(renderObjectBufferID);
+    }
+
+    if(!resourceManager.updateBufferData(renderObjectBufferID, minimumBufferSize, renderObjects.data()))
+        LOG_ERROR("Failed to update render objects buffer data.");
 }

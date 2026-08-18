@@ -158,3 +158,7 @@ const void* mtd::UpdateDescriptorDataEvent::getData() const
 {
 	return data;
 }
+
+mtd::UpdateGpuBufferEvent::UpdateGpuBufferEvent(const char* name, size_t copySize, const void* pData, size_t offset)
+	: name{name}, copySize{copySize}, pData{pData}, offset{offset}
+{}

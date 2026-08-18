@@ -3,9 +3,6 @@
 #include <memory>
 
 #include "InstanceManager.hpp"
-#include "../AssetManager/TexturePool.hpp"
-#include "../AssetManager/MaterialManager.hpp"
-#include "../AssetManager/MeshPool.hpp"
 #include "../Vulkan/Mesh/MeshManager.hpp"
 #include "../Vulkan/Descriptors/DescriptorPool.hpp"
 #include "../Vulkan/Pipeline/PipelineBundles.hpp"
@@ -23,9 +20,12 @@ namespace mtd
 			Scene& operator=(const Scene&) = delete;
 
 			// Getters
-			const MeshPool& getMeshPool() const { return meshPool; }
+			const std::vector<MeshData>& getMeshes() const { return meshes; }
 			const std::vector<SceneInstance>& getInstances() const { return instanceManager.getInstances(); }
 			const DescriptorPool& getDescriptorPool() const { return descriptorPool; }
+
+			// Setter
+			void setCameraResourceID(ResourceID cameraResourceID) { gpuResources.cameraResourceID = cameraResourceID; }
 
 			// Loads scene from file
 			void loadScene
@@ -34,13 +34,16 @@ namespace mtd
 				std::string_view sceneFileName,
 				std::vector<FramebufferInfo>& framebufferInfos,
 				PipelineInfoBundle& pipelineInfos,
+				ResourceManager& resourceManager,
+				DescriptorManager& descriptorManager,
 				std::vector<RenderPassInfo>& renderOrder
 			);
 
 			// Allocates resources and loads all mesh data
 			void allocateResources(PipelineBundle& pipelines);
-			// Configures the scene descriptor set with the scene data
-			void configureSceneDescriptorSet(DescriptorSetHandler& descriptorSetHandler) const;
+
+			// Binds the vertex and index buffers
+			void bindMeshData(const ResourceManager& resourceManager, vk::CommandBuffer commandBuffer) const;
 
 			// Executes starting code on scene
 			void start() const;
@@ -51,14 +54,13 @@ namespace mtd
 			// Active mesh managers
 			std::vector<std::unique_ptr<MeshManager>> meshManagers;
 
-			// Scene textures
-			TexturePool texturePool;
-			// Scene materials
-			MaterialManager materialManager;
-			// Scene meshes
-			MeshPool meshPool;
+			// GPU resources managed by the engine
+			SceneResources gpuResources;
 			// Scene instances
 			InstanceManager instanceManager;
+
+			// CPU side data for all scene meshes
+			std::vector<MeshData> meshes;
 
 			// Descriptor pool for the pipelines descriptor sets
 			DescriptorPool descriptorPool;

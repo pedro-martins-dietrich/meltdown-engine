@@ -3,7 +3,6 @@
 #include <meltdown/event.hpp>
 
 #include "Pipeline.hpp"
-#include "../Image/Image.hpp"
 
 namespace mtd
 {
@@ -13,8 +12,8 @@ namespace mtd
 			ComputePipeline
 			(
 				const Device& mtdDevice,
+				const DescriptorManager& descriptorManager,
 				const ComputePipelineInfo& info,
-				const vk::DescriptorSetLayout& globalDescriptorSetLayout,
 				vk::Extent2D swapchainExtent
 			);
 			~ComputePipeline() = default;
@@ -64,7 +63,7 @@ namespace mtd
 			void createDescriptorSetLayouts();
 
 			// Creates the layout for the compute pipeline
-			void createPipelineLayout(const vk::DescriptorSetLayout& globalDescriptorSetLayout);
+			void createPipelineLayout();
 			// Creates the compute pipeline from the layout
 			void createComputePipeline();
 

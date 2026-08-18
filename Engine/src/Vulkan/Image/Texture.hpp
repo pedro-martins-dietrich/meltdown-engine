@@ -20,7 +20,6 @@ namespace mtd
 				std::string_view fileName,
 				const CommandHandler& commandHandler,
 				DescriptorSetHandler& descriptorSetHandler,
-				uint32_t swappableSetIndex,
 				uint32_t binding
 			);
 			~Texture() = default;
@@ -30,12 +29,9 @@ namespace mtd
 
 			Texture(Texture&& other) noexcept;
 
-			// Getter
-			vk::DescriptorImageInfo getDescriptorImageInfo() const;
-
 			// Updates the descriptor image info with the texture information
 			void updateDescriptorImageInfo(vk::DescriptorImageInfo& descriptorImageInfo) const
-				{ image.defineDescriptorImageInfo(&descriptorImageInfo); }
+				{ image.updateDescriptorInfo(descriptorImageInfo); }
 
 			// Sends the texture data to the GPU
 			void loadToGpu(const Device& mtdDevice, const CommandHandler& commandHandler);
@@ -55,9 +51,6 @@ namespace mtd
 			// Loads placeholder texture
 			stbi_uc* loadPlaceholderTexture(int& width, int& height);
 			// Configures the texture descriptor set
-			void createDescriptorResource
-			(
-				DescriptorSetHandler& descriptorSetHandler, uint32_t swappableSetIndex, uint32_t binding
-			) const;
+			void createDescriptorResource(DescriptorSetHandler& descriptorSetHandler, uint32_t binding) const;
 	};
 }

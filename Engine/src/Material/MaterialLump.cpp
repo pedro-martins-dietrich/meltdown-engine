@@ -24,22 +24,26 @@ void mtd::MaterialLump::addMaterial(const float* data, size_t size, const std::v
 
 void mtd::MaterialLump::assignFloatDataBufferToDescriptor
 (
-	DescriptorSetHandler& descriptorSetHandler, uint32_t swappableSetIndex, uint32_t bindingIndex
+	DescriptorSetHandler& descriptorSetHandler, uint32_t bindingIndex
 ) const
 {
-	descriptorSetHandler.assignExternalResourcesToDescriptor(swappableSetIndex, bindingIndex, floatDataBuffer);
+	descriptorSetHandler.assignExternalResourcesToDescriptor(bindingIndex, floatDataBuffer);
 }
 
 void mtd::MaterialLump::assignTexturesToDescriptor
 (
-	DescriptorSetHandler& descriptorSetHandler, uint32_t swappableSetIndex, uint32_t bindingIndex
+	DescriptorSetHandler& descriptorSetHandler, uint32_t bindingIndex
 ) const
 {
 	std::vector<vk::DescriptorImageInfo> descriptorImageInfos;
 	for(const Texture& texture: textures)
-		descriptorImageInfos.emplace_back(texture.getDescriptorImageInfo());
+	{
+		vk::DescriptorImageInfo descriptorInfo;
+		texture.updateDescriptorImageInfo(descriptorInfo);
+		descriptorImageInfos.emplace_back(descriptorInfo);
+	}
 
-	descriptorSetHandler.createImagesDescriptorResources(swappableSetIndex, bindingIndex, descriptorImageInfos);
+	descriptorSetHandler.createImagesDescriptorResources(bindingIndex, descriptorImageInfos);
 }
 
 void mtd::MaterialLump::loadMaterialsToGPU(const CommandHandler& commandHandler)

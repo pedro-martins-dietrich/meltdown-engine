@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Pipeline.hpp"
+#include "../Descriptors/DescriptorManager.hpp"
 
 namespace mtd
 {
@@ -11,8 +12,8 @@ namespace mtd
 			RasterizationPipeline
 			(
 				const vk::Device& device,
+				const DescriptorManager& descriptorManager,
 				const RasterizationPipelineInfo& info,
-				const vk::DescriptorSetLayout& globalDescriptorSetLayout,
 				vk::Extent2D extent,
 				vk::RenderPass renderPass
 			);
@@ -38,12 +39,9 @@ namespace mtd
 			void loadShaderModules();
 
 			// Creates the layout for the pipeline
-			void createPipelineLayout(const vk::DescriptorSetLayout& globalDescriptorSetLayout);
+			void createPipelineLayout();
 			// Creates the rasterization pipeline
 			void createPipeline(vk::Extent2D extent, vk::RenderPass renderPass);
-
-			// Configures the descriptor set handlers to be used
-			void createDescriptorSetLayouts();
 
 			// Sets the input assembly create info
 			void setInputAssembly(vk::PipelineInputAssemblyStateCreateInfo& inputAssemblyInfo) const;

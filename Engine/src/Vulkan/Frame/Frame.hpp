@@ -11,11 +11,8 @@ namespace mtd
 		public:
 			Frame
 			(
-				const Device& mtdDevice,
-				const UIntVec2& frameDimensions,
-				vk::Image image,
-				vk::Format format,
-				uint32_t frameIndex
+				const Device& mtdDevice, UIntVec2 frameDimensions,
+				vk::Image image, vk::Format format, uint32_t frameIndex
 			);
 			~Frame();
 
@@ -41,7 +38,9 @@ namespace mtd
 			vk::Framebuffer framebuffer;
 
 			// Color buffer attachment data
-			Image colorBuffer;
+			vk::Image colorBuffer;
+			// Color buffer view
+			vk::ImageView colorBufferView;
 			// Depth buffer attachment data
 			Image depthBuffer;
 
@@ -59,6 +58,8 @@ namespace mtd
 			// Vulkan device reference
 			const vk::Device& device;
 
+			// Creates the image view for the color buffer
+			void createColorBufferView(vk::Format format);
 			// Creates depth buffer data
 			void createDepthResources(const Device& mtdDevice);
 

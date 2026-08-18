@@ -434,6 +434,32 @@ namespace mtd
 	};
 
 	/*
+	* @brief Event for updating the contents of a GPU buffer.
+	*/
+	class UpdateGpuBufferEvent : public Event
+	{
+		public:
+			/*
+			* @brief Creates the event to update the contents of the GPU buffer specified by the resource name.
+			*
+			* @param name Resource name of the GPU buffer to be updated.
+			* @param size Size in bytes of the data to be uploaded to the buffer.
+			* @param pData Pointer to the data to be copied to the buffer.
+			* @param offset Offset in bytes from the start of the GPU buffer, to where the data will be copied.
+			*/
+			UpdateGpuBufferEvent(const char* name, size_t copySize, const void* pData, size_t offset = 0UL);
+
+			/* @brief Resource name of the GPU buffer to be updated. */
+			const char* name;
+			/* @brief Size in bytes of the data to be uploaded to the buffer. */
+			size_t copySize;
+			/* @brief Pointer to the data to be copied to the buffer. */
+			const void* pData;
+			/* @brief Offset in bytes from the start of the GPU buffer, to where the data will be copied. */
+			size_t offset;
+	};
+
+	/*
 	* @brief Container class to handle the event callback function after being registered in the `EventManager`.
 	* The event callback tied to an instance of this class will be removed with the deletion of the instance.
 	*/

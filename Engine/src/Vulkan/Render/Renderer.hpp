@@ -33,13 +33,19 @@ namespace mtd
 				const std::vector<Framebuffer>& framebuffers,
 				const PipelineBundle& pipelines,
 				const Scene& scene,
-				DescriptorSetHandler& globalDescriptorSet,
+				ResourceManager& resourceManager,
+				DescriptorManager& descriptorManager,
 				DrawInfo& drawInfo,
 				std::atomic<bool>& shouldUpdateEngine
 			);
 
+			// Creates the render objects GPU buffer
+			void createRenderObjectsBuffer(ResourceManager& resourceManager);
 			// Configures the descriptor for the render objects
-			void configureRendererDescriptor(DescriptorSetHandler& descriptorSetHandler) const;
+			void configureRendererDescriptor
+			(
+				const ResourceManager& resourceManager, DescriptorSetHandler& descriptorSetHandler
+			);
 
 		private:
 			// Index of the frame being rendered
@@ -61,6 +67,7 @@ namespace mtd
 				const std::vector<Framebuffer>& framebuffers,
 				const PipelineBundle& pipelines,
 				const Scene& scene,
+				const ResourceManager& resourceManager,
 				const CommandHandler& commandHandler,
 				const DrawInfo& drawInfo,
 				const std::vector<DrawBatch>& drawBatches,

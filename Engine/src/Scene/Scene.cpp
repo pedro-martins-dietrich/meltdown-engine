@@ -5,9 +5,7 @@
 #include "../Utils/Logger.hpp"
 #include "../Vulkan/Mesh/MeshManager.hpp"
 
-mtd::Scene::Scene(const Device& mtdDevice)
-	: texturePool{mtdDevice}, materialManager{mtdDevice}, meshPool{mtdDevice},
-	descriptorPool{mtdDevice.getDevice()}
+mtd::Scene::Scene(const Device& mtdDevice) : instanceManager{}, descriptorPool{mtdDevice.getDevice()}
 {}
 
 void mtd::Scene::loadScene
@@ -16,6 +14,8 @@ void mtd::Scene::loadScene
 	std::string_view sceneFileName,
 	std::vector<FramebufferInfo>& framebufferInfos,
 	PipelineInfoBundle& pipelineInfos,
+	ResourceManager& resourceManager,
+	DescriptorManager& descriptorManager,
 	std::vector<RenderPassInfo>& renderOrder
 )
 {
@@ -30,10 +30,11 @@ void mtd::Scene::loadScene
 		pipelineInfos,
 		renderOrder,
 		meshManagers,
+		meshes,
+		resourceManager,
+		descriptorManager,
 		instanceManager,
-		texturePool,
-		materialManager,
-		meshPool
+		gpuResources
 	);
 }
 
@@ -70,7 +71,7 @@ void mtd::Scene::allocateResources(PipelineBundle& pipelines)
 	}
 
 	std::vector<PoolSizeData> poolSizesInfo{totalDescriptorTypeCount.size()};
-	uint32_t i = 0;
+	uint32_t i = 0U;
 	for(const auto& [type, count]: totalDescriptorTypeCount)
 	{
 		poolSizesInfo[i].descriptorCount = count;
@@ -82,20 +83,17 @@ void mtd::Scene::allocateResources(PipelineBundle& pipelines)
 
 	for(FramebufferPipeline& fbPipeline: pipelines.framebufferPipelines)
 	{
-		DescriptorSetHandler& descriptorSetHandler = fbPipeline.getDescriptorSetHandler(0);
-		descriptorSetHandler.defineDescriptorSetsAmount(1U);
+		DescriptorSetHandler& descriptorSetHandler = fbPipeline.getDescriptorSetHandler(0U);
 		descriptorPool.allocateDescriptorSet(descriptorSetHandler);
 	}
 	for(ComputePipeline& computePipeline: pipelines.computePipelines)
 	{
-		DescriptorSetHandler& descriptorSetHandler = computePipeline.getDescriptorSetHandler(0);
-		descriptorSetHandler.defineDescriptorSetsAmount(1U);
+		DescriptorSetHandler& descriptorSetHandler = computePipeline.getDescriptorSetHandler(0U);
 		descriptorPool.allocateDescriptorSet(descriptorSetHandler);
 	}
-	for(uint32_t i = 0; i < pipelines.rayTracingPipelines.size(); i++)
+	for(uint32_t i = 0U; i < pipelines.rayTracingPipelines.size(); i++)
 	{
-		DescriptorSetHandler& descriptorSetHandler = pipelines.rayTracingPipelines[i].getDescriptorSetHandler(0);
-		descriptorSetHandler.defineDescriptorSetsAmount(1U);
+		DescriptorSetHandler& descriptorSetHandler = pipelines.rayTracingPipelines[i].getDescriptorSetHandler(0U);
 
 		vk::DescriptorSetVariableDescriptorCountAllocateInfo variableCountInfo{};
 		variableCountInfo.descriptorSetCount = 1U;
@@ -107,11 +105,16 @@ void mtd::Scene::allocateResources(PipelineBundle& pipelines)
 	LOG_INFO("Meshes loaded to the GPU.\n");
 }
 
-void mtd::Scene::configureSceneDescriptorSet(DescriptorSetHandler& descriptorSetHandler) const
+void mtd::Scene::bindMeshData(const ResourceManager& resourceManager, vk::CommandBuffer commandBuffer) const
 {
-	meshPool.createMeshDescriptors(descriptorSetHandler, 1U, 2U, 3U);
-	texturePool.createTextureListDescriptor(descriptorSetHandler, 4U);
-	materialManager.createMaterialDescriptor(descriptorSetHandler, 5U, 6U, 7U);
+	vk::DeviceSize offset{0UL};
+    vk::Buffer vertexBuffer = resourceManager.getVulkanBuffer(gpuResources.vertexBufferID);
+    vk::Buffer indexBuffer = resourceManager.getVulkanBuffer(gpuResources.indexBufferID);
+
+	if(vertexBuffer)
+    	commandBuffer.bindVertexBuffers(0U, 1U, &vertexBuffer, &offset);
+	if(indexBuffer)
+    	commandBuffer.bindIndexBuffer(indexBuffer, offset, vk::IndexType::eUint32);
 }
 
 void mtd::Scene::start() const
@@ -138,7 +141,7 @@ uint32_t mtd::Scene::getTotalTextureCount() const
 	for(const std::unique_ptr<MeshManager>& pMeshManager: meshManagers)
 		count += pMeshManager->getTextureCount();
 
-	count += MAX_TEXTURE_POOL_SIZE;
+	count += gpuResources.textureIDs.size() + 1U;
 
 	return count;
 }

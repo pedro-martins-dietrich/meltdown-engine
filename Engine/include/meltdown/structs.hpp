@@ -20,11 +20,11 @@ namespace mtd
 		/* @brief Name of the application. Will be shown in the window titlebar. */
 		const char* appName = "Meltdown Application";
 		/* @brief Major version of the application. */
-		uint32_t appVersionMajor = 1;
+		uint32_t appVersionMajor = 1U;
 		/* @brief Minor version of the application. */
-		uint32_t appVersionMinor = 0;
+		uint32_t appVersionMinor = 0U;
 		/* @brief Patch version of the application. */
-		uint32_t appVersionPatch = 0;
+		uint32_t appVersionPatch = 0U;
 		/* @brief Flag to enable ray tracing if the hardware supports it. */
 		bool enableRayTracing = false;
 	};
@@ -64,18 +64,27 @@ namespace mtd
 	}
 
 	/*
-	* @brief Information about how a descriptor set binding will be used.
+	* @brief Information required to create the descriptor binding for a layout.
 	*/
-	struct DescriptorInfo
+	struct DescriptorLayoutBindingInfo
 	{
 		/* @brief Data type that will be used in the binding. */
-		DescriptorType descriptorType;
+		DescriptorType type;
 		/* @brief Shader stage(s) where the descriptor can be accessed. */
 		ShaderStage shaderStage;
-		/* @brief Size, in bytes, of the descriptor data. If used as an array, the size of the whole array. */
-		size_t totalDescriptorSize;
 		/* @brief Array size of the descriptor, if accessed as an array. */
-		uint32_t descriptorCount = 1;
+		uint32_t count = 1U;
+	};
+
+	/*
+	* @brief Information about a descriptor set data.
+	*/
+	struct DescriptorSetInfo
+	{
+		/* @brief ID of the descriptor set layout that will be used by this descriptor set. */
+		DescriptorLayoutID layoutID;
+		/* @brief List of resource IDs for each descriptor in the set. */
+		std::vector<std::vector<ResourceID>> resources;
 	};
 
 	/*
@@ -113,8 +122,10 @@ namespace mtd
 	{
 		/* @brief Exhibition name for the pipeline. */
 		std::string pipelineName;
-		/* @brief Info about each binding for the user defined descriptor set (set = 2). */
-		std::vector<DescriptorInfo> descriptorSetInfo = {};
+		/* @brief Descriptor layouts used for the pipeline. */
+		std::vector<DescriptorLayoutID> descriptorLayoutIDs;
+		/* @brief Pipeline's descriptor set ID. */
+		std::vector<DescriptorSetID> descriptorSetIDs;
 	};
 
 	/*
