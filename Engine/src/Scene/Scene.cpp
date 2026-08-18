@@ -105,44 +105,16 @@ void mtd::Scene::allocateResources(PipelineBundle& pipelines)
 	LOG_INFO("Meshes loaded to the GPU.\n");
 }
 
-void mtd::Scene::configureSceneDescriptorSet
-(
-	const ResourceManager& resourceManager, DescriptorSetHandler& descriptorSetHandler
-)
-{
-	vk::DescriptorBufferInfo bufferInfo{};
-	std::vector<vk::DescriptorImageInfo> descriptorImageInfos;
-
-	gpuResources.materialBufferID = resourceManager.getResourceID("MaterialBuffer");
-	gpuResources.materialIndexingBufferID = resourceManager.getResourceID("MaterialIndexingBuffer");
-	gpuResources.materialSetBufferID = resourceManager.getResourceID("MaterialSetBuffer");
-
-	if(resourceManager.fetchDescriptorBufferInfo(gpuResources.cameraResourceID, bufferInfo))
-		descriptorSetHandler.assignBuffer(0U, bufferInfo);
-	if(resourceManager.fetchDescriptorBufferInfo(gpuResources.vertexBufferID, bufferInfo))
-		descriptorSetHandler.assignBuffer(1U, bufferInfo);
-	if(resourceManager.fetchDescriptorBufferInfo(gpuResources.indexBufferID, bufferInfo))
-		descriptorSetHandler.assignBuffer(2U, bufferInfo);
-	if(resourceManager.fetchDescriptorBufferInfo(gpuResources.submeshBufferID, bufferInfo))
-		descriptorSetHandler.assignBuffer(3U, bufferInfo);
-	if(resourceManager.fetchDescriptorImageInfos(gpuResources.textureIDs, descriptorImageInfos))
-		descriptorSetHandler.createImagesDescriptorResources(4U, descriptorImageInfos);
-	if(resourceManager.fetchDescriptorBufferInfo(gpuResources.materialBufferID, bufferInfo))
-		descriptorSetHandler.assignBuffer(5U, bufferInfo);
-	if(resourceManager.fetchDescriptorBufferInfo(gpuResources.materialIndexingBufferID, bufferInfo))
-		descriptorSetHandler.assignBuffer(6U, bufferInfo);
-	if(resourceManager.fetchDescriptorBufferInfo(gpuResources.materialSetBufferID, bufferInfo))
-		descriptorSetHandler.assignBuffer(7U, bufferInfo);
-}
-
 void mtd::Scene::bindMeshData(const ResourceManager& resourceManager, vk::CommandBuffer commandBuffer) const
 {
 	vk::DeviceSize offset{0UL};
     vk::Buffer vertexBuffer = resourceManager.getVulkanBuffer(gpuResources.vertexBufferID);
     vk::Buffer indexBuffer = resourceManager.getVulkanBuffer(gpuResources.indexBufferID);
 
-    commandBuffer.bindVertexBuffers(0U, 1U, &vertexBuffer, &offset);
-    commandBuffer.bindIndexBuffer(indexBuffer, offset, vk::IndexType::eUint32);
+	if(vertexBuffer)
+    	commandBuffer.bindVertexBuffers(0U, 1U, &vertexBuffer, &offset);
+	if(indexBuffer)
+    	commandBuffer.bindIndexBuffer(indexBuffer, offset, vk::IndexType::eUint32);
 }
 
 void mtd::Scene::start() const

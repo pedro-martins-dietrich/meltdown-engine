@@ -23,7 +23,6 @@ void mtd::Renderer::render
 	const Scene& scene,
 	ResourceManager& resourceManager,
 	DescriptorManager& descriptorManager,
-	DescriptorSetHandler& globalDescriptorSet,
 	DrawInfo& drawInfo,
 	std::atomic<bool>& shouldUpdateEngine
 )
@@ -33,7 +32,7 @@ void mtd::Renderer::render
 	std::vector<DrawBatch> drawBatches;
 	renderObjectManager.createFrameRenderObjects
 	(
-		resourceManager, scene.getMeshes(), scene.getInstances(), drawBatches, descriptorManager, globalDescriptorSet
+		resourceManager, scene.getMeshes(), scene.getInstances(), drawBatches, descriptorManager
 	);
 
 	PROFILER_NEXT_STAGE("Render - Acquire frame");
@@ -138,18 +137,6 @@ void mtd::Renderer::recordDrawCommands
 
 	commandHandler.beginCommand();
 
-	if(pipelines.computePipelines.size() > 0)
-	{
-		commandBuffer.bindDescriptorSets
-		(
-			vk::PipelineBindPoint::eCompute,
-			pipelines.computePipelines[0].getLayout(),
-			0U,
-			1U, &(drawInfo.globalDescriptorSet),
-			0U, nullptr
-		);
-	}
-
 	scene.bindMeshData(resourceManager, commandBuffer);
 
 	for(const ComputePipeline& computePipeline: pipelines.computePipelines)
@@ -157,18 +144,6 @@ void mtd::Renderer::recordDrawCommands
 		PROFILER_NEXT_STAGE(computePipeline.getName().c_str());
 		computePipeline.setInstanceCount(renderObjectManager.getRenderObjectCount());
 		computePipeline.dispatchCompute(commandBuffer);
-	}
-
-	if(pipelines.rayTracingPipelines.size() > 0)
-	{
-		commandBuffer.bindDescriptorSets
-		(
-			vk::PipelineBindPoint::eRayTracingKHR,
-			pipelines.rayTracingPipelines[0].getLayout(),
-			0U,
-			1U, &(drawInfo.globalDescriptorSet),
-			0U, nullptr
-		);
 	}
 
 	for(const RayTracingPipeline& rayTracingPipeline: pipelines.rayTracingPipelines)
@@ -179,15 +154,6 @@ void mtd::Renderer::recordDrawCommands
 
 	vk::Rect2D renderArea{};
 	renderArea.offset = vk::Offset2D{0, 0};
-
-	commandBuffer.bindDescriptorSets
-	(
-		vk::PipelineBindPoint::eGraphics,
-		firstPipelineLayout,
-		0U,
-		1U, &(drawInfo.globalDescriptorSet),
-		0U, nullptr
-	);
 
 	for(const RenderPassInfo& renderPassInfo: renderOrder)
 	{

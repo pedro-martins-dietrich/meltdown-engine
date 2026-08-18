@@ -14,7 +14,6 @@ namespace mtd
 				const vk::Device& device,
 				const DescriptorManager& descriptorManager,
 				const RasterizationPipelineInfo& info,
-				const vk::DescriptorSetLayout& globalDescriptorSetLayout,
 				vk::Extent2D extent,
 				vk::RenderPass renderPass
 			);
@@ -40,7 +39,7 @@ namespace mtd
 			void loadShaderModules();
 
 			// Creates the layout for the pipeline
-			void createPipelineLayout(vk::DescriptorSetLayout globalDescriptorSetLayout);
+			void createPipelineLayout();
 			// Creates the rasterization pipeline
 			void createPipeline(vk::Extent2D extent, vk::RenderPass renderPass);
 

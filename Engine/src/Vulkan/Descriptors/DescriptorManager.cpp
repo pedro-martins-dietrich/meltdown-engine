@@ -260,6 +260,19 @@ void mtd::DescriptorManager::buildWriteOperation
     writeOperation.pTexelBufferView = nullptr;
     writeOperation.pNext = nullptr;
 
+    if(bindingData.count != descriptorResources.size())
+    {
+        LOG_WARNING
+        (
+            "The binding count (%d) for the descriptor layout (ID: %d), "
+            "and the resource count (%d) for the descriptor set (ID: %d) does not match.",
+            bindingData.count, layoutID, descriptorResources.size(), setID
+        );
+
+        writeOperation.descriptorCount
+            = std::min(bindingData.count, static_cast<uint32_t>(descriptorResources.size()));
+    }
+
     if(isBufferDescriptor(bindingData.type))
     {
         size_t offset = bufferInfos.size();

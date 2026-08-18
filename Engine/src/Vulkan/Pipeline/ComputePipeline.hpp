@@ -14,7 +14,6 @@ namespace mtd
 				const Device& mtdDevice,
 				const DescriptorManager& descriptorManager,
 				const ComputePipelineInfo& info,
-				const vk::DescriptorSetLayout& globalDescriptorSetLayout,
 				vk::Extent2D swapchainExtent
 			);
 			~ComputePipeline() = default;
@@ -64,7 +63,7 @@ namespace mtd
 			void createDescriptorSetLayouts();
 
 			// Creates the layout for the compute pipeline
-			void createPipelineLayout(const vk::DescriptorSetLayout& globalDescriptorSetLayout);
+			void createPipelineLayout();
 			// Creates the compute pipeline from the layout
 			void createComputePipeline();
 

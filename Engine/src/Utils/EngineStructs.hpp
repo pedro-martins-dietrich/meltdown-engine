@@ -148,7 +148,6 @@ namespace mtd
 	{
 		const vk::RenderPass& renderPass;
 		const vk::Extent2D& extent;
-		const vk::DescriptorSet& globalDescriptorSet;
 		const vk::Framebuffer* framebuffer;
 		const SynchronizationBundle* syncBundle;
 	};

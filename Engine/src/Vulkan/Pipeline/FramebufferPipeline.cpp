@@ -9,14 +9,13 @@ mtd::FramebufferPipeline::FramebufferPipeline
 	const vk::Device& device,
 	const DescriptorManager& descriptorManager,
 	const FramebufferPipelineInfo& info,
-	const vk::DescriptorSetLayout& globalDescriptorSetLayout,
 	vk::Extent2D extent,
 	vk::RenderPass renderPass
 ) : Pipeline{device, descriptorManager, info}
 {
 	createDescriptorSetLayouts();
 	loadShaderModules();
-	createPipelineLayout(globalDescriptorSetLayout);
+	createPipelineLayout();
 	createPipeline(extent, renderPass);
 }
 
@@ -40,23 +39,18 @@ void mtd::FramebufferPipeline::bind(const vk::CommandBuffer& commandBuffer) cons
 {
 	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
 
-	commandBuffer.bindDescriptorSets
-	(
-		vk::PipelineBindPoint::eGraphics,
-		pipelineLayout,
-		1U,
-		1U, &(descriptorSetHandlers[0].getSet()),
-		0U, nullptr
-	);
-
-	if(descriptorSetHandlers.size() == 1) return;
+	std::vector<vk::DescriptorSet> descriptorSets;
+	descriptorSets.reserve(info.descriptorSetIDs.size() + 1);
+	for(DescriptorSetID setID: info.descriptorSetIDs)
+		descriptorSets.emplace_back(descriptorManager.getSet(setID));
+	descriptorSets.emplace_back(descriptorSetHandlers[0].getSet());
 
 	commandBuffer.bindDescriptorSets
 	(
 		vk::PipelineBindPoint::eGraphics,
 		pipelineLayout,
-		2U,
-		1U, &(descriptorSetHandlers[1].getSet()),
+		0U,
+		static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(),
 		0U, nullptr
 	);
 }
@@ -105,19 +99,20 @@ void mtd::FramebufferPipeline::loadShaderModules()
 	shaders.emplace_back(device, vk::ShaderStageFlagBits::eFragment, info.fragmentShaderPath.c_str());
 }
 
-void mtd::FramebufferPipeline::createPipelineLayout(const vk::DescriptorSetLayout& globalDescriptorSetLayout)
+void mtd::FramebufferPipeline::createPipelineLayout()
 {
-	std::vector<vk::DescriptorSetLayout> descriptorSetLayouts{globalDescriptorSetLayout};
-	for(const DescriptorSetHandler& descriptorSetHandler: descriptorSetHandlers)
-		descriptorSetLayouts.push_back(descriptorSetHandler.getLayout());
+	std::vector<vk::DescriptorSetLayout> descriptorSetLayouts;
+	descriptorSetLayouts.reserve(info.descriptorLayoutIDs.size() + 1);
 	for(DescriptorLayoutID layoutID: info.descriptorLayoutIDs)
-		descriptorSetLayouts.push_back(descriptorManager.getLayout(layoutID));
+		descriptorSetLayouts.emplace_back(descriptorManager.getLayout(layoutID));
+	for(const DescriptorSetHandler& descriptorSetHandler: descriptorSetHandlers)
+		descriptorSetLayouts.emplace_back(descriptorSetHandler.getLayout());
 
 	vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
 	pipelineLayoutCreateInfo.flags = vk::PipelineLayoutCreateFlags();
 	pipelineLayoutCreateInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
 	pipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayouts.data();
-	pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
+	pipelineLayoutCreateInfo.pushConstantRangeCount = 0U;
 	pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
 
 	vk::Result result = device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &pipelineLayout);

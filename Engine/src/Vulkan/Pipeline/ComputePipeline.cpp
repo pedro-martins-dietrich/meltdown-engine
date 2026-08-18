@@ -8,14 +8,13 @@ mtd::ComputePipeline::ComputePipeline
 	const Device& mtdDevice,
 	const DescriptorManager& descriptorManager,
 	const ComputePipelineInfo& info,
-	const vk::DescriptorSetLayout& globalDescriptorSetLayout,
 	vk::Extent2D swapchainExtent
 ) : Pipeline{mtdDevice.getDevice(), descriptorManager, info}, outputImage{mtdDevice},
 	pushConstantData{UIntVec2{0U, 0U}, 0U, 4U, 4U, 4U, 0U, 0U, 0U}
 {
 	loadShaderModule();
 	createDescriptorSetLayouts();
-	createPipelineLayout(globalDescriptorSetLayout);
+	createPipelineLayout();
 	createComputePipeline();
 	createStorageImages(mtdDevice, swapchainExtent);
 
@@ -45,27 +44,21 @@ void mtd::ComputePipeline::dispatchCompute(const vk::CommandBuffer& commandBuffe
 			vk::PipelineStageFlagBits::eNone, vk::PipelineStageFlagBits::eComputeShader
 		);
 
+	std::vector<vk::DescriptorSet> descriptorSets;
+	descriptorSets.reserve(info.descriptorSetIDs.size() + 1);
+	for(DescriptorSetID setID: info.descriptorSetIDs)
+		descriptorSets.emplace_back(descriptorManager.getSet(setID));
+	descriptorSets.emplace_back(descriptorSetHandlers[0].getSet());
+
 	commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline);
 	commandBuffer.bindDescriptorSets
 	(
 		vk::PipelineBindPoint::eCompute,
 		pipelineLayout,
-		1U,
-		1U, &(descriptorSetHandlers[0].getSet()),
+		0U,
+		static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(),
 		0U, nullptr
 	);
-
-	if(descriptorSetHandlers.size() > 1)
-	{
-		commandBuffer.bindDescriptorSets
-		(
-			vk::PipelineBindPoint::eCompute,
-			pipelineLayout,
-			2U,
-			1U, &(descriptorSetHandlers[1].getSet()),
-			0U, nullptr
-		);
-	}
 
 	pushConstantData.randomSeed = rand();
 	commandBuffer.pushConstants
@@ -165,13 +158,14 @@ void mtd::ComputePipeline::createDescriptorSetLayouts()
 	descriptorTypeCount[vk::DescriptorType::eStorageImage] += 3U;
 }
 
-void mtd::ComputePipeline::createPipelineLayout(const vk::DescriptorSetLayout& globalDescriptorSetLayout)
+void mtd::ComputePipeline::createPipelineLayout()
 {
-	std::vector<vk::DescriptorSetLayout> descriptorSetLayouts{globalDescriptorSetLayout};
-	for(const DescriptorSetHandler& descriptorSetHandler: descriptorSetHandlers)
-		descriptorSetLayouts.push_back(descriptorSetHandler.getLayout());
+	std::vector<vk::DescriptorSetLayout> descriptorSetLayouts;
+	descriptorSetLayouts.reserve(info.descriptorLayoutIDs.size() + descriptorSetHandlers.size());
 	for(DescriptorLayoutID layoutID: info.descriptorLayoutIDs)
-		descriptorSetLayouts.push_back(descriptorManager.getLayout(layoutID));
+		descriptorSetLayouts.emplace_back(descriptorManager.getLayout(layoutID));
+	for(const DescriptorSetHandler& descriptorSetHandler: descriptorSetHandlers)
+		descriptorSetLayouts.emplace_back(descriptorSetHandler.getLayout());
 
 	vk::PushConstantRange pushConstantRange{};
 	pushConstantRange.stageFlags = vk::ShaderStageFlagBits::eCompute;

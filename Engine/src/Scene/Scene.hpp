@@ -41,11 +41,6 @@ namespace mtd
 
 			// Allocates resources and loads all mesh data
 			void allocateResources(PipelineBundle& pipelines);
-			// Configures the scene descriptor set with the scene data
-			void configureSceneDescriptorSet
-			(
-				const ResourceManager& resourceManager, DescriptorSetHandler& descriptorSetHandler
-			);
 
 			// Binds the vertex and index buffers
 			void bindMeshData(const ResourceManager& resourceManager, vk::CommandBuffer commandBuffer) const;

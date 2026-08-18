@@ -29,8 +29,7 @@ namespace mtd
                 const std::vector<MeshData>& meshes,
                 const std::vector<SceneInstance>& sceneInstances,
                 std::vector<DrawBatch>& drawBatches,
-                DescriptorManager& descriptorManager,
-                DescriptorSetHandler& descriptorSetHandler
+                DescriptorManager& descriptorManager
             );
             // Updates the descriptor data for the render objects buffer
             void updateDescriptor
@@ -53,10 +52,6 @@ namespace mtd
             uint32_t renderObjectCount = 0U;
 
             // Updates the render objects buffer contents
-            void updateBufferData
-            (
-                ResourceManager& resourceManager, DescriptorManager& descriptorManager,
-                DescriptorSetHandler& descriptorSetHandler
-            );
+            void updateBufferData(ResourceManager& resourceManager, DescriptorManager& descriptorManager);
     };
 }

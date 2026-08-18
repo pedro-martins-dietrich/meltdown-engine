@@ -15,7 +15,6 @@ namespace mtd
 				const vk::Device& device,
 				const DescriptorManager& descriptorManager,
 				const FramebufferPipelineInfo& info,
-				const vk::DescriptorSetLayout& globalDescriptorSetLayout,
 				vk::Extent2D extent,
 				vk::RenderPass renderPass
 			);
@@ -48,7 +47,7 @@ namespace mtd
 			void loadShaderModules();
 
 			// Creates the layout for the framebuffer pipeline
-			void createPipelineLayout(const vk::DescriptorSetLayout& globalDescriptorSetLayout);
+			void createPipelineLayout();
 			// Creates the graphics pipeline
 			void createPipeline(vk::Extent2D extent, vk::RenderPass renderPass);
 

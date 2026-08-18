@@ -48,7 +48,6 @@ namespace mtd
 			Device device;
 			Swapchain swapchain;
 			std::vector<Framebuffer> framebuffers;
-			std::unique_ptr<DescriptorSetHandler> globalDescriptorSetHandler;
 			CommandHandler commandHandler;
 			Renderer renderer;
 			ImGuiHandler imGuiHandler;
@@ -85,8 +84,6 @@ namespace mtd
 
 			// Sets up event callback functions
 			void configureEventCallbacks();
-			// Sets up descriptor set shared across pipelines
-			void configureGlobalDescriptorSetHandler();
 			// Creates the framebuffers and pipelines to be used in the scene
 			void createRenderResources
 			(

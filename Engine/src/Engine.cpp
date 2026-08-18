@@ -22,7 +22,6 @@ mtd::Engine::Engine(const EngineInfo& info, Window& window)
 {
 	SamplerManager::createSamplers(device.getDevice());
 	configureEventCallbacks();
-	configureGlobalDescriptorSetHandler();
 
 	LOG_INFO("Engine ready.\n");
 }
@@ -51,8 +50,7 @@ void mtd::Engine::run(Window& window, const std::function<void(double)>& onUpdat
 	DrawInfo drawInfo
 	{
 		swapchain.getRenderPass(),
-		swapchain.getExtent(),
-		globalDescriptorSetHandler->getSet()
+		swapchain.getExtent()
 	};
 
 	running.store(pWindowHandler->keepOpen());
@@ -75,7 +73,6 @@ void mtd::Engine::run(Window& window, const std::function<void(double)>& onUpdat
 			scene,
 			resourceManager,
 			descriptorManager,
-			*globalDescriptorSetHandler,
 			drawInfo,
 			shouldUpdateEngine
 		);
@@ -194,67 +191,6 @@ void mtd::Engine::configureEventCallbacks()
 	});
 }
 
-void mtd::Engine::configureGlobalDescriptorSetHandler()
-{
-	std::vector<vk::DescriptorSetLayoutBinding> bindings(9);
-	// Camera data
-	bindings[0].binding = 0U;
-	bindings[0].descriptorType = vk::DescriptorType::eUniformBuffer;
-	bindings[0].descriptorCount = 1U;
-	bindings[0].stageFlags = vk::ShaderStageFlagBits::eAll;
-	bindings[0].pImmutableSamplers = nullptr;
-	// Scene vertex buffer
-	bindings[1].binding = 1U;
-	bindings[1].descriptorType = vk::DescriptorType::eStorageBuffer;
-	bindings[1].descriptorCount = 1U;
-	bindings[1].stageFlags = vk::ShaderStageFlagBits::eAll;
-	bindings[1].pImmutableSamplers = nullptr;
-	// Scene index buffer
-	bindings[2].binding = 2U;
-	bindings[2].descriptorType = vk::DescriptorType::eStorageBuffer;
-	bindings[2].descriptorCount = 1U;
-	bindings[2].stageFlags = vk::ShaderStageFlagBits::eAll;
-	bindings[2].pImmutableSamplers = nullptr;
-	// Scene submesh buffer
-	bindings[3].binding = 3U;
-	bindings[3].descriptorType = vk::DescriptorType::eStorageBuffer;
-	bindings[3].descriptorCount = 1U;
-	bindings[3].stageFlags = vk::ShaderStageFlagBits::eAll;
-	bindings[3].pImmutableSamplers = nullptr;
-	// Scene textures data
-	bindings[4].binding = 4U;
-	bindings[4].descriptorType = vk::DescriptorType::eCombinedImageSampler;
-	bindings[4].descriptorCount = 8U;
-	bindings[4].stageFlags = vk::ShaderStageFlagBits::eAll;
-	bindings[4].pImmutableSamplers = nullptr;
-	// Scene materials data
-	bindings[5].binding = 5U;
-	bindings[5].descriptorType = vk::DescriptorType::eStorageBuffer;
-	bindings[5].descriptorCount = 1U;
-	bindings[5].stageFlags = vk::ShaderStageFlagBits::eAll;
-	bindings[5].pImmutableSamplers = nullptr;
-	// Scene materials indexing
-	bindings[6].binding = 6U;
-	bindings[6].descriptorType = vk::DescriptorType::eStorageBuffer;
-	bindings[6].descriptorCount = 1U;
-	bindings[6].stageFlags = vk::ShaderStageFlagBits::eAll;
-	bindings[6].pImmutableSamplers = nullptr;
-	// Scene material sets
-	bindings[7].binding = 7U;
-	bindings[7].descriptorType = vk::DescriptorType::eStorageBuffer;
-	bindings[7].descriptorCount = 1U;
-	bindings[7].stageFlags = vk::ShaderStageFlagBits::eAll;
-	bindings[7].pImmutableSamplers = nullptr;
-	// Render objects
-	bindings[8].binding = 8U;
-	bindings[8].descriptorType = vk::DescriptorType::eStorageBuffer;
-	bindings[8].descriptorCount = 1U;
-	bindings[8].stageFlags = vk::ShaderStageFlagBits::eAll;
-	bindings[8].pImmutableSamplers = nullptr;
-
-	globalDescriptorSetHandler = std::make_unique<DescriptorSetHandler>(device.getDevice(), bindings);
-}
-
 void mtd::Engine::createRenderResources
 (
 	const std::vector<FramebufferInfo>& framebufferInfos,
@@ -278,7 +214,6 @@ void mtd::Engine::createRenderResources
 			device.getDevice(),
 			descriptorManager,
 			rasterizationPipelineInfo,
-			globalDescriptorSetHandler->getLayout(),
 			targetSwapchain ? swapchain.getExtent() : framebuffers[fbIndex].getExtent(),
 			targetSwapchain ? swapchain.getRenderPass() : framebuffers[fbIndex].getRenderPass()
 		);
@@ -295,7 +230,6 @@ void mtd::Engine::createRenderResources
 			device.getDevice(),
 			descriptorManager,
 			fbPipelineInfo,
-			globalDescriptorSetHandler->getLayout(),
 			targetSwapchain ? swapchain.getExtent() : framebuffers[fbIndex].getExtent(),
 			targetSwapchain ? swapchain.getRenderPass() : framebuffers[fbIndex].getRenderPass()
 		);
@@ -306,8 +240,7 @@ void mtd::Engine::createRenderResources
 	{
 		pipelines.computePipelines.emplace_back
 		(
-			device, descriptorManager, computePipelineInfo,
-			globalDescriptorSetHandler->getLayout(), swapchain.getExtent()
+			device, descriptorManager, computePipelineInfo, swapchain.getExtent()
 		);
 	}
 
@@ -317,19 +250,13 @@ void mtd::Engine::createRenderResources
 	{
 		pipelines.rayTracingPipelines.emplace_back
 		(
-			device, descriptorManager, rtPipelineInfo, globalDescriptorSetHandler->getLayout(), swapchain.getExtent()
+			device, descriptorManager, rtPipelineInfo, swapchain.getExtent()
 		);
 	}
 }
 
 void mtd::Engine::configureDescriptors()
 {
-	scene.getDescriptorPool().allocateDescriptorSet(*globalDescriptorSetHandler);
-	scene.configureSceneDescriptorSet(resourceManager, *globalDescriptorSetHandler);
-	renderer.configureRendererDescriptor(resourceManager, *globalDescriptorSetHandler);
-
-	globalDescriptorSetHandler->writeDescriptorSet();
-
 	for(ComputePipeline& computePipeline: pipelines.computePipelines)
 		computePipeline.configurePipelineDescriptorSet();
 	for(RayTracingPipeline& rtPipeline: pipelines.rayTracingPipelines)

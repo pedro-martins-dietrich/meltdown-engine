@@ -10,7 +10,6 @@ mtd::RayTracingPipeline::RayTracingPipeline
 	const Device& mtdDevice,
 	const DescriptorManager& descriptorManager,
 	const RayTracingPipelineInfo& info,
-	const vk::DescriptorSetLayout& globalDescriptorSetLayout,
 	vk::Extent2D swapchainExtent
 ) : Pipeline{mtdDevice.getDevice(), descriptorManager, info},
 	outputImage{mtdDevice},
@@ -27,7 +26,7 @@ mtd::RayTracingPipeline::RayTracingPipeline
 {
 	loadShaderModules();
 	createDescriptorSetLayouts();
-	createPipelineLayout(globalDescriptorSetLayout);
+	createPipelineLayout();
 	createRayTracingPipeline(mtdDevice.getDLDI());
 	createShaderBindingTable(mtdDevice);
 	createStorageImages(mtdDevice, swapchainExtent);
@@ -259,13 +258,14 @@ void mtd::RayTracingPipeline::createStorageImages(const Device& mtdDevice, vk::E
 	);
 }
 
-void mtd::RayTracingPipeline::createPipelineLayout(const vk::DescriptorSetLayout& globalDescriptorSetLayout)
+void mtd::RayTracingPipeline::createPipelineLayout()
 {
-	std::vector<vk::DescriptorSetLayout> descriptorSetLayouts{globalDescriptorSetLayout};
-	for(const DescriptorSetHandler& descriptorSetHandler: descriptorSetHandlers)
-		descriptorSetLayouts.push_back(descriptorSetHandler.getLayout());
+	std::vector<vk::DescriptorSetLayout> descriptorSetLayouts;
+	descriptorSetLayouts.reserve(info.descriptorLayoutIDs.size() + descriptorSetHandlers.size());
 	for(DescriptorLayoutID layoutID: info.descriptorLayoutIDs)
-		descriptorSetLayouts.push_back(descriptorManager.getLayout(layoutID));
+		descriptorSetLayouts.emplace_back(descriptorManager.getLayout(layoutID));
+	for(const DescriptorSetHandler& descriptorSetHandler: descriptorSetHandlers)
+		descriptorSetLayouts.emplace_back(descriptorSetHandler.getLayout());
 
 	vk::PushConstantRange pushConstantRange{};
 	pushConstantRange.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eClosestHitKHR;

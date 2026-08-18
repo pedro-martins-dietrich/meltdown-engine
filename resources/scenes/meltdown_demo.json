@@ -31,55 +31,55 @@
 				{
 					"binding": 0,
 					"type": 0,
-					"shader-stage": 63,
+					"shader-stage": 127,
 					"count": 1
 				},
 				{
 					"binding": 1,
 					"type": 1,
-					"shader-stage": 63,
+					"shader-stage": 127,
 					"count": 1
 				},
 				{
 					"binding": 2,
 					"type": 1,
-					"shader-stage": 63,
+					"shader-stage": 127,
 					"count": 1
 				},
 				{
 					"binding": 3,
 					"type": 1,
-					"shader-stage": 63,
+					"shader-stage": 127,
 					"count": 1
 				},
 				{
 					"binding": 4,
 					"type": 3,
-					"shader-stage": 63,
+					"shader-stage": 127,
 					"count": 8
 				},
 				{
 					"binding": 5,
 					"type": 1,
-					"shader-stage": 63,
+					"shader-stage": 127,
 					"count": 1
 				},
 				{
 					"binding": 6,
 					"type": 1,
-					"shader-stage": 63,
+					"shader-stage": 127,
 					"count": 1
 				},
 				{
 					"binding": 7,
 					"type": 1,
-					"shader-stage": 63,
+					"shader-stage": 127,
 					"count": 1
 				},
 				{
 					"binding": 8,
 					"type": 1,
-					"shader-stage": 63,
+					"shader-stage": 127,
 					"count": 1
 				}
 			]
@@ -138,8 +138,8 @@
 			"fragment-shader": "default.frag.spv",
 			"mesh-type": 0,
 			"target-framebuffer": 0,
-			"descriptor-layouts": [1],
-			"descriptor-sets": [1],
+			"descriptor-layouts": [0, 1],
+			"descriptor-sets": [0, 1],
 			"shader-primitive-topology": 5,
 			"shader-face-culling": 1,
 			"transparency": false
@@ -150,8 +150,8 @@
 			"fragment-shader": "billboard.frag.spv",
 			"mesh-type": 2,
 			"target-framebuffer": 0,
-			"descriptor-layouts": [],
-			"descriptor-sets": [],
+			"descriptor-layouts": [0],
+			"descriptor-sets": [0],
 			"shader-primitive-topology": 5,
 			"shader-face-culling": 2,
 			"transparency": true

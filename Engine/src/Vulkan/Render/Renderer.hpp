@@ -35,7 +35,6 @@ namespace mtd
 				const Scene& scene,
 				ResourceManager& resourceManager,
 				DescriptorManager& descriptorManager,
-				DescriptorSetHandler& globalDescriptorSet,
 				DrawInfo& drawInfo,
 				std::atomic<bool>& shouldUpdateEngine
 			);
