@@ -117,6 +117,11 @@ bool mtd::MeshLoader::loadFromFile
     if(!meshes.empty())
         meshData.submeshOffset = meshes.back().submeshOffset + meshes.back().submeshes.size();
 
+    size_t vertexOffset = vertexData.size();
+    if(vertexOffset % meshData.vertexStride != 0)
+        vertexOffset += meshData.vertexStride - (vertexOffset % meshData.vertexStride);
+    meshData.vertexOffset = static_cast<uint32_t>(vertexOffset / meshData.vertexStride);
+
     std::streamoff currentOffset = meshFile.tellg();
     while(currentOffset < meshFileSize)
     {
@@ -130,19 +135,11 @@ bool mtd::MeshLoader::loadFromFile
             break;
         }
 
-        size_t oldBufferSize = 0;
-        size_t vertexOffset = 0;
         switch(blockHeader.blockID)
         {
             case "Vertices"_u64:
-                oldBufferSize = vertexData.size();
-                if(oldBufferSize % meshData.vertexStride == 0)
-                    vertexOffset = oldBufferSize;
-                else
-                    vertexOffset = oldBufferSize + meshData.vertexStride - (oldBufferSize % meshData.vertexStride);
-                meshData.vertexOffset = static_cast<uint32_t>(vertexOffset / meshData.vertexStride);
-                vertexData.resize(oldBufferSize + blockHeader.blockSize);
-                meshFile.read(reinterpret_cast<char*>(vertexData.data() + oldBufferSize), blockHeader.blockSize);
+                vertexData.resize(vertexOffset + blockHeader.blockSize);
+                meshFile.read(reinterpret_cast<char*>(vertexData.data() + vertexOffset), blockHeader.blockSize);
                 break;
 
             case "Indices\0"_u64:
@@ -153,8 +150,9 @@ bool mtd::MeshLoader::loadFromFile
             case "Submesh\0"_u64:
                 meshData.submeshes.resize(blockHeader.blockSize / sizeof(SubmeshData));
                 meshFile.read(reinterpret_cast<char*>(meshData.submeshes.data()), blockHeader.blockSize);
-                for(const SubmeshData& submesh: meshData.submeshes)
+                for(SubmeshData& submesh: meshData.submeshes)
                 {
+                    submesh.indexOffset += meshData.indexOffset;
                     if(submesh.materialSlot + 1U > meshData.materialSlotCount)
                         meshData.materialSlotCount = submesh.materialSlot + 1U;
                 }

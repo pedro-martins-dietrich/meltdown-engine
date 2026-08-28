@@ -62,7 +62,7 @@ void mtd::RenderObjectManager::createFrameRenderObjects
     for(size_t i = 1UL; i < visibleInstances.size(); i++)
     {
         const SceneInstance* pInstance = visibleInstances[i];
-        const MeshData& mesh = meshes[firstInstance->meshID];
+        const MeshData& mesh = meshes[pInstance->meshID];
         renderObjects.push_back(RenderObject{
             pInstance->transform,
             pInstance->materialSetID,
