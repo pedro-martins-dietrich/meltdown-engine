@@ -28,7 +28,8 @@ namespace mtd::SceneLoader
 		const nlohmann::json& materialsJson,
 		const nlohmann::json& materialSetsJson,
 		ResourceManager& resourceManager,
-		SceneResources& sceneResources
+		SceneResources& sceneResources,
+		std::vector<uint32_t>& materialSetOffsets
 	);
 	// Fetches all mesh files from the scene file and loads them
 	static void loadMeshes
@@ -91,7 +92,12 @@ namespace mtd::SceneLoader
 	);
 
 	// Loads all instances from the scene file
-	static void loadInstances(const nlohmann::json& instancesJson, InstanceManager& instanceManager);
+	static void loadInstances
+	(
+		const nlohmann::json& instancesJson,
+		InstanceManager& instanceManager,
+		const std::vector<uint32_t>& materialSetOffsets
+	);
 }
 
 void mtd::SceneLoader::load
@@ -123,11 +129,14 @@ void mtd::SceneLoader::load
 		return;
 	}
 
+	std::vector<uint32_t> materialSetOffsets;
+
 	loadCamera(sceneJson["camera"]);
 	loadGpuResources(sceneJson["gpu-resources"], resourceManager);
 	loadMaterials
 	(
-		sceneJson["textures"], sceneJson["materials"], sceneJson["material-sets"], resourceManager, sceneResources
+		sceneJson["textures"], sceneJson["materials"], sceneJson["material-sets"],
+		resourceManager, sceneResources, materialSetOffsets
 	);
 	loadMeshes(sceneJson["meshes"], resourceManager, sceneResources, meshes);
 
@@ -178,7 +187,7 @@ void mtd::SceneLoader::load
 		}
 	}
 
-	loadInstances(sceneJson["instances"], instanceManager);
+	loadInstances(sceneJson["instances"], instanceManager, materialSetOffsets);
 
 	LOG_INFO("Scene \"%s\" loaded.", fileName.data());
 }
@@ -242,7 +251,8 @@ void mtd::SceneLoader::loadMaterials
 	const nlohmann::json& materialsJson,
 	const nlohmann::json& materialSetsJson,
 	ResourceManager& resourceManager,
-	SceneResources& sceneResources
+	SceneResources& sceneResources,
+	std::vector<uint32_t>& materialSetOffsets
 )
 {
 	std::vector<std::string> textureInfos;
@@ -259,6 +269,13 @@ void mtd::SceneLoader::loadMaterials
 
 	std::vector<std::vector<uint32_t>> materialSets;
 	materialSetsJson.get_to(materialSets);
+
+	uint32_t currentMaterialSetOffset = 0U;
+	for(const std::vector<uint32_t>& materialSet: materialSets)
+	{
+		materialSetOffsets.emplace_back(currentMaterialSetOffset);
+		currentMaterialSetOffset += materialSet.size();
+	}
 
 	MaterialLoader::loadMaterials
 	(
@@ -544,20 +561,26 @@ void mtd::SceneLoader::loadRayTracingMeshes
 	}
 }
 
-void mtd::SceneLoader::loadInstances(const nlohmann::json& instancesJson, InstanceManager& instanceManager)
+void mtd::SceneLoader::loadInstances
+(
+	const nlohmann::json& instancesJson,
+	InstanceManager& instanceManager,
+	const std::vector<uint32_t>& materialSetOffsets
+)
 {
 	std::vector<SceneInstance> instances;
 	instances.reserve(instancesJson.size());
-	for(const nlohmann::json& instance: instancesJson)
+	for(const nlohmann::json& instanceJson: instancesJson)
 	{
-		uint32_t pipelineID = instance["pipeline-id"];
-		uint32_t meshID = instance["mesh-id"];
-		uint32_t materialSetID = instance["material-set-id"];
-		const std::array<float, 16>& transform = instance["transform"];
+		uint32_t pipelineID = instanceJson.value("pipeline-id", 0U);
+		uint32_t meshID = instanceJson.value("mesh-id", 0U);
+		size_t materialSetIndex = instanceJson.value("material-set-id", 0U);
+		uint32_t materialSetOffset = materialSetOffsets[materialSetIndex];
+		const std::array<float, 16>& transform = instanceJson["transform"];
 		const Mat4x4* pTransform = reinterpret_cast<const Mat4x4*>(&transform);
-		bool visible = instance["visible"];
+		bool visible = instanceJson.value("visible", true);
 
-		instances.emplace_back(*pTransform, pipelineID, meshID, materialSetID, visible);
+		instances.emplace_back(*pTransform, pipelineID, meshID, materialSetOffset, visible);
 	}
 	instanceManager.loadInstances(instances);
 }

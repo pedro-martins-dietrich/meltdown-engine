@@ -216,7 +216,7 @@ void mtd::Renderer::recordDrawCommands
 					commandBuffer.drawIndexed
 					(
 						submesh.indexCount, drawBatch.instanceCount,
-						mesh.indexOffset + submesh.indexOffset, mesh.vertexOffset,
+						submesh.indexOffset, mesh.vertexOffset,
 						drawBatch.firstInstance
 					);
 				}
