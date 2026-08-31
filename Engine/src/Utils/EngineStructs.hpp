@@ -45,6 +45,8 @@ namespace mtd
 		vk::Semaphore imageAvailable;
 		// Signals the image has been rendered in the frame
 		vk::Semaphore renderFinished;
+		// Signals the screenshot copy has been completed
+		vk::Semaphore screenshotCopy;
 	};
 
 	// Camera data to send to the shaders
@@ -141,15 +143,6 @@ namespace mtd
 		Vec3 extentAABB = Vec3{0.0f};
 		std::vector<SubmeshData> submeshes;
 		uint32_t submeshOffset;
-	};
-
-	// Information required for drawing a frame
-	struct DrawInfo
-	{
-		const vk::RenderPass& renderPass;
-		const vk::Extent2D& extent;
-		const vk::Framebuffer* framebuffer;
-		const SynchronizationBundle* syncBundle;
 	};
 
 	// Resource IDs of the GPU resources managed by the engine

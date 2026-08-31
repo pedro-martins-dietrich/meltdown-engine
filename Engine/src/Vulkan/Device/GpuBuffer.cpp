@@ -155,6 +155,22 @@ void mtd::GpuBuffer::copyMemoryToBuffer(vk::DeviceSize copySize, const void* src
 	device.getDevice().unmapMemory(bufferMemory);
 }
 
+void mtd::GpuBuffer::copyMemoryFromBuffer(vk::DeviceSize copySize, void* dstData, vk::DeviceSize bufferOffset) const
+{
+	assert(buffer && bufferMemory && "Cannot copy memory from an invalid GPU buffer.");
+	assert(bufferOffset < size && "The buffer offset cannot be greater the the GPU buffer size.");
+
+	if(copySize > size - bufferOffset)
+	{
+		copySize = size - bufferOffset;
+		LOG_WARNING("Copy size exceeded the available GPU buffer size. Only part of the data will be copied.");
+	}
+
+	const void* memoryLocation = device.getDevice().mapMemory(bufferMemory, bufferOffset, copySize);
+	memcpy(dstData, memoryLocation, copySize);
+	device.getDevice().unmapMemory(bufferMemory);
+}
+
 void mtd::GpuBuffer::updateDescriptorInfo(vk::DescriptorBufferInfo& descriptorInfo) const
 {
 	assert(buffer && size != 0UL && "The buffer must be properly created before updating the descriptor info.");

@@ -47,11 +47,6 @@ void mtd::Engine::setVSync(bool enableVSync)
 void mtd::Engine::run(Window& window, const std::function<void(double)>& onUpdateCallback)
 {
 	WindowHandler* const pWindowHandler = window.windowHandler.get();
-	DrawInfo drawInfo
-	{
-		swapchain.getRenderPass(),
-		swapchain.getExtent()
-	};
 
 	running.store(pWindowHandler->keepOpen());
 	std::thread updateThread{&Engine::updateLoop, this, onUpdateCallback};
@@ -73,7 +68,6 @@ void mtd::Engine::run(Window& window, const std::function<void(double)>& onUpdat
 			scene,
 			resourceManager,
 			descriptorManager,
-			drawInfo,
 			shouldUpdateEngine
 		);
 

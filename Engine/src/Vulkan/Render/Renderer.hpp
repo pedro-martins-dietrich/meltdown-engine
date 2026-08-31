@@ -35,7 +35,6 @@ namespace mtd
 				const Scene& scene,
 				ResourceManager& resourceManager,
 				DescriptorManager& descriptorManager,
-				DrawInfo& drawInfo,
 				std::atomic<bool>& shouldUpdateEngine
 			);
 
@@ -48,8 +47,11 @@ namespace mtd
 			);
 
 		private:
-			// Index of the frame being rendered
+			// Index of the current frame-in-flight
 			uint32_t currentFrameIndex = 0U;
+			// Index of the swapchain image in use
+			uint32_t currentImageIndex = 0U;
+
 			// Framebuffer clear values
 			std::array<vk::ClearValue, 2> clearValues;
 			// Order which the framebuffers will be rendered
@@ -58,28 +60,29 @@ namespace mtd
 			// Handler for per frame data to be sent to the GPU
 			RenderObjectManager renderObjectManager;
 
+			// Screenshot event callback handle
+			EventCallbackHandle screenshotCallbackHandle;
+			// Flag for a pending screenshot
+			bool pendingScreenshot = false;
+
 			// Device reference
 			const Device& mtdDevice;
 
 			// Records draw commands to the command buffer
 			void recordDrawCommands
 			(
+				const Swapchain& swapchain,
+				vk::Framebuffer mainFramebuffer,
 				const std::vector<Framebuffer>& framebuffers,
 				const PipelineBundle& pipelines,
 				const Scene& scene,
 				const ResourceManager& resourceManager,
 				const CommandHandler& commandHandler,
-				const DrawInfo& drawInfo,
 				const std::vector<DrawBatch>& drawBatches,
 				const ImGuiHandler& guiHandler
 			) const;
 
 			// Presents frame to screen when ready
-			void presentFrame
-			(
-				const vk::SwapchainKHR& swapchain,
-				const vk::Queue& presentQueue,
-				const vk::Semaphore& renderFinished
-			) const;
+			void presentFrame(vk::SwapchainKHR swapchain, vk::Semaphore renderFinished) const;
 	};
 }

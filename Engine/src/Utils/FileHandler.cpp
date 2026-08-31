@@ -2,6 +2,8 @@
 #include "FileHandler.hpp"
 
 #include <stb_image.h>
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image_write.h>
 
 #include "Logger.hpp"
 
@@ -68,4 +70,23 @@ void* mtd::FileHandler::readImage(std::string_view path, UIntVec2& dimensions, u
 	channels = static_cast<uint32_t>(desiredChannels);
 
 	return pixels;
+}
+
+bool mtd::FileHandler::saveImage
+(
+	std::string_view path, UIntVec2 dimensions, int channels, const std::vector<uint8_t>& pixels
+)
+{
+	const int result = stbi_write_png
+	(
+		path.data(), dimensions.x, dimensions.y, channels, pixels.data(), static_cast<int>(dimensions.x * channels)
+	);
+
+	if(result == 0)
+	{
+		LOG_ERROR("Failed to save image as \"%s\".", path.data());
+		return false;
+	}
+
+	return true;
 }

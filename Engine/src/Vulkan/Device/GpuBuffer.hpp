@@ -38,7 +38,9 @@ namespace mtd
 			void resizeBuffer(const CommandHandler& commandHandler, vk::DeviceSize newSize);
 
 			// Copies data to the buffer
-			void copyMemoryToBuffer(vk::DeviceSize copySize, const void* srcData, vk::DeviceSize bufferOffset = 0);
+			void copyMemoryToBuffer(vk::DeviceSize copySize, const void* srcData, vk::DeviceSize bufferOffset = 0UL);
+			// Copies data from the buffer
+			void copyMemoryFromBuffer(vk::DeviceSize copySize, void* dstData, vk::DeviceSize bufferOffset = 0UL) const;
 
 			// Updates the descriptor info with the buffer data
 			void updateDescriptorInfo(vk::DescriptorBufferInfo& descriptorInfo) const;

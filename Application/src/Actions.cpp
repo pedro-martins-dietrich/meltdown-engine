@@ -20,4 +20,5 @@ void mapActions()
 	mapAction(Actions::ToggleCameraSettingsGui, {KeyCode::LeftControl, KeyCode::C});
 	mapAction(Actions::ToggleProfilerGui, {KeyCode::LeftControl, KeyCode::P});
 	mapAction(Actions::ChangeScene, {KeyCode::LeftControl, KeyCode::R});
+	mapAction(Actions::Screenshot, {KeyCode::LeftAlt, KeyCode::Semicolon});
 }

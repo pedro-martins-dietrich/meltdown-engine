@@ -1,13 +1,19 @@
 #include <pch.hpp>
 #include "Renderer.hpp"
 
+#include "../Frame/Screenshot.hpp"
 #include "../../Utils/Logger.hpp"
 #include "../../Utils/Profiler.hpp"
 
 mtd::Renderer::Renderer(const Device& mtdDevice)
 	: mtdDevice{mtdDevice},
 	clearValues{vk::ClearColorValue{0.1f, 0.1f, 0.1f, 1.0f}, vk::ClearDepthStencilValue{1.0f, 0U}}
-{}
+{
+	screenshotCallbackHandle = EventManager::addCallback([this](const ScreenshotEvent& event)
+	{
+		pendingScreenshot = true;
+	});
+}
 
 void mtd::Renderer::setClearColor(const Vec4& color)
 {
@@ -23,7 +29,6 @@ void mtd::Renderer::render
 	const Scene& scene,
 	ResourceManager& resourceManager,
 	DescriptorManager& descriptorManager,
-	DrawInfo& drawInfo,
 	std::atomic<bool>& shouldUpdateEngine
 )
 {
@@ -38,27 +43,29 @@ void mtd::Renderer::render
 	PROFILER_NEXT_STAGE("Render - Acquire frame");
 
 	const vk::Device& device = mtdDevice.getDevice();
-	const Frame& frame = swapchain.getFrame(currentFrameIndex);
-	const vk::Fence& inFlightFence = frame.getInFlightFence();
+	const Frame& frameInFlight = swapchain.getFrame(currentFrameIndex);
 
-	(void) device.waitForFences(1U, &inFlightFence, vk::True, UINT64_MAX);
-	(void) device.resetFences(1U, &inFlightFence);
+	const SynchronizationBundle& syncBundle = frameInFlight.getSyncBundle();
+	const CommandHandler& commandHandler = frameInFlight.getCommandHandler();
+
+	(void) device.waitForFences(1U, &(syncBundle.inFlightFence), vk::True, UINT64_MAX);
+	(void) device.resetFences(1U, &(syncBundle.inFlightFence));
 
 	vk::Result result = device.acquireNextImageKHR
 	(
 		swapchain.getSwapchain(),
 		UINT64_MAX,
-		frame.getImageAvailableSemaphore(),
+		syncBundle.imageAvailable,
 		nullptr,
-		&currentFrameIndex
+		&currentImageIndex
 	);
 	if(result != vk::Result::eSuccess)
 	{
 		if
 		(
-			result == vk::Result::eErrorOutOfDateKHR ||
-			result == vk::Result::eErrorIncompatibleDisplayKHR ||
-			result == vk::Result::eSuboptimalKHR
+			result == vk::Result::eErrorOutOfDateKHR
+			|| result == vk::Result::eErrorIncompatibleDisplayKHR
+			|| result == vk::Result::eSuboptimalKHR
 		)
 		{
 			currentFrameIndex = 0U;
@@ -71,29 +78,36 @@ void mtd::Renderer::render
 		return;
 	}
 
-	swapchain.getFrame(currentFrameIndex).fetchFrameDrawData(drawInfo);
-	const CommandHandler& commandHandler = swapchain.getFrame(currentFrameIndex).getCommandHandler();
+	const Frame& swapchainFrame = swapchain.getFrame(currentImageIndex);
 
 	recordDrawCommands
 	(
+		swapchain,
+		swapchainFrame.getFramebuffer(),
 		framebuffers,
 		pipelines,
 		scene,
 		resourceManager,
 		commandHandler,
-		drawInfo,
 		drawBatches,
 		guiHandler
 	);
-	commandHandler.submitDrawCommandBuffer(*(drawInfo.syncBundle));
+	commandHandler.submitDrawCommandBuffer(syncBundle);
 
 	PROFILER_NEXT_STAGE("Present frame");
-	presentFrame
-	(
-		swapchain.getSwapchain(),
-		mtdDevice.getPresentQueue(),
-		drawInfo.syncBundle->renderFinished
-	);
+	vk::Semaphore presentReadySemaphore = syncBundle.renderFinished;
+	if(pendingScreenshot)
+	{
+		Screenshot::takeScreenshot
+		(
+			mtdDevice, swapchainFrame.getColorBufferImage(), swapchainFrame.getDimensions(),
+			presentReadySemaphore, syncBundle.screenshotCopy
+		);
+		presentReadySemaphore = syncBundle.screenshotCopy;
+		pendingScreenshot = false;
+	}
+
+	presentFrame(swapchain.getSwapchain(), presentReadySemaphore);
 
 	currentFrameIndex = shouldUpdateEngine.load() ? 0U : (currentFrameIndex + 1U) % swapchain.getFrameCount();
 }
@@ -113,12 +127,13 @@ void mtd::Renderer::configureRendererDescriptor
 
 void mtd::Renderer::recordDrawCommands
 (
+	const Swapchain& swapchain,
+	vk::Framebuffer mainFramebuffer,
 	const std::vector<Framebuffer>& framebuffers,
 	const PipelineBundle& pipelines,
 	const Scene& scene,
 	const ResourceManager& resourceManager,
 	const CommandHandler& commandHandler,
-	const DrawInfo& drawInfo,
 	const std::vector<DrawBatch>& drawBatches,
 	const ImGuiHandler& guiHandler
 ) const
@@ -160,7 +175,7 @@ void mtd::Renderer::recordDrawCommands
 		int32_t fbIndex = renderPassInfo.targetFramebufferIndex;
 		bool toSwapchain = (fbIndex == -1);
 
-		renderArea.extent = toSwapchain ? drawInfo.extent : framebuffers[fbIndex].getExtent();
+		renderArea.extent = toSwapchain ? swapchain.getExtent() : framebuffers[fbIndex].getExtent();
 
 		vk::ImageMemoryBarrier barrier{};
 		if(renderPassInfo.framebufferPipelineIndex.has_value())
@@ -176,9 +191,9 @@ void mtd::Renderer::recordDrawCommands
 		}
 
 		vk::RenderPassBeginInfo renderPassBeginInfo{};
-		renderPassBeginInfo.renderPass = toSwapchain ? drawInfo.renderPass : framebuffers[fbIndex].getRenderPass();
-		renderPassBeginInfo.framebuffer =
-			toSwapchain ? *(drawInfo.framebuffer) : framebuffers[fbIndex].getFramebuffer();
+		renderPassBeginInfo.renderPass =
+			toSwapchain ? swapchain.getRenderPass() : framebuffers[fbIndex].getRenderPass();
+		renderPassBeginInfo.framebuffer = toSwapchain ? mainFramebuffer : framebuffers[fbIndex].getFramebuffer();
 		renderPassBeginInfo.renderArea = renderArea;
 		renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
 		renderPassBeginInfo.pClearValues = clearValues.data();
@@ -234,10 +249,7 @@ void mtd::Renderer::recordDrawCommands
 	commandHandler.endCommand();
 }
 
-void mtd::Renderer::presentFrame
-(
-	const vk::SwapchainKHR& swapchain, const vk::Queue& presentQueue, const vk::Semaphore& renderFinished
-) const
+void mtd::Renderer::presentFrame(vk::SwapchainKHR swapchain, vk::Semaphore renderFinished) const
 {
 	vk::PresentInfoKHR presentInfo{};
 	presentInfo.waitSemaphoreCount = 1U;
@@ -247,11 +259,11 @@ void mtd::Renderer::presentFrame
 	presentInfo.pImageIndices = &currentFrameIndex;
 	presentInfo.pResults = nullptr;
 
-	vk::Result result = presentQueue.presentKHR(&presentInfo);
+	vk::Result result = mtdDevice.getPresentQueue().presentKHR(&presentInfo);
 	if
 	(
-		result != vk::Result::eSuccess &&
-		result != vk::Result::eErrorOutOfDateKHR &&
-		result != vk::Result::eSuboptimalKHR
+		result != vk::Result::eSuccess
+		&& result != vk::Result::eErrorOutOfDateKHR
+		&& result != vk::Result::eSuboptimalKHR
 	) LOG_ERROR("Failed to present frame to screen. Vulkan result: %d", result);
 }

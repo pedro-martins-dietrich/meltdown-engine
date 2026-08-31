@@ -95,7 +95,7 @@ void mtd::Swapchain::createSwapchain(const Device& device, const vk::SurfaceKHR&
 	swapchainCreateInfo.imageColorSpace = settings.colorSpace;
 	swapchainCreateInfo.imageExtent = extent;
 	swapchainCreateInfo.imageArrayLayers = 1U;
-	swapchainCreateInfo.imageUsage = vk::ImageUsageFlagBits::eColorAttachment;
+	swapchainCreateInfo.imageUsage = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferSrc;
 	swapchainCreateInfo.imageSharingMode = selectedSharingMode;
 	swapchainCreateInfo.queueFamilyIndexCount = distinctQueueFamilyIndices;
 	swapchainCreateInfo.pQueueFamilyIndices = device.getQueueFamilies().getUniqueIndices().data();
@@ -146,7 +146,7 @@ void mtd::Swapchain::createRenderPass()
 	depthAttachmentDescription.finalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
 
 	vk::AttachmentReference depthAttachmentReference{};
-	depthAttachmentReference.attachment = 1;
+	depthAttachmentReference.attachment = 1U;
 	depthAttachmentReference.layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
 
 	std::array<vk::AttachmentDescription, 2> attachmentDescriptions
@@ -273,9 +273,15 @@ void mtd::Swapchain::setSwapchainFrames(const Device& device)
 	std::vector<vk::Image> images = this->device.getSwapchainImagesKHR(swapchain);
 
 	frames.reserve(settings.frameCount);
-	LOG_INFO("Reserved %d frames.", settings.frameCount);
-	for(uint32_t i = 0U; i < images.size(); i++)
-		frames.emplace_back(device, UIntVec2{extent.width, extent.height}, images[i], settings.colorFormat, i);
+	for(size_t frameIndex = 0; frameIndex < images.size(); frameIndex++)
+	{
+		frames.emplace_back
+		(
+			device, UIntVec2{extent.width, extent.height}, images[frameIndex], settings.colorFormat
+		);
+	}
+
+	LOG_INFO("Created %d frames.", settings.frameCount);
 }
 
 void mtd::Swapchain::destroy()

@@ -37,6 +37,8 @@ Application::Application()
 	{
 		if(event.getAction() == Actions::ChangeScene)
 			changeScene = true;
+		if(event.getAction() == Actions::Screenshot)
+			takeScreenshot = true;
 	});
 }
 
@@ -55,6 +57,11 @@ void Application::run()
 				currentSceneIndex = (currentSceneIndex + 1U) % scenes.size();
 				mtd::EventManager::dispatch<mtd::ChangeSceneEvent>(scenes[currentSceneIndex]);
 				changeScene = false;
+			}
+			if(takeScreenshot)
+			{
+				mtd::EventManager::dispatch<mtd::ScreenshotEvent>();
+				takeScreenshot = false;
 			}
 
 			if(currentSceneIndex == 0U)
