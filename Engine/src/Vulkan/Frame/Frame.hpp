@@ -12,7 +12,7 @@ namespace mtd
 			Frame
 			(
 				const Device& mtdDevice, UIntVec2 frameDimensions,
-				vk::Image image, vk::Format format, uint32_t frameIndex
+				vk::Image colorBufferImage, vk::Format colorBufferFormat
 			);
 			~Frame();
 
@@ -22,34 +22,31 @@ namespace mtd
 			Frame(Frame&& other) noexcept;
 
 			// Getters
+			UIntVec2 getDimensions() const { return dimensions; }
+			vk::Framebuffer getFramebuffer() const { return framebuffer; }
+			vk::Image getColorBufferImage() const { return colorBuffer; }
 			vk::Format getDepthFormat() const { return depthBuffer.getFormat(); }
-			const vk::Fence& getInFlightFence() const { return synchronizationBundle.inFlightFence; }
-			const vk::Semaphore& getImageAvailableSemaphore() const { return synchronizationBundle.imageAvailable; }
+			const SynchronizationBundle& getSyncBundle() const { return synchronizationBundle; }
 			const CommandHandler& getCommandHandler() const { return commandHandler; }
 
-			// Adds frame data to the draw info
-			void fetchFrameDrawData(DrawInfo& drawInfo) const;
-
-			// Set up framebuffer
+			// Sets up framebuffer
 			void createFramebuffer(const vk::RenderPass& renderPass);
 
 		private:
 			// Frame storage
 			vk::Framebuffer framebuffer;
+			// Frame dimensions
+			UIntVec2 dimensions;
 
-			// Color buffer attachment data
+			// Color buffer Vulkan image
 			vk::Image colorBuffer;
 			// Color buffer view
 			vk::ImageView colorBufferView;
+
 			// Depth buffer attachment data
 			Image depthBuffer;
 
-			// Frame index in the swapchain
-			uint32_t frameIndex;
-			// Frame dimensions
-			UIntVec2 frameDimensions;
-
-			// Vulkan command handler
+			// Command handler for frame specific operations
 			CommandHandler commandHandler;
 
 			// Synchronization objects
@@ -59,7 +56,7 @@ namespace mtd
 			const vk::Device& device;
 
 			// Creates the image view for the color buffer
-			void createColorBufferView(vk::Format format);
+			void createColorBufferView(vk::Format colorBufferFormat);
 			// Creates depth buffer data
 			void createDepthResources(const Device& mtdDevice);
 

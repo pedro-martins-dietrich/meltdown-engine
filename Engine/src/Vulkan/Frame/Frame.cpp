@@ -6,25 +6,23 @@
 
 mtd::Frame::Frame
 (
-	const Device& mtdDevice, UIntVec2 frameDimensions, vk::Image image, vk::Format format, uint32_t frameIndex
-) : device{mtdDevice.getDevice()},
-	framebuffer{nullptr},
-	colorBuffer{image}, depthBuffer{mtdDevice},
-	frameIndex{frameIndex}, frameDimensions{frameDimensions},
-	commandHandler{mtdDevice}
+	const Device& mtdDevice, UIntVec2 frameDimensions, vk::Image colorBufferImage, vk::Format colorBufferFormat
+)
+	: device{mtdDevice.getDevice()}, framebuffer{nullptr}, dimensions{frameDimensions},
+	colorBuffer{colorBufferImage}, colorBufferView{nullptr}, depthBuffer{mtdDevice}, commandHandler{mtdDevice}
 {
 	Synchronization::createFence(device, synchronizationBundle.inFlightFence);
 	Synchronization::createSemaphore(device, synchronizationBundle.imageAvailable);
 	Synchronization::createSemaphore(device, synchronizationBundle.renderFinished);
+	Synchronization::createSemaphore(device, synchronizationBundle.screenshotCopy);
 
-	createColorBufferView(format);
+	createColorBufferView(colorBufferFormat);
 	createDepthResources(mtdDevice);
-
-	LOG_VERBOSE("Created frame number %d.", frameIndex);
 }
 
 mtd::Frame::~Frame()
 {
+	device.destroySemaphore(synchronizationBundle.screenshotCopy);
 	device.destroySemaphore(synchronizationBundle.renderFinished);
 	device.destroySemaphore(synchronizationBundle.imageAvailable);
 	device.destroyFence(synchronizationBundle.inFlightFence);
@@ -36,10 +34,10 @@ mtd::Frame::~Frame()
 mtd::Frame::Frame(Frame&& other) noexcept
 	: device{other.device},
 	framebuffer{std::move(other.framebuffer)},
+	dimensions{other.dimensions},
 	colorBuffer{std::move(other.colorBuffer)},
+	colorBufferView{std::move(other.colorBufferView)},
 	depthBuffer{std::move(other.depthBuffer)},
-	frameIndex{other.frameIndex},
-	frameDimensions{other.frameDimensions},
 	commandHandler{std::move(other.commandHandler)},
 	synchronizationBundle{std::move(other.synchronizationBundle)}
 {
@@ -47,12 +45,7 @@ mtd::Frame::Frame(Frame&& other) noexcept
 	other.synchronizationBundle.inFlightFence = nullptr;
 	other.synchronizationBundle.imageAvailable = nullptr;
 	other.synchronizationBundle.renderFinished = nullptr;
-}
-
-void mtd::Frame::fetchFrameDrawData(DrawInfo& drawInfo) const
-{
-	drawInfo.framebuffer = &framebuffer;
-	drawInfo.syncBundle = &synchronizationBundle;
+	other.synchronizationBundle.screenshotCopy = nullptr;
 }
 
 void mtd::Frame::createFramebuffer(const vk::RenderPass& renderPass)
@@ -64,8 +57,8 @@ void mtd::Frame::createFramebuffer(const vk::RenderPass& renderPass)
 	framebufferCreateInfo.renderPass = renderPass;
 	framebufferCreateInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
 	framebufferCreateInfo.pAttachments = attachments.data();
-	framebufferCreateInfo.width = frameDimensions.x;
-	framebufferCreateInfo.height = frameDimensions.y;
+	framebufferCreateInfo.width = dimensions.x;
+	framebufferCreateInfo.height = dimensions.y;
 	framebufferCreateInfo.layers = 1U;
 
 	vk::Result result = device.createFramebuffer(&framebufferCreateInfo, nullptr, &framebuffer);
@@ -78,7 +71,7 @@ void mtd::Frame::createFramebuffer(const vk::RenderPass& renderPass)
 	LOG_VERBOSE("Created framebuffer.");
 }
 
-void mtd::Frame::createColorBufferView(vk::Format format)
+void mtd::Frame::createColorBufferView(vk::Format colorBufferFormat)
 {
 	vk::ComponentMapping componentMapping{};
 	componentMapping.r = vk::ComponentSwizzle::eIdentity;
@@ -97,7 +90,7 @@ void mtd::Frame::createColorBufferView(vk::Format format)
 	imageViewCreateInfo.flags = vk::ImageViewCreateFlags();
 	imageViewCreateInfo.image = colorBuffer;
 	imageViewCreateInfo.viewType = vk::ImageViewType::e2D;
-	imageViewCreateInfo.format = format;
+	imageViewCreateInfo.format = colorBufferFormat;
 	imageViewCreateInfo.components = componentMapping;
 	imageViewCreateInfo.subresourceRange = subresourceRange;
 
@@ -118,7 +111,7 @@ void mtd::Frame::createDepthResources(const Device& mtdDevice)
 
 	depthBuffer.create
 	(
-		frameDimensions,
+		dimensions,
 		depthBufferFormat,
 		vk::ImageTiling::eOptimal,
 		vk::ImageUsageFlagBits::eDepthStencilAttachment,

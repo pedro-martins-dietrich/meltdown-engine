@@ -19,4 +19,6 @@ namespace mtd::FileHandler
 
 	// Reads an image file and returns the pointer data or a `nullptr` if it fails
 	void* readImage(std::string_view path, UIntVec2& dimensions, uint32_t& channels);
+	// Saves an image as a .png file
+	bool saveImage(std::string_view path, UIntVec2 dimensions, int channels, const std::vector<uint8_t>& pixels);
 }

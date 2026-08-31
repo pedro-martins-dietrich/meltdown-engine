@@ -26,7 +26,13 @@ namespace mtd
 			// Creates a command buffer for submitting a command once
 			vk::CommandBuffer beginSingleTimeCommand() const;
 			// Submits and finalizes the single time command
-			void endSingleTimeCommand(const vk::CommandBuffer& commandBuffer) const;
+			void endSingleTimeCommand
+			(
+				const vk::CommandBuffer& commandBuffer,
+				vk::Semaphore waitSemaphore = nullptr,
+				vk::Semaphore signalSemaphore = nullptr,
+				vk::Fence fence = nullptr
+			) const;
 
 			// Begins the main command buffer
 			void beginCommand() const;

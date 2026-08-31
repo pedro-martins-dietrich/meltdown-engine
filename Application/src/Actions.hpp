@@ -17,7 +17,8 @@ enum Actions : uint32_t
 	Jump,
 	ToggleCameraSettingsGui,
 	ToggleProfilerGui,
-	ChangeScene
+	ChangeScene,
+	Screenshot
 };
 
 // Creates a mapping for all actions used by the application

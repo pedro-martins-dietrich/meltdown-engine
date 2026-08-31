@@ -460,6 +460,18 @@ namespace mtd
 	};
 
 	/*
+	* @brief Event for taking a screenshot of the current frame.
+	*/
+	class ScreenshotEvent : public Event
+	{
+		public:
+			/*
+			* @brief Creates an event to trigger the screenshot of the current frame.
+			*/
+			ScreenshotEvent() = default;
+	};
+
+	/*
 	* @brief Container class to handle the event callback function after being registered in the `EventManager`.
 	* The event callback tied to an instance of this class will be removed with the deletion of the instance.
 	*/

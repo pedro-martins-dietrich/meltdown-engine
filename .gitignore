@@ -18,6 +18,8 @@
 
 /resources/shaders
 
+/screenshots
+
 /Application/**/experimental
 /resources/**/experimental
 

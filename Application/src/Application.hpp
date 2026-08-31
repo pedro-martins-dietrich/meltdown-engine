@@ -38,6 +38,10 @@ class Application
 
 		// Change scene event handle
 		mtd::EventCallbackHandle changeSceneCallbackHandle;
-		bool changeScene = false;
+		// Index of the current scene being rendered
 		uint32_t currentSceneIndex = 0U;
+		// Change scene flag
+		bool changeScene = false;
+		// Screenshot flag
+		bool takeScreenshot = false;
 };

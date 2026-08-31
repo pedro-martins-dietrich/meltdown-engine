@@ -62,20 +62,27 @@ vk::CommandBuffer mtd::CommandHandler::beginSingleTimeCommand() const
 	return commandBuffer;
 }
 
-void mtd::CommandHandler::endSingleTimeCommand(const vk::CommandBuffer& commandBuffer) const
+void mtd::CommandHandler::endSingleTimeCommand
+(
+	const vk::CommandBuffer& commandBuffer,
+	vk::Semaphore waitSemaphore,
+	vk::Semaphore signalSemaphore,
+	vk::Fence fence
+) const
 {
 	commandBuffer.end();
 
+	vk::PipelineStageFlags waitStage = vk::PipelineStageFlagBits::eColorAttachmentOutput;
 	vk::SubmitInfo submitInfo{};
-	submitInfo.waitSemaphoreCount = 0U;
-	submitInfo.pWaitSemaphores = nullptr;
-	submitInfo.pWaitDstStageMask = nullptr;
+	submitInfo.waitSemaphoreCount = waitSemaphore ? 1U : 0U;
+	submitInfo.pWaitSemaphores = waitSemaphore ? &waitSemaphore : nullptr;
+	submitInfo.pWaitDstStageMask = waitSemaphore ? &waitStage : nullptr;
 	submitInfo.commandBufferCount = 1U;
 	submitInfo.pCommandBuffers = &commandBuffer;
-	submitInfo.signalSemaphoreCount = 0U;
-	submitInfo.pSignalSemaphores = nullptr;
+	submitInfo.signalSemaphoreCount = signalSemaphore ? 1U : 0U;
+	submitInfo.pSignalSemaphores = signalSemaphore ? &signalSemaphore : nullptr;
 
-	vk::Result result = mtdDevice.getGraphicsQueue().submit(1U, &submitInfo, nullptr);
+	vk::Result result = mtdDevice.getGraphicsQueue().submit(1U, &submitInfo, fence);
 	if(result != vk::Result::eSuccess)
 		LOG_ERROR("Failed to submit command buffer. Vulkan result: %d", result);
 
