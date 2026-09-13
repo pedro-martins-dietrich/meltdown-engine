@@ -55,7 +55,7 @@ mtd::ResourceID mtd::ResourceManager::createBuffer
     vk::BufferUsageFlags bufferUsage = EnumMapping::getBufferUsage(type);
     vk::MemoryPropertyFlags memoryProperties = EnumMapping::getMemoryProperties(memoryUsage);
 
-    if(bufferSize == 0UL)
+    if(bufferSize == 0UL || memoryUsage == GpuMemoryUsage::CpuUploadOnce)
         buffers.emplace(nextID, GpuBuffer{mtdDevice, bufferUsage, memoryProperties});
     else
     {
@@ -63,6 +63,9 @@ mtd::ResourceID mtd::ResourceManager::createBuffer
         if(pData)
             buffers.at(nextID).copyMemoryToBuffer(bufferSize, pData);
     }
+
+    if(memoryUsage == GpuMemoryUsage::CpuUploadOnce && pData)
+        buffers.at(nextID).createDeviceLocal(commandHandler, bufferSize, pData);
 
     if(resourceName.length() != 0UL)
         nameIdMap.emplace(std::move(resourceName), nextID);

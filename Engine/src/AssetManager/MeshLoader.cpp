@@ -52,17 +52,17 @@ void mtd::MeshLoader::loadMeshes
 
     vertexBufferID = resourceManager.createBuffer
     (
-        "VertexBuffer", GpuBufferType::Vertex, GpuMemoryUsage::GpuOnly,
+        "VertexBuffer", GpuBufferType::Vertex, GpuMemoryUsage::CpuUploadOnce,
         vertexData.size(), vertexData.data()
     );
     indexBufferID = resourceManager.createBuffer
     (
-        "IndexBuffer", GpuBufferType::Index, GpuMemoryUsage::GpuOnly,
+        "IndexBuffer", GpuBufferType::Index, GpuMemoryUsage::CpuUploadOnce,
         sizeof(uint32_t) * indexData.size(), indexData.data()
     );
     submeshBufferID = resourceManager.createBuffer
     (
-        "SubmeshBuffer", GpuBufferType::Index, GpuMemoryUsage::GpuOnly,
+        "SubmeshBuffer", GpuBufferType::Index, GpuMemoryUsage::CpuUploadOnce,
         sizeof(SubmeshData) * submeshes.size(), submeshes.data()
     );
 
