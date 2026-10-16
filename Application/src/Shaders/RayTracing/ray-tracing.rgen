@@ -21,10 +21,10 @@ layout(set = 0, binding = 0) uniform CameraMatrices
 	mat4 view;
 	mat4 projectionView;
 } camera;
+layout(set = 0, binding = 8) uniform accelerationStructureEXT accelerationStructure;
 
-layout(set = 1, binding = 0) uniform accelerationStructureEXT accelerationStructure;
-layout(set = 1, binding = 1, rgba8) uniform image2D outputImage;
-layout(set = 1, binding = 2, rgba32f) uniform image2D accumulationImage;
+layout(set = 1, binding = 0, rgba8) uniform image2D outputImage;
+layout(set = 1, binding = 1, rgba32f) uniform image2D accumulationImage;
 
 
 void reinhardToneMapping(inout vec3 color)
@@ -44,11 +44,11 @@ void main()
 	ray.origin = inverseView[3].xyz;
 	payload.randomState = renderingInfo.randomSeed + gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x;
 
-	for(uint sampleIndex = 0; sampleIndex < renderingInfo.samplesPerPixel; sampleIndex++)
+	for(uint sampleIndex = 0U; sampleIndex < renderingInfo.samplesPerPixel; sampleIndex++)
 	{
 		payload.light = vec3(0.0f);
 		payload.throughput = vec3(1.0f);
-		payload.recursionDepth = 0;
+		payload.recursionDepth = 0U;
 
 		vec2 jitter = vec2(randomFloat(payload.randomState), randomFloat(payload.randomState));
 		vec2 uv = inverseScreenSize * (pixelCoord + jitter) - 1.0f;

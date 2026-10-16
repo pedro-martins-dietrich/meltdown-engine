@@ -1,9 +1,7 @@
 #pragma once
 
-#include <memory>
-
 #include "InstanceManager.hpp"
-#include "../Vulkan/Mesh/MeshManager.hpp"
+#include "../Vulkan/AccelerationStructure/RayTracingBVH.hpp"
 #include "../Vulkan/Descriptors/DescriptorPool.hpp"
 #include "../Vulkan/Pipeline/PipelineBundles.hpp"
 
@@ -51,9 +49,6 @@ namespace mtd
 			void update(double frameTime) const;
 
 		private:
-			// Active mesh managers
-			std::vector<std::unique_ptr<MeshManager>> meshManagers;
-
 			// GPU resources managed by the engine
 			SceneResources gpuResources;
 			// Scene instances
@@ -62,12 +57,10 @@ namespace mtd
 			// CPU side data for all scene meshes
 			std::vector<MeshData> meshes;
 
+			// BVH structure for ray tracing
+			std::optional<RayTracingBVH> rayTracingBVH;
+
 			// Descriptor pool for the pipelines descriptor sets
 			DescriptorPool descriptorPool;
-
-			// Sums the texture count from all mesh managers
-			uint32_t getTotalTextureCount() const;
-			// Sums the amount of material float data descriptors
-			uint32_t getMaterialFloatDataCount() const;
 	};
 }

@@ -3,7 +3,6 @@
 
 #include "SceneLoader.hpp"
 #include "../Utils/Logger.hpp"
-#include "../Vulkan/Mesh/MeshManager.hpp"
 
 mtd::Scene::Scene(const Device& mtdDevice) : instanceManager{}, descriptorPool{mtdDevice.getDevice()}
 {}
@@ -20,7 +19,8 @@ void mtd::Scene::loadScene
 )
 {
 	renderOrder.clear();
-	meshManagers.clear();
+	if(rayTracingBVH.has_value())
+		rayTracingBVH.value().clear();
 
 	SceneLoader::load
 	(
@@ -29,11 +29,11 @@ void mtd::Scene::loadScene
 		framebufferInfos,
 		pipelineInfos,
 		renderOrder,
-		meshManagers,
 		meshes,
 		resourceManager,
 		descriptorManager,
 		instanceManager,
+		rayTracingBVH,
 		gpuResources
 	);
 }
@@ -43,10 +43,10 @@ void mtd::Scene::allocateResources(PipelineBundle& pipelines)
 	descriptorPool.clear();
 
 	std::unordered_map<vk::DescriptorType, uint32_t> totalDescriptorTypeCount;
-	totalDescriptorTypeCount[vk::DescriptorType::eUniformBuffer] = 1U + getMaterialFloatDataCount();
+	totalDescriptorTypeCount[vk::DescriptorType::eUniformBuffer] = 1U;
 	totalDescriptorTypeCount[vk::DescriptorType::eStorageBuffer] = 7U;
 
-	uint32_t totalImageSamplerCount = getTotalTextureCount();
+	uint32_t totalImageSamplerCount = gpuResources.textureIDs.size() + 1U;
 	for(const FramebufferPipeline& fbPipeline: pipelines.framebufferPipelines)
 		totalImageSamplerCount += fbPipeline.getImageDescriptorsCount();
 	if(totalImageSamplerCount > 0U)
@@ -62,13 +62,8 @@ void mtd::Scene::allocateResources(PipelineBundle& pipelines)
 		for(const auto& [type, count]: computePipeline.getDescriptorTypeCount())
 			totalDescriptorTypeCount[type] += count;
 	for(const RayTracingPipeline& rtPipeline: pipelines.rayTracingPipelines)
-	{
 		for(const auto& [type, count]: rtPipeline.getDescriptorTypeCount())
 			totalDescriptorTypeCount[type] += count;
-		totalDescriptorTypeCount[vk::DescriptorType::eAccelerationStructureKHR]++;
-		totalDescriptorTypeCount[vk::DescriptorType::eStorageImage] += 2U;
-		totalDescriptorTypeCount[vk::DescriptorType::eStorageBuffer] += 4U;
-	}
 
 	std::vector<PoolSizeData> poolSizesInfo{totalDescriptorTypeCount.size()};
 	uint32_t i = 0U;
@@ -95,12 +90,12 @@ void mtd::Scene::allocateResources(PipelineBundle& pipelines)
 	{
 		DescriptorSetHandler& descriptorSetHandler = pipelines.rayTracingPipelines[i].getDescriptorSetHandler(0U);
 
+		totalImageSamplerCount--;
+
 		vk::DescriptorSetVariableDescriptorCountAllocateInfo variableCountInfo{};
 		variableCountInfo.descriptorSetCount = 1U;
 		variableCountInfo.pDescriptorCounts = &totalImageSamplerCount;
 		descriptorPool.allocateDescriptorSet(descriptorSetHandler, &variableCountInfo);
-
-		meshManagers[i]->loadMeshes(descriptorSetHandler);
 	}
 	LOG_INFO("Meshes loaded to the GPU.\n");
 }
@@ -108,51 +103,17 @@ void mtd::Scene::allocateResources(PipelineBundle& pipelines)
 void mtd::Scene::bindMeshData(const ResourceManager& resourceManager, vk::CommandBuffer commandBuffer) const
 {
 	vk::DeviceSize offset{0UL};
-    vk::Buffer vertexBuffer = resourceManager.getVulkanBuffer(gpuResources.vertexBufferID);
-    vk::Buffer indexBuffer = resourceManager.getVulkanBuffer(gpuResources.indexBufferID);
+	vk::Buffer vertexBuffer = resourceManager.getVulkanBuffer(gpuResources.vertexBufferID);
+	vk::Buffer indexBuffer = resourceManager.getVulkanBuffer(gpuResources.indexBufferID);
 
 	if(vertexBuffer)
-    	commandBuffer.bindVertexBuffers(0U, 1U, &vertexBuffer, &offset);
+		commandBuffer.bindVertexBuffers(0U, 1U, &vertexBuffer, &offset);
 	if(indexBuffer)
-    	commandBuffer.bindIndexBuffer(indexBuffer, offset, vk::IndexType::eUint32);
+		commandBuffer.bindIndexBuffer(indexBuffer, offset, vk::IndexType::eUint32);
 }
 
 void mtd::Scene::start() const
-{
-	for(const std::unique_ptr<MeshManager>& pMeshManager: meshManagers)
-	{
-		if(pMeshManager->getMeshCount() > 0U)
-			pMeshManager->start();
-	}
-}
+{}
 
 void mtd::Scene::update(double frameTime) const
-{
-	for(const std::unique_ptr<MeshManager>& pMeshManager: meshManagers)
-	{
-		if(pMeshManager->getMeshCount() > 0U)
-			pMeshManager->update(frameTime);
-	}
-}
-
-uint32_t mtd::Scene::getTotalTextureCount() const
-{
-	uint32_t count = 0U;
-	for(const std::unique_ptr<MeshManager>& pMeshManager: meshManagers)
-		count += pMeshManager->getTextureCount();
-
-	count += gpuResources.textureIDs.size() + 1U;
-
-	return count;
-}
-
-uint32_t mtd::Scene::getMaterialFloatDataCount() const
-{
-	uint32_t count = 0U;
-	for(const std::unique_ptr<MeshManager>& pMeshManager: meshManagers)
-	{
-		if(pMeshManager->hasMaterialFloatData())
-			count += pMeshManager->getMaterialCount();
-	}
-	return count;
-}
+{}

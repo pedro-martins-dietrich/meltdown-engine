@@ -9,7 +9,6 @@
 #include "../AssetManager/MaterialLoader.hpp"
 #include "../Utils/FileHandler.hpp"
 #include "../Utils/Logger.hpp"
-#include "../Vulkan/Mesh/RayTracingMesh/RayTracingMeshManager.hpp"
 
 namespace mtd::SceneLoader
 {
@@ -37,7 +36,15 @@ namespace mtd::SceneLoader
 		const nlohmann::json& meshJson,
 		ResourceManager& resourceManager,
 		SceneResources& sceneResources,
-		std::vector<MeshData>& meshes
+		std::vector<MeshData>& meshes,
+		bool useBVH = false
+	);
+	// Loads all scene instances from the scene file
+	static void loadInstances
+	(
+		const nlohmann::json& instancesJson,
+		InstanceManager& instanceManager,
+		const std::vector<uint32_t>& materialSetOffsets
 	);
 
 	// Loads descriptor set layout infos from the scene file
@@ -81,37 +88,20 @@ namespace mtd::SceneLoader
 		std::vector<FramebufferPipelineInfo>& framebufferPipelineInfos,
 		std::vector<RenderPassInfo>& renderOrder
 	);
-
-	// Fetches ray tracing meshes from the scene file
-	static void loadRayTracingMeshes
-	(
-		const Device& device,
-		const nlohmann::json& rtMeshListJson,
-		const RayTracingPipelineInfo& rtPipelineInfo,
-		std::vector<std::unique_ptr<MeshManager>>& meshManagers
-	);
-
-	// Loads all instances from the scene file
-	static void loadInstances
-	(
-		const nlohmann::json& instancesJson,
-		InstanceManager& instanceManager,
-		const std::vector<uint32_t>& materialSetOffsets
-	);
 }
 
 void mtd::SceneLoader::load
 (
-	const Device& device,
+	const Device& mtdDevice,
 	std::string_view fileName,
 	std::vector<FramebufferInfo>& framebufferInfos,
 	PipelineInfoBundle& pipelineInfos,
 	std::vector<RenderPassInfo>& renderOrder,
-	std::vector<std::unique_ptr<MeshManager>>& meshManagers,
 	std::vector<MeshData>& meshes,
 	ResourceManager& resourceManager,
 	DescriptorManager& descriptorManager,
 	InstanceManager& instanceManager,
+	std::optional<RayTracingBVH>& rayTracingBVH,
 	SceneResources& sceneResources
 )
 {
@@ -129,6 +119,12 @@ void mtd::SceneLoader::load
 		return;
 	}
 
+	const nlohmann::json& framebuffersJson = sceneJson["framebuffers"];
+	const nlohmann::json& rasterPipelinesJson = sceneJson["rasterization-pipelines"];
+	const nlohmann::json& computePipelinesJson = sceneJson["compute-pipelines"];
+	const nlohmann::json& rtPipelinesJson = sceneJson["ray-tracing-pipelines"];
+	const nlohmann::json& fbPipelinesJson = sceneJson["framebuffer-pipelines"];
+
 	std::vector<uint32_t> materialSetOffsets;
 
 	loadCamera(sceneJson["camera"]);
@@ -138,20 +134,18 @@ void mtd::SceneLoader::load
 		sceneJson["textures"], sceneJson["materials"], sceneJson["material-sets"],
 		resourceManager, sceneResources, materialSetOffsets
 	);
-	loadMeshes(sceneJson["meshes"], resourceManager, sceneResources, meshes);
+	loadMeshes(sceneJson["meshes"], resourceManager, sceneResources, meshes, (rtPipelinesJson.size() != 0));
+	loadInstances(sceneJson["instances"], instanceManager, materialSetOffsets);
+
+	if(rtPipelinesJson.size() != 0)
+	{
+		rayTracingBVH.emplace(mtdDevice, resourceManager);
+		rayTracingBVH.value()
+			.createAccelerationStructures(mtdDevice, resourceManager, meshes, instanceManager.getInstances());
+	}
 
 	loadDescriptorLayouts(sceneJson["descriptor-layouts"], descriptorManager);
 	loadDescriptorSets(sceneJson["descriptor-sets"], descriptorManager, resourceManager, sceneResources);
-
-	const nlohmann::json& framebuffersJson = sceneJson["framebuffers"];
-	const nlohmann::json& rasterPipelinesJson = sceneJson["rasterization-pipelines"];
-	const nlohmann::json& computePipelinesJson = sceneJson["compute-pipelines"];
-	const nlohmann::json& rtPipelinesJson = sceneJson["ray-tracing-pipelines"];
-	const nlohmann::json& fbPipelinesJson = sceneJson["framebuffer-pipelines"];
-	const nlohmann::json& meshesJson = sceneJson["meshes-old"];
-
-	if(rtPipelinesJson.size() != meshesJson.size())
-		LOG_ERROR("The number of ray tracing pipelines and mesh managers should be the same.");
 	
 	framebufferInfos.reserve(framebuffersJson.size());
 	pipelineInfos.rasterizerInfos.reserve(rasterPipelinesJson.size());
@@ -159,7 +153,6 @@ void mtd::SceneLoader::load
 	pipelineInfos.rayTracingInfos.reserve(rtPipelinesJson.size());
 	pipelineInfos.framebufferInfos.reserve(fbPipelinesJson.size());
 	renderOrder.reserve(framebuffersJson.size() + 1);
-	meshManagers.reserve(meshesJson.size());
 
 	for(int32_t i = 0; i < framebuffersJson.size(); i++)
 	{
@@ -176,18 +169,6 @@ void mtd::SceneLoader::load
 		loadRayTracingPipelines(rtPipelineJson, pipelineInfos.rayTracingInfos);
 	for(const nlohmann::json& fbPipelineJson: fbPipelinesJson)
 		loadFramebufferPipelines(fbPipelineJson, pipelineInfos.framebufferInfos, renderOrder);
-
-	for(uint32_t i = 0U; i < meshesJson.size(); i++)
-	{
-		if(i >= pipelineInfos.rasterizerInfos.size())
-		{
-			uint32_t rtPipelineIndex = i - rasterPipelinesJson.size();
-			loadRayTracingMeshes(device, meshesJson[i], pipelineInfos.rayTracingInfos[rtPipelineIndex], meshManagers);
-			continue;
-		}
-	}
-
-	loadInstances(sceneJson["instances"], instanceManager, materialSetOffsets);
 
 	LOG_INFO("Scene \"%s\" loaded.", fileName.data());
 }
@@ -293,7 +274,8 @@ void mtd::SceneLoader::loadMeshes
 	const nlohmann::json& meshJson,
 	ResourceManager& resourceManager,
 	SceneResources& sceneResources,
-	std::vector<MeshData>& meshes
+	std::vector<MeshData>& meshes,
+	bool useBVH
 )
 {
 	std::vector<std::string> meshPaths;
@@ -308,8 +290,33 @@ void mtd::SceneLoader::loadMeshes
 		meshes,
 		sceneResources.vertexBufferID,
 		sceneResources.indexBufferID,
-		sceneResources.submeshBufferID
+		sceneResources.submeshBufferID,
+		useBVH
 	);
+}
+
+void mtd::SceneLoader::loadInstances
+(
+	const nlohmann::json& instancesJson,
+	InstanceManager& instanceManager,
+	const std::vector<uint32_t>& materialSetOffsets
+)
+{
+	std::vector<SceneInstance> instances;
+	instances.reserve(instancesJson.size());
+	for(const nlohmann::json& instanceJson : instancesJson)
+	{
+		uint32_t pipelineID = instanceJson.value("pipeline-id", 0U);
+		uint32_t meshID = instanceJson.value("mesh-id", 0U);
+		size_t materialSetIndex = instanceJson.value("material-set-id", 0U);
+		uint32_t materialSetOffset = materialSetOffsets[materialSetIndex];
+		const std::array<float, 16>& transform = instanceJson["transform"];
+		const Mat4x4* pTransform = reinterpret_cast<const Mat4x4*>(&transform);
+		bool visible = instanceJson.value("visible", true);
+
+		instances.emplace_back(*pTransform, pipelineID, meshID, materialSetOffset, visible);
+	}
+	instanceManager.loadInstances(instances);
 }
 
 void mtd::SceneLoader::loadDescriptorLayouts
@@ -432,16 +439,6 @@ void mtd::SceneLoader::loadRayTracingPipelines
 	const nlohmann::json& rtPipelineJson, std::vector<RayTracingPipelineInfo>& rayTracingPipelineInfos
 )
 {
-	std::vector<MaterialFloatDataType> floatDataTypes;
-	floatDataTypes.reserve(rtPipelineJson["material-float-data-types"].size());
-	for(const nlohmann::json& floatDataType: rtPipelineJson["material-float-data-types"])
-		floatDataTypes.emplace_back(static_cast<MaterialFloatDataType>(floatDataType));
-
-	std::vector<MaterialTextureType> textureTypes;
-	textureTypes.reserve(rtPipelineJson["material-texture-types"].size());
-	for(const nlohmann::json& textureType: rtPipelineJson["material-texture-types"])
-		textureTypes.emplace_back(static_cast<MaterialTextureType>(textureType));
-
 	rayTracingPipelineInfos.emplace_back(RayTracingPipelineInfo
 	{
 		{
@@ -457,9 +454,7 @@ void mtd::SceneLoader::loadRayTracingPipelines
 			rtPipelineJson.value("resolution-ratio-vertical", -1.0f)
 		},
 		rtPipelineJson.value("fixed-horizontal-resolution", 1280U),
-		rtPipelineJson.value("fixed-vertical-resolution", 720U),
-		std::move(floatDataTypes),
-		std::move(textureTypes)
+		rtPipelineJson.value("fixed-vertical-resolution", 720U)
 	});
 }
 
@@ -534,53 +529,4 @@ void mtd::SceneLoader::loadFramebufferPipelines
 		fbPipelineJson["ray-tracing-storage-images"],
 		fbPipelineJson["dependencies"]
 	});
-}
-
-void mtd::SceneLoader::loadRayTracingMeshes
-(
-	const Device& device,
-	const nlohmann::json& rtMeshListJson,
-	const RayTracingPipelineInfo& rtPipelineInfo,
-	std::vector<std::unique_ptr<MeshManager>>& meshManagers
-)
-{
-	MaterialInfo materialInfo{rtPipelineInfo.materialFloatDataTypes, rtPipelineInfo.materialTextureTypes};
-	meshManagers.emplace_back(std::make_unique<RayTracingMeshManager>(device, materialInfo));
-
-	RayTracingMeshManager* pMeshManager = dynamic_cast<RayTracingMeshManager*>(meshManagers.back().get());
-
-	for(uint32_t i = 0; i < rtMeshListJson.size(); i++)
-	{
-		const std::string& id = rtMeshListJson[i].value("model-id", "");
-		const std::string& file = rtMeshListJson[i]["file"];
-
-		const std::vector<std::array<float, 16>>& preTransforms = rtMeshListJson[i]["pre-transforms"];
-		const std::vector<Mat4x4>* pPreTransforms = reinterpret_cast<const std::vector<Mat4x4>*>(&preTransforms);
-
-		pMeshManager->createNewMesh(i, id.c_str(), file.c_str(), *pPreTransforms);
-	}
-}
-
-void mtd::SceneLoader::loadInstances
-(
-	const nlohmann::json& instancesJson,
-	InstanceManager& instanceManager,
-	const std::vector<uint32_t>& materialSetOffsets
-)
-{
-	std::vector<SceneInstance> instances;
-	instances.reserve(instancesJson.size());
-	for(const nlohmann::json& instanceJson: instancesJson)
-	{
-		uint32_t pipelineID = instanceJson.value("pipeline-id", 0U);
-		uint32_t meshID = instanceJson.value("mesh-id", 0U);
-		size_t materialSetIndex = instanceJson.value("material-set-id", 0U);
-		uint32_t materialSetOffset = materialSetOffsets[materialSetIndex];
-		const std::array<float, 16>& transform = instanceJson["transform"];
-		const Mat4x4* pTransform = reinterpret_cast<const Mat4x4*>(&transform);
-		bool visible = instanceJson.value("visible", true);
-
-		instances.emplace_back(*pTransform, pipelineID, meshID, materialSetOffset, visible);
-	}
-	instanceManager.loadInstances(instances);
 }

@@ -2,9 +2,6 @@
 
 #include "ShaderModule.hpp"
 #include "../Descriptors/DescriptorManager.hpp"
-#include "../Descriptors/DescriptorPool.hpp"
-
-#include "Builders/PipelineMapping.hpp"
 
 namespace mtd
 {

@@ -14,11 +14,35 @@ struct Ray
 
 struct Vertex
 {
-	vec3 position;
-	vec2 textureUV;
+	vec4 position;
+	vec4 textureUV;
 };
 
-struct MaterialFloatAttributes
+struct AABB
+{
+	vec3 center;
+	vec3 extent;
+};
+
+struct Submesh
+{
+	uint indexOffset;
+	uint indexCount;
+	uint materialSlot;
+	AABB aabb;
+};
+
+struct RenderObject
+{
+	mat4 transform;
+	uint materialSetID;
+	uint submeshOffset;
+	uint submeshCount;
+	uint vertexOffset;
+	AABB aabb;
+};
+
+struct MaterialData
 {
 	vec4 diffuse;
 	vec4 emissionAndIoR;
