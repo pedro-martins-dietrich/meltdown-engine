@@ -47,7 +47,7 @@
 				},
 				{
 					"binding": 4,
-					"type": 3,
+					"type": 1,
 					"shader-stage": 127,
 					"count": 1
 				},
@@ -71,8 +71,8 @@
 				},
 				{
 					"binding": 8,
-					"type": 1,
-					"shader-stage": 127,
+					"type": 4,
+					"shader-stage": 120,
 					"count": 1
 				}
 			]
@@ -88,11 +88,11 @@
 				["VertexBuffer"],
 				["IndexBuffer"],
 				["SubmeshBuffer"],
-				["Textures"],
 				["MaterialBuffer"],
 				["MaterialIndexingBuffer"],
 				["MaterialSetBuffer"],
-				["RenderObjectsBuffer"]
+				["RenderObjectsBuffer"],
+				["TLAS"]
 			]
 		}
 	],
@@ -109,9 +109,7 @@
 			"descriptor-layouts": [0],
 			"descriptor-sets": [0],
 			"resolution-ratio-horizontal": 1.0,
-			"resolution-ratio-vertical": 1.0,
-			"material-float-data-types": [0, 1, 2, 3, 4],
-			"material-texture-types": []
+			"resolution-ratio-vertical": 1.0
 		}
 	],
 	"framebuffer-pipelines":
@@ -132,23 +130,6 @@
 	"meshes":
 	[
 		"meshes/meltdown_box.mesh"
-	],
-	"meshes-old":
-	[
-		[
-			{
-				"file": "meltdown_box/meltdown_box.obj",
-				"pre-transforms":
-				[
-					[
-						1.0, 0.0, 0.0, 0.0,
-						0.0, 1.0, 0.0, 0.0,
-						0.0, 0.0, 1.0, 0.0,
-						0.0, 0.0, 1.0, 1.0
-					]
-				]
-			}
-		]
 	],
 	"textures": [],
 	"materials":

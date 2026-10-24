@@ -91,7 +91,7 @@ void mtd::ImGuiHandler::createDescriptorPool()
 {
 	std::vector<PoolSizeData> poolSizesInfo;
 	poolSizesInfo.resize(1);
-	poolSizesInfo[0].descriptorCount = 1;
+	poolSizesInfo[0].descriptorCount = 1000U;
 	poolSizesInfo[0].descriptorType = vk::DescriptorType::eCombinedImageSampler;
 
 	guiDescriptorPool.createDescriptorPool(poolSizesInfo, vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet);

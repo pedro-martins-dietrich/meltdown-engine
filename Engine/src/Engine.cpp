@@ -244,7 +244,7 @@ void mtd::Engine::createRenderResources
 	{
 		pipelines.rayTracingPipelines.emplace_back
 		(
-			device, descriptorManager, rtPipelineInfo, swapchain.getExtent()
+			device, resourceManager, descriptorManager, rtPipelineInfo, swapchain.getExtent()
 		);
 	}
 }

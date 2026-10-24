@@ -125,11 +125,11 @@ namespace mtd
 		uint32_t indexOffset;
 		uint32_t indexCount;
 		uint32_t materialSlot;
-		uint32_t padding0;
+		uint32_t padding0 = 0U;
 		Vec3 centerAABB = Vec3{0.0f};
-		float padding1;
+		float padding1 = 0.0f;
 		Vec3 extentAABB = Vec3{0.0f};
-		float padding2;
+		float padding2 = 0.0f;
 	};
 
 	// Information for the mesh rendering
@@ -137,12 +137,13 @@ namespace mtd
 	{
 		uint32_t vertexStride;
 		uint32_t vertexOffset;
+		uint32_t vertexCount;
 		uint32_t indexOffset;
+		uint32_t submeshOffset;
 		uint32_t materialSlotCount;
 		Vec3 centerAABB = Vec3{0.0f};
 		Vec3 extentAABB = Vec3{0.0f};
 		std::vector<SubmeshData> submeshes;
-		uint32_t submeshOffset;
 	};
 
 	// Resource IDs of the GPU resources managed by the engine
@@ -155,7 +156,7 @@ namespace mtd
 		ResourceID materialBufferID = 0U;
 		ResourceID materialIndexingBufferID = 0U;
 		ResourceID materialSetBufferID = 0U;
-        ResourceID missingTextureID = 0U;
+		ResourceID missingTextureID = 0U;
 		std::vector<ResourceID> textureIDs = {};
 	};
 

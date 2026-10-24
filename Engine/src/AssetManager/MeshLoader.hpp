@@ -13,6 +13,7 @@ namespace mtd::MeshLoader
         std::vector<MeshData>& meshes,
         ResourceID& vertexBufferID,
         ResourceID& indexBufferID,
-        ResourceID& submeshBufferID
+        ResourceID& submeshBufferID,
+        bool useBVH = false
     );
 }

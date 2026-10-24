@@ -34,12 +34,18 @@ namespace mtd
 		return a = a & b;
 	}
 
+	template<BitMaskEnum E>
+	constexpr bool operator!(E a)
+	{
+		return static_cast<std::underlying_type_t<E>>(a) == 0;
+	}
+
 	/*
 	* @brief Enables the usage of bit mask operators on the enum class.
 	*
 	* @param Enum The enum class type to enable the bit mask operators.
 	*/
-	#define ENABLE_ENUM_FLAGS(Enum) template<> struct EnableBitMaskOperators<Enum> : std::true_type {};
+	#define ENABLE_ENUM_FLAGS(Enum) template<> struct EnableBitMaskOperators<Enum> : std::true_type {}
 
 	/* @brief ID for handling GPU resources. */
 	using ResourceID = uint32_t;
@@ -70,14 +76,18 @@ namespace mtd
 	enum class GpuBufferType : uint32_t
 	{
 		None = 0U,
-		Uniform = 1U << 0,
-		Storage = 1U << 1,
-		Vertex = 1U << 2,
-		Index = 1U << 3,
-		TransferSource = 1U << 4,
-		TransferDestination = 1U << 5
+		Uniform = 1U << 0U,
+		Storage = 1U << 1U,
+		Vertex = 1U << 2U,
+		Index = 1U << 3U,
+		AccelerationStructure = 1U << 4U,
+		AccelerationStructureInput = 1U << 5U,
+		ShaderBindingTable = 1U << 6U,
+		TransferSource = 1U << 7U,
+		TransferDestination = 1U << 8U,
+		DeviceAddress = 1U << 9U
 	};
-	ENABLE_ENUM_FLAGS(GpuBufferType)
+	ENABLE_ENUM_FLAGS(GpuBufferType);
 
 	/*
 	* @brief Type of GPU memory usages.
@@ -99,7 +109,8 @@ namespace mtd
 		UniformBuffer,
 		StorageBuffer,
 		StorageImage,
-		CombinedImageSampler
+		CombinedImageSampler,
+		AccelerationStructure
 	};
 
 	/*

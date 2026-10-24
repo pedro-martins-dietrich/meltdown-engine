@@ -3,25 +3,17 @@
 
 #include "../../Utils/Logger.hpp"
 
-static constexpr uint32_t MAX_TEXTURE_COUNT = 1024U;
-
 mtd::RayTracingPipeline::RayTracingPipeline
 (
 	const Device& mtdDevice,
+	ResourceManager& resourceManager,
 	const DescriptorManager& descriptorManager,
 	const RayTracingPipelineInfo& info,
 	vk::Extent2D swapchainExtent
 ) : Pipeline{mtdDevice.getDevice(), descriptorManager, info},
+	resourceManager{resourceManager},
 	outputImage{mtdDevice},
 	accumulationImage{mtdDevice},
-	windowResolutionDependant{false},
-	sbtBuffer
-	{
-		mtdDevice,
-		vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddress
-			| vk::BufferUsageFlagBits::eTransferDst,
-		vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-	},
 	shaderRenderingInfo{2U, 4U, 1U, 0U, 0U}
 {
 	loadShaderModules();
@@ -33,17 +25,25 @@ mtd::RayTracingPipeline::RayTracingPipeline
 	setEventCallback();
 }
 
+mtd::RayTracingPipeline::~RayTracingPipeline()
+{
+	resourceManager.deleteResource(sbtBufferID);
+}
+
 mtd::RayTracingPipeline::RayTracingPipeline(RayTracingPipeline&& other) noexcept
 	: Pipeline{std::move(other)},
+	resourceManager{other.resourceManager},
 	outputImage{std::move(other.outputImage)},
 	accumulationImage{std::move(other.accumulationImage)},
 	windowResolutionDependant{other.windowResolutionDependant},
-	sbtBuffer{std::move(other.sbtBuffer)},
+	sbtBufferID{other.sbtBufferID},
 	rayGenRegionSBT{std::move(other.rayGenRegionSBT)},
 	missRegionSBT{std::move(other.missRegionSBT)},
 	hitRegionSBT{std::move(other.hitRegionSBT)},
 	callableRegionSBT{std::move(other.callableRegionSBT)}
-{}
+{
+	other.sbtBufferID = 0U;
+}
 
 void mtd::RayTracingPipeline::traceRays
 (
@@ -61,13 +61,19 @@ void mtd::RayTracingPipeline::traceRays
 		vk::PipelineStageFlagBits::eNone, vk::PipelineStageFlagBits::eRayTracingShaderKHR
 	);
 
+	std::vector<vk::DescriptorSet> descriptorSets;
+	descriptorSets.reserve(info.descriptorSetIDs.size() + 1);
+	for(DescriptorSetID setID: info.descriptorSetIDs)
+		descriptorSets.emplace_back(descriptorManager.getSet(setID));
+	descriptorSets.emplace_back(descriptorSetHandlers[0].getSet());
+
 	commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, pipeline);
 	commandBuffer.bindDescriptorSets
 	(
 		vk::PipelineBindPoint::eRayTracingKHR,
 		pipelineLayout,
-		1U,
-		1U, &(descriptorSetHandlers[0].getSet()),
+		0U,
+		static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(),
 		0U, nullptr
 	);
 
@@ -115,11 +121,11 @@ void mtd::RayTracingPipeline::configurePipelineDescriptorSet()
 	vk::DescriptorImageInfo descriptorImageInfo{};
 	outputImage.updateDescriptorInfo(descriptorImageInfo);
 	descriptorImageInfo.imageLayout = vk::ImageLayout::eGeneral;
-	descriptorSetHandlers[0].createImageDescriptorResources(1U, descriptorImageInfo);
+	descriptorSetHandlers[0].createImageDescriptorResources(0U, descriptorImageInfo);
 
 	accumulationImage.updateDescriptorInfo(descriptorImageInfo);
 	descriptorImageInfo.imageLayout = vk::ImageLayout::eGeneral;
-	descriptorSetHandlers[0].createImageDescriptorResources(2U, descriptorImageInfo);
+	descriptorSetHandlers[0].createImageDescriptorResources(1U, descriptorImageInfo);
 
 	descriptorSetHandlers[0].writeDescriptorSet();
 }
@@ -162,63 +168,21 @@ void mtd::RayTracingPipeline::loadShaderModules()
 
 void mtd::RayTracingPipeline::createDescriptorSetLayouts()
 {
-	const uint32_t bindingCount = info.materialTextureTypes.empty() ? 7U : 8U;
-	uint32_t bindingIndex = 0U;
-	std::vector<vk::DescriptorSetLayoutBinding> layoutBindings(bindingCount);
+	std::vector<vk::DescriptorSetLayoutBinding> layoutBindings(2);
+	layoutBindings[0U].binding = 0U;
+	layoutBindings[0U].descriptorType = vk::DescriptorType::eStorageImage;
+	layoutBindings[0U].descriptorCount = 1U;
+	layoutBindings[0U].stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
+	layoutBindings[0U].pImmutableSamplers = nullptr;
 
-	layoutBindings[bindingIndex].binding = bindingIndex;
-	layoutBindings[bindingIndex].descriptorType = vk::DescriptorType::eAccelerationStructureKHR;
-	layoutBindings[bindingIndex].descriptorCount = 1U;
-	layoutBindings[bindingIndex].stageFlags =
-		vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eClosestHitKHR;
-	layoutBindings[bindingIndex].pImmutableSamplers = nullptr;
-	bindingIndex++;
+	layoutBindings[1U].binding = 1U;
+	layoutBindings[1U].descriptorType = vk::DescriptorType::eStorageImage;
+	layoutBindings[1U].descriptorCount = 1U;
+	layoutBindings[1U].stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
+	layoutBindings[1U].pImmutableSamplers = nullptr;
 
-	layoutBindings[bindingIndex].binding = bindingIndex;
-	layoutBindings[bindingIndex].descriptorType = vk::DescriptorType::eStorageImage;
-	layoutBindings[bindingIndex].descriptorCount = 1U;
-	layoutBindings[bindingIndex].stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
-	layoutBindings[bindingIndex].pImmutableSamplers = nullptr;
-	bindingIndex++;
-
-	layoutBindings[bindingIndex].binding = bindingIndex;
-	layoutBindings[bindingIndex].descriptorType = vk::DescriptorType::eStorageImage;
-	layoutBindings[bindingIndex].descriptorCount = 1U;
-	layoutBindings[bindingIndex].stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
-	layoutBindings[bindingIndex].pImmutableSamplers = nullptr;
-	bindingIndex++;
-
-	while(bindingIndex < 7U)
-	{
-		layoutBindings[bindingIndex].binding = bindingIndex;
-		layoutBindings[bindingIndex].descriptorType = vk::DescriptorType::eStorageBuffer;
-		layoutBindings[bindingIndex].descriptorCount = 1U;
-		layoutBindings[bindingIndex].stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
-		layoutBindings[bindingIndex].pImmutableSamplers = nullptr;
-
-		bindingIndex++;
-	}
-
-	vk::DescriptorSetLayoutBindingFlagsCreateInfo descriptorSetLayoutBindingsCreateInfo{};
-	const vk::DescriptorSetLayoutBindingFlagsCreateInfo* pDescriptorSetLayoutBindingsCreateInfo = nullptr;
-	std::array<vk::DescriptorBindingFlags, 8> bindingFlags;
-	if(!info.materialTextureTypes.empty())
-	{
-		layoutBindings[bindingIndex].binding = bindingIndex;
-		layoutBindings[bindingIndex].descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		layoutBindings[bindingIndex].descriptorCount = MAX_TEXTURE_COUNT;
-		layoutBindings[bindingIndex].stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
-		layoutBindings[bindingIndex].pImmutableSamplers = nullptr;
-
-		bindingFlags.back() = vk::DescriptorBindingFlagBits::eVariableDescriptorCount |
-			vk::DescriptorBindingFlagBits::ePartiallyBound;
-		
-		descriptorSetLayoutBindingsCreateInfo.bindingCount = bindingCount;
-		descriptorSetLayoutBindingsCreateInfo.pBindingFlags = bindingFlags.data();
-		pDescriptorSetLayoutBindingsCreateInfo = &descriptorSetLayoutBindingsCreateInfo;
-	}
-
-	descriptorSetHandlers.emplace_back(device, layoutBindings, pDescriptorSetLayoutBindingsCreateInfo);
+	descriptorSetHandlers.emplace_back(device, layoutBindings, nullptr);
+	descriptorTypeCount[vk::DescriptorType::eStorageImage] += 2U;
 }
 
 void mtd::RayTracingPipeline::createStorageImages(const Device& mtdDevice, vk::Extent2D swapchainExtent)
@@ -331,8 +295,8 @@ void mtd::RayTracingPipeline::createShaderBindingTable(const Device& mtdDevice)
 	const uint32_t handleAlignment = rayTracingProperties.shaderGroupHandleAlignment;
 	const uint32_t baseAlignment = rayTracingProperties.shaderGroupBaseAlignment;
 
-	const uint32_t handleSizeAligned = (handleSize + handleAlignment - 1) & ~(handleAlignment - 1);
-	const uint32_t baseSizeAligned = (handleSize + baseAlignment - 1) & ~(baseAlignment - 1);
+	const uint32_t handleSizeAligned = (handleSize + handleAlignment - 1U) & ~(handleAlignment - 1U);
+	const uint32_t baseSizeAligned = (handleSize + baseAlignment - 1U) & ~(baseAlignment - 1U);
 	
 	std::vector<uint8_t> shaderHandleStorage(shaders.size() * handleSize);
 	vk::Result result = device.getRayTracingShaderGroupHandlesKHR
@@ -349,8 +313,8 @@ void mtd::RayTracingPipeline::createShaderBindingTable(const Device& mtdDevice)
 	}
 
 	const vk::DeviceSize sbtSize = shaders.size() * baseSizeAligned;
-	sbtBuffer.create(sbtSize);
-	vk::DeviceAddress sbtAddress = sbtBuffer.getBufferAddress();
+	sbtBufferID = resourceManager.createBuffer("", GpuBufferType::ShaderBindingTable, GpuMemoryUsage::CpuUpload, sbtSize);
+	const vk::DeviceAddress sbtAddress = resourceManager.getBufferAddress(sbtBufferID);
 
 	rayGenRegionSBT.deviceAddress = sbtAddress;
 	rayGenRegionSBT.stride = baseSizeAligned;
@@ -365,17 +329,17 @@ void mtd::RayTracingPipeline::createShaderBindingTable(const Device& mtdDevice)
 	hitRegionSBT.size = baseSizeAligned;
 
 	uint8_t* pShaderHandleStorage = shaderHandleStorage.data();
-	vk::DeviceSize bufferOffset = 0;
+	vk::DeviceSize bufferOffset = 0UL;
 
-	sbtBuffer.copyMemoryToBuffer(handleSize, pShaderHandleStorage, bufferOffset);
+	resourceManager.updateBufferData(sbtBufferID, handleSize, pShaderHandleStorage, bufferOffset);
 	pShaderHandleStorage += handleSize;
 	bufferOffset += rayGenRegionSBT.size;
 
-	sbtBuffer.copyMemoryToBuffer(handleSize, pShaderHandleStorage, bufferOffset);
+	resourceManager.updateBufferData(sbtBufferID, handleSize, pShaderHandleStorage, bufferOffset);
 	pShaderHandleStorage += handleSize;
 	bufferOffset += missRegionSBT.size;
 
-	sbtBuffer.copyMemoryToBuffer(handleSize, pShaderHandleStorage, bufferOffset);
+	resourceManager.updateBufferData(sbtBufferID, handleSize, pShaderHandleStorage, bufferOffset);
 	pShaderHandleStorage += handleSize;
 	bufferOffset += hitRegionSBT.size;
 }

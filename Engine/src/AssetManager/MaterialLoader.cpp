@@ -119,16 +119,17 @@ void mtd::MaterialLoader::loadMaterials
 
     materialBufferID = resourceManager.createBuffer
     (
-        "MaterialBuffer", GpuBufferType::Storage, GpuMemoryUsage::GpuOnly, materialData.size(), materialData.data()
+        "MaterialBuffer", GpuBufferType::Storage, GpuMemoryUsage::CpuUploadOnce,
+        materialData.size(), materialData.data()
     );
     materialIndexingBufferID = resourceManager.createBuffer
     (
-        "MaterialIndexingBuffer", GpuBufferType::Storage, GpuMemoryUsage::GpuOnly,
+        "MaterialIndexingBuffer", GpuBufferType::Storage, GpuMemoryUsage::CpuUploadOnce,
         sizeof(uint32_t) * materialIndexing.size(), materialIndexing.data()
     );
     materialSetBufferID = resourceManager.createBuffer
     (
-        "MaterialSetBuffer", GpuBufferType::Storage, GpuMemoryUsage::GpuOnly,
+        "MaterialSetBuffer", GpuBufferType::Storage, GpuMemoryUsage::CpuUploadOnce,
         sizeof(uint32_t) * materialSetData.size(), materialSetData.data()
     );
 }
