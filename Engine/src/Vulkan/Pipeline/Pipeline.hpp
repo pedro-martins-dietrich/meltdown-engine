@@ -2,6 +2,7 @@
 
 #include "ShaderModule.hpp"
 #include "../Descriptors/DescriptorManager.hpp"
+#include "../Descriptors/DescriptorSetHandler.hpp"
 
 namespace mtd
 {

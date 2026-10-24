@@ -68,7 +68,7 @@ namespace mtd
 				vk::AccelerationStructureKHR accelerationStructure, ResourceID asBufferID
 			);
 
-			// Updates buffer data
+			// Copies data from the CPU to the GPU buffer at the specified location
 			bool updateBufferData(ResourceID id, uint64_t copySize, const void* srcData, uint64_t bufferOffset = 0UL);
 			// Resizes the specified GPU buffer
 			bool resizeBuffer(ResourceID id, uint64_t newSize);

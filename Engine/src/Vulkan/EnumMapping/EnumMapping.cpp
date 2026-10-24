@@ -7,32 +7,38 @@ vk::BufferUsageFlags mtd::EnumMapping::getBufferUsage(GpuBufferType bufferType)
 {
 	vk::BufferUsageFlags bufferUsage{};
 
-	if((bufferType & GpuBufferType::Uniform) != GpuBufferType::None)
+	if(!!(bufferType & GpuBufferType::Uniform))
 		bufferUsage |= vk::BufferUsageFlagBits::eUniformBuffer;
-	if((bufferType & GpuBufferType::Storage) != GpuBufferType::None)
+	if(!!(bufferType & GpuBufferType::Storage))
 		bufferUsage |= vk::BufferUsageFlagBits::eStorageBuffer;
-	if((bufferType & GpuBufferType::Vertex) != GpuBufferType::None)
+	if(!!(bufferType & GpuBufferType::Vertex))
 		bufferUsage |= (vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eStorageBuffer);
-	if((bufferType & GpuBufferType::Index) != GpuBufferType::None)
+	if(!!(bufferType & GpuBufferType::Index))
 		bufferUsage |= (vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eStorageBuffer);
-	if((bufferType |= GpuBufferType::AccelerationStructure) != GpuBufferType::None)
+	if(!!(bufferType |= GpuBufferType::AccelerationStructure))
 		bufferUsage |=
 		(
 			vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR
 			| vk::BufferUsageFlagBits::eShaderDeviceAddress
 		);
-	if((bufferType & GpuBufferType::AccelerationStructureInput) != GpuBufferType::None)
+	if(!!(bufferType & GpuBufferType::AccelerationStructureInput))
 		bufferUsage |=
 		(
 			vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR
 			| vk::BufferUsageFlagBits::eShaderDeviceAddress
 		);
+	if(!!(bufferType & GpuBufferType::ShaderBindingTable))
+		bufferUsage |=
+		(
+			vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddress
+			| vk::BufferUsageFlagBits::eTransferDst
+		);
 
-	if((bufferType & GpuBufferType::TransferSource) != GpuBufferType::None)
+	if(!!(bufferType & GpuBufferType::TransferSource))
 		bufferUsage |= vk::BufferUsageFlagBits::eTransferSrc;
-	if((bufferType & GpuBufferType::TransferDestination) != GpuBufferType::None)
+	if(!!(bufferType & GpuBufferType::TransferDestination))
 		bufferUsage |= vk::BufferUsageFlagBits::eTransferDst;
-	if((bufferType & GpuBufferType::DeviceAddress) != GpuBufferType::None)
+	if(!!(bufferType & GpuBufferType::DeviceAddress))
 		bufferUsage |= vk::BufferUsageFlagBits::eShaderDeviceAddress;
 
 	return bufferUsage;
@@ -57,11 +63,8 @@ vk::MemoryPropertyFlags mtd::EnumMapping::getMemoryProperties(GpuMemoryUsage mem
 
 mtd::GpuMemoryUsage mtd::EnumMapping::defaultMemoryUsage(GpuBufferType bufferType)
 {
-	if
-	(
-		(bufferType & GpuBufferType::Uniform) != GpuBufferType::None
-		|| (bufferType & GpuBufferType::AccelerationStructureInput) != GpuBufferType::None // Do I really need to compare with None?
-	) return GpuMemoryUsage::CpuUpload;
+	if(!!(bufferType & GpuBufferType::Uniform) || !!(bufferType & GpuBufferType::AccelerationStructureInput))
+		return GpuMemoryUsage::CpuUpload;
 
 	return GpuMemoryUsage::GpuOnly;
 }
@@ -90,19 +93,19 @@ vk::ShaderStageFlags mtd::EnumMapping::getShaderStage(ShaderStage shaderStage)
 {
 	vk::ShaderStageFlags flags{};
 
-	if((shaderStage & ShaderStage::Vertex) != ShaderStage::None)
+	if(!!(shaderStage & ShaderStage::Vertex))
 		flags |= vk::ShaderStageFlagBits::eVertex;
-	if((shaderStage & ShaderStage::Fragment) != ShaderStage::None)
+	if(!!(shaderStage & ShaderStage::Fragment))
 		flags |= vk::ShaderStageFlagBits::eFragment;
-	if((shaderStage & ShaderStage::Compute) != ShaderStage::None)
+	if(!!(shaderStage & ShaderStage::Compute))
 		flags |= vk::ShaderStageFlagBits::eCompute;
-	if((shaderStage & ShaderStage::RayGeneration) != ShaderStage::None)
+	if(!!(shaderStage & ShaderStage::RayGeneration))
 		flags |= vk::ShaderStageFlagBits::eRaygenKHR;
-	if((shaderStage & ShaderStage::ClosestHit) != ShaderStage::None)
+	if(!!(shaderStage & ShaderStage::ClosestHit))
 		flags |= vk::ShaderStageFlagBits::eClosestHitKHR;
-	if((shaderStage & ShaderStage::AnyHit) != ShaderStage::None)
+	if(!!(shaderStage & ShaderStage::AnyHit))
 		flags |= vk::ShaderStageFlagBits::eAnyHitKHR;
-	if((shaderStage & ShaderStage::Miss) != ShaderStage::None)
+	if(!!(shaderStage & ShaderStage::Miss))
 		flags |= vk::ShaderStageFlagBits::eMissKHR;
 
 	return flags;

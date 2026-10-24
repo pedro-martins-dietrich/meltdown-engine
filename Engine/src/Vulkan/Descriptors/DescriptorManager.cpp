@@ -94,6 +94,12 @@ mtd::DescriptorSetID mtd::DescriptorManager::allocateSet(DescriptorSetInfo& desc
 
 	const DescriptorLayoutData& layout = layouts[descriptorSetInfo.layoutID];
 
+	assert
+	(
+		descriptorSetInfo.resources.size() == layout.bindings.size()
+		&& "The number of descriptor set resources must match the number of descriptor layout bindings."
+	);
+
 	DescriptorSetData setData;
 	setData.layoutID = descriptorSetInfo.layoutID;
 	setData.resources = std::move(descriptorSetInfo.resources);
@@ -109,7 +115,7 @@ mtd::DescriptorSetID mtd::DescriptorManager::allocateSet(DescriptorSetInfo& desc
 
 	vk::Result result = mtdDevice.getDevice().allocateDescriptorSets(&setAllocateInfo, vulkanSets.data());
 	if(result != vk::Result::eSuccess)
-		LOG_ERROR("Failed to allocate descriptor sets. Vulkan result: %d", result);
+		LOG_ERROR("Failed to allocate descriptor sets. Vulkan result: %d.", result);
 
 	DescriptorSetID setID = static_cast<DescriptorSetID>(sets.size());
 	for(size_t i = 0; i < count; i++)

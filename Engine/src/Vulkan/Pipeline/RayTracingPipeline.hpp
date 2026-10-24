@@ -14,11 +14,12 @@ namespace mtd
 			RayTracingPipeline
 			(
 				const Device& mtdDevice,
+				ResourceManager& resourceManager,
 				const DescriptorManager& descriptorManager,
 				const RayTracingPipelineInfo& info,
 				vk::Extent2D swapchainExtent
 			);
-			~RayTracingPipeline() = default;
+			~RayTracingPipeline();
 
 			RayTracingPipeline(RayTracingPipeline&& other) noexcept;
 
@@ -52,10 +53,10 @@ namespace mtd
 			// Storage image for frame accumulation
 			Image accumulationImage;
 			// Flag to recreate image on window resize
-			bool windowResolutionDependant;
+			bool windowResolutionDependant = false;
 
 			// Shader Binding Table (SBT) buffer and the memory regions
-			GpuBuffer sbtBuffer;
+			ResourceID sbtBufferID = 0U;
 			vk::StridedDeviceAddressRegionKHR rayGenRegionSBT;
 			vk::StridedDeviceAddressRegionKHR missRegionSBT;
 			vk::StridedDeviceAddressRegionKHR hitRegionSBT;
@@ -66,6 +67,9 @@ namespace mtd
 
 			// Event callback handle for resetting frame accumulation
 			EventCallbackHandle resetAccumulationCallbackHandle;
+
+			// Resource manager reference
+			ResourceManager& resourceManager;
 
 			// Loads the pipeline shader modules
 			void loadShaderModules();

@@ -34,6 +34,12 @@ namespace mtd
 		return a = a & b;
 	}
 
+	template<BitMaskEnum E>
+	constexpr bool operator!(E a)
+	{
+		return static_cast<std::underlying_type_t<E>>(a) == 0;
+	}
+
 	/*
 	* @brief Enables the usage of bit mask operators on the enum class.
 	*
@@ -76,9 +82,10 @@ namespace mtd
 		Index = 1U << 3U,
 		AccelerationStructure = 1U << 4U,
 		AccelerationStructureInput = 1U << 5U,
-		TransferSource = 1U << 6U,
-		TransferDestination = 1U << 7U,
-		DeviceAddress = 1U << 8U
+		ShaderBindingTable = 1U << 6U,
+		TransferSource = 1U << 7U,
+		TransferDestination = 1U << 8U,
+		DeviceAddress = 1U << 9U
 	};
 	ENABLE_ENUM_FLAGS(GpuBufferType);
 

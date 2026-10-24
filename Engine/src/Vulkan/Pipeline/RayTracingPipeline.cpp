@@ -6,20 +6,14 @@
 mtd::RayTracingPipeline::RayTracingPipeline
 (
 	const Device& mtdDevice,
+	ResourceManager& resourceManager,
 	const DescriptorManager& descriptorManager,
 	const RayTracingPipelineInfo& info,
 	vk::Extent2D swapchainExtent
 ) : Pipeline{mtdDevice.getDevice(), descriptorManager, info},
+	resourceManager{resourceManager},
 	outputImage{mtdDevice},
 	accumulationImage{mtdDevice},
-	windowResolutionDependant{false},
-	sbtBuffer
-	{
-		mtdDevice,
-		vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddress
-			| vk::BufferUsageFlagBits::eTransferDst,
-		vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-	},
 	shaderRenderingInfo{2U, 4U, 1U, 0U, 0U}
 {
 	loadShaderModules();
@@ -31,17 +25,25 @@ mtd::RayTracingPipeline::RayTracingPipeline
 	setEventCallback();
 }
 
+mtd::RayTracingPipeline::~RayTracingPipeline()
+{
+	resourceManager.deleteResource(sbtBufferID);
+}
+
 mtd::RayTracingPipeline::RayTracingPipeline(RayTracingPipeline&& other) noexcept
 	: Pipeline{std::move(other)},
+	resourceManager{other.resourceManager},
 	outputImage{std::move(other.outputImage)},
 	accumulationImage{std::move(other.accumulationImage)},
 	windowResolutionDependant{other.windowResolutionDependant},
-	sbtBuffer{std::move(other.sbtBuffer)},
+	sbtBufferID{other.sbtBufferID},
 	rayGenRegionSBT{std::move(other.rayGenRegionSBT)},
 	missRegionSBT{std::move(other.missRegionSBT)},
 	hitRegionSBT{std::move(other.hitRegionSBT)},
 	callableRegionSBT{std::move(other.callableRegionSBT)}
-{}
+{
+	other.sbtBufferID = 0U;
+}
 
 void mtd::RayTracingPipeline::traceRays
 (
@@ -311,8 +313,8 @@ void mtd::RayTracingPipeline::createShaderBindingTable(const Device& mtdDevice)
 	}
 
 	const vk::DeviceSize sbtSize = shaders.size() * baseSizeAligned;
-	sbtBuffer.create(sbtSize);
-	vk::DeviceAddress sbtAddress = sbtBuffer.getBufferAddress();
+	sbtBufferID = resourceManager.createBuffer("", GpuBufferType::ShaderBindingTable, GpuMemoryUsage::CpuUpload, sbtSize);
+	const vk::DeviceAddress sbtAddress = resourceManager.getBufferAddress(sbtBufferID);
 
 	rayGenRegionSBT.deviceAddress = sbtAddress;
 	rayGenRegionSBT.stride = baseSizeAligned;
@@ -327,17 +329,17 @@ void mtd::RayTracingPipeline::createShaderBindingTable(const Device& mtdDevice)
 	hitRegionSBT.size = baseSizeAligned;
 
 	uint8_t* pShaderHandleStorage = shaderHandleStorage.data();
-	vk::DeviceSize bufferOffset = 0;
+	vk::DeviceSize bufferOffset = 0UL;
 
-	sbtBuffer.copyMemoryToBuffer(handleSize, pShaderHandleStorage, bufferOffset);
+	resourceManager.updateBufferData(sbtBufferID, handleSize, pShaderHandleStorage, bufferOffset);
 	pShaderHandleStorage += handleSize;
 	bufferOffset += rayGenRegionSBT.size;
 
-	sbtBuffer.copyMemoryToBuffer(handleSize, pShaderHandleStorage, bufferOffset);
+	resourceManager.updateBufferData(sbtBufferID, handleSize, pShaderHandleStorage, bufferOffset);
 	pShaderHandleStorage += handleSize;
 	bufferOffset += missRegionSBT.size;
 
-	sbtBuffer.copyMemoryToBuffer(handleSize, pShaderHandleStorage, bufferOffset);
+	resourceManager.updateBufferData(sbtBufferID, handleSize, pShaderHandleStorage, bufferOffset);
 	pShaderHandleStorage += handleSize;
 	bufferOffset += hitRegionSBT.size;
 }

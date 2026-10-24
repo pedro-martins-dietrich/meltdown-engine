@@ -1,5 +1,4 @@
 #pragma once
-#include "DescriptorPool.hpp"
 
 #include "../../AssetManager/ResourceManager.hpp"
 
