@@ -10,7 +10,7 @@ mtd::ComputePipeline::ComputePipeline
 	const ComputePipelineInfo& info,
 	vk::Extent2D swapchainExtent
 ) : Pipeline{mtdDevice.getDevice(), descriptorManager, info}, outputImage{mtdDevice},
-	pushConstantData{UIntVec2{0U, 0U}, 0U, 4U, 4U, 4U, 0U, 0U, 0U}
+	pushConstantData{UIntVec2{0U, 0U}, 0U, 1U, 4U, 0U, 0U}
 {
 	loadShaderModule();
 	createDescriptorSetLayouts();
@@ -71,7 +71,6 @@ void mtd::ComputePipeline::dispatchCompute(const vk::CommandBuffer& commandBuffe
 	commandBuffer.dispatch(info.workgroups.x, info.workgroups.y, info.workgroups.z);
 
 	pushConstantData.iterationCounter++;
-	pushConstantData.accumulatedFrames++;
 
 	outputImage.transitionImageLayout
 	(
@@ -125,7 +124,7 @@ void mtd::ComputePipeline::resize(const Device& mtdDevice, vk::Extent2D swapchai
 	if(info.calculateWorkgroupsFromImage[1])
 		info.workgroups.y = (info.imageResolution.y + info.workgroupSize.y - 1U) / info.workgroupSize.y;
 
-	pushConstantData.accumulatedFrames = 0U;
+	pushConstantData.iterationCounter = 0U;
 
 	outputImage.resize(info.imageResolution);
 
@@ -263,6 +262,6 @@ void mtd::ComputePipeline::setEventCallback()
 {
 	resetAccumulationCallbackHandle = EventManager::addCallback([this](const ResetFrameAccumulationEvent& event)
 	{
-		pushConstantData.accumulatedFrames = 0U;
+		pushConstantData.iterationCounter = 0U;
 	});
 }

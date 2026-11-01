@@ -196,10 +196,8 @@ namespace mtd
 		uint32_t iterationCounter = 0U;
 		uint32_t samplesPerPixel = 1U;
 		uint32_t maxRecursionDepth = 4U;
-		uint32_t maxScatterRayCount = 4U;
-		uint32_t accumulatedFrames = 0U;
-		uint32_t randomSeed = 0U;
 		uint32_t instanceCount = 0U;
+		uint32_t randomSeed = 0U;
 	};
 
 	// Ray tracing push constant struct
@@ -207,7 +205,6 @@ namespace mtd
 	{
 		uint32_t samplesPerPixel = 1U;
 		uint32_t maxRecursionDepth = 4U;
-		uint32_t maxScatterRayCount = 4U;
 		uint32_t accumulatedFrames = 0U;
 		uint32_t randomSeed = 0U;
 	};

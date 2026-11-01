@@ -55,8 +55,6 @@ const float PI = 3.14159265359f;
 const float TWO_PI = 6.28318530718f;
 const float INV_PI = 0.31830988618f;
 
-const vec3 F0 = vec3(0.04f);
-
 
 uint pcgHash(uint inputValue)
 {
@@ -69,4 +67,18 @@ float randomFloat(inout uint seed)
 {
 	seed = pcgHash(seed);
 	return float(seed) / float(0xFFFFFFFFU);
+}
+
+vec3 unitSphereSample(inout uint randomState)
+{
+	float z = 2.0f * randomFloat(randomState) - 1.0f;
+	float r = sqrt(1.0f - z * z);
+	float phi = TWO_PI * randomFloat(randomState);
+
+	return vec3(r * cos(phi), r * sin(phi), z);
+}
+
+void reinhardToneMapping(inout vec3 color)
+{
+	color /= vec3(1.0f) + color;
 }
