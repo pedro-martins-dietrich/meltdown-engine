@@ -14,15 +14,17 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(meltdown)
 find_package(imgui REQUIRED)
 
-# Sets resources directory
+# Resources directory
 set(RESOURCES_DIR "${CMAKE_SOURCE_DIR}/resources")
-# Sets shaders directories
+# Shaders directories
 set(SOURCE_SHADERS_DIR "src/Shaders")
 set(COMPILED_SHADERS_DIR "${RESOURCES_DIR}/shaders")
+# Compiled shaders list
+set(SHADER_OUTPUTS "")
 
 # Searches shaders source code files and compiles them
 file(
-    GLOB_RECURSE SHADER_SRC_FILES
+    GLOB_RECURSE SHADER_SRC_FILES CONFIGURE_DEPENDS
     "${SOURCE_SHADERS_DIR}/**.vert"
     "${SOURCE_SHADERS_DIR}/**.frag"
     "${SOURCE_SHADERS_DIR}/**.comp"
@@ -33,16 +35,18 @@ file(
     "${SOURCE_SHADERS_DIR}/**.rint"
     "${SOURCE_SHADERS_DIR}/**.rcall"
 )
-foreach(SHADER_SRC_FILE ${SHADER_SRC_FILES})
+foreach(SHADER_SRC_FILE IN LISTS SHADER_SRC_FILES)
     get_filename_component(SHADER_NAME ${SHADER_SRC_FILE} NAME)
     set(SHADER_OUTPUT "${COMPILED_SHADERS_DIR}/${SHADER_NAME}.spv")
+    set(SHADER_DEPENDENCY_FILE "${CMAKE_CURRENT_BINARY_DIR}/${SHADER_NAME}.d")
 
     add_custom_command(
         OUTPUT ${SHADER_OUTPUT}
-        COMMAND ${CMAKE_COMMAND} -E remove ${SHADER_OUTPUT}
-        COMMAND glslc --target-env=vulkan1.3 "${SHADER_SRC_FILE}" -o "${SHADER_OUTPUT}"
+        COMMAND glslc --target-env=vulkan1.3 -MD -MF "${SHADER_DEPENDENCY_FILE}" -MT "${SHADER_OUTPUT}" "${SHADER_SRC_FILE}" -o "${SHADER_OUTPUT}"
+        DEPFILE "${SHADER_DEPENDENCY_FILE}"
         DEPENDS ${SHADER_SRC_FILE}
         COMMENT "[MELTDOWN APP] Compiled shader: ${SHADER_NAME}"
+        VERBATIM
     )
     list(APPEND SHADER_OUTPUTS ${SHADER_OUTPUT})
 endforeach()
