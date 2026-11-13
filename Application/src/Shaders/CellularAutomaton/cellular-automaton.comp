@@ -19,15 +19,21 @@ uint pcgHash(uint inputValue)
 	return (word >> 22U) ^ word;
 }
 
+uint initializeRandomSeed(uint pixelIndex, uint frameIndex)
+{
+	uint seed = pcgHash(frameIndex ^ 0x9E3779B9U);
+	return pcgHash(pixelIndex ^ seed);
+}
+
 float randomFloat(inout uint seed)
 {
 	seed = pcgHash(seed);
-	return float(seed) / float(0xFFFFFFFFU);
+	return float(seed >> 8U) * 5.9604644775390625e-8;
 }
 
 void setInitialState(ivec2 coord)
 {
-	uint seed = uint(coord.x + coord.y * int(computeData.imagesSize.x)) + computeData.iterationCounter;
+	uint seed = initializeRandomSeed(coord.x + coord.y * computeData.imagesSize.x, computeData.iterationCounter);
 	float value = randomFloat(seed);
 
 	vec4 color = vec4(0.0f, 0.0f, 0.0f, 1.0f);

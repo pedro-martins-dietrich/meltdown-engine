@@ -21,7 +21,7 @@ mtd::RayTracingBlas::RayTracingBlas
 	{
 		vk::AccelerationStructureGeometryTrianglesDataKHR asGeometryTrianglesData{};
 		asGeometryTrianglesData.vertexFormat = vk::Format::eR32G32B32Sfloat;
-		asGeometryTrianglesData.vertexData.deviceAddress = vertexAddress + meshData.vertexOffset;
+		asGeometryTrianglesData.vertexData.deviceAddress = vertexAddress + meshData.vertexOffset * meshData.vertexStride;
 		asGeometryTrianglesData.vertexStride = meshData.vertexStride;
 		asGeometryTrianglesData.maxVertex = meshData.vertexCount - 1U;
 		asGeometryTrianglesData.indexType = vk::IndexType::eUint32;

@@ -13,7 +13,6 @@ layout(push_constant) uniform PushConstant
 	uint samplesPerPixel;
 	uint maxRecursionDepth;
 	uint accumulatedFrames;
-	uint randomSeed;
 } renderingInfo;
 
 layout(set = 0, binding = 1) readonly buffer VertexBuffer
@@ -75,27 +74,39 @@ void main()
 	uint materialID = materialIDs[instance.materialSetID + submesh.materialSlot];
 	MaterialData material = materialData[materialOffsets[materialID] / 3U];
 
-	vec3 specularReflection = reflect(gl_WorldRayDirectionEXT, normal);
-	vec3 diffuseReflection = normalize(normal + unitSphereSample(payload.randomState));
-	vec3 bounceDirection = mix(diffuseReflection, specularReflection, (1.0f - material.roughness) * material.metallic);
-
 	payload.light += payload.throughput * material.emissionAndIoR.rgb;
 
 	if(payload.recursionDepth < renderingInfo.maxRecursionDepth)
 	{
-		payload.throughput *= material.diffuse.rgb;
-		payload.recursionDepth++;
-
-		traceRayEXT
+		SampleData sampleData = sampleBRDF
 		(
-			accelerationStructure,
-			gl_RayFlagsOpaqueEXT,
-			0xFF,
-			0, 0,
-			0,
-			hitPoint, 1e-3f,
-			bounceDirection, 1e6f,
-			0
+			-gl_WorldRayDirectionEXT, normal, payload.randomState,
+			material.diffuse.rgb, material.roughness, material.metallic
 		);
+
+		if(sampleData.valid)
+		{
+			Ray newRay;
+			newRay.origin = hitPoint;
+			newRay.direction = sampleData.newRayDirection;
+
+			payload.throughput *= sampleData.weight;
+			payload.recursionDepth++;
+
+			if(russianRoulette(payload.recursionDepth, payload.throughput, payload.randomState))
+				return;
+
+			traceRayEXT
+			(
+				accelerationStructure,
+				gl_RayFlagsOpaqueEXT,
+				0xFF,
+				0, 0,
+				0,
+				newRay.origin, 1e-3f,
+				newRay.direction, 1e6f,
+				0
+			);
+		}
 	}
 }

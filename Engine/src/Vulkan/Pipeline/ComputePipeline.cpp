@@ -10,7 +10,7 @@ mtd::ComputePipeline::ComputePipeline
 	const ComputePipelineInfo& info,
 	vk::Extent2D swapchainExtent
 ) : Pipeline{mtdDevice.getDevice(), descriptorManager, info}, outputImage{mtdDevice},
-	pushConstantData{UIntVec2{0U, 0U}, 0U, 1U, 4U, 0U, 0U}
+	pushConstantData{UIntVec2{0U, 0U}, 0U, 1U, 4U, 0U}
 {
 	loadShaderModule();
 	createDescriptorSetLayouts();
@@ -59,8 +59,6 @@ void mtd::ComputePipeline::dispatchCompute(const vk::CommandBuffer& commandBuffe
 		static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(),
 		0U, nullptr
 	);
-
-	pushConstantData.randomSeed = rand();
 	commandBuffer.pushConstants
 	(
 		pipelineLayout,
