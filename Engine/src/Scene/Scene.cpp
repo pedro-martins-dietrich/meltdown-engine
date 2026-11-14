@@ -90,7 +90,7 @@ void mtd::Scene::allocateResources(PipelineBundle& pipelines)
 	{
 		DescriptorSetHandler& descriptorSetHandler = pipelines.rayTracingPipelines[i].getDescriptorSetHandler(0U);
 
-		totalImageSamplerCount--;
+		totalImageSamplerCount = 1U;
 
 		vk::DescriptorSetVariableDescriptorCountAllocateInfo variableCountInfo{};
 		variableCountInfo.descriptorSetCount = 1U;

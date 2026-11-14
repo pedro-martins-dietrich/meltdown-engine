@@ -14,7 +14,7 @@ mtd::RayTracingPipeline::RayTracingPipeline
 	resourceManager{resourceManager},
 	outputImage{mtdDevice},
 	accumulationImage{mtdDevice},
-	shaderRenderingInfo{2U, 4U, 1U, 0U, 0U}
+	shaderRenderingInfo{1U, 4U, 0U}
 {
 	loadShaderModules();
 	createDescriptorSetLayouts();
@@ -89,7 +89,6 @@ void mtd::RayTracingPipeline::traceRays
 		);
 	}
 
-	shaderRenderingInfo.randomSeed = rand();
 	commandBuffer.pushConstants
 	(
 		pipelineLayout,

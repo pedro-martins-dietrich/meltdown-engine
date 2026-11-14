@@ -10,9 +10,7 @@ layout(push_constant) uniform PushConstant
 {
 	uint samplesPerPixel;
 	uint maxRecursionDepth;
-	uint maxScatterRayCount;
 	uint accumulatedFrames;
-	uint randomSeed;
 } renderingInfo;
 
 layout(set = 0, binding = 0) uniform CameraMatrices
@@ -27,11 +25,6 @@ layout(set = 1, binding = 0, rgba8) uniform image2D outputImage;
 layout(set = 1, binding = 1, rgba32f) uniform image2D accumulationImage;
 
 
-void reinhardToneMapping(inout vec3 color)
-{
-	color /= vec3(1.0f) + color;
-}
-
 void main()
 {
 	vec2 pixelCoord = gl_LaunchIDEXT.xy;
@@ -42,7 +35,7 @@ void main()
 
 	Ray ray;
 	ray.origin = inverseView[3].xyz;
-	payload.randomState = renderingInfo.randomSeed + gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x;
+	payload.randomState = initializeRandomSeed(gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x, renderingInfo.accumulatedFrames);
 
 	for(uint sampleIndex = 0U; sampleIndex < renderingInfo.samplesPerPixel; sampleIndex++)
 	{
