@@ -1,9 +1,9 @@
 #include <pch.hpp>
-#include "RayTracingBlas.hpp"
+#include "RayTracingBLAS.hpp"
 
 #include "../../Utils/Logger.hpp"
 
-mtd::RayTracingBlas::RayTracingBlas
+mtd::RayTracingBLAS::RayTracingBLAS
 (
 	const Device& mtdDevice, ResourceManager& resourceManager,
 	const CommandHandler& commandHandler, const MeshData& meshData
@@ -41,14 +41,14 @@ mtd::RayTracingBlas::RayTracingBlas
 	createAndBuild(commandHandler, geometries, primitiveCounts, primitiveOffsets);
 }
 
-mtd::RayTracingBlas::~RayTracingBlas()
+mtd::RayTracingBLAS::~RayTracingBLAS()
 {
 	if(accelerationStructure)
 		mtdDevice.getDevice().destroyAccelerationStructureKHR(accelerationStructure, nullptr, mtdDevice.getDLDI());
 	resourceManager.deleteResource(bufferID);
 }
 
-mtd::RayTracingBlas::RayTracingBlas(RayTracingBlas&& other) noexcept
+mtd::RayTracingBLAS::RayTracingBLAS(RayTracingBLAS&& other) noexcept
 	: mtdDevice{other.mtdDevice}, resourceManager{other.resourceManager},
 	accelerationStructure{other.accelerationStructure}, bufferID{other.bufferID}
 {
@@ -56,7 +56,7 @@ mtd::RayTracingBlas::RayTracingBlas(RayTracingBlas&& other) noexcept
 	other.bufferID = 0U;
 }
 
-void mtd::RayTracingBlas::createAndBuild
+void mtd::RayTracingBLAS::createAndBuild
 (
 	const CommandHandler& commandHandler,
 	const std::vector<vk::AccelerationStructureGeometryKHR>& geometries,

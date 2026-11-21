@@ -1,20 +1,20 @@
 #include <pch.hpp>
-#include "RayTracingTlas.hpp"
+#include "RayTracingTLAS.hpp"
 
 #include "../../Utils/Logger.hpp"
 
-mtd::RayTracingTlas::RayTracingTlas(const Device& mtdDevice, ResourceManager& resourceManager)
+mtd::RayTracingTLAS::RayTracingTLAS(const Device& mtdDevice, ResourceManager& resourceManager)
 	: mtdDevice{mtdDevice}, resourceManager{resourceManager}, accelerationStructure{nullptr}
 {}
 
-mtd::RayTracingTlas::~RayTracingTlas()
+mtd::RayTracingTLAS::~RayTracingTLAS()
 {
 	if(accelerationStructure)
 		mtdDevice.getDevice().destroyAccelerationStructureKHR(accelerationStructure, nullptr, mtdDevice.getDLDI());
 	resourceManager.deleteResource(bufferID);
 }
 
-mtd::RayTracingTlas::RayTracingTlas(RayTracingTlas&& other) noexcept
+mtd::RayTracingTLAS::RayTracingTLAS(RayTracingTLAS&& other) noexcept
 	: mtdDevice{other.mtdDevice}, resourceManager{other.resourceManager},
 	accelerationStructure{other.accelerationStructure}, bufferID{other.bufferID}
 {
@@ -22,10 +22,10 @@ mtd::RayTracingTlas::RayTracingTlas(RayTracingTlas&& other) noexcept
 	other.bufferID = 0U;
 }
 
-void mtd::RayTracingTlas::create
+void mtd::RayTracingTLAS::create
 (
 	const std::vector<SceneInstance> sceneInstances,
-	const std::vector<RayTracingBlas>& blasList,
+	const std::vector<RayTracingBLAS>& blasList,
 	const CommandHandler& commandHandler
 )
 {
@@ -59,7 +59,7 @@ void mtd::RayTracingTlas::create
 	resourceManager.addAccelerationStructureReference(accelerationStructure, bufferID);
 }
 
-void mtd::RayTracingTlas::clear()
+void mtd::RayTracingTLAS::clear()
 {
 	if(accelerationStructure)
 	{
@@ -70,10 +70,10 @@ void mtd::RayTracingTlas::clear()
 	bufferID = 0U;
 }
 
-mtd::ResourceID mtd::RayTracingTlas::createInstanceBuffer
+mtd::ResourceID mtd::RayTracingTLAS::createInstanceBuffer
 (
 	const std::vector<SceneInstance> sceneInstances,
-	const std::vector<RayTracingBlas>& blasList,
+	const std::vector<RayTracingBLAS>& blasList,
 	const CommandHandler& commandHandler
 ) const
 {
@@ -120,7 +120,7 @@ mtd::ResourceID mtd::RayTracingTlas::createInstanceBuffer
 	return instanceBufferID;
 }
 
-void mtd::RayTracingTlas::createAndBuild
+void mtd::RayTracingTLAS::createAndBuild
 (
 	const CommandHandler& commandHandler,
 	const vk::AccelerationStructureGeometryKHR& geometry,

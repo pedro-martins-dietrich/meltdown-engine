@@ -12,7 +12,7 @@
 
 namespace mtd::SceneLoader
 {
-	static constexpr const char* SCENE_LOADER_VERSION = "0.2.2";
+	static constexpr const char* SCENE_LOADER_VERSION = "0.2.3";
 
 	// Loads initial camera data for the scene
 	static void loadCamera(const nlohmann::json& cameraJson);
@@ -37,7 +37,8 @@ namespace mtd::SceneLoader
 		ResourceManager& resourceManager,
 		SceneResources& sceneResources,
 		std::vector<MeshData>& meshes,
-		bool useBVH = false
+		bool buildBVH = false,
+		bool buildRayTracingBVH = false
 	);
 	// Loads all scene instances from the scene file
 	static void loadInstances
@@ -134,7 +135,11 @@ void mtd::SceneLoader::load
 		sceneJson["textures"], sceneJson["materials"], sceneJson["material-sets"],
 		resourceManager, sceneResources, materialSetOffsets
 	);
-	loadMeshes(sceneJson["meshes"], resourceManager, sceneResources, meshes, (rtPipelinesJson.size() != 0));
+	loadMeshes
+	(
+		sceneJson["meshes"], resourceManager, sceneResources, meshes,
+		sceneJson.value("build-bvh", false), (rtPipelinesJson.size() != 0)
+	);
 	loadInstances(sceneJson["instances"], instanceManager, materialSetOffsets);
 
 	if(rtPipelinesJson.size() != 0)
@@ -275,7 +280,8 @@ void mtd::SceneLoader::loadMeshes
 	ResourceManager& resourceManager,
 	SceneResources& sceneResources,
 	std::vector<MeshData>& meshes,
-	bool useBVH
+	bool buildBVH,
+	bool buildRayTracingBVH
 )
 {
 	std::vector<std::string> meshPaths;
@@ -288,10 +294,9 @@ void mtd::SceneLoader::loadMeshes
 		resourceManager,
 		meshPaths,
 		meshes,
-		sceneResources.vertexBufferID,
-		sceneResources.indexBufferID,
-		sceneResources.submeshBufferID,
-		useBVH
+		sceneResources,
+		buildBVH,
+		buildRayTracingBVH
 	);
 }
 

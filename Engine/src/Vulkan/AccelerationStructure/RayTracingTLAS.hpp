@@ -1,23 +1,23 @@
 #pragma once
 
-#include "RayTracingBlas.hpp"
+#include "RayTracingBLAS.hpp"
 
 namespace mtd
 {
 	// Top Level Acceleration Structure for the ray tracing pipeline
-	class RayTracingTlas
+	class RayTracingTLAS
 	{
 		public:
-			RayTracingTlas(const Device& mtdDevice, ResourceManager& resourceManager);
-			~RayTracingTlas();
+			RayTracingTLAS(const Device& mtdDevice, ResourceManager& resourceManager);
+			~RayTracingTLAS();
 
-			RayTracingTlas(RayTracingTlas&& other) noexcept;
+			RayTracingTLAS(RayTracingTLAS&& other) noexcept;
 
 			// Creates and builds the acceleration structure
 			void create
 			(
 				const std::vector<SceneInstance> sceneInstances,
-				const std::vector<RayTracingBlas>& blasList,
+				const std::vector<RayTracingBLAS>& blasList,
 				const CommandHandler& commandHandler
 			);
 			// Clears TLAS data
@@ -38,7 +38,7 @@ namespace mtd
 			ResourceID createInstanceBuffer
 			(
 				const std::vector<SceneInstance> sceneInstances,
-				const std::vector<RayTracingBlas>& blasList,
+				const std::vector<RayTracingBLAS>& blasList,
 				const CommandHandler& commandHandler
 			) const;
 

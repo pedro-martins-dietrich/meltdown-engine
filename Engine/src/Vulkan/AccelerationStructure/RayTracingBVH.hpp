@@ -1,6 +1,6 @@
 #pragma once
 
-#include "RayTracingTlas.hpp"
+#include "RayTracingTLAS.hpp"
 
 namespace mtd
 {
@@ -27,9 +27,9 @@ namespace mtd
 
 		private:
 			// Top-Level Acceleration Structure
-			RayTracingTlas tlas;
+			RayTracingTLAS tlas;
 			// Bottom-Level Acceleration Structures
-			std::vector<RayTracingBlas> blasList;
+			std::vector<RayTracingBLAS> blasList;
 
 			// BVH command handler
 			CommandHandler commandHandler;

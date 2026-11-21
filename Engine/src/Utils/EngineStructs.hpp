@@ -146,6 +146,28 @@ namespace mtd
 		std::vector<SubmeshData> submeshes;
 	};
 
+	// BVH child node reference with its AABB
+	struct alignas(16) ChildBVH
+	{
+		Vec3 minAABB = Vec3{0.0f};
+		uint32_t nodeReference = ~0U;
+		Vec3 maxAABB = Vec3{0.0f};
+		uint32_t padding = 0U;
+	};
+
+	// BVH4 node
+	struct alignas(16) NodeBVH4
+	{
+		ChildBVH children[4];
+	};
+
+	// BVH node for a single triangle
+	struct alignas(16) TriangleBVH
+	{
+		UIntVec3 indices;
+		uint32_t submeshIndex;
+	};
+
 	// Resource IDs of the GPU resources managed by the engine
 	struct SceneResources
 	{
@@ -157,6 +179,7 @@ namespace mtd
 		ResourceID materialIndexingBufferID = 0U;
 		ResourceID materialSetBufferID = 0U;
 		ResourceID missingTextureID = 0U;
+		ResourceID blasBVH4 = 0U;
 		std::vector<ResourceID> textureIDs = {};
 	};
 

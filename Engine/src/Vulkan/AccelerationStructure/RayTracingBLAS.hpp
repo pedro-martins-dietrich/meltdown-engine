@@ -5,20 +5,20 @@
 namespace mtd
 {
 	// Bottom Level Acceleration Structure for the ray tracing pipeline
-	class RayTracingBlas
+	class RayTracingBLAS
 	{
 		public:
-			RayTracingBlas
+			RayTracingBLAS
 			(
 				const Device& mtdDevice, ResourceManager& resourceManager,
 				const CommandHandler& commandHandler, const MeshData& meshData
 			);
-			~RayTracingBlas();
+			~RayTracingBLAS();
 
-			RayTracingBlas(const RayTracingBlas&) = delete;
-			RayTracingBlas& operator=(const RayTracingBlas&) = delete;
+			RayTracingBLAS(const RayTracingBLAS&) = delete;
+			RayTracingBLAS& operator=(const RayTracingBLAS&) = delete;
 
-			RayTracingBlas(RayTracingBlas&& other) noexcept;
+			RayTracingBLAS(RayTracingBLAS&& other) noexcept;
 
 			// Getter
 			vk::DeviceAddress getBufferAddress() const { return resourceManager.getBufferAddress(bufferID); }
