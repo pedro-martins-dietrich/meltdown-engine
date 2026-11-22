@@ -531,6 +531,10 @@ namespace mtd
 			float wx, float wy, float wz, float ww
 		);
 		/*
+		* @brief Builds a 4x4 matrix from four `Vec4` values.
+		*/
+		constexpr Mat4x4(Vec4 x, Vec4 y, Vec4 z, Vec4 w) : x{x}, y{y}, z{z}, w{w} {}
+		/*
 		* @brief Builds a scalar matrix.
 		* Using `1.0f` as a value builds the identity matrix.
 		*
@@ -545,7 +549,20 @@ namespace mtd
 		Mat4x4(const Quaternion& quat);
 
 		/*
-		* @brief Rotates () the matrix around the axis, by an angle (in radians).
+		* @brief Calculates the determinant of the matrix.
+		*
+		* @return The matrix determinant.
+		*/
+		float determinant() const;
+		/*
+		* @brief Calculates the inverse of the matrix.
+		*
+		* @return The inverse matrix. If the matrix has a null determinant, the returned matrix will be a 0 matrix.
+		*/
+		Mat4x4 inverse() const;
+
+		/*
+		* @brief Rotates the matrix around the axis, by an angle (in radians).
 		* The rotation is done intrinsically (the rotation axis is defined based on the
 		* model's current orientation).
 		*

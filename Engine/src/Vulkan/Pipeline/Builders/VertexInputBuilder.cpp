@@ -16,7 +16,6 @@ void mtd::VertexInputBuilder::setVertexInput(MeshType type, vk::PipelineVertexIn
 	switch(type)
 	{
 		case MeshType::Default3D:
-		case MeshType::MultiMaterial3D:
 			defaultVertexInput(vertexInputInfo);
 			break;
 
@@ -70,7 +69,7 @@ void mtd::VertexInputBuilder::defaultVertexInput(vk::PipelineVertexInputStateCre
 	attributeDescriptions[7].location = 7U;
 	attributeDescriptions[7].binding = 1U;
 	attributeDescriptions[7].format = vk::Format::eR8G8B8A8Uint;
-	attributeDescriptions[7].offset = 16U * sizeof(float);
+	attributeDescriptions[7].offset = 32U * sizeof(float);
 
 	vertexInputInfo.flags = vk::PipelineVertexInputStateCreateFlags();
 	vertexInputInfo.vertexBindingDescriptionCount = bindingDescriptions.size();
@@ -109,7 +108,7 @@ void mtd::VertexInputBuilder::billboardVertexInput(vk::PipelineVertexInputStateC
 	attributeDescriptions[5].location = 5U;
 	attributeDescriptions[5].binding = 1U;
 	attributeDescriptions[5].format = vk::Format::eR8G8B8A8Uint;
-	attributeDescriptions[5].offset = 16U * sizeof(float);
+	attributeDescriptions[5].offset = 32U * sizeof(float);
 
 	vertexInputInfo.flags = vk::PipelineVertexInputStateCreateFlags();
 	vertexInputInfo.vertexBindingDescriptionCount = bindingDescriptions.size();

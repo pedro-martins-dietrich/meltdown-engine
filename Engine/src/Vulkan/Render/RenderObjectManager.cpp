@@ -48,6 +48,7 @@ void mtd::RenderObjectManager::createFrameRenderObjects
     renderObjects.push_back(RenderObject
     {
         firstInstance->transform,
+        firstInstance->transform.inverse(),
         firstInstance->materialSetID,
         firstMesh.submeshOffset,
         static_cast<uint32_t>(firstMesh.submeshes.size()),
@@ -65,6 +66,7 @@ void mtd::RenderObjectManager::createFrameRenderObjects
         const MeshData& mesh = meshes[pInstance->meshID];
         renderObjects.push_back(RenderObject{
             pInstance->transform,
+            pInstance->transform.inverse(),
             pInstance->materialSetID,
             mesh.submeshOffset,
             static_cast<uint32_t>(mesh.submeshes.size()),

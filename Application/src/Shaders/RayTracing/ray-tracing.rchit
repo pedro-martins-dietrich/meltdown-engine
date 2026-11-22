@@ -67,7 +67,6 @@ void main()
 	RenderObject instance = instances[gl_InstanceCustomIndexEXT];
 	Submesh submesh = submeshes[instance.submeshOffset + gl_GeometryIndexEXT];
 
-	vec3 hitPoint = gl_WorldRayOriginEXT + gl_WorldRayDirectionEXT * gl_HitTEXT;
 	vec3 normal;
 	getTriangleHitInfo(submesh.indexOffset, normal);
 
@@ -84,29 +83,27 @@ void main()
 			material.diffuse.rgb, material.roughness, material.metallic
 		);
 
-		if(sampleData.valid)
-		{
-			Ray newRay;
-			newRay.origin = hitPoint;
-			newRay.direction = sampleData.newRayDirection;
+		if(!sampleData.valid) return;
 
-			payload.throughput *= sampleData.weight;
-			payload.recursionDepth++;
+		Ray newRay;
+		newRay.origin = gl_WorldRayOriginEXT + gl_WorldRayDirectionEXT * gl_HitTEXT;
+		newRay.direction = sampleData.newRayDirection;
 
-			if(russianRoulette(payload.recursionDepth, payload.throughput, payload.randomState))
-				return;
+		payload.throughput *= sampleData.weight;
+		payload.recursionDepth++;
 
-			traceRayEXT
-			(
-				accelerationStructure,
-				gl_RayFlagsOpaqueEXT,
-				0xFF,
-				0, 0,
-				0,
-				newRay.origin, 1e-3f,
-				newRay.direction, 1e6f,
-				0
-			);
-		}
+		if(russianRoulette(payload.recursionDepth, payload.throughput, payload.randomState)) return;
+
+		traceRayEXT
+		(
+			accelerationStructure,
+			gl_RayFlagsOpaqueEXT,
+			0xFF,
+			0, 0,
+			0,
+			newRay.origin, 1e-3f,
+			newRay.direction, 1e6f,
+			0
+		);
 	}
 }

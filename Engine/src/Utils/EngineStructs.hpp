@@ -55,6 +55,8 @@ namespace mtd
 		Mat4x4 projection;
 		Mat4x4 view;
 		Mat4x4 projectionView;
+		Mat4x4 inverseView;
+		Mat4x4 inverseProjection;
 	};
 
 	// Common header format for asset files
@@ -85,6 +87,7 @@ namespace mtd
 	struct RenderObject
 	{
 		Mat4x4 transform;
+		Mat4x4 inverseTransform;
 		uint32_t materialSetID;
 		uint32_t submeshOffset;
 		uint32_t submeshCount;

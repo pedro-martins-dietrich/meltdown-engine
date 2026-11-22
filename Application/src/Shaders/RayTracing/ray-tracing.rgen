@@ -18,6 +18,8 @@ layout(set = 0, binding = 0) uniform CameraMatrices
 	mat4 projection;
 	mat4 view;
 	mat4 projectionView;
+	mat4 inverseView;
+	mat4 inverseProjection;
 } camera;
 layout(set = 0, binding = 8) uniform accelerationStructureEXT accelerationStructure;
 
@@ -29,12 +31,10 @@ void main()
 {
 	vec2 pixelCoord = gl_LaunchIDEXT.xy;
 	vec2 inverseScreenSize = 2.0f / gl_LaunchSizeEXT.xy;
-	mat4 inverseView = inverse(camera.view);
-	mat4 inverseProjection = inverse(camera.projection);
 	vec3 sampledLight = vec3(0.0f);
 
 	Ray ray;
-	ray.origin = inverseView[3].xyz;
+	ray.origin = camera.inverseView[3].xyz;
 	payload.randomState = initializeRandomSeed(gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x, renderingInfo.accumulatedFrames);
 
 	for(uint sampleIndex = 0U; sampleIndex < renderingInfo.samplesPerPixel; sampleIndex++)
@@ -45,8 +45,8 @@ void main()
 
 		vec2 jitter = vec2(randomFloat(payload.randomState), randomFloat(payload.randomState));
 		vec2 uv = inverseScreenSize * (pixelCoord + jitter) - 1.0f;
-		vec4 farPoint = inverseProjection * vec4(uv, 1.0f, 1.0f);
-		ray.direction = normalize((inverseView * (farPoint / farPoint.w)).xyz - ray.origin);
+		vec4 farPoint = camera.inverseProjection * vec4(uv, 1.0f, 1.0f);
+		ray.direction = normalize((camera.inverseView * (farPoint / farPoint.w)).xyz - ray.origin);
 
 		traceRayEXT
 		(

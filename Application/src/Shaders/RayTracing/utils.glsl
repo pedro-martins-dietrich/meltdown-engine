@@ -38,6 +38,7 @@ struct Submesh
 struct RenderObject
 {
 	mat4 transform;
+	mat4 inverseTransform;
 	uint materialSetID;
 	uint submeshOffset;
 	uint submeshCount;
