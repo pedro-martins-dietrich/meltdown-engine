@@ -55,6 +55,8 @@ namespace mtd
 		Mat4x4 projection;
 		Mat4x4 view;
 		Mat4x4 projectionView;
+		Mat4x4 inverseView;
+		Mat4x4 inverseProjection;
 	};
 
 	// Common header format for asset files
@@ -85,6 +87,7 @@ namespace mtd
 	struct RenderObject
 	{
 		Mat4x4 transform;
+		Mat4x4 inverseTransform;
 		uint32_t materialSetID;
 		uint32_t submeshOffset;
 		uint32_t submeshCount;
@@ -146,6 +149,28 @@ namespace mtd
 		std::vector<SubmeshData> submeshes;
 	};
 
+	// BVH child node reference with its AABB
+	struct alignas(16) ChildBVH
+	{
+		Vec3 minAABB = Vec3{0.0f};
+		uint32_t nodeReference = ~0U;
+		Vec3 maxAABB = Vec3{0.0f};
+		uint32_t padding = 0U;
+	};
+
+	// BVH4 node
+	struct alignas(16) NodeBVH4
+	{
+		ChildBVH children[4];
+	};
+
+	// BVH node for a single triangle
+	struct alignas(16) TriangleBVH
+	{
+		UIntVec3 indices;
+		uint32_t submeshIndex;
+	};
+
 	// Resource IDs of the GPU resources managed by the engine
 	struct SceneResources
 	{
@@ -157,6 +182,7 @@ namespace mtd
 		ResourceID materialIndexingBufferID = 0U;
 		ResourceID materialSetBufferID = 0U;
 		ResourceID missingTextureID = 0U;
+		ResourceID blasBVH4 = 0U;
 		std::vector<ResourceID> textureIDs = {};
 	};
 

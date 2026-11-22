@@ -8,7 +8,7 @@ mtd::Camera::Camera(float aspectRatio)
 	aspectRatio{aspectRatio},
 	yFOV{75.0f}, viewWidth{10.0f}, nearPlane{0.01f}, farPlane{1000.0f},
 	orthographicMode{false},
-	matrices{{1.0f}, {1.0f}, {1.0f}}
+	matrices{{1.0f}, {1.0f}, {1.0f}, {1.0f}, {1.0f}}
 {
 	updateViewMatrix();
 	updateProjectionMatrix();
@@ -53,6 +53,7 @@ void mtd::Camera::updateViewMatrix()
 	matrices.view.w.z = position.dot(Vec3{-matrices.view.x.z, -matrices.view.y.z, -matrices.view.z.z});
 
 	matrices.projectionView = matrices.projection * matrices.view;
+	matrices.inverseView = matrices.view.inverse();
 }
 
 void mtd::Camera::updateProjectionMatrix()
@@ -82,6 +83,7 @@ void mtd::Camera::updateProjectionMatrix()
 	}
 
 	matrices.projectionView = matrices.projection * matrices.view;
+	matrices.inverseProjection = matrices.projection.inverse();
 }
 
 void mtd::Camera::setEventCallbacks()

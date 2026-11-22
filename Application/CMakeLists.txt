@@ -42,7 +42,7 @@ foreach(SHADER_SRC_FILE IN LISTS SHADER_SRC_FILES)
 
     add_custom_command(
         OUTPUT ${SHADER_OUTPUT}
-        COMMAND glslc --target-env=vulkan1.3 -MD -MF "${SHADER_DEPENDENCY_FILE}" -MT "${SHADER_OUTPUT}" "${SHADER_SRC_FILE}" -o "${SHADER_OUTPUT}"
+        COMMAND glslc -O --target-env=vulkan1.3 -MD -MF "${SHADER_DEPENDENCY_FILE}" -MT "${SHADER_OUTPUT}" "${SHADER_SRC_FILE}" -o "${SHADER_OUTPUT}"
         DEPFILE "${SHADER_DEPENDENCY_FILE}"
         DEPENDS ${SHADER_SRC_FILE}
         COMMENT "[MELTDOWN APP] Compiled shader: ${SHADER_NAME}"

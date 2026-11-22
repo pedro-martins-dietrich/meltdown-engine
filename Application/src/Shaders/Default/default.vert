@@ -21,6 +21,8 @@ layout(set = 0, binding = 0) uniform CameraMatrices
 	mat4 projection;
 	mat4 view;
 	mat4 projectionView;
+	mat4 inverseView;
+	mat4 inverseProjection;
 } camera;
 
 void main()

@@ -1,15 +1,18 @@
+#ifndef RAY_STRUCT
+#define RAY_STRUCT
+struct Ray
+{
+	vec3 origin;
+	vec3 direction;
+};
+#endif
+
 struct Payload
 {
 	vec3 light;
 	vec3 throughput;
 	uint recursionDepth;
 	uint randomState;
-};
-
-struct Ray
-{
-	vec3 origin;
-	vec3 direction;
 };
 
 struct Vertex
@@ -35,6 +38,7 @@ struct Submesh
 struct RenderObject
 {
 	mat4 transform;
+	mat4 inverseTransform;
 	uint materialSetID;
 	uint submeshOffset;
 	uint submeshCount;
@@ -173,7 +177,7 @@ SampleData sampleBRDF
 	result.valid = false;
 
 	vec3 diffuseColor = (1.0f - metallic) * albedo;
-	vec3 f0 = mix(DIELETRIC_F0, albedo, metallic);
+	vec3 f0 = max(vec3(1e-7), mix(DIELETRIC_F0, albedo, metallic));
 
 	float specularProbability = specularReflectionProbability(diffuseColor, f0);
 

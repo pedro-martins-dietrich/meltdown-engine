@@ -91,18 +91,76 @@ mtd::Mat4x4 mtd::operator*(float scalar, const Mat4x4& mat)
 	};
 }
 
-std::ostream& mtd::operator<<(std::ostream& os, const Mat4x4& mat)
+float mtd::Mat4x4::determinant() const
 {
-	for(uint32_t i = 0; i < 4; i++)
-	{
-		os << "\n[ ";
-		for(uint32_t j = 0; j < 4; j++)
-			os << std::fixed << std::setw(8) << std::setprecision(3) << mat[i][j] << "  ";
-		os << ']';
-	}
-	os << '\n';
+	float t0 = x.x * y.y - y.x * x.y;
+	float t1 = x.x * y.z - y.x * x.z;
+	float t2 = x.x * y.w - y.x * x.w;
+	float t3 = x.y * y.z - y.y * x.z;
+	float t4 = x.y * y.w - y.y * x.w;
+	float t5 = x.z * y.w - y.z * x.w;
 
-	return os;
+	float b0 = z.x * w.y - w.x * z.y;
+	float b1 = z.x * w.z - w.x * z.z;
+	float b2 = z.x * w.w - w.x * z.w;
+	float b3 = z.y * w.z - w.y * z.z;
+	float b4 = z.y * w.w - w.y * z.w;
+	float b5 = z.z * w.w - w.z * z.w;
+
+	return t0 * b5 - t1 * b4 + t2 * b3 + t3 * b2 - t4 * b1 + t5 * b0;
+}
+
+mtd::Mat4x4 mtd::Mat4x4::inverse() const
+{
+	float t0 = x.x * y.y - y.x * x.y;
+	float t1 = x.x * y.z - y.x * x.z;
+	float t2 = x.x * y.w - y.x * x.w;
+	float t3 = x.y * y.z - y.y * x.z;
+	float t4 = x.y * y.w - y.y * x.w;
+	float t5 = x.z * y.w - y.z * x.w;
+
+	float b0 = z.x * w.y - w.x * z.y;
+	float b1 = z.x * w.z - w.x * z.z;
+	float b2 = z.x * w.w - w.x * z.w;
+	float b3 = z.y * w.z - w.y * z.z;
+	float b4 = z.y * w.w - w.y * z.w;
+	float b5 = z.z * w.w - w.z * z.w;
+
+	float determinant = t0 * b5 - t1 * b4 + t2 * b3 + t3 * b2 - t4 * b1 + t5 * b0;
+	if(std::abs(determinant) < 1e-8f)
+		return Mat4x4{0.0f};
+
+	float inverseDeterminant = 1.0f / determinant;
+
+	Mat4x4 inv
+	{
+		{
+			y.y * b5 - y.z * b4 + y.w * b3,
+			-x.y * b5 + x.z * b4 - x.w * b3,
+			w.y * t5 - w.z * t4 + w.w * t3,
+			-z.y * t5 + z.z * t4 - z.w * t3
+		},
+		{
+			-y.x * b5 + y.z * b2 - y.w * b1,
+			x.x * b5 - x.z * b2 + x.w * b1,
+			-w.x * t5 + w.z * t2 - w.w * t1,
+			z.x * t5 - z.z * t2 + z.w * t1
+		},
+		{
+			y.x * b4 - y.y * b2 + y.w * b0,
+			-x.x * b4 + x.y * b2 - x.w * b0,
+			w.x * t4 - w.y * t2 + w.w * t0,
+			-z.x * t4 + z.y * t2 - z.w * t0
+		},
+		{
+			-y.x * b3 + y.y * b1 - y.z * b0,
+			x.x * b3 - x.y * b1 + x.z * b0,
+			-w.x * t3 + w.y * t1 - w.z * t0,
+			z.x * t3 - z.y * t1 + z.z * t0
+		}
+	};
+
+	return inverseDeterminant * inv;
 }
 
 void mtd::Mat4x4::rotateIntrinsic(float angle, const Vec3& axis)
@@ -125,4 +183,21 @@ void mtd::Mat4x4::rotateExtrinsic(float angle, const Vec3& axis)
 	this->w.x = offset.x;
 	this->w.y = offset.y;
 	this->w.z = offset.z;
+}
+
+namespace mtd
+{
+	std::ostream& operator<<(std::ostream& os, const Mat4x4& mat)
+	{
+		for(uint32_t i = 0; i < 4; i++)
+		{
+			os << "\n[ ";
+			for(uint32_t j = 0; j < 4; j++)
+				os << std::fixed << std::setw(8) << std::setprecision(3) << mat[i][j] << "  ";
+			os << ']';
+		}
+		os << '\n';
+
+		return os;
+	}
 }

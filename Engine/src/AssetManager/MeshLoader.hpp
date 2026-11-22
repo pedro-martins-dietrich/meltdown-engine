@@ -11,9 +11,8 @@ namespace mtd::MeshLoader
         ResourceManager& resourceManager,
         const std::vector<std::string>& meshFiles,
         std::vector<MeshData>& meshes,
-        ResourceID& vertexBufferID,
-        ResourceID& indexBufferID,
-        ResourceID& submeshBufferID,
-        bool useBVH = false
+        SceneResources& sceneResources,
+        bool buildBVH = false,
+        bool buildRayTracingBVH = false
     );
 }

@@ -3,6 +3,7 @@
 
 #include "../Utils/Logger.hpp"
 #include "../Utils/StringParser.hpp"
+#include "../Vulkan/AccelerationStructure/BlasBuilder.hpp"
 
 namespace mtd::MeshLoader
 {
@@ -32,10 +33,9 @@ void mtd::MeshLoader::loadMeshes
 	ResourceManager& resourceManager,
 	const std::vector<std::string>& meshFiles,
 	std::vector<MeshData>& meshes,
-	ResourceID& vertexBufferID,
-	ResourceID& indexBufferID,
-	ResourceID& submeshBufferID,
-	bool useBVH
+	SceneResources& sceneResources,
+	bool buildBVH,
+	bool buildRayTracingBVH
 )
 {
 	std::vector<std::byte> vertexData;
@@ -53,23 +53,34 @@ void mtd::MeshLoader::loadMeshes
 
 	GpuBufferType vertexBufferType = GpuBufferType::Vertex;
 	GpuBufferType indexBufferType = GpuBufferType::Index;
-	if(useBVH)
+
+	if(buildRayTracingBVH)
 	{
 		vertexBufferType |= GpuBufferType::AccelerationStructureInput;
 		indexBufferType |= GpuBufferType::AccelerationStructureInput;
 	}
+	if(buildBVH)
+	{
+		std::vector<std::byte> bvhData;
+		BlasBuilder::buildBLAS(meshes.front(), vertexData, indexData, bvhData);
+		sceneResources.blasBVH4 = resourceManager.createBuffer
+		(
+			"BVH4_BLAS", GpuBufferType::Storage, GpuMemoryUsage::CpuUploadOnce,
+			bvhData.size(), bvhData.data()
+		);
+	}
 
-	vertexBufferID = resourceManager.createBuffer
+	sceneResources.vertexBufferID = resourceManager.createBuffer
 	(
 		"VertexBuffer", vertexBufferType, GpuMemoryUsage::CpuUploadOnce,
 		vertexData.size(), vertexData.data()
 	);
-	indexBufferID = resourceManager.createBuffer
+	sceneResources.indexBufferID = resourceManager.createBuffer
 	(
 		"IndexBuffer", indexBufferType, GpuMemoryUsage::CpuUploadOnce,
 		sizeof(uint32_t) * indexData.size(), indexData.data()
 	);
-	submeshBufferID = resourceManager.createBuffer
+	sceneResources.submeshBufferID = resourceManager.createBuffer
 	(
 		"SubmeshBuffer", GpuBufferType::Index, GpuMemoryUsage::CpuUploadOnce,
 		sizeof(SubmeshData) * submeshes.size(), submeshes.data()

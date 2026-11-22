@@ -14,7 +14,7 @@ mtd::RayTracingPipeline::RayTracingPipeline
 	resourceManager{resourceManager},
 	outputImage{mtdDevice},
 	accumulationImage{mtdDevice},
-	shaderRenderingInfo{1U, 4U, 0U}
+	shaderRenderingInfo{1U, 10U, 0U}
 {
 	loadShaderModules();
 	createDescriptorSetLayouts();
